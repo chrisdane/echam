@@ -395,7 +395,6 @@ if (mode == "fldmean") {
                            gsub(" ", "_", paste0(tlimlt, collapse="-")),
                            ".", p$plot_type)
         dir.create(dirname(plotname), recursive=T, showWarnings=F)
-        message("\nSave ", plotname, " ...")
         if (p$plot_type == "png") {
             png(plotname, width=p$ts_width, height=p$ts_height,
                 res=p$dpi, family=p$family)
@@ -474,7 +473,7 @@ if (mode == "fldmean") {
                 }
                 if (length(timeslt[[i]]) == 1) abline(v=timeslt[[i]])
 
-                # add first data point
+                # special: add first data point
                 if (T) {
                     if (i == 1) message("\nadd first data point")
                     points(timeslt[[i]][1], data[[i]][[1]][1], 
@@ -528,6 +527,7 @@ if (mode == "fldmean") {
         } # if add_legend
 
         box()
+        message("\nSave ", plotname, " ...")
         dev.off()
 
     } # for vi max(nvars_per_runid)
