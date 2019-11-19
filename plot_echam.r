@@ -33,15 +33,15 @@ if (T) {
                  "4CO2_echam6_echammon_dynveg")
     models <- rep("echam6", t=3)
     names_short <- c("hist", "1pctCO2", "abrupt-4xCO2") 
-    names_legend <- c("historical", "1pct", "abrupt-4×CO2")
+    names_legend <- c("historical", 
+                      eval(substitute(expression(paste("1pctCO"[2])))),
+                      eval(substitute(expression(paste("abrupt-4" %*% "CO"[2])))))
     fromsf <- rep(1850, t=3)
     #fromsf <- rep(1985, t=3)
     #tosf <- rep(2014, t=3)
     tosf <- c(2014, 2099, 2099)
-    fromsp <- fromsf
-    tosp <- tosf
     seasonsf <- rep("Jan-Dec", t=3)
-    seasonsp <- seasonsf
+    tosp <- rep(2014, t=3)
     areas <- rep("global", t=3)
     n_mas <- c(60, 60, 60)
 }
@@ -54,41 +54,77 @@ varname_out <- "temp2"
 
 # options across settings
 mode <- "fldmean" # "timmean" "fldmean"
+squeeze_data <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
+plot_redfit <- F
+
+# general plot options
 add_title <- F
-add_land <- T
-reorder_lon_from_0360_to_180180 <- T
-add_grid <- F
 add_legend <- T
 plot_type <- "png" # "png" "pdf"
 p <- setDefaultPlotOptions(plot_type=plot_type)
 
-# time series options
+# time series plot options
 # woa13 seasons: "JFM" "AMJ" "JAS" "OND"
 # other seasons: "Jan-Dec" "DJF" "MAM" "JJA" "SON" "JJ"
 # months: "Feb" "Jul" "Jan"  "Jul"
+add_xgrid <- F
+add_ygrid <- F
 add_unsmoothed <- T
+add_smoothed <- T
 add_sd <- F
 add_trend <- F
 scale_ts <- F
-plot_redfit <- F
+add_data_right_yaxis <- T
 plot_var_vs_months <- T
+add_first_data_point <- F
 
-# map options
+# map plot options
 proj <- "rectangular" #"rectangular"
+add_land <- T
+reorder_lon_from_0360_to_180180 <- T
+add_grid <- F
 
-# defaults
+# ================================================================
+# load special data
+if (machine_tag == "mistral") {
+    co2_hist_ncin <- nc_open("/pool/data//ECHAM6/input/r0007/greenhouse_historical.nc") 
+    message("\n", "read hist CO2 from ", co2_hist_ncin$filename, " ...")
+    time <- co2_hist_ncin$dim$time$vals
+    timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
+    co2_hist <- list(co2_ppm=ncvar_get(co2_hist_ncin, "CO2"), time=time, timelt=timelt)
+    co2_1pct_ncin <- nc_open("/pool/data//ECHAM6/input/r0008/greenhouse_1pctCO2.nc")
+    message("\n", "read 1pct CO2 from ", co2_1pct_ncin$filename, " ...")
+    time <- co2_1pct_ncin$dim$time$vals
+    timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
+    co2_1pct <- list(co2_ppm=ncvar_get(co2_1pct_ncin, "CO2"), time=time, timelt=timelt)
+}
+co2_4co2 <- list(co2_ppm=1137.2679)
+message("\n", "set 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
+
+# ================================================================
+# check user input and defaults
 nsettings <- length(postpaths)
 if (!exists("varnames_in")) varnames_in <- rep(varname_out, t=nsettings)
 if (!exists("codes")) codes <- rep("", t=nsettings)
 if (!exists("levs")) levs <- rep("", t=nsettings)
-if (!exists("cols")) cols <- 1:nsettings
 if (!exists("ltys")) ltys <- rep(1, t=nsettings)
 if (!exists("lwds")) lwds <- rep(1, t=nsettings)
 if (!exists("pchs")) pchs <- rep(NA, t=nsettings)
+if (!exists("cols")) {
+    cols <- 1:nsettings
+    # dont use default green as 3rd color
+    if (length(cols) >= 3) {
+        cols[3] <- "blue"
+    }
+    if (length(cols) >= 4) {
+        cols[4] <- "darkgreen"
+    }
+}
 if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effect
 if (!exists("fromsp")) fromsp <- fromsf
 if (!exists("tosp")) tosp <- tosf
 if (!exists("froms_shift")) froms_shift <- rep(NA, t=nsettings)
+if (!exists("seasonsp")) seasonsp <- seasonsf
 codesf <- codes
 codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
 levsf <- levs
@@ -100,10 +136,11 @@ power <- 0 # default: 0 --> 10^0 = 1e0 = 1 --> nothing happens
 alpha <- 0.15 # transparent: 0,1 (1 fully transparent)
 cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha)
 
+
 # allocate
 datas <- vector("list", l=nsettings)
 names(datas) <- names_short
-dims <- times <- times2 <- times3 <- timesp <- timeslt <- lons <- lats <- datas
+data_infos <- dims <- times <- times2 <- times3 <- timesp <- timeslt <- datas
 
 # read data
 message("\n", "Read data ...")
@@ -138,7 +175,7 @@ for (i in 1:nsettings) {
     if (any(names(dims[[i]]) == "time")) {
 
         timein_units <- ncin$dim$time$units
-        message("\n", "detected \"time\" dim -> make POSIXlt from timein_units")
+        message("\n", "detected \"time\" dim -> make POSIXlt from timein_units:")
         print(timein_units)
         # convert any unit to seconds for POSIX,e.g. 
         # "days since 1538-1-1 00:00:00"
@@ -181,16 +218,16 @@ for (i in 1:nsettings) {
                 stop("timein_format=", timein_format, " not defined")
             }
         } # which timein_units "days since", "day as", etc.
-        message("range(timein_lt[[", i, "]]) = ", appendLF=F)
+        message("range(timein_lt) = ", appendLF=F)
         print(range(timein_lt))
         
         # find temporal subset based on given fromsp and tosp
         fromsplt <- as.POSIXlt(paste0(fromsp[i], "-01-01 00:00:00"), tz="UTC")
         tosplt <- as.POSIXlt(paste0(tosp[i], "-12-31 23:59:59"), tz="UTC")
-        inds <- which(timein_lt >= fromsplt & timein_lt <= tosplt)
+        time_inds <- which(timein_lt >= fromsplt & timein_lt <= tosplt)
         # take subset only if necessary
-        if (length(inds) > 0 && length(inds) != length(timein_lt)) { 
-            message("\n", "found ", lebngth(inds), " temporal subset inds based on fromsp[", 
+        if (length(time_inds) > 0 && length(time_inds) != length(timein_lt)) { 
+            message("\n", "found ", length(time_inds), " temporal subset time_inds based on fromsp[", 
                     i, "]=", fromsp[i], " to tosp[", i, "]=", tosp[i], " ...")
             
             # subset seasons from data if wanted (=seasonsp)
@@ -199,12 +236,11 @@ for (i in 1:nsettings) {
                 stop("todo")
             }
 
-            timein_lt <- timein_lt[inds]
-            print(range(timeslt[[i]]))
+            timein_lt <- timein_lt[time_inds]
+            message("range(timein_lt) = ", appendLF=F)
+            print(range(timein_lt))
         
-        } # found temporal subset inds
-        message("new range(timein_lt[[", i, "]]) = ", appendLF=F)
-        print(range(timein_lt))
+        } # found temporal subset time_inds
         
         # shift times due to e.g. senseless spinup years
         # as.POSIXlt's 'year' starts at 1900
@@ -221,7 +257,7 @@ for (i in 1:nsettings) {
         } # if !is.na(froms_shift[i])
         
         # update time dim
-        dims[[i]]$time_inds <- inds
+        dims[[i]]$time_inds <- time_inds
         dims[[i]]$timelt <- timein_lt
 
         # POSIXlt as numeric
@@ -243,20 +279,41 @@ for (i in 1:nsettings) {
     vars_per_file <- names(ncin$var)
     vars <- vector("list", l=ncin$nvars)
     names(vars) <- vars_per_file
+    var_infos <- vars
     for (vi in 1:length(vars)) {
-        message("  ", vars_per_file[vi])
-        # read data: squeeze() is automatically applied
-        vars[[vi]] <- ncvar_get(ncin, names(vars)[vi])
-        # get dims of data
-        stop("asd")
-        dimids <- ncin$var[[vars_per_file[vi]]]$dimids
+        message(vi, "/", length(vars), ": ", vars_per_file[vi])
+        vars[[vi]] <- ncvar_get(ncin, names(vars)[vi], collapse_degen=squeeze_data) 
+        
+        # get infos of variable
+        var_infos[[vi]]$name <- ncin$var[[vars_per_file[vi]]]$name
+        var_infos[[vi]]$longname <- ncin$var[[vars_per_file[vi]]]$longname
+        var_infos[[vi]]$units <- ncin$var[[vars_per_file[vi]]]$units
+        var_infos[[vi]]$missval <- ncin$var[[vars_per_file[vi]]]$missval
+        var_infos[[vi]]$hasAddOffset <- ncin$var[[vars_per_file[vi]]]$hasAddOffset
+        var_infos[[vi]]$hasScaleFact <- ncin$var[[vars_per_file[vi]]]$hasScaleFact
+
+        # get dimensions of variable
+        dimids <- ncin$var[[vars_per_file[vi]]]$dimids # get dims of data
         dimids <- dimids + 1 # nc dim ids start counting from zero
+        if (squeeze_data) { # drop dims with len=1
+            dim_lengths <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[", "len")
+            names(dim_lengths) <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[", "name")
+            if (any(dim_lengths == 1)) {
+                len1_dim_inds <- which(dim_lengths == 1)
+                message("drop \"", paste0(names(len1_dim_inds), collapse="\",\""), 
+                        "\" dim", ifelse(length(len1_dim_inds) > 1, "s", ""), " of length 1 ...")
+                dimids <- dimids[-len1_dim_inds]
+            } # if var has dims of length 1 
+        } else {
+            stop("not implemented")
+        } # if squeeze_data
         attributes(vars[[vi]]) <- list(dim=dim(vars[[vi]]), dims=dims_per_file[dimids])
         #cmd <- paste0("tmp <- list(", paste0(dims_per_file[dimids], "=ncin$dim[[", dimids, "]]$vals", collapse=", "), ")")
     }
     datas[[i]] <- vars
-    rm(vars)
-               
+    data_infos[[i]] <- var_infos
+    rm(vars, var_infos)
+
     # cut temporal subset
     dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
     if (!is.null(dims[[i]]$time_inds)) {
@@ -274,6 +331,12 @@ for (i in 1:nsettings) {
                               "datas[[", i, "]][[", var_with_timedim_ind, "]][", paste0(cmd, collapse=""), "]")
                 message(cmd)
                 eval(parse(text=cmd))
+                # subsetting removed attributes, apply again
+                attributes(datas[[i]][[var_with_timedim_ind]]) <- list(dim=dim(datas[[i]][[var_with_timedim_ind]]), 
+                                                                       dims=dims_of_var)
+                # cut from time dimension
+                dims[[i]]$time <- dims[[i]]$time[dims[[i]]$time_inds]
+
             } # vi vars per file with time dim
         } # if there are varbels with time dimension
     } # cut temporal subset
@@ -338,55 +401,13 @@ for (i in 1:nsettings) {
     } # if this file has lon dim
     
 } # for i nsettings
-message("\n", "*********************************************")
+message("\n", "****************** reading data finished ***************************")
 
 # save data before applying offset, multiplication factors, running mean, etc. for later
 cmd <- paste0(varname_out, "_datas <- datas")
 message("\n", "for later save ", cmd, " ...")
 eval(parse(text=cmd))
-
-if (add_unsmoothed && !all(n_mas == 1)) {
-
-    # apply ma
-    message("\n", "apply moving averages ...")
-    datasma <- datas
-    for (i in 1:nsettings) {
-        for (vi in 1:length(datasma[[i]])) { # for all vars
-            message("n_mas[", i, "]: ", n_mas[i], 
-                    " (n = ", length(datas[[i]][[vi]]), 
-                    " --> ", length(datas[[i]][[vi]]), "/", n_mas[i], " = ", 
-                    length(datas[[i]][[vi]])/n_mas[i], ")")
-            datasma[[i]][[vi]] <- filter(datas[[i]][[vi]], filter=rep(1/n_mas[i], t=n_mas[i]))
-        }
-    }
-    stop("asd")
-
-    tlimn <- range(timesn)
-    tlimlt <- as.POSIXlt(tlimn, origin="1970-01-01", tz="UTC")
-    tlabcex <- 1
-    tlabsrt <- 0
-    tlablt <- as.POSIXlt(pretty(tlimlt, n=10))
-    # remove lables which are possibly out of limits due to pretty
-    if (any(tlablt < tlimlt[1])) {
-        tlablt <- tlablt[-which(tlablt < tlimlt[1])]
-    }
-    if (any(tlablt > tlimlt[2])) {
-        tlablt <- tlablt[-which(tlablt > tlimlt[2])]
-    }
-    tatn <- as.numeric(tlablt)
-    tlablt_diff <- unclass(diff(range(tlablt)))
-    # do not show days if range of tlim is above 1 year
-    if (attr(tlablt_diff, "units") == "days") {
-        if (tlablt_diff > 365) { # remove days --> shortens labels
-            message("time lims is longer than 1 year, modify time labels ...")
-            tlablt <- substr(tlablt, 1, 7) # this destroys the POSIX
-        } else { # decrease label size due to long labels
-            message("change time label angle ...")
-            tlabsrt <- 45
-        } 
-    }
-
-} # check times related stuff
+    
 
 if (F) { # for testing
     message("special")
@@ -396,18 +417,14 @@ if (F) { # for testing
 
 # set variable specific things
 message("\n", "set variable specific things ...")
-nvars_per_runid <- sapply(datas, length)
-v <- datas
 for (i in 1:nsettings) {
-    for (vi in 1:nvars_per_runid[i]) {
-        # default options: default name only
-        v2 <- list(label=names(datas[[i]])[vi])
+    for (vi in 1:length(datas[[i]])) {
+        # add specific things
         if (names(datas[[i]])[vi] == "temp2") {
-            v2$label <- "2m Temperature [°C]"
-            v2$offset <- c("-", 273.15)
-        }
-        v[[i]][[vi]] <- v2
-        rm(v2)
+            data_infos[[i]][[vi]]$label <- "2m Temperature [°C]"
+            data_infos[[i]][[vi]]$offset$operator <- "-"
+            data_infos[[i]][[vi]]$offset$value <- 273.15
+        } # finished define variable specific things
     }
 }
 # finished setting variable specific things
@@ -415,21 +432,97 @@ for (i in 1:nsettings) {
 # apply offset or mult_fac
 message("\n", "apply variable specific things ...")
 for (i in 1:nsettings) {
-    for (vi in 1:nvars_per_runid[i]) {
-        if (!is.null(v[[i]][[vi]]$offset) &&
-            !is.null(v[[i]][[vi]]$mult_fac)) {
-            stop("both \"offset\" and \"mult_fac\" are defined for runid ", 
-                 names_short[i], " variable ", names(v[[i]])[vi], ". dont know which to take")
-        }
-        if (!is.null(v[[i]][[vi]]$offset)) {
+    for (vi in 1:length(datas[[i]])) {
+        if (!is.null(data_infos[[i]][[vi]]$offset)) {
             cmd <- paste0("datas[[", i, "]][[", vi, "]] <- datas[[", i, "]][[", vi, "]] ", 
-                          v[[i]][[vi]]$offset[1], " ", v[[i]][[vi]]$offset[2])
+                          data_infos[[i]][[vi]]$offset$operator, " ", 
+                          data_infos[[i]][[vi]]$offset$value)
             message("eval ", cmd, " ...")
             eval(parse(text=cmd))
         }
     }
 } # for i nsettings
-# start mode specific things
+
+# apply moving average
+if (add_smoothed && any(attributes(datas[[i]][[vi]])$dims == "time") && 
+    any(seasonsp == "Jan-Dec") && !all(n_mas == 1)) {
+    message("\n", "apply moving averages ...")
+    datasma <- datas
+    for (i in 1:nsettings) {
+        if (seasonsp[i] == "Jan-Dec" && n_mas[i] != 1) { # applying moving average
+            for (vi in 1:length(datasma[[i]])) { 
+                if (length(dim(datas[[i]][[vi]])) == 1 && # var has only 1 dim 
+                    attributes(datas[[i]][[vi]])$dims == "time") { # and its "time"
+                    npy <- unclass(dims[[i]]$timelt)
+                    npy <- length(npy$year[which(npy$year == npy$year[1])])
+                    message("n_mas[", i, "]: ", n_mas[i], " (n = ", length(datas[[i]][[vi]]), 
+                            ", npy = ", npy, " --> ", n_mas[i], "/", npy, " = ", n_mas[i]/npy, 
+                            " year running mean)") 
+                    datasma[[i]][[vi]] <- filter(datas[[i]][[vi]], filter=rep(1/n_mas[i], t=n_mas[i]))
+
+                # variable has more than 1 dims
+                } else { 
+                    message("moving average with dims \"", 
+                            paste0(attributes(datas[[i]][[vi]])$dims, collapse="\",\""), 
+                            "\". not implemented.")
+                    datasma[[i]][[vi]] <- NA
+                }
+
+                attributes(datasma[[i]][[vi]]) <- attributes(datas[[i]][[vi]])
+            } # for vi nvars
+        } # if n_mas != 1    
+    } # for i nsettings
+} # if add_smoothed && any(attributes(datas[[i]][[vi]])$dims == "time") && !all(n_mas == 1)
+
+# get proper time axis values if necessary
+ntime_per_setting <- sapply(sapply(dims, "[", "time"), length)
+if (any(ntime_per_setting > 1)) {
+    message("\n", "find good time axis labels ...")
+    
+    # POSIX will be converted to numeric by plot(), so use these numeric values as limits
+    tlim <- range(lapply(sapply(dims, "[", "timelt"), as.numeric)) # seconds by default 
+    tlimlt <- as.POSIXlt(tlim, origin="1970-01-01", tz="UTC")
+    tlabcex <- 0.8
+    tlabsrt <- 0
+    
+    # time labels
+    tlablt <- as.POSIXlt(pretty(tlimlt, n=10))
+    
+    # remove lables which are possibly out of limits due to pretty
+    tlab_diff_secs <- as.numeric(diff(range(tlablt)), units="secs") # total time label distance
+    if (any(tlablt < tlimlt[1])) {
+        # check if the too early autmatic time labels are negligible
+        overshoot_diff <- abs(as.numeric(tlablt[tlablt < tlimlt[1]], units="secs")) - abs(tlim[1])
+        overshoot_rel <- overshoot_diff/tlab_diff_secs*100
+        if (any(overshoot_rel > 1)) { # only change pretty labels if overoot is > 1% of total time label range  
+            message("remove automatic labels")
+            print(tlablt[which(tlablt < tlimlt[1])[overshoot_rel > 1]])
+            tlablt <- tlablt[-which(tlablt < tlimlt[1])[overshoot_rel > 1]]
+        }
+    }
+    if (any(tlablt > tlimlt[2])) {
+        # check if the too late automatic time labels are negligible
+        overshoot_diff <- abs(as.numeric(tlablt[tlablt > tlimlt[2]], units="secs")) - abs(tlim[2])
+        overshoot_rel <- overshoot_diff/tlab_diff_secs*100
+        if (any(overshoot_rel > 1)) { # only change pretty labels if overoot is > 1% of total time label range  
+            message("remove automatic labels")
+            print(tlablt[which(tlablt > tlimlt[2])[overshoot_rel > 1]])
+            tlablt <- tlablt[-which(tlablt > tlimlt[2])[overshoot_rel > 1]]
+        }
+    }
+    tatn <- as.numeric(tlablt)
+    
+    # modify time axis labels YYYY-MM-DD depending on range covered:
+    if (tlab_diff_secs > 365*24*60*60) { # do not show days if range of tlim is above 1 year
+        message("time lims is longer than 1 year, modify time labels ...")
+        tlablt <- substr(tlablt, 1, 4) # -> YYYY; this destroys POSIX object
+    } else { # decrease label size due to long labels
+        message("change time label angle ...")
+        tlabsrt <- 45
+    } 
+} # get time axis labels
+
+## start mode specific things
 if (any(mode == c("timmean"))) {
 
     message("\n", "timmean plot ...")
@@ -481,60 +574,112 @@ if (any(mode == c("timmean"))) {
 
     dev.off()
 
+# timmean end
 } else if (any(mode == c("fldmean"))) {
+
+    if (!add_unsmoothed && !add_smoothed) {
+        warning("both `add_unsmoothed=F` and `add_smoothed=F`. set `add_unsmoothed=T` to show time series.")
+        add_unsmoothed <- T # default
+    }
 
     message("\n", "fldmean plot ...")
     
     # compare the same variable across models
-    for (vi in 1:max(nvars_per_runid)) {
-
-        data <- lapply(datas, "[", vi)
-        if (any(n_mas != 1)) datama <- lapply(datasma, "[", vi)
-
-        varsf <- unique(sapply(data, names))
-        if (any(is.na(varsf))) varsf <- varsf[-which(is.na(varsf))]
-        varsf <- paste0(varsf, collapse="_")
-        if (varsf == "") stop("varsf = ", varsf)
-        message("\n", varsf, " ...")
-
-        # ylim default: moving average only if available
-        if (any(n_mas != 1)) {
-            message("\n", "temporal min/mean/max datama:")
-            for (i in 1:nsettings) {
-                message(names_short[i], " = ", min(datama[[i]][[1]], na.rm=T), "/",
-                        mean(datama[[i]][[1]], na.rm=T), "/", max(datama[[i]][[1]], na.rm=T))
+    varnames_unique <- unique(unlist(sapply(datas, names)))
+    for (vi in 1:length(varnames_unique)) {
+        
+        varname <- varnames_unique[vi]
+        message(varname, " ...")
+        varnames_per_setting <- lapply(datas, names)
+        data <- vector("list", l=nsettings)
+        names(data) <- names_short
+        if (exists("datasma")) datama <- data
+        for (i in 1:nsettings) {
+            data[[i]] <- NA # default
+            if (exists("datasma")) datama[[i]] <- NA # default
+            var_ind <- which(names(datas[[i]]) == varname)
+            data[[i]] <- datas[[i]][[var_ind]]
+            attributes(data[[i]]) <- c(attributes(data[[i]]), list(name=varname))
+            if (exists("datasma")) {
+                datama[[i]] <- datasma[[i]][[var_ind]]
+                attributes(datama[[i]]) <- c(attributes(datama[[i]]), list(name=varname))
             }
-            ylim <- range(datama, na.rm=T)
-            if (add_unsmoothed) {
-                message("\n", "temporal min/mean/max data:")
-                for (i in 1:nsettings) {
-                    message(names_short[i], " = ", min(data[[i]][[1]], na.rm=T), "/",
-                            mean(data[[i]][[1]], na.rm=T), "/", max(data[[i]][[1]], na.rm=T))
-                }
-                ylim <- range(ylim, data, na.rm=T)
-            }
+        } # for i nsettings
+
+        # prepare right axis data if necessary
+        if (!add_data_right_yaxis) {
+            data_right_yaxis_suffix <- "" # default
         } else {
-            message("\n", "temporal min/mean/max data:")
+            message("\n", "prepare data right yaxis ..")
+            if (varname == "temp2") {
+                # hist, 1pct and 4CO2
+                data_right_label <- substitute(paste("CO"[2], " [ppm]"))
+                data_right <- list("co2_hist"=list(x=co2_hist$timelt, y=co2_hist$co2_ppm), 
+                                   "co2_1pct"=list(x=co2_1pct$timelt, y=co2_1pct$co2_ppm), 
+                                   "co2_4co2"=list(x="const", y=co2_4co2$co2_ppm))
+                data_right_yaxis_suffix <- "_with_CO2"
+                #ylim_at <- c(range(lapply(data_right, "[", "y"))[1],
+                #             seq(300, 500, 
+            } # finished variable specific stuff for add_data_right_yaxis
+            
+            if (!exists("ylim_right")) {
+                message("use automatic data right yaxis labels ...")
+                ylim_right <- vector("list", l=length(data_right))
+                for (i in 1:length(data_right)) {
+                    if (length(data_right[[i]]$x) == 1 && data_right[[i]]$x == "const") {
+                        ylim_right[[i]] <- range(data_right[[i]]$y, na.rm=T)
+                    } else {
+                        timeinds <- which(data_right[[i]]$x >= tlimlt[1] & data_right[[i]]$x <= tlimlt[2])
+                        if (length(timeinds) == 0) {
+                            message("all data of data_right[[", i, "]]: ", names(data_right)[1], " are out of tlimlt")
+                            ylim_right[[i]] <- NA
+                        } else {
+                            ylim_right[[i]] <- range(data_right[[i]]$y[timeinds], na.rm=T)
+                        }
+                    }
+                } # i in data_right
+                ylim_right <- range(ylim_right)
+            } # if ylim_right does not already exist
+            if (!exists("ylim_at")) {
+                message("use automatic data right yaxis labels ...")
+                yat_right <- pretty(ylim_right, n=10)
+            }
+            ylab_right <- format(yat_right)
+        } # if add_data_right_yaxis finished prepare right axis data
+
+        # ylims for fldmean plot
+        if (add_unsmoothed) {
+            message("\n", "temporal min / mean / max ", varname, " data:")
             for (i in 1:nsettings) {
-                message(names_short[i], " = ", min(data[[i]][[1]], na.rm=T), "/",
-                        mean(data[[i]][[1]], na.rm=T), "/", max(data[[i]][[1]], na.rm=T))
+                message(names_short[i], ": ", min(data[[i]], na.rm=T), " / ",
+                        mean(data[[i]], na.rm=T), " / ", max(data[[i]], na.rm=T))
             }
             ylim <- range(data, na.rm=T)
         }
+        if (exists("datasma")) {
+            message("\n", "temporal min / mean / max ", varname, " datama:")
+            for (i in 1:nsettings) {
+                message(names_short[i], ": ", min(datama[[i]], na.rm=T), " / ",
+                        mean(datama[[i]], na.rm=T), " / ", max(datama[[i]], na.rm=T))
+            }
+            ylimma <- range(datama, na.rm=T)
+        }
+        if (add_unsmoothed && add_smoothed) {
+            ylim <- range(ylim, ylimma)
+        } else if (!add_unsmoothed && add_smoothed) {
+            ylim <- range(ylimma)
+        }
         message("\n", "ylim=", appendLF=F)
         dput(ylim)
-
-        yat <- pretty(ylim)
+        yat <- pretty(ylim, n=10)
+        ylab <- format(yat)
 
         # plotname
-        plotname <- paste0(plotpath, "/", mode, "/", varsf, "/",
-                           paste0(unique(paste0(models, "_", names_short)), collapse="_vs_"), "_",
-                           paste0(unique(areas), collapse="_vs_"), "_",
-                           ifelse(any(levsf != ""), 
-                                  paste0(unique(levsf), collapse="_vs_"), ""), "_",
-                           paste0(unique(streams), collapse="_vs_"), "_",
-                           paste0(unique(seasonsp), collapse="_vs_"), "_",
-                           gsub(" ", "_", paste0(tlimlt, collapse="-")),
+        plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                           varname, "_",
+                           paste0(names_short, "_", seasonsp, 
+                                  "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
+                           data_right_yaxis_suffix,
                            ".", p$plot_type)
         dir.create(dirname(plotname), recursive=T, showWarnings=F)
         if (p$plot_type == "png") {
@@ -545,22 +690,17 @@ if (any(mode == c("timmean"))) {
                 family=p$family)
         }
                            
-        # open plot 
+        # set plot margins
         mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
-        message("decrease right margin")
-        mar[4] <- 1
-        if (!add_title) { 
-            message("decrease upper margin")
-            mar[3] <- 1
-        }
-        if (tlabsrt == 0) {
-            message("decrease lower margin")
-            mar[1] <- mar[1]/2
-        }
-        #par(mar=c(5.1, 6.1, 4.1, 4.1))
+        mar[4] <- 1 # decrease right margin
+        if (!add_title) mar[3] <- 1 # decrease upper margin
+        if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
+        if (add_data_right_yaxis) mar[4] <- mar[2] # same as left  
+       
+        # open plot
         par(mar=mar)
-        plot(timeslt[[1]], data[[1]][[1]], t="n",
-             xlim=tlimn, ylim=ylim, 
+        plot(dims[[1]]$timelt, data[[1]], t="n",
+             xlim=tlim, ylim=ylim, 
              xaxt="n", yaxt="n",
              xlab=NA, ylab=NA)
         if (tlabsrt == 0) { # add horizontal labels
@@ -571,7 +711,7 @@ if (any(mode == c("timmean"))) {
             text(x=tatn, y=par("usr")[3] - strheight("1"), labels=tlablt, 
                  xpd=T, srt=tlabsrt, adj=c(1, 1), cex=tlabcex)
         }
-        axis(2, at=yat, las=2)
+        axis(2, at=yat, labels=ylab, las=2)
 
         # add title
         if (add_title) {
@@ -579,69 +719,63 @@ if (any(mode == c("timmean"))) {
         }
 
         # add variable label
-        mtext(side=2, v[[1]][[vi]]$label, line=3.4, cex=0.9)
+        data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]]
+        mtext(side=2, data_info[[1]]$label, line=3.4, cex=0.9)
 
         # add grid
-        if (add_grid) {
-            message("\n", "add grid ...")
-            abline(v=tatn, h=yat, col="gray", lwd=0.5)
+        if (add_xgrid) {
+            message("\n", "add xgrid ...")
+            abline(v=tatn, col="gray", lwd=0.5)
+        }
+        if (add_ygrid) {
+            message("\n", "add ygrid ...")
+            abline(h=yat, col="gray", lwd=0.5)
         }
 
-        # add data
-        for (i in 1:nsettings) {
+        ## add data
+        # unsmoothed before smoothed data
+        if (!is.null(data[[i]])) {
+            for (i in 1:nsettings) {
+                lines(dims[[i]]$timelt, data[[i]], 
+                      col=ifelse(!is.null(datama[[i]]), cols_rgb[i], cols[i]), 
+                      lty=ltys[i], lwd=lwds[i], pch=pchs[i])
+            }
+        }
+        
+        # smoothed data after unsmoothed data
+        if (!is.null(datama[[i]])) {
+            for (i in 1:nsettings) {
+                lines(dims[[i]]$timelt, datama[[i]], 
+                      col=cols[i], lty=ltys[i], lwd=lwds[i], pch=pchs[i])
+            }
+        }
 
-            if (!is.null(data[[i]][[1]])) {
+        # special: add first data point
+        if (add_first_data_point) {
+            for (i in 1:nsettings) {
+                if (i == 1) message("\n", "add first data point")
+                points(dims[[i]]$timelt[1], data[[i]][1], 
+                       col=cols[i], lty=ltys[i], lwd=lwds[i], 
+                       pch=1)
+            }
+        } # add first data point
 
-                # add moving average data if wanted
-                if (any(n_mas != 1)) {
-                    # unsmoothed first if wanted
-                    if (add_unsmoothed) {
-                        lines(timeslt[[i]], data[[i]][[1]], 
-                              col=cols_rgb[i], lty=ltys[i], lwd=lwds[i], pch=pchs[i])
-                    }
-                    # smoothed second 
-                    lines(timeslt[[i]], datama[[i]][[1]], 
-                          col=cols[i], lty=ltys[i], lwd=lwds[i], pch=pchs[i])
-
-                # add unsmoothed data only
-                } else {
-                    # if length is only 1 due to subset
-                    if (length(timeslt[[i]]) == 1) { 
-                        points(timeslt[[i]], data[[i]][[1]], col=cols[i], pch=1)
-                    } else {
-                        lines(timeslt[[i]], data[[i]][[1]], 
-                              col=cols[i], lty=ltys[i], lwd=lwds[i], pch=pchs[i])
-                    }
-                }
-                if (length(timeslt[[i]]) == 1) abline(v=timeslt[[i]])
-
-                # special: add first data point
-                if (T) {
-                    if (i == 1) message("\n", "add first data point")
-                    points(timeslt[[i]][1], data[[i]][[1]][1], 
-                          col=cols[i], lty=ltys[i], lwd=lwds[i], 
-                          pch=1)
-                } # add first data point
-
-                # add linear regression trend if wanted
-                if (add_trend) {
-
-                }
-
-            } # if (!is.null(data[[i]][[1]]))
-
-        } # for i nsettings add data 
+        # add linear regression trend if wanted
+        if (add_trend) {
+            stop("not yet")
+        }
 
         # add legend if wanted
         if (add_legend) {
+            message("\n", "add default stuff to fldmean legend ...")
             le <- list()
-            #le$pos <- "topleft" 
-            le$pos <- "bottomleft" 
+            le$pos <- "topleft" 
+            #le$pos <- "bottomleft" 
             #le$pos <- "bottomright" 
             #le$ncol <- nsettings/2
             le$ncol <- 1
             #le$ncol <- 2 
-            le$text <- names_short
+            le$text <- names_legend
             le$col <- cols
             le$lty <- ltys
             le$lwds <- lwds
@@ -650,6 +784,7 @@ if (any(mode == c("timmean"))) {
             le$cex <- 0.85
             # add stuf to legend here
             if (F) {
+                message("\n", "add non default stuff to fldmean legend ...")
 
             }
             # reorder reading direction from R's default top->bottom to left->right
@@ -667,12 +802,31 @@ if (any(mode == c("timmean"))) {
                        x.intersp=0.2, cex=le$cex, bty="n")
             }
         } # if add_legend
+    
+        if (add_data_right_yaxis) {
+            message("\n", "add data right yaxis ...")
+            par(new=T)
+            plot(data_right[[1]]$x, data_right[[1]]$y, #log="y", 
+                 t="n", xlim=tlim, ylim=ylim_right, 
+                 xlab=NA, ylab=NA, axes=F)
+            axis(4, at=yat_right, labels=ylab_right, las=2)
+            mtext(side=4, data_right_label, line=3.4, cex=0.9)
+
+            # add right data
+            for (i in 1:length(data_right)) {
+                if (length(data_right[[i]]$x) == 1 && data_right[[i]]$x == "const") {
+                    abline(h=data_right[[i]]$y, col=cols[i], lty=2)
+                } else {
+                    lines(data_right[[i]]$x, data_right[[i]]$y, col=cols[i], lty=2)
+                }
+            }
+        } # if add_data_right_yaxis
 
         box()
         message("\n", "save ", plotname, " ...")
         dev.off()
 
-    } # for vi max(nvars_per_runid)
+    } # for vi max(nvars_per_setting)
 
 } # if mode = fldmean
 
