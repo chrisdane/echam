@@ -3,57 +3,60 @@
 rm(list=ls()); graphics.off()
 
 # Host options
+homepath <- "~/scripts/r"
 machine <- system("hostname -f", intern=T)
 message("Run on ", machine, ":")
 if (regexpr("ollie", machine) != -1 ||
     regexpr("prod-", machine) != -1 ||
     regexpr("fat-", machine) != -1) {
     machine_tag <- "ollie"
-    workpath <- "/work/ollie/cdanek/post"
     plotpath <- "/work/ollie/cdanek/plots"
 } else if (regexpr("hpc.dkrz", machine) != -1) {
     machine <- substr(machine, 1, regexpr(".hpc.dkrz", machine) - 1)
     machine_tag <- "mistral"
-    workpath <- "/work/ab0246/a270073/post"
     plotpath <- "/work/ab0246/a270073/plots"
 } else {
     stop("machine ", machine, " is unknown. stop")
 }
-message("workpath = ", workpath)
+message("homepath = ", homepath)
 message("plotpath = ", plotpath)
 # =====================================
 
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 
 # =====================================
-# 6 settings
-
+# 3 settings
 if (T) {
-    models <- c("awicm-CMIP6", rep("awicm-test", t=5))
-    runidsf <- c("PI-CTRL4", rep("CMIP6/CMIP_PMIP/dynveg_true/hist", t=5))
-    runidsp <- c("PI-CTRL4", rep("hist", t=5))
-    runidsl <- c("spinup day", paste0("hist ", c("1hr", "3hr", "6hr", "day", "mon")))
-    fromsf <- c(2911, rep(1850, t=5))
-    tosf <- c(2999, rep(1886, t=5))
-    #froms_shift <- c(1849, rep(NA, t=5)) # from 2999
-    froms_shift <- c(1761, rep(NA, t=5)) # from 2911 
-    fromsp <- c("1846-01-01 00:00:00", rep(1850, t=5))
-    #tosp <- c(1849, rep("1850-01-31 23:59:59", t=5))
-    tosp <- c(1849, rep("1863-01-31 23:59:59", t=5))
-    seasonsf <- rep("Jan-Dec", t=6)
+    postpaths <- rep("/work/ab0246/a270073/post/echam6", t=3)
+    prefixs <- c("hist_echam6_echammon_dynveg",
+                 "1percCO2_echam6_echammon_dynveg",
+                 "4CO2_echam6_echammon_dynveg")
+    models <- rep("echam6", t=3)
+    names_short <- c("hist", "1pctCO2", "abrupt-4xCO2") 
+    names_legend <- c("historical", "1pct", "abrupt-4×CO2")
+    fromsf <- rep(1850, t=3)
+    #fromsf <- rep(1985, t=3)
+    #tosf <- rep(2014, t=3)
+    tosf <- c(2014, 2099, 2099)
+    fromsp <- fromsf
+    tosp <- tosf
+    seasonsf <- rep("Jan-Dec", t=3)
     seasonsp <- seasonsf
-    areas <- rep("global", t=6)
-    varnames <- rep("temp2", t=6)
-    submodels <- rep("echam", t=6)
-    streams <- c("g3bid", "ma", "echam3hr", "echam6hr", "echamday", "echammon")
-    #n_mas <- c(30, 24*30, 8*30, 4*30, 30, 1)
+    areas <- rep("global", t=3)
+    n_mas <- c(60, 60, 60)
 }
 
 # ==================================================
 
-# options across runids
+# which variable
+if (exists("varnames_in")) varname_out <- unique(varnames_in) # default
+varname_out <- "temp2"
+
+# options across settings
 mode <- "fldmean" # "timmean" "fldmean"
 add_title <- F
+add_land <- T
+reorder_lon_from_0360_to_180180 <- T
 add_grid <- F
 add_legend <- T
 plot_type <- "png" # "png" "pdf"
@@ -74,15 +77,20 @@ plot_var_vs_months <- T
 proj <- "rectangular" #"rectangular"
 
 # defaults
-nrunids <- length(runidsf)
-if (!exists("levs")) levs <- rep("", t=nrunids)
-if (!exists("cols")) cols <- 1:nrunids
-if (!exists("ltys")) ltys <- rep(1, t=nrunids)
-if (!exists("lwds")) lwds <- rep(1, t=nrunids)
-if (!exists("pchs")) pchs <- rep(NA, t=nrunids)
-if (!exists("n_mas")) n_mas <- rep(1, t=nrunids) # no moving average effect
+nsettings <- length(postpaths)
+if (!exists("varnames_in")) varnames_in <- rep(varname_out, t=nsettings)
+if (!exists("codes")) codes <- rep("", t=nsettings)
+if (!exists("levs")) levs <- rep("", t=nsettings)
+if (!exists("cols")) cols <- 1:nsettings
+if (!exists("ltys")) ltys <- rep(1, t=nsettings)
+if (!exists("lwds")) lwds <- rep(1, t=nsettings)
+if (!exists("pchs")) pchs <- rep(NA, t=nsettings)
+if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effect
 if (!exists("fromsp")) fromsp <- fromsf
 if (!exists("tosp")) tosp <- tosf
+if (!exists("froms_shift")) froms_shift <- rep(NA, t=nsettings)
+codesf <- codes
+codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
 levsf <- levs
 levsf[levs != ""] <- paste0("_", levsf[levs != ""], "m")
 tos_shift <- froms_shift
@@ -93,50 +101,44 @@ alpha <- 0.15 # transparent: 0,1 (1 fully transparent)
 cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha)
 
 # allocate
-datas <- vector("list", l=nrunids)
-names(datas) <- runidsl
-times <- times2 <- times3 <- timesp <- timeslt <- lons <- lats <- datas
+datas <- vector("list", l=nsettings)
+names(datas) <- names_short
+dims <- times <- times2 <- times3 <- timesp <- timeslt <- lons <- lats <- datas
 
-message("\nRead data ...\n")
 # read data
-for (i in 1:nrunids) {
-   
-    message("runid ", appendLF=F)
-    print(i)
-    inpath <- paste0(workpath, "/", models[i], "/", runidsf[i], "/", submodels[i], "/", 
-                     mode, "/", areas[i], "/", varnames[i])
-    fname <- paste0(inpath, "/", 
-                    models[i], "_", runidsp[i], "_", varnames[i], "_", streams[i], "_", 
-                    mode, "_", areas[i], levsf[i], "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], ".nc")
+message("\n", "Read data ...")
+for (i in 1:nsettings) {
+  
+    message("\n", "*********************************************")
+    message("setting ", i, "/", nsettings, ": ", names_short[i], " ...")
+    inpath <- paste0(postpaths[i], "/", mode, "/", varnames_in[i])
+    fname <- paste0(prefixs[i], "_", mode, 
+                    "_selname_", varnames_in[i], # codes
+                    "_", areas[i],
+                    "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
+                    ".nc") 
 
-    message("open ", appendLF=F)
-    print(fname)
-    ncin <- nc_open(fname)
+    message("\n", "open ", inpath, "/", fname, " ...")
+    ncin <- nc_open(paste0(inpath, "/", fname))
 
-    if (any(names(ncin$dim) == "time")) times[[i]] <- ncin$dim$time$vals
-    if (any(names(ncin$dim) == "time2")) times2[[i]] <- ncin$dim$time2$vals
-    if (any(names(ncin$dim) == "time3")) times3[[i]] <- ncin$dim$time3$vals
-    if (any(names(ncin$dim) == "lon")) lons[[i]] <- ncin$dim$lon$vals
-    if (any(names(ncin$dim) == "lat")) lats[[i]] <- ncin$dim$lat$vals
-
-    vars <- vector("list", l=ncin$nvars)
-    names(vars) <- names(ncin$var)
-    for (vi in 1:length(vars)) { # 
-        vars[[vi]] <- ncvar_get(ncin, names(vars)[vi])
+    # get dims of file
+    message("\n", "get dims ...")
+    dims_per_file <- names(ncin$dim)
+    dimtmp <- vector("list", l=ncin$ndims)
+    names(dimtmp) <- dims_per_file
+    for (di in 1:length(dimtmp)) {
+        message(dims_per_file[di], " ", appendLF=F)
+        dimtmp[[di]] <- ncin$dim[[di]]$vals
+        if (di == length(dimtmp)) message()
     }
-    datas[[i]] <- vars
-    rm(vars)
+    dims[[i]] <- dimtmp
+    rm(dimtmp)
 
-    # which time to use?
-    if (!is.null(times[[i]])) timesp[[i]] <- times[[i]] # default
-    if (!is.null(times2[[i]])) timesp[[i]] <- times2[[i]]
-    if (!is.null(times3[[i]])) timesp[[i]] <- times3[[i]] 
+    # time dim as posix object
+    if (any(names(dims[[i]]) == "time")) {
 
-    # make posix object
-    if (!is.null(times[[i]])) {
-        
         timein_units <- ncin$dim$time$units
-        message("make POSIXlt from timein_units = ", appendLF=F)
+        message("\n", "detected \"time\" dim -> make POSIXlt from timein_units")
         print(timein_units)
         # convert any unit to seconds for POSIX,e.g. 
         # "days since 1538-1-1 00:00:00"
@@ -158,31 +160,56 @@ for (i in 1:nrunids) {
             }
             timein_origin <- substr(timein_units, regexpr(" since ", timein_units) + 7, nchar(timein_units))
             #timein_ct <- as.POSIXct(timein*timein_fac, origin=timein_origin, tz="UTC")
-            timein_lt <- as.POSIXlt(times[[i]]*timein_fac, origin=timein_origin, tz="UTC")
+            timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac, origin=timein_origin, tz="UTC")
+        
         # case 2: e.g. "day as %Y%m%d.%f"
         } else if (regexpr(" as ", timein_units) != -1) { 
             timein_unit <- substr(timein_units, 1, regexpr(" as ", timein_units) - 1)
             timein_format <- substr(timein_units, regexpr(" as ", timein_units) + 4, nchar(timein_units))
             if (timein_format == "%Y%m%d.%f") { # e.g. "29991201.9944444"
-                hours <- 24*(times[[i]] - floor(times[[i]]))
+                hours <- 24*(dims[[i]]$time - floor(dims[[i]]$time))
                 mins <- 60*(hours - floor(hours))
                 secs <- 60*(mins - floor(mins))
                 hours <- floor(hours)
                 mins <- floor(mins)
                 secs <- floor(secs)
-                timein_lt <- as.POSIXlt(paste0(substr(times[[i]], 1, 4), "-", 
-                                               substr(times[[i]], 5, 6), "-",
-                                               substr(times[[i]], 7, 8), " ",
+                timein_lt <- as.POSIXlt(paste0(substr(dims[[i]]$time, 1, 4), "-", 
+                                               substr(dims[[i]]$time, 5, 6), "-",
+                                               substr(dims[[i]]$time, 7, 8), " ",
                                                hours, ":", mins, ":", secs), tz="UTC")
             } else {
                 stop("timein_format=", timein_format, " not defined")
             }
-        }
-        timeslt[[i]] <- timein_lt
+        } # which timein_units "days since", "day as", etc.
+        message("range(timein_lt[[", i, "]]) = ", appendLF=F)
+        print(range(timein_lt))
         
-        # apply different times to e.g. senseless spinup years
+        # find temporal subset based on given fromsp and tosp
+        fromsplt <- as.POSIXlt(paste0(fromsp[i], "-01-01 00:00:00"), tz="UTC")
+        tosplt <- as.POSIXlt(paste0(tosp[i], "-12-31 23:59:59"), tz="UTC")
+        inds <- which(timein_lt >= fromsplt & timein_lt <= tosplt)
+        # take subset only if necessary
+        if (length(inds) > 0 && length(inds) != length(timein_lt)) { 
+            message("\n", "found ", lebngth(inds), " temporal subset inds based on fromsp[", 
+                    i, "]=", fromsp[i], " to tosp[", i, "]=", tosp[i], " ...")
+            
+            # subset seasons from data if wanted (=seasonsp)
+            # check which seasonsf and seasonp differ
+            if (seasonsp[i] != seasonsf[i]) {
+                stop("todo")
+            }
+
+            timein_lt <- timein_lt[inds]
+            print(range(timeslt[[i]]))
+        
+        } # found temporal subset inds
+        message("new range(timein_lt[[", i, "]]) = ", appendLF=F)
+        print(range(timein_lt))
+        
+        # shift times due to e.g. senseless spinup years
         # as.POSIXlt's 'year' starts at 1900
         if (!is.na(froms_shift[i])) {
+            stop("update")
             # from year in  = min(timeslt[[i]]$year) + 1900
             message("range(timeslt[[", i, "]]) = ", appendLF=F)
             print(range(timeslt[[i]]))
@@ -192,119 +219,147 @@ for (i in 1:nrunids) {
             timeslt[[i]]$year <- timeslt[[i]]$year + shift_by
             tos_shift[i] <- max(timeslt[[i]]$year) + 1900
         } # if !is.na(froms_shift[i])
+        
+        # update time dim
+        dims[[i]]$time_inds <- inds
+        dims[[i]]$timelt <- timein_lt
 
-        # check time 
-        message("range(timeslt[[", i, "]]) = ", appendLF=F)
-        print(range(timeslt[[i]]))
+        # POSIXlt as numeric
+        #dims[[i]]$timen <- lapply(dims[[i]]$timelt, as.numeric)
 
-    } # if (!is.null(times[[i]]))
-
-    message()
-
-} # for i nrunids
-
-# set variable specific things
-if (F) { # for testing
-    datas[[1]][[2]] <- datas[[1]][[1]] + 10
-    names(datas[[1]])[2] <- names(datas[[1]])[1]
-}
-nvars_per_runid <- sapply(datas, length)
-v <- datas
-for (i in 1:nrunids) {
-    for (vi in 1:nvars_per_runid[i]) {
-        # default options: default name only
-        v2 <- list(label=names(datas[[i]])[vi])
-        if (names(datas[[i]])[vi] == "temp2") {
-            v2$label <- "2m Temperature [°C]"
-            v2$offset <- c("-", 273.15)
-        }
-        v[[i]][[vi]] <- v2
-        rm(v2)
-    }
-}
-
-# apply offset or mult_fac
-for (i in 1:nrunids) {
-    for (vi in 1:nvars_per_runid[i]) {
-        if (!is.null(v[[i]][[vi]]$offset) &&
-            !is.null(v[[i]][[vi]]$mult_fac)) {
-            stop("both \"offset\" and \"mult_fac\" are defined for runid ", 
-                 runidsl[i], " variable ", names(v[[i]])[vi], ". dont know which to take")
-        }
-        if (!is.null(v[[i]][[vi]]$offset)) {
-            cmd <- paste0("datas[[", i, "]][[", vi, "]] <- datas[[", i, "]][[", vi, "]] ", 
-                          v[[i]][[vi]]$offset[1], " ", v[[i]][[vi]]$offset[2])
-            message("eval ", cmd, " ...")
-            eval(parse(text=cmd))
-        }
-    }
-}
-
-# check stuff if times are set
-if (all(!sapply(times, is.null))) {
-
-    message("\nfind temporal subsets based on fromsp to tosp ...")
-    message("timeslt ranges:")
-    print(lapply(timeslt, range))
+    } # if any of file dims is "time"
     
-    for (i in 1:nrunids) {
-        # check if first time of data and fromsp are different
-        if (nchar(fromsp[i]) == 4) { # standard YYYY format was provided --> take earliest possible
-            fromsplt <- as.POSIXlt(paste0(fromsp[i], "-01-01 00:00:00"), tz="UTC")
-        } else { # POSIX format was provided
-            fromsplt <- as.POSIXlt(fromsp[i], tz="UTC")
-        }
-        if (nchar(tosp[i]) == 4) { # standard YYYY format was provided --> take last possible 
-            tosplt <- as.POSIXlt(paste0(tosp[i], "-12-31 23:59:59"), tz="UTC")
-        } else { # POSIX format was provided
-            tosplt <- as.POSIXlt(tosp[i], tz="UTC")
-        }
-        # find inds between wanted times
-        inds <- which(timeslt[[i]] >= fromsplt & timeslt[[i]] <= tosplt)
-        if (length(inds) > 0) { # take subset only if length(inds) > 0
-            if (length(inds) != length(timeslt[[i]])) {
-                message(i, " ", runidsl[i], ": subset ", length(inds), " of ", 
-                        length(timeslt[[i]]), " datapoints:", appendLF=F)
-                timeslt[[i]] <- timeslt[[i]][inds]
-                for (vi in 1:length(datas[[i]])) {
-                    datas[[i]][[vi]] <- datas[[i]][[vi]][inds]
-                }
-                print(range(timeslt[[i]]))
-            }
-        }
-    } # find temporal subsets for all runids
-
-    # subset seasons from data if wanted (=seasonsp)
-    # check which seasonsf and seasonp differ
-    for (i in 1:nrunids) {
-        if (seasonsp[i] != seasonsf[i]) {
-            message("todo")
+    # flip latitudes if necessary (needs to be increasing)
+    if (any(names(dims[[i]]) == "lat")) {
+        if (any(diff(dims[[i]]$lat) < 0)) {
+            message("\n", "detected lat dimension and lats are decreasing -> flip latitudes ...") 
+            dims[[i]]$lat_orig <- dims[[i]]$lat
+            dims[[i]]$lat <- rev(dims[[i]]$lat)
         }
     }
 
-    message("\ntimeslt ranges:")
-    print(lapply(timeslt, range))
+    # get vars of file
+    message("\n", "get variables ...")
+    vars_per_file <- names(ncin$var)
+    vars <- vector("list", l=ncin$nvars)
+    names(vars) <- vars_per_file
+    for (vi in 1:length(vars)) {
+        message("  ", vars_per_file[vi])
+        # read data: squeeze() is automatically applied
+        vars[[vi]] <- ncvar_get(ncin, names(vars)[vi])
+        # get dims of data
+        stop("asd")
+        dimids <- ncin$var[[vars_per_file[vi]]]$dimids
+        dimids <- dimids + 1 # nc dim ids start counting from zero
+        attributes(vars[[vi]]) <- list(dim=dim(vars[[vi]]), dims=dims_per_file[dimids])
+        #cmd <- paste0("tmp <- list(", paste0(dims_per_file[dimids], "=ncin$dim[[", dimids, "]]$vals", collapse=", "), ")")
+    }
+    datas[[i]] <- vars
+    rm(vars)
+               
+    # cut temporal subset
+    dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
+    if (!is.null(dims[[i]]$time_inds)) {
+        # check for variables that have time dim
+        vars_with_timedim <- which(lapply(dims_per_setting, function(x) grep("time", x)) == 1)
+        if (length(vars_with_timedim) > 0) {
+            message("\n", "cut subset from time dim ...")
+            for (vi in 1:length(vars_with_timedim)) {
+                var_with_timedim_ind <- vars_with_timedim[vi]
+                dims_of_var <- attributes(datas[[i]][[var_with_timedim_ind]])$dims # e.g. "time", "lon", "lat"
+                timedimind <- which(dims_of_var == "time")
+                cmd <- rep(",", t=length(dims_of_var))
+                cmd[timedimind] <- paste0("dims[[", i, "]]$time_inds")
+                cmd <- paste0("datas[[", i, "]][[", var_with_timedim_ind, "]] <- ",
+                              "datas[[", i, "]][[", var_with_timedim_ind, "]][", paste0(cmd, collapse=""), "]")
+                message(cmd)
+                eval(parse(text=cmd))
+            } # vi vars per file with time dim
+        } # if there are varbels with time dimension
+    } # cut temporal subset
 
-    # POSIXlt as numeric
-    timesn <- lapply(timeslt, as.numeric)
+    # reorder lons to (-180,...,180) if wanted and necessary
+    if (any(names(dims[[i]]) == "lon")) {
+        if (reorder_lon_from_0360_to_180180) {
+            if (any(dims[[i]]$lon < 180) && any(dims[[i]]$lon >= 180)) {
+                message("\n", "detected lon dimension AND", "\n", "`reorder_lon_from_0360_to_180180 <- T` AND", "\n",
+                        "any(lon < 180) && any(lon >= 180)", "\n", "--> reorder longitudes from (0,...,360) to (-180,...,180) degree ...")
+                dims[[i]]$lon_orig <- dims[[i]]$lon
+                if (i == 1) library(abind)
+                west_of_180_inds <- which(dims[[i]]$lon < 180)
+                east_of_180_inds <- which(dims[[i]]$lon >= 180)
+                dims[[i]]$lon <- dims[[i]]$lon_orig - 180
+                message("reorder lons at indices\n",
+                        paste0(range(west_of_180_inds), collapse=",...,"), ",",
+                        paste0(range(east_of_180_inds), collapse=",...,"), " (",
+                        paste0(range(dims[[i]]$lon_orig[west_of_180_inds]), collapse=",...,"), ",", 
+                        paste0(range(dims[[i]]$lon_orig[east_of_180_inds]), collapse=",...,"), ") deg to\n",
+                        paste0(range(east_of_180_inds), collapse=",...,"), ",",
+                        paste0(range(west_of_180_inds), collapse=",...,"), " (",
+                        paste0(range(dims[[i]]$lon[west_of_180_inds]), collapse=",...,"), ",", 
+                        paste0(range(dims[[i]]$lon[east_of_180_inds]), collapse=",...,"), ") deg ...",
+                        " (are these numbers correct?!)")
+                
+                # check for variables that have lon dim
+                vars_with_londim <- which(lapply(dims_per_setting, function(x) grep("lon", x)) == 1)
+                if (length(vars_with_londim) > 0) {
+                    for (vi in 1:length(vars_with_londim)) {
+                        var_with_londim_ind <- vars_with_londim[vi]
+                        dims_of_var <- attributes(datas[[i]][[var_with_londim_ind]])$dims # e.g. "lon", "lat"
+                        londimind <- which(dims_of_var == "lon")
+
+                        # case 1: only 1 dim (lon)
+                        if (length(dims_of_var) == 1) {
+                            stop("not implemented")
+
+                        # case 2: more than 1 dim (and one of them is lon) 
+                        } else if (length(dims_of_var) > 1) {
+                            cmdeast <- rep(",", t=length(dims_of_var)) 
+                            cmdeast[londimind] <- "east_of_180_inds"
+                            cmdeast <- paste0(cmdeast, collapse="")
+                            cmdwest <- rep(",", t=length(dims_of_var)) 
+                            cmdwest[londimind] <- "west_of_180_inds"
+                            cmdwest <- paste0(cmdwest, collapse="")
+                            cmd <- paste0("datas[[", i, "]][[", var_with_londim_ind, "]] <- ",
+                                             "abind(datas[[", i, "]][[", var_with_londim_ind, "]][", cmdeast, "], ",
+                                                   "datas[[", i, "]][[", var_with_londim_ind, "]][", cmdwest, "], ",
+                                                   "along=", londimind, ")")
+                            message("run ", cmd, " ...")
+                            eval(parse(text=cmd))
+                            # restore attributes remoed by abind() call
+                            dimnames(datas[[i]][[var_with_londim_ind]]) <- NULL
+                            attributes(datas[[i]][[var_with_londim_ind]]) <- list(dim=dim(datas[[i]][[var_with_londim_ind]]), 
+                                                                                  dims=dims_of_var)
+                        } # how many dims has the variable of whose dims one dim is "lon" 
+                    } # for vi vars per file with lon dim
+                } # if any vars with lon dim
+            } # if (any(lons[[i]] < 180) && any(lons[[i]] >= 180))
+        } # if reorder_lon_from_0360_to_180180
+    } # if this file has lon dim
     
+} # for i nsettings
+message("\n", "*********************************************")
+
+# save data before applying offset, multiplication factors, running mean, etc. for later
+cmd <- paste0(varname_out, "_datas <- datas")
+message("\n", "for later save ", cmd, " ...")
+eval(parse(text=cmd))
+
+if (add_unsmoothed && !all(n_mas == 1)) {
+
     # apply ma
-    if (all(n_mas == 1) && !add_unsmoothed) {
-        stop("add_unsmoothed is false but all moving average filers are 1 (n_mas)")
-    }
-    if (any(n_mas != 1)) {
-        message("\napply moving averages ...")
-        datasma <- datas
-        for (i in 1:nrunids) {
-            for (vi in 1:length(datasma[[i]])) { # for all vars
-                message("n_ma ", runidsl[i], ": ", n_mas[i], 
-                        " (n = ", length(datas[[i]][[vi]]), 
-                        " --> ", length(datas[[i]][[vi]]), "/", n_mas[i], " = ", 
-                        length(datas[[i]][[vi]])/n_mas[i], ")")
-                datasma[[i]][[vi]] <- filter(datas[[i]][[vi]], filter=rep(1/n_mas[i], t=n_mas[i]))
-            }
+    message("\n", "apply moving averages ...")
+    datasma <- datas
+    for (i in 1:nsettings) {
+        for (vi in 1:length(datasma[[i]])) { # for all vars
+            message("n_mas[", i, "]: ", n_mas[i], 
+                    " (n = ", length(datas[[i]][[vi]]), 
+                    " --> ", length(datas[[i]][[vi]]), "/", n_mas[i], " = ", 
+                    length(datas[[i]][[vi]])/n_mas[i], ")")
+            datasma[[i]][[vi]] <- filter(datas[[i]][[vi]], filter=rep(1/n_mas[i], t=n_mas[i]))
         }
-    } # if any n_mas != 1
+    }
+    stop("asd")
 
     tlimn <- range(timesn)
     tlimlt <- as.POSIXlt(tlimn, origin="1970-01-01", tz="UTC")
@@ -333,15 +388,102 @@ if (all(!sapply(times, is.null))) {
 
 } # check times related stuff
 
-# save data for later
-cmd <- paste0(paste0(unique(varnames), collapse="_"), "_datas <- datas")
-message("\nfor later save ", cmd, " ...\n")
-eval(parse(text=cmd))
+if (F) { # for testing
+    message("special")
+    datas[[1]][[2]] <- datas[[1]][[1]] + 10
+    names(datas[[1]])[2] <- names(datas[[1]])[1]
+}
 
+# set variable specific things
+message("\n", "set variable specific things ...")
+nvars_per_runid <- sapply(datas, length)
+v <- datas
+for (i in 1:nsettings) {
+    for (vi in 1:nvars_per_runid[i]) {
+        # default options: default name only
+        v2 <- list(label=names(datas[[i]])[vi])
+        if (names(datas[[i]])[vi] == "temp2") {
+            v2$label <- "2m Temperature [°C]"
+            v2$offset <- c("-", 273.15)
+        }
+        v[[i]][[vi]] <- v2
+        rm(v2)
+    }
+}
+# finished setting variable specific things
+
+# apply offset or mult_fac
+message("\n", "apply variable specific things ...")
+for (i in 1:nsettings) {
+    for (vi in 1:nvars_per_runid[i]) {
+        if (!is.null(v[[i]][[vi]]$offset) &&
+            !is.null(v[[i]][[vi]]$mult_fac)) {
+            stop("both \"offset\" and \"mult_fac\" are defined for runid ", 
+                 names_short[i], " variable ", names(v[[i]])[vi], ". dont know which to take")
+        }
+        if (!is.null(v[[i]][[vi]]$offset)) {
+            cmd <- paste0("datas[[", i, "]][[", vi, "]] <- datas[[", i, "]][[", vi, "]] ", 
+                          v[[i]][[vi]]$offset[1], " ", v[[i]][[vi]]$offset[2])
+            message("eval ", cmd, " ...")
+            eval(parse(text=cmd))
+        }
+    }
+} # for i nsettings
 # start mode specific things
-if (mode == "fldmean") {
+if (any(mode == c("timmean"))) {
 
-    message("fldmean plot ...")
+    message("\n", "timmean plot ...")
+
+    z <- vector("list", l=nsettings)
+    names(z) <- names_legend
+    x <- y <- z
+    for (i in 1:nsettings) {
+        varind <- which(names(datas[[i]]) == varname_out)
+        if (length(varind) != 1) {
+            warning("could not find varname \"", varname_out, " in setting ", i, ": ", names_short[i], ". skip to next")
+        } else {
+            z[[i]] <- datas[[i]][[varind]]
+            if (length(dim(z[[i]])) != 2) {
+                warning("length(dim(z[[", i, "]])) = ", length(dim(z[[i]])), 
+                        ". cannot make timmean plot of setting ", i, ": ", names_short[i])
+                next # setting
+            }
+            if (any(attributes(z[[i]])$dims != c("lon", "lat"))) {
+                warning("attributes(z[[", i, "]]))$dims = ", paste0(attributes(z[[i]])$dims, collapse=", "),
+                        ". need lon, lat. cannot make timmean plot of setting ", i, ": ", names_short[i])
+                next # setting
+            }
+            x[[i]] <- dims[[i]]$lon
+            y[[i]] <- dims[[i]]$lat
+        } # if varname was found
+    } # for i nsettings
+    
+    plotname <- paste0(plotpath, "/", mode, "/", varname_out, "/",
+                       varname_out, "_", 
+                       paste0(names_short, "_", seasonsp, 
+                              "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
+                       ".", p$plot_type)
+    message("plot ", plotname, " ...")
+    dir.create(dirname(plotname), recursive=T, showWarnings=F)
+    if (p$plot_type == "png") {
+        png(plotname, width=p$map_width, height=p$map_height,
+            res=p$dpi, family=p$family)
+    } else if (p$plot_type == "pdf") {
+        pdf(plotname, width=p$inch, height=p$inch*p$ts_height/p$ts_width,
+            family=p$family)
+    }
+
+    source(paste0(homepath, "/functions/image.plot.pre.r"))
+    ip <- image.plot.pre(range(z, na.rm=T))
+
+    source(paste0(homepath, "/functions/image.plot.nxm.r"))
+    image.plot.nxm(x=x, y=y, z=z, ip=ip, verbose=T)
+
+    dev.off()
+
+} else if (any(mode == c("fldmean"))) {
+
+    message("\n", "fldmean plot ...")
     
     # compare the same variable across models
     for (vi in 1:max(nvars_per_runid)) {
@@ -357,36 +499,36 @@ if (mode == "fldmean") {
 
         # ylim default: moving average only if available
         if (any(n_mas != 1)) {
-            message("\ntemporal min/mean/max datama:")
-            for (i in 1:nrunids) {
-                message(runidsl[i], " = ", min(datama[[i]][[1]], na.rm=T), "/",
+            message("\n", "temporal min/mean/max datama:")
+            for (i in 1:nsettings) {
+                message(names_short[i], " = ", min(datama[[i]][[1]], na.rm=T), "/",
                         mean(datama[[i]][[1]], na.rm=T), "/", max(datama[[i]][[1]], na.rm=T))
             }
             ylim <- range(datama, na.rm=T)
             if (add_unsmoothed) {
-                message("\ntemporal min/mean/max data:")
-                for (i in 1:nrunids) {
-                    message(runidsl[i], " = ", min(data[[i]][[1]], na.rm=T), "/",
+                message("\n", "temporal min/mean/max data:")
+                for (i in 1:nsettings) {
+                    message(names_short[i], " = ", min(data[[i]][[1]], na.rm=T), "/",
                             mean(data[[i]][[1]], na.rm=T), "/", max(data[[i]][[1]], na.rm=T))
                 }
                 ylim <- range(ylim, data, na.rm=T)
             }
         } else {
-            message("\ntemporal min/mean/max data:")
-            for (i in 1:nrunids) {
-                message(runidsl[i], " = ", min(data[[i]][[1]], na.rm=T), "/",
+            message("\n", "temporal min/mean/max data:")
+            for (i in 1:nsettings) {
+                message(names_short[i], " = ", min(data[[i]][[1]], na.rm=T), "/",
                         mean(data[[i]][[1]], na.rm=T), "/", max(data[[i]][[1]], na.rm=T))
             }
             ylim <- range(data, na.rm=T)
         }
-        message("\nylim=", appendLF=F)
+        message("\n", "ylim=", appendLF=F)
         dput(ylim)
 
         yat <- pretty(ylim)
 
         # plotname
         plotname <- paste0(plotpath, "/", mode, "/", varsf, "/",
-                           paste0(unique(paste0(models, "_", runidsp)), collapse="_vs_"), "_",
+                           paste0(unique(paste0(models, "_", names_short)), collapse="_vs_"), "_",
                            paste0(unique(areas), collapse="_vs_"), "_",
                            ifelse(any(levsf != ""), 
                                   paste0(unique(levsf), collapse="_vs_"), ""), "_",
@@ -433,7 +575,7 @@ if (mode == "fldmean") {
 
         # add title
         if (add_title) {
-            message("\nadd title ...")
+            message("\n", "add title ...")
         }
 
         # add variable label
@@ -441,12 +583,12 @@ if (mode == "fldmean") {
 
         # add grid
         if (add_grid) {
-            message("\nadd grid ...")
+            message("\n", "add grid ...")
             abline(v=tatn, h=yat, col="gray", lwd=0.5)
         }
 
         # add data
-        for (i in 1:nrunids) {
+        for (i in 1:nsettings) {
 
             if (!is.null(data[[i]][[1]])) {
 
@@ -475,7 +617,7 @@ if (mode == "fldmean") {
 
                 # special: add first data point
                 if (T) {
-                    if (i == 1) message("\nadd first data point")
+                    if (i == 1) message("\n", "add first data point")
                     points(timeslt[[i]][1], data[[i]][[1]][1], 
                           col=cols[i], lty=ltys[i], lwd=lwds[i], 
                           pch=1)
@@ -488,7 +630,7 @@ if (mode == "fldmean") {
 
             } # if (!is.null(data[[i]][[1]]))
 
-        } # for i nrunids add data 
+        } # for i nsettings add data 
 
         # add legend if wanted
         if (add_legend) {
@@ -496,10 +638,10 @@ if (mode == "fldmean") {
             #le$pos <- "topleft" 
             le$pos <- "bottomleft" 
             #le$pos <- "bottomright" 
-            #le$ncol <- nrunids/2
+            #le$ncol <- nsettings/2
             le$ncol <- 1
             #le$ncol <- 2 
-            le$text <- runidsl
+            le$text <- names_short
             le$col <- cols
             le$lty <- ltys
             le$lwds <- lwds
@@ -527,11 +669,11 @@ if (mode == "fldmean") {
         } # if add_legend
 
         box()
-        message("\nSave ", plotname, " ...")
+        message("\n", "save ", plotname, " ...")
         dev.off()
 
     } # for vi max(nvars_per_runid)
 
 } # if mode = fldmean
 
-message("\nfinish\n")
+message("\n", "finish", "\n")
