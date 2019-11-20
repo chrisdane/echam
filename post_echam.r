@@ -1,4 +1,5 @@
-##
+## R
+
 rm(list=ls()); graphics.off()
 
 ## Host options
@@ -34,8 +35,9 @@ if (!interactive()) {
 }
 
 # user input
-message("\n", "Read namelist.post.r ...")
-source("namelist.post.r")
+fnml <- "namelist.post.r"
+message("\n", "Read ", fnml, " ...")
+source(fnml)
 
 # Check user input and set defaults
 message("\n", "Check user input ...")
@@ -150,6 +152,10 @@ for (i in 1:nsettings) {
     # all parts from file name without YYYY, MM, etc. and ending
     prefix <- gsub("\\*", "", fpattern)
     prefix <- gsub(paste0(".", filetype), "", prefix)
+    # append "_" as last character
+    if (substr(prefix, nchar(prefix), nchar(prefix)) != "_") {
+        prefix <- paste0(prefix, "_")
+    }
 
     # identify correct YYYY, MM, etc. in found files
     if (grepl("<YYYY>", fpatterns[i])) {

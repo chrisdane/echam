@@ -1,90 +1,13 @@
 ## R
 
 rm(list=ls()); graphics.off()
-
-# Host options
-homepath <- "~/scripts/r"
-machine <- system("hostname -f", intern=T)
-message("Run on ", machine, ":")
-if (regexpr("ollie", machine) != -1 ||
-    regexpr("prod-", machine) != -1 ||
-    regexpr("fat-", machine) != -1) {
-    machine_tag <- "ollie"
-    plotpath <- "/work/ollie/cdanek/plots"
-} else if (regexpr("hpc.dkrz", machine) != -1) {
-    machine <- substr(machine, 1, regexpr(".hpc.dkrz", machine) - 1)
-    machine_tag <- "mistral"
-    plotpath <- "/work/ab0246/a270073/plots"
-} else {
-    stop("machine ", machine, " is unknown. stop")
-}
-message("homepath = ", homepath)
-message("plotpath = ", plotpath)
-# =====================================
-
 fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
 
-# =====================================
-# 3 settings
-if (T) {
-    postpaths <- rep("/work/ab0246/a270073/post/echam6", t=3)
-    prefixs <- c("hist_echam6_echammon_dynveg",
-                 "1percCO2_echam6_echammon_dynveg",
-                 "4CO2_echam6_echammon_dynveg")
-    models <- rep("echam6", t=3)
-    names_short <- c("hist", "1pctCO2", "abrupt-4xCO2") 
-    names_legend <- c("historical", 
-                      eval(substitute(expression(paste("1pctCO"[2])))),
-                      eval(substitute(expression(paste("abrupt-4" %*% "CO"[2])))))
-    fromsf <- rep(1850, t=3)
-    #fromsf <- rep(1985, t=3)
-    #tosf <- rep(2014, t=3)
-    tosf <- c(2014, 2099, 2099)
-    seasonsf <- rep("Jan-Dec", t=3)
-    tosp <- rep(2014, t=3)
-    areas <- rep("global", t=3)
-    n_mas <- c(60, 60, 60)
-}
+# user input
+fnml <- "namelist.plot.r"
+message("\n", "Read ", fnml, " ...")
+source(fnml)
 
-# ==================================================
-
-# which variable
-if (exists("varnames_in")) varname_out <- unique(varnames_in) # default
-varname_out <- "temp2"
-
-# options across settings
-mode <- "fldmean" # "timmean" "fldmean"
-squeeze_data <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
-plot_redfit <- F
-
-# general plot options
-add_title <- F
-add_legend <- T
-plot_type <- "png" # "png" "pdf"
-p <- setDefaultPlotOptions(plot_type=plot_type)
-
-# time series plot options
-# woa13 seasons: "JFM" "AMJ" "JAS" "OND"
-# other seasons: "Jan-Dec" "DJF" "MAM" "JJA" "SON" "JJ"
-# months: "Feb" "Jul" "Jan"  "Jul"
-add_xgrid <- F
-add_ygrid <- F
-add_unsmoothed <- T
-add_smoothed <- T
-add_sd <- F
-add_trend <- F
-scale_ts <- F
-add_data_right_yaxis <- T
-plot_var_vs_months <- T
-add_first_data_point <- F
-
-# map plot options
-proj <- "rectangular" #"rectangular"
-add_land <- T
-reorder_lon_from_0360_to_180180 <- T
-add_grid <- F
-
-# ================================================================
 # load special data
 if (machine_tag == "mistral") {
     co2_hist_ncin <- nc_open("/pool/data//ECHAM6/input/r0007/greenhouse_historical.nc") 
@@ -101,10 +24,8 @@ if (machine_tag == "mistral") {
 co2_4co2 <- list(co2_ppm=1137.2679)
 message("\n", "set 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
 
-# ================================================================
 # check user input and defaults
 nsettings <- length(postpaths)
-if (!exists("varnames_in")) varnames_in <- rep(varname_out, t=nsettings)
 if (!exists("codes")) codes <- rep("", t=nsettings)
 if (!exists("levs")) levs <- rep("", t=nsettings)
 if (!exists("ltys")) ltys <- rep(1, t=nsettings)
@@ -124,7 +45,9 @@ if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effec
 if (!exists("fromsp")) fromsp <- fromsf
 if (!exists("tosp")) tosp <- tosf
 if (!exists("froms_shift")) froms_shift <- rep(NA, t=nsettings)
+if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
 if (!exists("seasonsp")) seasonsp <- seasonsf
+if (!exists("areas")) areas <- rep("global", t=nsettings)
 codesf <- codes
 codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
 levsf <- levs
@@ -149,7 +72,7 @@ for (i in 1:nsettings) {
     message("\n", "*********************************************")
     message("setting ", i, "/", nsettings, ": ", names_short[i], " ...")
     inpath <- paste0(postpaths[i], "/", mode, "/", varnames_in[i])
-    fname <- paste0(prefixs[i], "_", mode, 
+    fname <- paste0(prefixes[i], "_", mode, 
                     "_selname_", varnames_in[i], # codes
                     "_", areas[i],
                     "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
@@ -265,15 +188,6 @@ for (i in 1:nsettings) {
 
     } # if any of file dims is "time"
     
-    # flip latitudes if necessary (needs to be increasing)
-    if (any(names(dims[[i]]) == "lat")) {
-        if (any(diff(dims[[i]]$lat) < 0)) {
-            message("\n", "detected lat dimension and lats are decreasing -> flip latitudes ...") 
-            dims[[i]]$lat_orig <- dims[[i]]$lat
-            dims[[i]]$lat <- rev(dims[[i]]$lat)
-        }
-    }
-
     # get vars of file
     message("\n", "get variables ...")
     vars_per_file <- names(ncin$var)
@@ -309,13 +223,15 @@ for (i in 1:nsettings) {
         } # if squeeze_data
         attributes(vars[[vi]]) <- list(dim=dim(vars[[vi]]), dims=dims_per_file[dimids])
         #cmd <- paste0("tmp <- list(", paste0(dims_per_file[dimids], "=ncin$dim[[", dimids, "]]$vals", collapse=", "), ")")
-    }
+    } # for vi nvars per setting
     datas[[i]] <- vars
     data_infos[[i]] <- var_infos
     rm(vars, var_infos)
 
-    # cut temporal subset
+    # all dimensions per setting
     dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
+    
+    # cut temporal subset
     if (!is.null(dims[[i]]$time_inds)) {
         # check for variables that have time dim
         vars_with_timedim <- which(lapply(dims_per_setting, function(x) grep("time", x)) == 1)
@@ -364,10 +280,10 @@ for (i in 1:nsettings) {
                         " (are these numbers correct?!)")
                 
                 # check for variables that have lon dim
-                vars_with_londim <- which(lapply(dims_per_setting, function(x) grep("lon", x)) == 1)
-                if (length(vars_with_londim) > 0) {
-                    for (vi in 1:length(vars_with_londim)) {
-                        var_with_londim_ind <- vars_with_londim[vi]
+                vars_with_londim_inds <- which(lapply(dims_per_setting, function(x) grep("lon", x)) == 1)
+                if (length(vars_with_londim_inds) > 0) {
+                    for (vi in 1:length(vars_with_londim_inds)) {
+                        var_with_londim_ind <- vars_with_londim_inds[vi]
                         dims_of_var <- attributes(datas[[i]][[var_with_londim_ind]])$dims # e.g. "lon", "lat"
                         londimind <- which(dims_of_var == "lon")
 
@@ -400,14 +316,49 @@ for (i in 1:nsettings) {
         } # if reorder_lon_from_0360_to_180180
     } # if this file has lon dim
     
+    # flip latitudes if necessary (needs to be increasing)
+    if (any(names(dims[[i]]) == "lat")) {
+        if (any(diff(dims[[i]]$lat) < 0)) {
+            message("\n", "detected lat dimension and lats are decreasing -> flip latitudes ...") 
+            dims[[i]]$lat_orig <- dims[[i]]$lat
+            dims[[i]]$lat <- rev(dims[[i]]$lat)
+            # check for variables that have lat dim
+            vars_with_latdim_inds <- lapply(dims_per_setting, function(x) regexpr("lat", x) != -1)
+            vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
+            if (length(vars_with_latdim_inds) > 0) {
+                for (vi in 1:length(vars_with_latdim_inds)) {
+                    var_with_latdim_ind <- vars_with_latdim_inds[vi]
+                    dims_of_var <- attributes(datas[[i]][[var_with_latdim_ind]])$dims # e.g. "lon", "lat"
+                    latdimind <- which(dims_of_var == "lat")
+                    cmdlat <- rep(",", t=length(dims_of_var)) 
+                    cmdlat[latdimind] <- paste0("length(dims[[", i, "]]$lat):1")
+                    cmdlat <- paste0(cmdlat, collapse="")
+                    cmd <- paste0("datas[[", i, "]][[", var_with_latdim_ind, "]] <- ",
+                                  "datas[[", i, "]][[", var_with_latdim_ind, "]][", cmdlat, "]")
+                    message("run ", cmd, " ...")
+                    eval(parse(text=cmd))
+                } 
+            } # if any vars with lat dim
+        } # 
+    } # if this file has lat dim
+    
 } # for i nsettings
 message("\n", "****************** reading data finished ***************************")
 
 # save data before applying offset, multiplication factors, running mean, etc. for later
-cmd <- paste0(varname_out, "_datas <- datas")
-message("\n", "for later save ", cmd, " ...")
-eval(parse(text=cmd))
-    
+message("\n", "save original data for later ...")
+varnames_unique <- apply(unlist(sapply(datas, names)), 1, unique)
+for (vi in 1:length(varnames_unique)) {
+    cmd <- paste0(varnames_unique[vi], "_datas <- vector(\"list\", l=nsettings)")
+    message(cmd, " ...")
+    eval(parse(text=cmd))
+    cmd <- paste0("names(", varnames_unique[vi], "_datas) <- names(datas)")
+    eval(parse(text=cmd))
+    for (i in 1:nsettings) {
+        cmd <- paste0(varnames_unique[vi], "_datas[[", i, "]] <- datas[[", i, "]][[", vi, "]]")
+        eval(parse(text=cmd))
+    }
+} 
 
 if (F) { # for testing
     message("special")
@@ -443,6 +394,41 @@ for (i in 1:nsettings) {
     }
 } # for i nsettings
 
+# calculate monthly means
+if (any(seasonsp == "Jan-Dec") && any(attributes(datas[[i]][[vi]])$dims == "time")) {
+    message("\n", "calc monthly means ...")
+    datasmon <- datas
+    for (i in 1:nsettings) {
+        if (seasonsp[i] == "Jan-Dec") {
+            for (vi in 1:length(datas[[i]])) { 
+                if (length(dim(datas[[i]][[vi]])) == 1 && # var has only 1 dim 
+                    attributes(datas[[i]][[vi]])$dims == "time") { # and its "time"
+                    months <- unclass(dims[[i]]$timelt)$mon + 1
+                    months_unique <- unique(months)
+                    tmp <- rep(NA, t=length(months_unique))
+                    for (mi in 1:length(months_unique)) {
+                        tmp[mi] <- mean(datas[[i]][[vi]][months == months_unique[mi]], na.rm=T)
+                    } 
+                    datasmon[[i]][[vi]] <- tmp
+
+                # variable has more than 1 dims
+                } else { 
+                    message("moving average with dims \"", 
+                            paste0(attributes(datas[[i]][[vi]])$dims, collapse="\",\""), 
+                            "\". not implemented.")
+                    datasmon[[i]][[vi]] <- NA
+                }
+
+                attributes(datasmon[[i]][[vi]]) <- list(dim=length(tmp), dims="months")
+                dims[[i]]$months <- months_unique
+            } # for vi nvars
+        } # if n_mas != 1    
+    } # for i nsettings
+    monlim <- range(sapply(dims, "[", "months"))
+    monat <- monlim[1]:monlim[2]
+    monlab <- substr(month.abb[monat], 1, 1) # Jan -> J
+} # if any(seasonsp == "Jan-Dec") && any(attributes(datas[[i]][[vi]])$dims == "time")
+
 # apply moving average
 if (add_smoothed && any(attributes(datas[[i]][[vi]])$dims == "time") && 
     any(seasonsp == "Jan-Dec") && !all(n_mas == 1)) {
@@ -450,7 +436,7 @@ if (add_smoothed && any(attributes(datas[[i]][[vi]])$dims == "time") &&
     datasma <- datas
     for (i in 1:nsettings) {
         if (seasonsp[i] == "Jan-Dec" && n_mas[i] != 1) { # applying moving average
-            for (vi in 1:length(datasma[[i]])) { 
+            for (vi in 1:length(datas[[i]])) { 
                 if (length(dim(datas[[i]][[vi]])) == 1 && # var has only 1 dim 
                     attributes(datas[[i]][[vi]])$dims == "time") { # and its "time"
                     npy <- unclass(dims[[i]]$timelt)
@@ -526,53 +512,75 @@ if (any(ntime_per_setting > 1)) {
 if (any(mode == c("timmean"))) {
 
     message("\n", "timmean plot ...")
+    for (vi in 1:length(varnames_unique)) {
+        
+        varname <- varnames_unique[vi]
+        message(varname, " ...")
+        z <- vector("list", l=nsettings)
+        names(z) <- names_legend
+        x <- y <- z
+        for (i in 1:nsettings) {
+            varind <- which(names(datas[[i]]) == varname)
+            if (length(varind) != 1) {
+                warning("could not find varname \"", varname, " in setting ", i, ": ", names_short[i], ". skip to next")
+            } else {
+                tmp <- datas[[i]][[varind]]
+                if (length(dim(tmp)) != 2) {
+                    warning("length(dim(z[[", i, "]])) = ", length(dim(tmp)), 
+                            ". cannot make ", varname, " timmean plot of setting ", i, ": ", names_short[i])
+                    next # setting
+                }
+                if (any(attributes(tmp)$dims != c("lon", "lat"))) {
+                    warning("attributes(z[[", i, "]]))$dims = ", paste0(attributes(tmp)$dims, collapse=", "),
+                            ". need lon, lat. cannot make ", varname, " timmean plot of setting ", i, ": ", names_short[i])
+                    next # setting
+                }
+                z[[i]] <- tmp
+                x[[i]] <- dims[[i]]$lon
+                y[[i]] <- dims[[i]]$lat
+            } # if varname was found
+        } # for i nsettings
+  
+        # only make timmean plot if checks above are survived
+        if (!all(sapply(z, is.null))) {
 
-    z <- vector("list", l=nsettings)
-    names(z) <- names_legend
-    x <- y <- z
-    for (i in 1:nsettings) {
-        varind <- which(names(datas[[i]]) == varname_out)
-        if (length(varind) != 1) {
-            warning("could not find varname \"", varname_out, " in setting ", i, ": ", names_short[i], ". skip to next")
-        } else {
-            z[[i]] <- datas[[i]][[varind]]
-            if (length(dim(z[[i]])) != 2) {
-                warning("length(dim(z[[", i, "]])) = ", length(dim(z[[i]])), 
-                        ". cannot make timmean plot of setting ", i, ": ", names_short[i])
-                next # setting
+            # colorbar values
+            source(paste0(homepath, "/functions/image.plot.pre.r"))
+            ip <- image.plot.pre(range(z, na.rm=T), verbose=F)
+            
+            # determine number of rows and columns
+            source(paste0(homepath, "/functions/image.plot.nxm.r"))
+            nm <- image.plot.nxm(x=x, y=y, z=z, ip=ip, dry=T)
+
+            plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                               varname, "_", 
+                               paste0(names_short, "_", seasonsp, 
+                                      "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
+                               ".", p$plot_type)
+            message("plot ", plotname, " ...")
+            dir.create(dirname(plotname), recursive=T, showWarnings=F)
+            if (p$plot_type == "png") {
+                png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
+                    res=p$dpi, family=p$family_png)
+            } else if (p$plot_type == "pdf") {
+                pdf(plotname, width=nm$ncol*p$inch, height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
+                    family=p$family_pdf)
             }
-            if (any(attributes(z[[i]])$dims != c("lon", "lat"))) {
-                warning("attributes(z[[", i, "]]))$dims = ", paste0(attributes(z[[i]])$dims, collapse=", "),
-                        ". need lon, lat. cannot make timmean plot of setting ", i, ": ", names_short[i])
-                next # setting
+
+            # map plot
+            data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]][[varname]]
+            image.plot.nxm(x=x, y=y, z=z, ip=ip, verbose=F,
+                           xlab="Longitude [°]", ylab="Latitude [°]", 
+                           zlab=data_info$label, znames=names_legend)
+
+            dev.off()
+            if (p$plot_type == "pdf") {
+                embed_fonts(plotname, outfile=plotname)
             }
-            x[[i]] <- dims[[i]]$lon
-            y[[i]] <- dims[[i]]$lat
-        } # if varname was found
-    } # for i nsettings
-    
-    plotname <- paste0(plotpath, "/", mode, "/", varname_out, "/",
-                       varname_out, "_", 
-                       paste0(names_short, "_", seasonsp, 
-                              "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
-                       ".", p$plot_type)
-    message("plot ", plotname, " ...")
-    dir.create(dirname(plotname), recursive=T, showWarnings=F)
-    if (p$plot_type == "png") {
-        png(plotname, width=p$map_width, height=p$map_height,
-            res=p$dpi, family=p$family)
-    } else if (p$plot_type == "pdf") {
-        pdf(plotname, width=p$inch, height=p$inch*p$ts_height/p$ts_width,
-            family=p$family)
-    }
+        
+        } # if not all z are NULL
 
-    source(paste0(homepath, "/functions/image.plot.pre.r"))
-    ip <- image.plot.pre(range(z, na.rm=T))
-
-    source(paste0(homepath, "/functions/image.plot.nxm.r"))
-    image.plot.nxm(x=x, y=y, z=z, ip=ip, verbose=T)
-
-    dev.off()
+    } # for vi in unique_varnames 
 
 # timmean end
 } else if (any(mode == c("fldmean"))) {
@@ -582,15 +590,11 @@ if (any(mode == c("timmean"))) {
         add_unsmoothed <- T # default
     }
 
-    message("\n", "fldmean plot ...")
-    
-    # compare the same variable across models
-    varnames_unique <- unique(unlist(sapply(datas, names)))
+    message("\n", "fldmean plot versus time ...")
     for (vi in 1:length(varnames_unique)) {
         
         varname <- varnames_unique[vi]
         message(varname, " ...")
-        varnames_per_setting <- lapply(datas, names)
         data <- vector("list", l=nsettings)
         names(data) <- names_short
         if (exists("datasma")) datama <- data
@@ -607,68 +611,270 @@ if (any(mode == c("timmean"))) {
         } # for i nsettings
 
         # prepare right axis data if necessary
-        if (!add_data_right_yaxis) {
-            data_right_yaxis_suffix <- "" # default
+        if (!add_data_right_yaxis_ts) {
+            data_right_yaxis_suffix_ts <- "" # default
         } else {
             message("\n", "prepare data right yaxis ..")
             if (varname == "temp2") {
                 # hist, 1pct and 4CO2
                 data_right_label <- substitute(paste("CO"[2], " [ppm]"))
                 data_right <- list("co2_hist"=list(x=co2_hist$timelt, y=co2_hist$co2_ppm), 
-                                   "co2_1pct"=list(x=co2_1pct$timelt, y=co2_1pct$co2_ppm), 
-                                   "co2_4co2"=list(x="const", y=co2_4co2$co2_ppm))
-                data_right_yaxis_suffix <- "_with_CO2"
-                #ylim_at <- c(range(lapply(data_right, "[", "y"))[1],
-                #             seq(300, 500, 
-            } # finished variable specific stuff for add_data_right_yaxis
-            
-            if (!exists("ylim_right")) {
-                message("use automatic data right yaxis labels ...")
-                ylim_right <- vector("list", l=length(data_right))
-                for (i in 1:length(data_right)) {
-                    if (length(data_right[[i]]$x) == 1 && data_right[[i]]$x == "const") {
-                        ylim_right[[i]] <- range(data_right[[i]]$y, na.rm=T)
+                               "co2_1pct"=list(x=co2_1pct$timelt, y=co2_1pct$co2_ppm), 
+                               "co2_4co2"=list(x="const", y=co2_4co2$co2_ppm))
+            data_right_yaxis_suffix_ts <- "_with_CO2"
+            #ylim_at <- c(range(lapply(data_right, "[", "y"))[1],
+            #             seq(300, 500, 
+        } # finished variable specific stuff for add_data_right_yaxis_ts
+        
+        if (!exists("ylim_right")) {
+            message("use automatic data right yaxis labels ...")
+            ylim_right <- vector("list", l=length(data_right))
+            for (i in 1:length(data_right)) {
+                if (length(data_right[[i]]$x) == 1 && data_right[[i]]$x == "const") {
+                    ylim_right[[i]] <- range(data_right[[i]]$y, na.rm=T)
+                } else {
+                    timeinds <- which(data_right[[i]]$x >= tlimlt[1] & data_right[[i]]$x <= tlimlt[2])
+                    if (length(timeinds) == 0) {
+                        message("all data of data_right[[", i, "]]: ", names(data_right)[1], " are out of tlimlt")
+                        ylim_right[[i]] <- NA
                     } else {
-                        timeinds <- which(data_right[[i]]$x >= tlimlt[1] & data_right[[i]]$x <= tlimlt[2])
-                        if (length(timeinds) == 0) {
-                            message("all data of data_right[[", i, "]]: ", names(data_right)[1], " are out of tlimlt")
-                            ylim_right[[i]] <- NA
-                        } else {
-                            ylim_right[[i]] <- range(data_right[[i]]$y[timeinds], na.rm=T)
-                        }
+                        ylim_right[[i]] <- range(data_right[[i]]$y[timeinds], na.rm=T)
                     }
-                } # i in data_right
-                ylim_right <- range(ylim_right)
-            } # if ylim_right does not already exist
-            if (!exists("ylim_at")) {
-                message("use automatic data right yaxis labels ...")
-                yat_right <- pretty(ylim_right, n=10)
-            }
-            ylab_right <- format(yat_right)
-        } # if add_data_right_yaxis finished prepare right axis data
+                }
+            } # i in data_right
+            ylim_right <- range(ylim_right)
+        } # if ylim_right does not already exist
+        if (!exists("ylim_at")) {
+            message("use automatic data right yaxis labels ...")
+            yat_right <- pretty(ylim_right, n=10)
+        }
+        ylab_right <- format(yat_right)
+    } # if add_data_right_yaxis_ts finished prepare right axis data
 
-        # ylims for fldmean plot
-        if (add_unsmoothed) {
-            message("\n", "temporal min / mean / max ", varname, " data:")
-            for (i in 1:nsettings) {
-                message(names_short[i], ": ", min(data[[i]], na.rm=T), " / ",
-                        mean(data[[i]], na.rm=T), " / ", max(data[[i]], na.rm=T))
+    # ylims for fldmean plot
+    if (add_unsmoothed) {
+        message("\n", "fldmean versus time min / mean / max ", varname, " data:")
+        for (i in 1:nsettings) {
+            message(names_short[i], ": ", min(data[[i]], na.rm=T), " / ",
+                    mean(data[[i]], na.rm=T), " / ", max(data[[i]], na.rm=T))
+        }
+        ylim <- range(data, na.rm=T)
+    }
+    if (exists("datasma")) {
+        message("\n", "fldmean versus time min / mean / max ", varname, " datama:")
+        for (i in 1:nsettings) {
+            message(names_short[i], ": ", min(datama[[i]], na.rm=T), " / ",
+                    mean(datama[[i]], na.rm=T), " / ", max(datama[[i]], na.rm=T))
+        }
+        ylimma <- range(datama, na.rm=T)
+    }
+    if (add_unsmoothed && add_smoothed) {
+        ylim <- range(ylim, ylimma)
+    } else if (!add_unsmoothed && add_smoothed) {
+        ylim <- range(ylimma)
+    }
+    message("\n", "ylim=", appendLF=F)
+    dput(ylim)
+    yat <- pretty(ylim, n=10)
+    ylab <- format(yat)
+
+    # plotname
+    plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                       varname, "_",
+                       paste0(names_short, "_", seasonsp, 
+                              "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
+                       data_right_yaxis_suffix_ts,
+                       ".", p$plot_type)
+    dir.create(dirname(plotname), recursive=T, showWarnings=F)
+    if (p$plot_type == "png") {
+        png(plotname, width=p$ts_width, height=p$ts_height,
+            res=p$dpi, family=p$family_png)
+    } else if (p$plot_type == "pdf") {
+        pdf(plotname, width=p$inch, height=p$inch*p$ts_height/p$ts_width,
+            family=p$family_pdf)
+    }
+                       
+    # set plot margins
+    mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
+    mar[4] <- 1 # decrease right margin
+    if (!add_title) mar[3] <- 1 # decrease upper margin
+    if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
+    if (add_data_right_yaxis_ts) mar[4] <- mar[2] # same as left  
+   
+    # open plot
+    par(mar=mar)
+    plot(dims[[1]]$timelt, data[[1]], t="n",
+         xlim=tlim, ylim=ylim, 
+         xaxt="n", yaxt="n",
+         xlab=NA, ylab=NA)
+    if (tlabsrt == 0) { # add horizontal labels
+        axis(1, at=tatn, labels=tlablt, cex.axis=tlabcex)
+    } else { # add non-horizontal labels with angle
+        axis(1, at=tatn, labels=NA)
+        # character height in user coordinates
+        text(x=tatn, y=par("usr")[3] - strheight("1"), labels=tlablt, 
+             xpd=T, srt=tlabsrt, adj=c(1, 1), cex=tlabcex)
+    }
+    axis(2, at=yat, labels=ylab, las=2)
+
+    # add title
+    if (add_title) {
+        message("\n", "add title ...")
+        if (length(unique(fromsp) == 1 && length(unique(tosp)) == 1) &&
+            length(unique(seasonsp) == 1) && length(unique(areas) == 1)) {
+            title <- paste0(unique(areas), " ", mode, " ", varname, " ", 
+                            unique(seasonsp), " ", unique(fromsp), "-", unique(tosp))
+        } else {
+            title <- "define title"
+        }
+        title(title, cex.main=0.75)
+    }
+
+    # add variable label
+    data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]]
+    mtext(side=2, data_info[[1]]$label, line=3.4, cex=0.9)
+
+    # add grid
+    if (add_xgrid) {
+        message("\n", "add xgrid ...")
+        abline(v=tatn, col="gray", lwd=0.5)
+    }
+    if (add_ygrid) {
+        message("\n", "add ygrid ...")
+        abline(h=yat, col="gray", lwd=0.5)
+    }
+
+    ## add data
+    # unsmoothed before smoothed data
+    if (!is.null(data[[i]])) {
+        for (i in 1:nsettings) {
+            lines(dims[[i]]$timelt, data[[i]], 
+                  col=ifelse(!is.null(datama[[i]]), cols_rgb[i], cols[i]), 
+                  lty=ltys[i], lwd=lwds[i], pch=pchs[i])
+        }
+    }
+    
+    # smoothed data after unsmoothed data
+    if (!is.null(datama[[i]])) {
+        for (i in 1:nsettings) {
+            lines(dims[[i]]$timelt, datama[[i]], 
+                  col=cols[i], lty=ltys[i], lwd=lwds[i], pch=pchs[i])
+        }
+    }
+
+    # special: add first data point
+    if (add_first_data_point) {
+        for (i in 1:nsettings) {
+            if (i == 1) message("\n", "add first data point")
+            points(dims[[i]]$timelt[1], data[[i]][1], 
+                   col=cols[i], lty=ltys[i], lwd=lwds[i], 
+                   pch=1)
+        }
+    } # add first data point
+
+    # add linear regression trend if wanted
+    if (add_trend) {
+        stop("not yet")
+    }
+
+    # add legend if wanted
+    if (add_legend) {
+        message("\n", "add default stuff to fldmean legend ...")
+        le <- list()
+        le$pos <- "topleft" 
+        #le$pos <- "bottomleft" 
+        #le$pos <- "bottomright" 
+        #le$ncol <- nsettings/2
+        le$ncol <- 1
+        #le$ncol <- 2 
+        le$text <- names_legend
+        le$col <- cols
+        le$lty <- ltys
+        le$lwds <- lwds
+        le$pchs <- pchs
+        le$cex <- 1
+        le$cex <- 0.85
+        # add stuf to legend here
+        if (F) {
+            message("\n", "add non default stuff to fldmean legend ...")
+
+        }
+        # reorder reading direction from R's default top->bottom to left->right
+        if (T) {
+            le <- reorder_legend(le)
+        }
+        if (length(le$pos) == 1) {
+            legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
+                   pch=le$pch, col=le$col, ncol=le$ncol,
+                   x.intersp=0.2, cex=le$cex, bty="n")
+        } else if (length(le$pos) == 2) {
+            legend(x=le$pos[1], y=le$pos[2],
+                   legend=le$text, lty=le$lty, lwd=le$lwd,
+                   pch=le$pch, col=le$col, ncol=le$ncol,
+                   x.intersp=0.2, cex=le$cex, bty="n")
+        }
+    } # if add_legend
+
+    if (add_data_right_yaxis_ts) {
+        message("\n", "add data right yaxis ...")
+        par(new=T)
+        plot(data_right[[1]]$x, data_right[[1]]$y, #log="y", 
+             t="n", xlim=tlim, ylim=ylim_right, 
+             xlab=NA, ylab=NA, axes=F)
+        axis(4, at=yat_right, labels=ylab_right, las=2)
+        mtext(side=4, data_right_label, line=3.4, cex=0.9)
+
+        # add right data
+        for (i in 1:length(data_right)) {
+            if (length(data_right[[i]]$x) == 1 && data_right[[i]]$x == "const") {
+                abline(h=data_right[[i]]$y, col=cols[i], lty=2)
+            } else {
+                lines(data_right[[i]]$x, data_right[[i]]$y, col=cols[i], lty=2)
             }
-            ylim <- range(data, na.rm=T)
         }
-        if (exists("datasma")) {
-            message("\n", "temporal min / mean / max ", varname, " datama:")
-            for (i in 1:nsettings) {
-                message(names_short[i], ": ", min(datama[[i]], na.rm=T), " / ",
-                        mean(datama[[i]], na.rm=T), " / ", max(datama[[i]], na.rm=T))
-            }
-            ylimma <- range(datama, na.rm=T)
+    } # if add_data_right_yaxis_ts
+
+    box()
+    message("\n", "save ", plotname, " ...")
+    dev.off()
+    if (p$plot_type == "pdf") {
+        embed_fonts(plotname, outfile=plotname)
+    }
+
+} # for vi max(nvars_per_setting)
+
+# time series plot versus months
+if (exists("datasmon")) {
+    message("\n", "fldmean plot versus months ...")
+
+    # compare the same variable across models
+    for (vi in 1:length(varnames_unique)) {
+        
+        varname <- varnames_unique[vi]
+        message(varname, " ...")
+        datamon <- vector("list", l=nsettings)
+        names(datamon) <- names_short
+        for (i in 1:nsettings) {
+            datamon[[i]] <- NA # default
+            var_ind <- which(names(datasmon[[i]]) == varname)
+            datamon[[i]] <- datasmon[[i]][[var_ind]]
+            attributes(datamon[[i]]) <- c(attributes(datamon[[i]]), list(name=varname))
+        } # for i nsettings
+
+        # prepare right axis data if necessary
+        if (!add_data_right_yaxis_ts_mon) {
+            data_right_yaxis_suffix_ts_mon <- "" # default
+        } else {
+            message("\n", "prepare data right yaxis ..")
+        } # if add_data_right_yaxis_ts_mon finished prepare right axis data
+
+        # ylims for fldmean versus months plot
+        message("\n", "fldmean versus months min / mean / max ", varname, " data:")
+        for (i in 1:nsettings) {
+            message(names_short[i], ": ", min(datamon[[i]], na.rm=T), " / ",
+                    mean(datamon[[i]], na.rm=T), " / ", max(datamon[[i]], na.rm=T))
         }
-        if (add_unsmoothed && add_smoothed) {
-            ylim <- range(ylim, ylimma)
-        } else if (!add_unsmoothed && add_smoothed) {
-            ylim <- range(ylimma)
-        }
+        ylim <- range(ylim)
         message("\n", "ylim=", appendLF=F)
         dput(ylim)
         yat <- pretty(ylim, n=10)
@@ -679,15 +885,16 @@ if (any(mode == c("timmean"))) {
                            varname, "_",
                            paste0(names_short, "_", seasonsp, 
                                   "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
-                           data_right_yaxis_suffix,
+                           "_months",
+                           data_right_yaxis_suffix_ts_mon,
                            ".", p$plot_type)
         dir.create(dirname(plotname), recursive=T, showWarnings=F)
         if (p$plot_type == "png") {
-            png(plotname, width=p$ts_width, height=p$ts_height,
-                res=p$dpi, family=p$family)
+            png(plotname, width=p$ts_width_m, height=p$ts_height_m,
+                res=p$dpi, family=p$family_png)
         } else if (p$plot_type == "pdf") {
-            pdf(plotname, width=p$inch, height=p$inch*p$ts_height/p$ts_width,
-                family=p$family)
+            pdf(plotname, width=p$inch, height=p$inch*p$ts_height_m/p$ts_width_m,
+                family=p$family_pdf)
         }
                            
         # set plot margins
@@ -695,27 +902,28 @@ if (any(mode == c("timmean"))) {
         mar[4] <- 1 # decrease right margin
         if (!add_title) mar[3] <- 1 # decrease upper margin
         if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
-        if (add_data_right_yaxis) mar[4] <- mar[2] # same as left  
+        if (add_data_right_yaxis_ts_mon) mar[4] <- mar[2] # same as left  
        
         # open plot
         par(mar=mar)
-        plot(dims[[1]]$timelt, data[[1]], t="n",
-             xlim=tlim, ylim=ylim, 
+        plot(dims[[1]]$months, datamon[[1]], t="n",
+             xlim=monlim, ylim=ylim, 
              xaxt="n", yaxt="n",
              xlab=NA, ylab=NA)
-        if (tlabsrt == 0) { # add horizontal labels
-            axis(1, at=tatn, labels=tlablt, cex.axis=tlabcex)
-        } else { # add non-horizontal labels with angle
-            axis(1, at=tatn, labels=NA)
-            # character height in user coordinates
-            text(x=tatn, y=par("usr")[3] - strheight("1"), labels=tlablt, 
-                 xpd=T, srt=tlabsrt, adj=c(1, 1), cex=tlabcex)
-        }
+        axis(1, at=monat, labels=monlab, cex.axis=tlabcex)
         axis(2, at=yat, labels=ylab, las=2)
 
         # add title
         if (add_title) {
             message("\n", "add title ...")
+            if (length(unique(fromsp) == 1 && length(unique(tosp)) == 1) &&
+                length(unique(areas) == 1)) {
+                title <- paste0(unique(areas), " ", mode, " ", varname, " ", 
+                                unique(fromsp), "-", unique(tosp))
+            } else {
+                title <- "define title"
+            }
+            title(title, cex.main=0.75)
         }
 
         # add variable label
@@ -734,42 +942,17 @@ if (any(mode == c("timmean"))) {
 
         ## add data
         # unsmoothed before smoothed data
-        if (!is.null(data[[i]])) {
-            for (i in 1:nsettings) {
-                lines(dims[[i]]$timelt, data[[i]], 
-                      col=ifelse(!is.null(datama[[i]]), cols_rgb[i], cols[i]), 
-                      lty=ltys[i], lwd=lwds[i], pch=pchs[i])
-            }
+        for (i in 1:nsettings) {
+            lines(dims[[i]]$months, datamon[[i]], 
+                  col=cols[i], lty=ltys[i], lwd=lwds[i], pch=pchs[i])
         }
         
-        # smoothed data after unsmoothed data
-        if (!is.null(datama[[i]])) {
-            for (i in 1:nsettings) {
-                lines(dims[[i]]$timelt, datama[[i]], 
-                      col=cols[i], lty=ltys[i], lwd=lwds[i], pch=pchs[i])
-            }
-        }
-
-        # special: add first data point
-        if (add_first_data_point) {
-            for (i in 1:nsettings) {
-                if (i == 1) message("\n", "add first data point")
-                points(dims[[i]]$timelt[1], data[[i]][1], 
-                       col=cols[i], lty=ltys[i], lwd=lwds[i], 
-                       pch=1)
-            }
-        } # add first data point
-
-        # add linear regression trend if wanted
-        if (add_trend) {
-            stop("not yet")
-        }
-
         # add legend if wanted
         if (add_legend) {
             message("\n", "add default stuff to fldmean legend ...")
             le <- list()
-            le$pos <- "topleft" 
+            le$pos <- "bottom"
+            #le$pos <- "topleft" 
             #le$pos <- "bottomleft" 
             #le$pos <- "bottomright" 
             #le$ncol <- nsettings/2
@@ -803,31 +986,37 @@ if (any(mode == c("timmean"))) {
             }
         } # if add_legend
     
-        if (add_data_right_yaxis) {
+        if (add_data_right_yaxis_ts_mon) {
             message("\n", "add data right yaxis ...")
             par(new=T)
-            plot(data_right[[1]]$x, data_right[[1]]$y, #log="y", 
-                 t="n", xlim=tlim, ylim=ylim_right, 
+            plot(data_right_mon[[1]]$x, data_right_mon[[1]]$y, #log="y", 
+                 t="n", xlim=monlim, ylim=ylim_right, 
                  xlab=NA, ylab=NA, axes=F)
             axis(4, at=yat_right, labels=ylab_right, las=2)
-            mtext(side=4, data_right_label, line=3.4, cex=0.9)
+            mtext(side=4, data_right_mon_label, line=3.4, cex=0.9)
 
             # add right data
-            for (i in 1:length(data_right)) {
-                if (length(data_right[[i]]$x) == 1 && data_right[[i]]$x == "const") {
-                    abline(h=data_right[[i]]$y, col=cols[i], lty=2)
+            for (i in 1:length(data_right_mon)) {
+                if (length(data_right_mon[[i]]$x) == 1 && data_right_mon[[i]]$x == "const") {
+                    abline(h=data_right_mon[[i]]$y, col=cols[i], lty=2)
                 } else {
-                    lines(data_right[[i]]$x, data_right[[i]]$y, col=cols[i], lty=2)
+                    lines(data_right_mon[[i]]$x, data_right_mon[[i]]$y, col=cols[i], lty=2)
                 }
             }
-        } # if add_data_right_yaxis
+        } # if add_data_right_yaxis_ts_mon
 
         box()
         message("\n", "save ", plotname, " ...")
         dev.off()
+        if (p$plot_type == "pdf") {
+            embed_fonts(plotname, outfile=plotname)
+        }
 
     } # for vi max(nvars_per_setting)
 
-} # if mode = fldmean
+} # if exists("datasmon")
+
+# fldmean end
+} # which mode
 
 message("\n", "finish", "\n")
