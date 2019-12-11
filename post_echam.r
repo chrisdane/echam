@@ -83,7 +83,18 @@ if (any(!is.na(froms_shift)) && add_my_time == F) {
 }
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
 if (!exists("areas_out")) areas_out <- rep("global", t=nsettings)
-if (!exists("seasons_out")) seasons_out <- rep("Jan-Dec", t=nsettings)
+if (!exists("season_inds")) {
+    season_inds <- vector("list", l=nsettings)
+    for (i in 1:nsettings) season_inds[[i]] <- 1:12
+}
+season_names <- rep(NA, t=nsettings)
+for (i in 1:nsettings) {
+    if (length(season_inds[[i]]) == 12 && season_inds[[i]] == 1:12) { # default case: annual
+        season_names[i] <- "Jan-Dec"
+    } else { # all other: first letters of months
+        season_names[i] <- paste(substr(month.abb[season_inds[[i]]], 1, 1), collapse="")
+    }
+}
 if (!exists("levs_out")) levs_out <- rep(NA, t=nsettings)
 lev_fnames <- levs_out
 lev_fnames[which(!is.na(levs_out))] <- paste0("_", levs_out[which(!is.na(levs_out))], "m")
@@ -109,7 +120,8 @@ for (i in 1:nsettings) {
     message("model = ", models[i])
     message("from = ", froms[i])
     message("to = ", tos[i])
-    message("season_out = ", seasons_out[i])
+    message("season_name = ", season_names[i])
+    message("season_inds = ", paste0(season_inds[[i]], collapse=","))
     if (!is.na(froms_shift[i])) message("from_shift = ", froms_shift[i])
     message("area_out = ", areas_out[i])
     if (!is.na(levs_out[i])) message("lev_out = ", levs_out[i])
@@ -222,27 +234,57 @@ for (i in 1:nsettings) {
         } 
     }
 
-    # apply season
-    if (seasons_out[i] != "Jan-Dec") {
-        stop("not yet")
-    }
+    # remove files out of wanted season
+    cmdselmon <- "" # default
+    if (season_names[i] != "Jan-Dec") {
+        message("\n", "season_inds = ", paste(season_inds[[i]], collapse=","), 
+                " -> season = ", season_names[i])
+        if (grepl("<MM>", fpatterns[i])) {
+            file_season_inds <- which(as.integer(df$MM) %in% season_inds[[i]])
+            if (length(file_season_inds) == 0) { # no files in wanted season 
+                stop("no files found at season_inds = ", paste(season_inds[[i]], collapse=","), 
+                     " based on given <MM> pattern.")
+            }
+            message("remove ", length(file_season_inds), " files out of these months. files:")
+            files <- files[file_season_inds]
+            dirnames <- dirnames[file_season_inds]
+            basenames <- basenames[file_season_inds]
+            df <- df[file_season_inds,]
+            ht(df)
 
-    ## construct cdo command
+        # end if <MM> is in fpatterns
+        } else {
+            cmd <- paste0("cdo ", cdo_silent, " showmon ", files[1])
+            message("run \"", cmd, "\"")
+            months_per_file <- system(cmd, intern=T)
+            if (months_per_file != "") {
+                months_per_file <- strsplit(months_per_file, "\\s+")[[1]]
+                if (any(months_per_file == "")) months_per_file <- months_per_file[-which(months_per_file == "")]
+            }
+            if (length(months_per_file) == 1 && months_per_file == "") { # `cdo showmon` was not successfull
+                stop("input files do not have proper time axis. not implemented yet")
+            }
+            message("determined months_per_file = ", paste(months_per_file, collapse=","), " (by `cdo showmon`)")
+            selmon_season_inds <- which(months_per_file %in% season_inds[[i]])
+            if (length(selmon_season_inds) == 0) { # no files in wanted season 
+                stop("wanted season_inds = ", paste(season_inds[[i]], collapse=","), 
+                     " not found in determined seasons ", paste(months_per_file, collapse=","), 
+                     " (by `cdo showmon`) in files[1] = ", files[1], ".")
+            }
+            cmdselmon <- paste0("-selmon,", paste(months_per_file[selmon_season_inds], collapse=",")) 
+            message("add `", cmdselmon, "` to cdo command ...")
+
+        } # if <MM> is given in fpatterns or not
+        
+
+    } # if season_name != "Jan_Dec"
+
+    ## construct cdo command (chained cdo commands will be executed from right to left)
     # prefix
     cmdprefix <- paste0("cdo ", cdo_silent, " ", cdo_OpenMP_threads)
 
-    # convert to nc first if grb
-    cmdconvert <- "" # default
-    if (filetype == "grb") {
-        if (models[i] == "echam6") {
-            cmdconvert <- paste0(cmdconvert, " -t echam6")
-        }
-        cmdconvert <- paste0(cmdconvert, " -f nc copy")
-    } # if grb
-    
-    # apply calculations and final cat/merge/etc. command
+    # n-th command: cat/mergetime/etc. command
     if (modes[i] == "timmean") {
-        cmdcalc <- "-timmean"
         nmax <- as.integer(system("ulimit -n", intern=T))
         if (length(files) > nmax) {
             stop("cannot compute ", modes[i], " of ", length(files), 
@@ -250,17 +292,42 @@ for (i in 1:nsettings) {
         }
         cmdcat <- "-O ensmean"
     } else if (modes[i] == "fldmean") {
-        cmdcalc <- "-fldmean"
         if (F) { # could not figure out a significant time difference between cat and mergetime
             cmdcat <- "cat"
         } else if (T) {
             cmdcat <- "mergetime"
         }
     } else {
-        stop("mode '", modes[i], "' not defined.")
-    }
+        #stop("cat/mergetime not defined for mode '", modes[i], "' not defined.")
+    } # which cat/mergetime depending on mode
 
-    # select variable
+    # (n-1)-th command: convert to nc if grb
+    cmdconvert <- "" # default
+    if (filetype == "grb") {
+        if (models[i] == "echam6") {
+            cmdconvert <- paste0(cmdconvert, " -t echam6")
+        }
+        cmdconvert <- paste0(cmdconvert, " -f nc")
+    } # if grb
+    
+    # (n-2)-th command: calculation
+    if (modes[i] == "timmean") {
+        cmdcalc <- "-timmean"
+    } else if (modes[i] == "fldmean") {
+        cmdcalc <- "-fldmean"
+    } else if (modes[i] == "volint") {
+        cmdcalc <- "-fldsum -vertsum"
+    } else {
+        stop("calculation for mode '", modes[i], "' not defined.")
+    } # which calculation depending on mode
+
+    # (n-3)-th command: select level
+    if (!is.na(levs_out[i])) {
+        cmdsellevel <- paste0("-sellevel,", paste0(levs_out[i], collapse=","))
+        stop("not yet") 
+    }
+    
+    # (n-4)-th command: select variable
     if (filetype == "grb") {
         if (is.na(codes[i])) { # code not provided
             stop("cannot process setting ", i, "/", nsettings, 
@@ -273,11 +340,6 @@ for (i in 1:nsettings) {
         cmdselect <- paste0("-select,name=", fvarnames[i])
     }
     
-    # select level
-    if (!is.na(levs_out[i])) {
-        stop("not yet")
-        #cmdselect <- paste0(cmdselect, ",level=,", paste0(levs_out[i], collapse=","))
-    }
     
     # select area
     if (areas_out[i] != "global") {
@@ -294,7 +356,7 @@ for (i in 1:nsettings) {
                        "_selname_", fvarnames[i], 
                        ifelse(!is.na(levs_out[i]), paste0("_sellev_", levs_out[i]), ""),
                        "_", areas_out[i],
-                       "_", seasons_out[i], "_", froms[i], "-", tos[i], 
+                       "_", season_names[i], "_", froms[i], "-", tos[i], 
                        ".nc")
         fout_exist_check <- file.access(fout, mode=0)
         if (fout_exist_check == 0 && cdo_force == F) { # running command not necessary
@@ -305,8 +367,10 @@ for (i in 1:nsettings) {
                 check <- file.remove(fout)
                 if (!check) warning("something went wrong deleting file ", fout)
             }
-            cmd <- paste0(cmdprefix, " ", cmdcat, " ", cmdconvert, " ", cmdcalc, " ", 
-                          cmdselect, " <files> ", fout, " || echo error")
+            cmd <- paste0(cmdprefix, " ", cmdconvert, 
+                          #" ", cmdcat, 
+                          " ", cmdcalc, " ", cmdselmon, " ", cmdselect, 
+                          " <files> ", fout, " || echo error")
             message("run \"", cmd, "\"")
             cmd <- gsub("<files>", paste0(paste0(files), collapse=" "), cmd)
             # system() does not run the command if its very long
@@ -530,7 +594,7 @@ for (i in 1:nsettings) {
                        "_selname_", fvarnames[i], 
                        ifelse(!is.na(levs_out[i]), paste0("_sellev_", levs_out[i]), ""),
                        "_", areas_out[i],
-                       "_", seasons_out[i], "_", froms[i], "-", tos[i], 
+                       "_", season_names[i], "_", froms[i], "-", tos[i], 
                        ".nc")
         if (file.access(fout, mode=0) == 0 && cdo_force == F) { # running command not necessary
             message("fout ", fout, " already exists and `cdo_force=F`. skip.")
