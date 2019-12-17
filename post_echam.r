@@ -2,30 +2,7 @@
 
 rm(list=ls()); graphics.off()
 
-## Host options
-machine <- system("hostname -f", intern=T)
-message(paste0("Run on ", machine, ":"))
-if (regexpr("ollie", machine) != -1 ||
-    regexpr("prod-", machine) != -1 ||
-    regexpr("fat-", machine) != -1) {
-    machine_tag <- "ollie"
-    homepath <- "~/scripts/r"
-    workpath <- "/work/ollie/cdanek"
-} else if (regexpr("hpc.dkrz", machine) != -1) {
-    machine <- substr(machine, 1, regexpr(".hpc.dkrz", machine) - 1)
-    machine_tag <- "mistral"
-    homepath <- "~/scripts/r"
-    #workpath <- "/work/ba0941/a270073"
-    workpath <- "/work/ab0246/a270073"
-} else {
-    message(paste0("   (unknown machine, use default paths)"))
-    homepath <- "~/scripts/r"
-    workpath <- homepath
-}
-message(paste0("   homepath = ", homepath))
-message(paste0("   workpath = ", workpath))
-
-## load packages if not interactive
+# load packages if not interactive
 if (!interactive()) {
     ht <- function(d, n=7) {
         print(head(d, n))
@@ -42,8 +19,7 @@ source(fnml)
 # Check user input and set defaults
 message("\n", "Check user input ...")
 exist_checks <- c("datapaths", "fpatterns", "fvarnames",
-                  "models", "froms", "tos", "modes",
-                  "postpaths")
+                  "models", "froms", "tos", "modes")
 if (!all(sapply(exist_checks, exists))) {
     missing_vars <- sapply(exist_checks, exists)
     stop("you have to define the variable", 
@@ -56,25 +32,6 @@ if (any(file.access(datapaths, mode=4) != 0)) { # check read permission
          " '", paste0(datapaths[nonreadable_paths], collapse="', '"), "'.")
 }
 datapaths <- normalizePath(datapaths)
-if (any(file.access(postpaths, mode=0) != 0)) { # check existance
-    nonexisting_paths <- which(file.access(postpaths, mode=0) != 0)
-    for (i in postpaths[nonexisting_paths]) {
-        if (file.access(i, mode=0) == 0) {
-            # postpath was created in a step before
-            next # path
-        }
-        permission_check <- tryCatch(dir.create(i, recursive=T), error=function(e) e, warning=function(w) w)
-        if (typeof(permission_check) == "logical" || # dir creation permission
-            grepl("already exists", permission_check$message)) { # just warning that directory already exists
-            message("create postpath '", i, "' ...")
-            dir.create(i, recursive=T, showWarnings=F)
-        } else { # no dir creation permission
-            stop("have no write permission to create postpath '", i, "'. error message:\n",
-                 permission_check)
-        }
-    }
-}
-postpaths <- normalizePath(postpaths)
 nsettings <- length(datapaths)
 if (!exists("suffixs")) suffixs <- rep(NA, t=nsettings)
 if (!exists("froms_shift")) froms_shift <- rep(NA, t=nsettings)
@@ -83,6 +40,29 @@ if (any(!is.na(froms_shift)) && add_my_time == F) {
 }
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
 if (!exists("areas_out")) areas_out <- rep("global", t=nsettings)
+if (exists("postpaths")) {
+    if (any(file.access(postpaths, mode=0) != 0)) { # check existance
+        nonexisting_paths <- which(file.access(postpaths, mode=0) != 0)
+        for (i in postpaths[nonexisting_paths]) {
+            if (file.access(i, mode=0) == 0) {
+                # postpath was created in a step before
+                next # path
+            }
+            permission_check <- tryCatch(dir.create(i, recursive=T), error=function(e) e, warning=function(w) w)
+            if (typeof(permission_check) == "logical" || # dir creation permission
+                grepl("already exists", permission_check$message)) { # just warning that directory already exists
+                message("create postpath '", i, "' ...")
+                dir.create(i, recursive=T, showWarnings=F)
+            } else { # no dir creation permission
+                stop("have no write permission to create postpath '", i, "'. error message:\n",
+                     permission_check)
+            }
+        }
+    }
+    postpaths <- normalizePath(postpaths)
+} else { # postpaths does not exist
+    postpaths <- paste(workpath, "post", models, modes, fvarnames, areas, sep="/")
+}
 if (!exists("season_inds")) {
     season_inds <- vector("list", l=nsettings)
     for (i in 1:nsettings) season_inds[[i]] <- 1:12
