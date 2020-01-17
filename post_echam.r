@@ -61,7 +61,7 @@ if (exists("postpaths")) {
     }
     postpaths <- normalizePath(postpaths)
 } else { # postpaths does not exist
-    postpaths <- paste(workpath, "post", models, modes, fvarnames, areas, sep="/")
+    postpaths <- paste(workpath, "post", models, modes, fvarnames, sep="/")
 }
 if (!exists("season_inds")) {
     season_inds <- vector("list", l=nsettings)
@@ -333,7 +333,7 @@ for (i in 1:nsettings) {
         fout <- paste0(postpaths[i],"/", prefix, suffixs[i],
                        "_", modes[i],
                        ifelse(filetype == "grb", paste0("_selcode_", codes[i]), ""),
-                       "_selname_", fvarnames[i], 
+                       "_", fvarnames[i], 
                        ifelse(!is.na(levs_out[i]), paste0("_sellev_", levs_out[i]), ""),
                        "_", areas_out[i],
                        "_", season_names[i], "_", froms[i], "-", tos[i], 
@@ -396,7 +396,7 @@ for (i in 1:nsettings) {
             fout <- paste0(postpaths[i],"/", prefix, suffixs[i],
                            "_", modes[i],
                            ifelse(filetype == "grb", paste0("_selcode_", codes[i]), ""),
-                           "_selname_", fvarnames[i], 
+                           "_", fvarnames[i], 
                            ifelse(!is.na(levs_out[i]), paste0("_sellev_", levs_out[i]), ""),
                            "_", areas_out[i],
                            "_", stamp,
@@ -571,7 +571,7 @@ for (i in 1:nsettings) {
         fout <- paste0(postpaths[i],"/", prefix, suffixs[i],
                        "_", modes[i],
                        ifelse(filetype == "grb", paste0("_selcode_", codes[i]), ""),
-                       "_selname_", fvarnames[i], 
+                       "_", fvarnames[i], 
                        ifelse(!is.na(levs_out[i]), paste0("_sellev_", levs_out[i]), ""),
                        "_", areas_out[i],
                        "_", season_names[i], "_", froms[i], "-", tos[i], 
