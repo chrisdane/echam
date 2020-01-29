@@ -15,6 +15,11 @@ if (regexpr("ollie", machine) != -1 ||
     homepath <- "~/scripts/r"
     #workpath <- "/work/ba0941/a270073"
     workpath <- "/work/ab0246/a270073"
+} else if (regexpr("stan", machine) != -1) {
+    machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
+    machine_tag <- "stan"
+    homepath <- "~/scripts/r"
+    workpath <- "/ace/user/cdanek"
 } else {
     message(paste0("   (unknown machine, use default paths)"))
     homepath <- "~/scripts/r"
@@ -29,8 +34,12 @@ cdo_silent <- "" # "-s" for silent or ""
 cdo_force <- T # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
 cdo_wout_loop <- T # keep true; run one cdo command on all files or loop through all files
-set_rel_time <- T # conversion from absolute (default) to relative time
+cdo_set_rel_time <- T # conversion from absolute (default) to relative time
+cdo_run_from_script <- T # create temporary file and run long cdo command from there
 add_my_time <- F # my time for ts output (needs package ncdf4) 
+nchar_max_arglist <- 2612710
+# --> $(getconf PAGE_SIZE)*32 = 4096*32 = 131072
+# --> getconf ARG_MAX                   = 2097152
 
 # ======================================================
 # 1 setting
@@ -47,7 +56,7 @@ if (F) { # old hist
     #modes <- "timmean"
     suffixs <- "dynveg"
     
-} else if (T) { # pi
+} else if (F) { # pi
     datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
     if (T) {
         fpatterns <- "piControl_echam6_echammon_<YYYY><MM>.grb"
@@ -88,6 +97,35 @@ if (F) { # old hist
     #modes <- "timmean" 
     modes <- "fldmean"
     suffixs <- "awi-esm-1-1-lr_lgm"
+
+} else if (T) { # Hol-T on stan
+    #reorder_inds <- data.frame(stamp_froms=c(2903, 800),
+                               #stamp_tos=c(6699, 2902),
+                               #calendar_froms=c(6997, 3200),
+                               #calendar_tos=c(3201, 1098),
+                               #count_froms=c(4, 3801),
+                               #count_tos=c(3800, 5903))
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
+    fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
+    ftypes <- "l" # "f" for files (default) or "l" for links
+    fvarnames <- "temp2"
+    models <- "echam5"
+    froms <- "0004" 
+    #tos <- "0013" 
+    #tos <- "0011"
+    #tos <- "0126"
+    tos <- "5903"
+    new_time_origins <- -6999 # for ncview must be >= -4714
+    #new_time_origins <- -0001
+    #new_time_origins <- 0000
+    new_time_units <- "years"
+    ##season_inds <- list(c(12, 1, 2)) # DJF
+    #season_inds <- list(c(3, 4, 5)) # MAM
+    #season_inds <- list(c(6, 7, 8)) # JJA
+    #season_inds <- list(c(9, 10, 11)) # SON
+    #season_inds <- list(1:6) 
+    #modes <- "timmean" 
+    modes <- "fldmean"
 
 # ======================================================
 # 2 settings
