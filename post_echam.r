@@ -531,7 +531,7 @@ for (i in 1:nsettings) {
                         cmd_calc_chunki <- gsub(fout, fout_vec[select_chunki], cmd_calc_chunki)
                         cmd_calc_list[[select_chunki]]$cmd <- cmd_calc_chunki
                         chunk_inds_list[[select_chunki]] <- inds_chunki
-                        message("   chunk ", select_chunki, "/", nchunks, ": files ",
+                        message("chunk ", select_chunki, "/", nchunks, ": files ",
                                 min(inds_chunki), " to ", max(inds_chunki), " (", length(inds_chunki), 
                                 " files from \"", files[min(inds_chunki)], "\" to \"", files[max(inds_chunki)], "\", ",
                                 "nchar(cmd) = ", nchar(cmd_calc_list[[select_chunki]]$cmd), ") ...")
