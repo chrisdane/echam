@@ -15,6 +15,11 @@ if (regexpr("ollie", machine) != -1 ||
     homepath <- "~/scripts/r"
     #workpath <- "/work/ba0941/a270073"
     workpath <- "/work/ab0246/a270073"
+} else if (regexpr("stan", machine) != -1) {
+    machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
+    machine_tag <- "stan"
+    homepath <- "~/scripts/r"
+    workpath <- "/ace/user/cdanek"
 } else {
     message(paste0("   (unknown machine, use default paths)"))
     homepath <- "~/scripts/r"
@@ -25,7 +30,7 @@ message(paste0("   workpath = ", workpath))
 
 # options across settings
 # echam:
-#mode <- "fldmean" 
+mode <- "fldmean" 
 #mode <- "timmean" 
 #mode <- "volint"
 # fesom:
@@ -34,7 +39,7 @@ message(paste0("   workpath = ", workpath))
 #mode <- "mean"
 #mode <- "sum"
 #mode <- "area"
-mode <- "depth"
+#mode <- "depth"
 
 # =====================================
 # 1 setting
@@ -52,9 +57,20 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
+} else if (T) { # Hol-T
+    prefixes <- "Hol-T_echam5_wiso_mm"
+    models <- "echam5"
+    names_short <- "Hol-T"
+    names_legend <- "cosmos-aso-wiso"
+    fromsf <- "0004"
+    tosf <- "5903"
+    new_origins <- -6995 # model year 1 = 6999 BP -> model year 4 = 6999 BP - 4 = 6995 BP
+    n_mas <- 1200
+    varnames_in <- "temp2"
+
 # =====================================
 # 2 settings
-} else if (T) { # awi-esm-1-1-lr 1pct 4CO2
+} else if (F) { # awi-esm-1-1-lr 1pct 4CO2
     #models <- rep("echam6", t=2)
     models <- rep("fesom", t=2)
     if (T) {
@@ -212,7 +228,7 @@ if (F) { # awi-esm-1-1-lr hist
     if (F) { # transient pi last 100
         fromsf <- c(1842, 1850, 1850, 1850)
         tosf <- c(1941, 2014, 2099, 2099)
-        froms_shift <- c(1842-91, NA, NA, NA)
+        new_origins <- c(1842-91, NA, NA, NA)
         #fromsp <- c(1849-99, 2014-29, 2099-29, 2099-29)
         #tosp <- c(1849, 2014, 2099, 2099)
         fromsp <- c(1849-99, 1850, 1850, 1850)
@@ -220,7 +236,7 @@ if (F) { # awi-esm-1-1-lr hist
     } else if (T) { # tranient pi last 30
         fromsf <- c(1912, 1850, 1850, 1850)
         tosf <- c(1941, 2014, 2099, 2099)
-        froms_shift <- c(1912-91, NA, NA, NA)
+        new_origins <- c(1912-91, NA, NA, NA)
         fromsp <- c(1849-29, 1850, 1850, 1850)
         tosp <- c(1849, 2014, 2099, 2099)
     } else if (F) { # ltm last 30
@@ -308,6 +324,7 @@ p <- setDefaultPlotOptions(plot_type="png",
                            family_pdf="Droid Sans Mono"
                            )
                            #family_pdf="CM Roman")
+alpha <- 0.2 # transparent: 0,1 (0 fully transparent)
 
 # time series plot options
 # woa13 seasons: "JFM" "AMJ" "JAS" "OND"
@@ -316,7 +333,7 @@ p <- setDefaultPlotOptions(plot_type="png",
 add_xgrid <- F
 add_ygrid <- F
 add_zeroline <- T
-add_unsmoothed <- F
+add_unsmoothed <- T
 add_smoothed <- T
 # time:
 add_sd <- F
@@ -324,10 +341,10 @@ add_linear_trend <- T
 add_nonlinear_trend <- F
 scale_ts <- F
 add_first_data_point <- F
-add_data_right_yaxis_ts <- F
-plot_scatter_var1_vs_var2 <- T
-add_legend_right_yaxis <- F
+add_data_right_yaxis_ts <- T
 add_data_right_yaxis_ts_mon <- F
+add_legend_right_yaxis <- F
+plot_scatter_var1_vs_var2 <- T
 # time vs depth:
 add_ts_to_time_vs_depth <- T
 

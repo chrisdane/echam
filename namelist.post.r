@@ -29,17 +29,19 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 verbose <- 1 # 0,1
-clean <- T # remove tmp files
+clean <- F # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
-cdo_force <- T # redo cdo command although outout file already exists 
+cdo_force <- F # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
 cdo_wout_loop <- T # keep true; run one cdo command on all files or loop through all files
-cdo_set_rel_time <- T # conversion from absolute (default) to relative time
+cdo_set_rel_time <- T # conversion from absolute to relative time
 cdo_run_from_script <- T # create temporary file and run long cdo command from there
-add_my_time <- F # my time for ts output (needs package ncdf4) 
-nchar_max_arglist <- 2612710
+cdo_nchar_max_arglist <- 2612710
+nco_nchar_max_arglist <- 131071
 # --> $(getconf PAGE_SIZE)*32 = 4096*32 = 131072
 # --> getconf ARG_MAX                   = 2097152
+ncview_min_origin <- -4714 # ncview error: the Gregorian calendar routines; must have year >= -4714
+add_my_time <- F # my time for ts output (needs package ncdf4) 
 
 # ======================================================
 # 1 setting
@@ -115,16 +117,10 @@ if (F) { # old hist
     #tos <- "0011"
     #tos <- "0126"
     tos <- "5903"
-    new_time_origins <- -6999 # for ncview must be >= -4714
+    #new_time_origins <- -6999 
     #new_time_origins <- -0001
-    #new_time_origins <- 0000
-    new_time_units <- "years"
-    ##season_inds <- list(c(12, 1, 2)) # DJF
-    #season_inds <- list(c(3, 4, 5)) # MAM
-    #season_inds <- list(c(6, 7, 8)) # JJA
-    #season_inds <- list(c(9, 10, 11)) # SON
-    #season_inds <- list(1:6) 
-    #modes <- "timmean" 
+    new_time_origins <- 0000
+    #new_time_units <- "years as %Y.%f" # <- no gaps in x-axis with ncview BUT not supported by cdo
     modes <- "fldmean"
 
 # ======================================================

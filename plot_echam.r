@@ -24,62 +24,108 @@ ignore_vars <- c("time_bnds", "timestamp",
                  "moc_reg_lat")
 
 # load special data
-alpha <- 0.2 # transparent: 0,1 (0 fully transparent)
+    
+# cmip6 co2 hist
+f <- ""
 if (machine_tag == "mistral") {
-    # cmip6 co2 hist
-    co2_hist_ncin <- nc_open("/pool/data/ECHAM6/input/r0007/greenhouse_historical.nc") 
-    message("\n", "read hist CO2 from ", co2_hist_ncin$filename, " ...")
+    f <- "/pool/data/ECHAM6/input/r0007/greenhouse_historical.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read hist CO2 from ", f, " ...")
+    co2_hist_ncin <- nc_open(f)
     time <- co2_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
     co2_hist <- list(co2_ppm=ncvar_get(co2_hist_ncin, "CO2"), time=timelt, timen=time,
                      text="", col="red", lty=2, lwd=0.5, pch=NA)
+    add_co2_hist <- F
+    message("set add_co2_hist=T if you want to add to plot")
+}
 
-    # cmip6 co2 1pct
-    co2_1pct_ncin <- nc_open("/pool/data/ECHAM6/input/r0008/greenhouse_1pctCO2.nc")
-    message("\n", "read 1pct CO2 from ", co2_1pct_ncin$filename, " ...")
+# cmip6 co2 1pct
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/pool/data/ECHAM6/input/r0008/greenhouse_1pctCO2.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read 1pct CO2 from ", f, " ...")
+    co2_1pct_ncin <- nc_open(f)
     time <- co2_1pct_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
     co2_1pct <- list(co2_ppm=ncvar_get(co2_1pct_ncin, "CO2"), time=timelt, timen=time,
                      text="", col="#377EB8", lty=2, lwd=0.5, pch=NA)
+    add_co2_1pct <- F
+    message("set add_co2_1pct=T if you want to add to plot")
+}
 
-    # cmip6 4CO2 
-    co2_4co2 <- list(co2_ppm=1137.2679,
-                     text="", col="#1B9E77", lty=2, lwd=0.5, pch=NA)
-    message("\n", "set 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
-    
-    # cmip6 historical monthly total solar irradiance 
-    tsi_hist_ncin <- nc_open("/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_monthly_1850-2014.nc")
-    message("\n", "read historical monthly total solar irradiance from ", tsi_hist_ncin$filename, " ...")
+# cmip6 4CO2 
+co2_4co2 <- list(co2_ppm=1137.2679,
+                 text="", col="#1B9E77", lty=2, lwd=0.5, pch=NA)
+message("\n", "set 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
+add_co2_4co2 <- F
+message("set add_co2_4co2=T if you want to add to plot")
+
+# cmip6 historical monthly total solar irradiance 
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_monthly_1850-2014.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read historical monthly total solar irradiance from ", f, " ...")
+    tsi_hist_ncin <- nc_open(f)
     time <- tsi_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*86400, origin="1850-01-01", tz="UTC")
     tsi_hist_monthly <- list(tsi_hist=ncvar_get(tsi_hist_ncin, "TSI"), time=timelt, timen=time,
                              col="orange2",
                              col_rgb=rgb(t(col2rgb("orange2")/255), alpha=0.5),
                              text="TSI", lty=1, lwd=0.5, pch=NA) 
+    add_tsi_hist <- F
+    message("set add_tsi_hist=T if you want to add to plot")
+}
 
-    # cmip6 historical annual total solar irradiance 
-    tsi_hist_ncin <- nc_open("/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_annual_1850-2014.nc")
-    message("\n", "read historical monthly total solar irradiance from ", tsi_hist_ncin$filename, " ...")
+# cmip6 historical annual total solar irradiance 
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_annual_1850-2014.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read historical monthly total solar irradiance from ", f, " ...")
+    tsi_hist_ncin <- nc_open(f)
     time <- tsi_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*86400, origin="1850-01-01", tz="UTC")
     tsi_hist_annual <- list(tsi_hist=ncvar_get(tsi_hist_ncin, "TSI"), time=timelt, timen=time,
                             col="orange2",
                             col_rgb=rgb(t(col2rgb("orange2")/255), alpha=0.5),
                             text="TSI", lty=1, lwd=0.5, pch=NA) 
-    
-    # hadcrut4 global monthly temperature anomaly wrt 1961-1990
-    hadcrut4_ncin <- nc_open("/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.monthly_ns_avg.txt.nc")
-    message("\n", "read hadcrut4 global monthly SAT anomalies wrt to 1961-1990 from ", hadcrut4_ncin$filename, " ...")
+    add_tsi_hist_annual <- F
+    message("set add_tsi_hist_annual=T if you want to add to plot")
+}
+
+# hadcrut4 global monthly temperature anomaly wrt 1961-1990
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.monthly_ns_avg.txt.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read hadcrut4 global monthly SAT anomalies wrt to 1961-1990 from ", f, " ...")
+    hadcrut4_ncin <- nc_open(f)
     time <- hadcrut4_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
     hadcrut4_sat_anom_monthly <- list(hadcrut4_sat_anom=ncvar_get(hadcrut4_ncin, "global_SAT_anomaly_wrt_1961-1990"),
                                       hadcrut4_sat_anom_lower_uncert=ncvar_get(hadcrut4_ncin, "global_SAT_anomaly_wrt_1961-1990_lower_uncertainty"),
                                       hadcrut4_sat_anom_upper_uncert=ncvar_get(hadcrut4_ncin, "global_SAT_anomaly_wrt_1961-1990_upper_uncertainty"),
                                       time=timelt, timen=time)
+    add_hadcrut4_sat_anom_monthly <- F
+    message("set add_hadcrut4_sat_anom_monthly=T if you want to add to plot")
+}
 
-    # hadcrut4 global annual temperature anomaly wrt 1961-1990
-    hadcrut4_ncin <- nc_open("/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.annual_ns_avg.txt.nc")
-    message("\n", "read hadcrut4 global annual SAT anomalies wrt to 1961-1990 from ", hadcrut4_ncin$filename, " ...")
+# hadcrut4 global annual temperature anomaly wrt 1961-1990
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.annual_ns_avg.txt.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read hadcrut4 global annual SAT anomalies wrt to 1961-1990 from ", f, " ...")
+    hadcrut4_ncin <- nc_open(f)
     time <- hadcrut4_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
     hadcrut4_sat_anom_annual <- list(hadcrut4_sat_anom=ncvar_get(hadcrut4_ncin, "global_SAT_anomaly_wrt_1961-1990"),
@@ -88,18 +134,35 @@ if (machine_tag == "mistral") {
                                      time=timelt, timen=time, col="black",
                                      col_rgb=rgb(t(col2rgb("black")/255), alpha=0.1),
                                      text="HadCRUT4", lty=1, lwd=1, pch=NA)
+    add_hadcrut4_sat_anom_annual <- F
+    message("set add_hadcrut4_sat_anom_annual=T if you want to add to plot")
+}
 
-    # gistempv4 global annual temperature anomaly wrt 1951-1980
-    gistempv4_ncin <- nc_open("/work/ba0941/a270073/data/GISTEMPv4/GISTEMPv4_global_SAT_anomaly_wrt_1951-1980_GLB.Ts+dSST.csv.nc")
-    message("\n", "read gistempv4 global annual SAT anomalies wrt to 1951-1980 from ", gistempv4_ncin$filename, " ...")
+# gistempv4 global annual temperature anomaly wrt 1951-1980
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/GISTEMPv4/GISTEMPv4_global_SAT_anomaly_wrt_1951-1980_GLB.Ts+dSST.csv.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read gistempv4 global annual SAT anomalies wrt to 1951-1980 from ", f, " ...")
+    gistempv4_ncin <- nc_open(f)
     time <- gistempv4_ncin$dim$time$vals # YYYY
     timelt <- as.POSIXlt(as.Date(paste0(time, "-06-30")), tz="UTC") # use mid-year
     gistempv4_sat_anom_annual <- list(gistempv4_sat_anom=ncvar_get(gistempv4_ncin, "global_SAT_anomaly_wrt_1951-1980"),
                                       time=timelt, timen=time)
+    add_gistempv4_sat_anom_annual <- F
+    message("set add_gistempv4_sat_anom_annual=T if you want to add to plot")
+}
 
-    # rapid moc
-    rapid_ncin <- nc_open("/work/ba0941/a270073/data/RAPID/moc_transports.nc")
-    message("\n", "read rapid moc from ", rapid_ncin$filename, " ...")
+# rapid moc
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/RAPID/moc_transports.nc"
+    f_err <- "/work/ba0941/a270073/data/RAPID/moc_error.mat"
+}
+if (file.exists(f)) {
+    message("\n", "read rapid moc from ", f, " ...")
+    rapid_ncin <- nc_open(f)
     time <- rapid_ncin$dim$time$vals # "days since 2004-4-1 00:00:00" 
     timelt <- as.POSIXlt(time*86400, origin="2004-04-01T00:00:00Z", tz="UTC") # use mid-year
     moc_rapid <- list(moc=drop(ncvar_get(rapid_ncin, "moc_mar_hc10")), # 12-hourly
@@ -110,7 +173,7 @@ if (machine_tag == "mistral") {
     moc_rapid$moc_monthly <- stats::filter(moc_rapid$moc, filter=rep(1/(30*2), 30*2))
     if (T) { # also read rapid uncertainty, which is distributed as .mat file. lol.
         library(R.matlab)
-        moc_rapid_error <- readMat("/work/ba0941/a270073/data/RAPID/moc_error.mat")
+        moc_rapid_error <- readMat(f_err)
         # errors and actual data are not on the same time axis. wtf?
         moc_error_time <- drop(moc_rapid_error$JG[,1])
         moc_error_time <- as.POSIXlt(moc_error_time*86400, origin="2004-04-01T00:00:00Z", tz="UTC")
@@ -125,28 +188,54 @@ if (machine_tag == "mistral") {
         }
         rm(moc_rapid_error)
     }
+    add_moc_rapid <- F
+    message("set add_moc_rapid=T if you want to add to plot")
+}
 
-    # monthly nsidc sea ice index northern and southern hemisphere
-    nsidc_ncin <- nc_open("/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_monthly_v3.0.nc")
-    message("\n", "read northern nsidc sea ice index from ", nsidc_ncin$filename, " ...")
+# monthly nsidc sea ice index northern hemisphere
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_monthly_v3.0.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read northern nsidc sea ice index from ", f, " ...")
+    nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
     nsidc_siarean_monthly <- list(siarean=ncvar_get(nsidc_ncin, "siarean"),
                                   time=timelt, timen=time,
                                   text="NSIDC north", col="black",
                                   lty=1, lwd=1.5, pch=NA)
-    nsidc_ncin <- nc_open("/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_monthly_v3.0.nc")
-    message("\n", "read southern nsidc sea ice index from ", nsidc_ncin$filename, " ...")
+    add_nsidc_arctic_monthly <- F
+    message("set add_nsidc_arctic_monthly=T if you want to add to plot")
+}
+
+# monthly nsidc sea ice index southern hemisphere
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_monthly_v3.0.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read southern nsidc sea ice index from ", f, " ...")
+    nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
     nsidc_siareas_monthly <- list(siareas=ncvar_get(nsidc_ncin, "siareas"),
                                   time=timelt, timen=time,
                                   text="NSIDC south", col="black",
                                   lty=3, lwd=1.5, pch=NA)
+    add_nsidc_antarctic_monthly <- F
+    message("set add_nsidc_antarctic_monthly=T if you want to add to plot")
+}
 
-    # annual nsidc sea ice index northern and southern hemisphere
-    nsidc_ncin <- nc_open("/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_annual_v3.0.nc")
-    message("\n", "read northern nsidc sea ice index from ", nsidc_ncin$filename, " ...")
+# annual nsidc sea ice index northern hemisphere
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_annual_v3.0.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read northern nsidc sea ice index from ", f, " ...")
+    nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
     nsidc_siarean_annual <- list(siarean=ncvar_get(nsidc_ncin, "siarean"),
@@ -158,8 +247,18 @@ if (machine_tag == "mistral") {
     nsidc_siarean_annual$siarean <- nsidc_siarean_annual$siarean[-1]
     nsidc_siarean_annual$time <- nsidc_siarean_annual$time[-1]
     nsidc_siarean_annual$timen <- nsidc_siarean_annual$timen[-1]
-    nsidc_ncin <- nc_open("/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_annual_v3.0.nc")
-    message("\n", "read southern nsidc sea ice index from ", nsidc_ncin$filename, " ...")
+    add_nsidc_arctic_annual <- F
+    message("set add_nsidc_arctic_annual=T if you want to add to plot")
+}
+
+# annual nsidc sea ice index southern hemisphere
+f <- ""
+if (machine_tag == "mistral") {
+    f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_annual_v3.0.nc"
+}
+if (file.exists(f)) {
+    message("\n", "read southern nsidc sea ice index from ", f, " ...")
+    nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
     nsidc_siareas_annual <- list(siareas=ncvar_get(nsidc_ncin, "siareas"),
@@ -171,10 +270,58 @@ if (machine_tag == "mistral") {
     nsidc_siareas_annual$siareas <- nsidc_siareas_annual$siareas[-1]
     nsidc_siareas_annual$time <- nsidc_siareas_annual$time[-1]
     nsidc_siareas_annual$timen <- nsidc_siareas_annual$timen[-1]
-    
-    rm(time, timelt)
+    add_nsidc_antarctic_annual <- F
+    message("set add_nsidc_antarctic_annual=T if you want to add to plot")
+}
 
-} # finished reading extra datasets
+# orbital paramter berger
+f <- ""
+if (machine_tag == "stan") {
+    f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
+}
+if (file.exists(f)) {
+    message("\n", "read berger orbital parameters from ", f, " ...")
+    orb_berger <- read.table(f, col.names=c("year BP", "eccentricity", "precession", "obliquity"))
+    years <- orb_berger$year.BP # kyr BP in reverse order --> 6.999, 6.998, 6997, ...
+    years <- -1*years*1000
+    # as.POSIXlt("-0001-01-01") --> negative year gives error 
+    # "not in a standard unambiguous format"
+    # --> but shifting works
+    timelt <- as.POSIXlt("0000-01-01", tz="UTC")
+    nyears_to_origin <- timelt$year + 1900 - years[1] + 1
+    timelt <- seq.POSIXt(timelt, l=nyears_to_origin, b="-1 year")[nyears_to_origin]
+    timelt <- seq.POSIXt(timelt, l=length(years), b="1 year")
+    orb_berger <- list(eccentricity=orb_berger$eccentricity, 
+                       precession=orb_berger$precession,
+                       obliquity=orb_berger$obliquity,
+                       time=timelt, timen=as.numeric(timelt),
+                       text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
+    add_orb_berger_eccentricity <- F
+    message("set add_orb_berger_eccentricity=", !add_orb_berger_eccentricity, 
+            " if you ", ifelse(add_orb_berger_eccentricity, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    add_orb_berger_precession <- F
+    message("set add_orb_berger_precession=", !add_orb_berger_precession, 
+            " if you ", ifelse(add_orb_berger_precession, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    add_orb_berger_obliquity <- T
+    message("set add_orb_berger_obliquity=", !add_orb_berger_obliquity, 
+            " if you ", ifelse(add_orb_berger_obliquity, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+}
+
+# clean
+for (obj in c("f", "time", "years", "timelt", "nyears_to_origin")) {
+    if (exists(obj)) rm(obj)
+}
+# finished reading extra datasets depending on machine
+
 
 # check user input and defaults
 nsettings <- length(prefixes)
@@ -187,9 +334,7 @@ levsf <- levs
 levsf[levs != ""] <- paste0("_", levs[levs != ""], "m")
 depthsf <- rep("", t=nsettings)
 depthsf[depths != ""] <- paste0("_", depths[depths != ""], "m")
-if (!exists("fromsp")) fromsp <- fromsf
-if (!exists("tosp")) tosp <- tosf
-if (!exists("froms_shift")) froms_shift <- rep(NA, t=nsettings)
+if (!exists("new_origins")) new_origins <- rep(NA, t=nsettings)
 if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
 if (!exists("seasonsp")) seasonsp <- seasonsf
 season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1:12])
@@ -348,52 +493,87 @@ for (i in 1:nsettings) {
 
         # shift times due to e.g. senseless spinup years
         # as.POSIXlt's 'year' starts at 1900
-        if (!is.na(froms_shift[i])) {
+        if (!is.na(new_origins[i])) {
             # from year in  = min(timein_lt$year) + 1900
-            message("\n", "shift from fromsf[", i, "] = ", fromsf[i], 
-                    " to froms_shift[", i, "] = ", froms_shift[i], " ...")
-            message("range(timein_lt) = ", appendLF=F)
+            message("\n", "new_origins is given --> new_origins[", i, "] = ", new_origins[i])
+            message("shift range(timein_lt) = ", appendLF=F)
             print(range(timein_lt))
-            shift_by <- -(min(timein_lt$year) + 1900 - froms_shift[i]) 
-            message("shift_by = ", shift_by, " years") 
+            shift_by <- -(timein_lt$year[1] + 1900 - new_origins[i]) 
+            message("by shift_by = -(", timein_lt$year[1] + 1900, " - ", 
+                    new_origins[i], ") = ", shift_by, " years") 
             timein_lt$year <- timein_lt$year + shift_by - 1
-            message("range(timein_lt) = ", appendLF=F)
+            message("--> new range(timein_lt) = ", appendLF=F)
             print(range(timein_lt))
-            if (!exists("fromsp")) {
-                message("update fromsp[", i, "] = ", fromsp[i], " to ", appendLF=F)
-                fromsp[i] <- min(timein_lt$year) + 1900
-                message(fromsp[i])
-            }
-            if (!exists("tosp")) {
-                message("update tosp[", i, "] = ", tosp[i], " to ", appendLF=F)
-                tosp[i] <- max(timein_lt$year) + 1900
-                message(tosp[i])
-            }
-        } # if !is.na(froms_shift[i])
+
+        } # if !is.na(new_origins[i])
+        # set new origin
 
         # find temporal subset based on given fromsp and tosp
-        message("\n", "find temporal subsets from fromsp[", i, "]=", 
-                fromsp[i], " to tosp[", i, "]=", tosp[i], " ...")
-        fromsplt <- as.POSIXlt(paste0(fromsp[i], "-01-01 00:00:00"), tz="UTC")
-        tosplt <- as.POSIXlt(paste0(tosp[i], "-12-31 23:59:59"), tz="UTC")
-        time_inds <- which(timein_lt >= fromsplt & timein_lt <= tosplt)
-        # take temporal subset
-        if (length(time_inds) > 0 && length(time_inds) != length(timein_lt)) { 
-            message("found temporal subset of length ", length(time_inds), " out of ", 
-                    length(dims[[i]]$time), " total time points ...")
-            message("before range(timein_lt) = ", appendLF=F)
-            print(range(timein_lt))
-            timein_lt <- timein_lt[time_inds]
-            message("after range(timein_lt) = ", appendLF=F)
-            print(range(timein_lt))
-            # cut from time dimension
-            dims[[i]]$time <- dims[[i]]$time[time_inds]
-        } else {
-            if (length(time_inds) == 0) {
-                stop("temporal subset is of length 0")
+        if (exists("fromsp") || exists("tosp")) {
+            message("\n", appendLF=F)
+            if (exists("fromsp") && !is.na(fromsp[i])) {
+                message("fromsp is given --> fromsp[", i, "] = ", fromsp[i])
+                if (fromsp[i] < 0) {
+                    # as.POSIXlt("-0001-01-01") --> negative year gives error 
+                    # "not in a standard unambiguous format"
+                    # --> but shifting works
+                    nyears_to_new_origin <- fromsp[i] - (timein_lt$year[1] + 1900) + 1
+                    fromsplt <- seq.POSIXt(timein_lt[1], l=nyears_to_new_origin, b="year")[nyears_to_new_origin]
+                } else {
+                    fromsplt <- as.POSIXlt(paste0(fromsp[i], "-01-01 00:00:00"), tz="UTC")
+                }
+            } else {
+                fromsplt <- timein_lt[1]
+                if (i == 1) fromsp <- rep(NA, t=nsettings)
+                fromsp[i] <- fromsplt$year + 1900
             }
-        }
-        # update time dim
+            if (exists("tosp") && !is.na(tosp[i])) {
+                message("tosp is given --> tosp[", i, "] = ", tosp[i])
+                if (tosp[i] < 0) {
+                    # as.POSIXlt("-0001-01-01") --> negative year gives error 
+                    # "not in a standard unambiguous format"
+                    # --> but shifting works
+                    nyears_to_new_end <- abs(tosp - (timein_lt$year[length(timein_lt)] + 1900)) + 1
+                    tosplt <- seq.POSIXt(timein_lt[length(timein_lt)], l=nyears_to_new_end, b="-1 year")[nyears_to_new_end]
+                } else {
+                    tosplt <- as.POSIXlt(paste0(tosp[i], "-12-31 23:59:59"), tz="UTC")
+                }
+            } else {
+                tosplt <- timein_lt[length(timein_lt)]
+                if (i == 1) tosp <- rep(NA, t=nsettings)
+                tosp[i] <- tosplt$year + 1900
+            }
+            message(" --> find indices for temporal subset between ", 
+                    fromsplt, " and ", tosplt, " ...")
+            
+            # take temporal subset
+            time_inds <- which(timein_lt >= fromsplt & timein_lt <= tosplt)
+            if (length(time_inds) > 0 && length(time_inds) != length(timein_lt)) { 
+                message("found temporal subset of length ", length(time_inds), " out of ", 
+                        length(dims[[i]]$time), " total time points ...")
+                message("before range(timein_lt) = ", appendLF=F)
+                print(range(timein_lt))
+                timein_lt <- timein_lt[time_inds]
+                message("after range(timein_lt) = ", appendLF=F)
+                print(range(timein_lt))
+                # cut from time dimension
+                dims[[i]]$time <- dims[[i]]$time[time_inds]
+            } else {
+                if (length(time_inds) == 0) {
+                    stop("temporal subset is of length 0")
+                } else if (length(time_inds) == length(dims[[i]]$time)) {
+                    message(" --> use complete time dimension of ", 
+                            length(dims[[i]]$time), " time points ...")
+                }
+            }
+
+        } else {
+            if (i == 1) fromsp <- tosp <- rep(NA, t=nsettings)
+            fromsp[i] <- timein_lt$year[1]
+            tosp[i] <- timein_lt$year[length(timein_lt)]
+
+        } # if exists("fromsp") || exists("tosp")
+        # cut year range if wanted
 
         # subset seasons from data if wanted (=seasonsp)
         # check which seasonsf and seasonp differ
@@ -420,14 +600,20 @@ for (i in 1:nsettings) {
             months_in <- unclass(timein_lt)$mon + 1
             month_inds <- months_in %in% season_inds
             timein_lt <- timein_lt[month_inds]
-            time_inds <- time_inds[month_inds]
-            dims[[i]]$time <- dims[[i]]$time[month_inds]
-            message("range(timein_lt) = ", appendLF=F)
-            print(range(timein_lt))
-        } # cut season
+            if (exists("time_inds")) {
+                time_inds <- time_inds[month_inds]
+            } else {
+                time_inds <- month_inds
+            }
+        
+        } # if seasonsp[i] != seasonsf[i]
+        # cut season if wanted
+
         # finished time stuff
         timein_ct <- as.POSIXct(timein_lt)
-        dims[[i]]$time_inds <- time_inds
+        if (exists("time_inds")) {
+            dims[[i]]$time_inds <- time_inds
+        }
         dims[[i]]$timen <- dims[[i]]$time # replace original numeric time with POSIX time object
         dims[[i]]$timelt <- timein_lt
         dims[[i]]$time <- timein_ct
@@ -537,21 +723,24 @@ for (i in 1:nsettings) {
         vars_with_timedim_inds <- lapply(dims_per_setting, function(x) grep("time", x) != -1)
         vars_with_timedim_inds <- which(sapply(vars_with_timedim_inds, any))
         if (length(vars_with_timedim_inds) > 0) {
-            message("\n", "cut subset from time dim ...")
             for (vi in 1:length(vars_with_timedim_inds)) {
                 var_with_timedim_ind <- vars_with_timedim_inds[vi]
                 dims_of_var <- attributes(datas[[i]][[var_with_timedim_ind]])$dims # e.g. "time", "lon", "lat"
+                dim_lengths_of_var <- dim(datas[[i]][[var_with_timedim_ind]])
                 timedimind <- which(dims_of_var == "time")
-                cmd <- rep(",", t=length(dims_of_var))
-                cmd[timedimind] <- paste0("dims[[", i, "]]$time_inds")
-                cmd <- paste0("datas[[", i, "]][[", var_with_timedim_ind, "]] <- ",
-                              "datas[[", i, "]][[", var_with_timedim_ind, "]][", paste0(cmd, collapse=""), "]")
-                message(cmd)
-                eval(parse(text=cmd))
-                # subsetting removed attributes, apply again
-                attributes(datas[[i]][[var_with_timedim_ind]]) <- list(dim=dim(datas[[i]][[var_with_timedim_ind]]), 
-                                                                       dims=dims_of_var)
-
+                time_dim_length <- dim_lengths_of_var[timedimind]
+                if (length(dims[[i]]$time_inds) != time_dim_length) {
+                    message("\n", "cut subset from time dim ...")
+                    cmd <- rep(",", t=length(dims_of_var))
+                    cmd[timedimind] <- paste0("dims[[", i, "]]$time_inds")
+                    cmd <- paste0("datas[[", i, "]][[", var_with_timedim_ind, "]] <- ",
+                                  "datas[[", i, "]][[", var_with_timedim_ind, "]][", paste0(cmd, collapse=""), "]")
+                    message(cmd)
+                    eval(parse(text=cmd))
+                    # subsetting removed attributes, apply again
+                    attributes(datas[[i]][[var_with_timedim_ind]]) <- list(dim=dim(datas[[i]][[var_with_timedim_ind]]), 
+                                                                           dims=dims_of_var)
+                } # if time subset inds are of different length then the given time dimension of the data 
             } # vi vars per file with time dim
         } # if there are varbels with time dimension
     } # cut temporal subset
@@ -765,12 +954,19 @@ for (i in 1:nsettings) {
             if (!is.na(remove_setting)) {
                 data_infos[[i]][[vi]]$label <- paste0("2m temperature anomaly wrt ", remove_setting)
             }
-            if (T) { # anomaly:
-                message("special label")
+            if (F) { # anomaly:
+                message("*** special label ***")
                 data_infos[[i]][[vi]]$label <- "2m temperature anomaly [°C]"
             } else {
-                data_infos[[i]][[vi]]$offset$operator <- "-"
-                data_infos[[i]][[vi]]$offset$value <- 273.15
+                if (grepl("C", data_infos[[i]][[vi]]$units)) {
+                    message("detected a \"C\" in the `units` attribute of ", varname, 
+                            " --> assume that data is already in deg C")
+                } else {
+                    message("did not detect a \"C\" in the `units` attribute of ", varname, 
+                            " --> assume that data is in K")
+                    data_infos[[i]][[vi]]$offset$operator <- "-"
+                    data_infos[[i]][[vi]]$offset$value <- 273.15
+                }
             }
         } else if (varname == "toa_imbalance") {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("TOA imbalance [W m"^paste(-2), "]"))))
@@ -1105,7 +1301,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                 
             } # if variable has time dim
         } # vi 
-        dims[[i]]$ltm_range <- paste0(min(dims[[i]]$time), " to ", max(dims[[i]]$time))
+        dims[[i]]$ltm_range <- paste0(dims[[i]]$time[1], " to ", dims[[i]]$time[length(dims[[i]]$time)])
     } # i
     # remove NA entries
     for (i in 1:nsettings) {
@@ -1147,7 +1343,7 @@ if (any(ntime_per_setting > 1)) {
         overshoot_diff <- abs(as.numeric(tlablt[tlablt < tlimlt[1]], units="secs")) - abs(tlim[1])
         overshoot_rel <- overshoot_diff/tlab_diff_secs*100
         if (any(overshoot_rel > 1)) { # only change pretty labels if overoot is > 1% of total time label range  
-            message("remove automatic labels")
+            message("remove some automatic labels < ", tlimlt[1], " ...")
             print(tlablt[which(tlablt < tlimlt[1])[overshoot_rel > 1]])
             tlablt <- tlablt[-which(tlablt < tlimlt[1])[overshoot_rel > 1]]
         }
@@ -1157,7 +1353,7 @@ if (any(ntime_per_setting > 1)) {
         overshoot_diff <- abs(as.numeric(tlablt[tlablt > tlimlt[2]], units="secs")) - abs(tlim[2])
         overshoot_rel <- overshoot_diff/tlab_diff_secs*100
         if (any(overshoot_rel > 1)) { # only change pretty labels if overoot is > 1% of total time label range  
-            message("remove automatic labels")
+            message("remove some automatic labels > ", tlimlt[2], " ...")
             print(tlablt[which(tlablt > tlimlt[2])[overshoot_rel > 1]])
             tlablt <- tlablt[-which(tlablt > tlimlt[2])[overshoot_rel > 1]]
         }
@@ -1166,12 +1362,31 @@ if (any(ntime_per_setting > 1)) {
 
     # modify time axis labels YYYY-MM-DD depending on range covered:
     if (tlab_diff_secs > 365*24*60*60) { # do not show days if range of tlim is above 1 year
-        message("time lims is longer than 1 year, modify time labels ...")
-        tlablt <- substr(tlablt, 1, 4) # -> YYYY; this destroys POSIX object
+        message("time lims is longer than 1 year, modify automatic time labels ...")
+        tlablt <- unclass(tlablt)$year + 1900 # -> YYYY; this destroys POSIX object
     } else { # decrease label size due to long labels
         message("change time label angle ...")
         tlabsrt <- 45
-    } 
+    }
+
+    # if all dates < 0, use "abs(dates) BP" instead
+    tunit <- "Time"
+    if (any(tlablt < 0)) {
+        if (F) {
+            message("some times are < 0 --> use \"abs(times) BP\" for time labels instead ...")
+            neg_inds <- which(tlablt < 0)
+            tlablt[neg_inds] <- paste0(abs(tlablt[neg_inds]), " BP")
+        } else if (T) {
+            message("some times are < 0 --> use \"abs(times)\" for time labels instead ...")
+            neg_inds <- which(tlablt < 0)
+            tlablt[neg_inds] <- abs(tlablt[neg_inds])
+            tunit <- "Time BP"
+        }
+    }
+
+    message("tlablt = ", paste(tlablt, collapse=", "))
+    message("tunit = ", tunit)
+
 } # get time axis labels
 # finished getting time axis labels
 
@@ -1352,19 +1567,51 @@ for (vi in 1:length(varnames_unique)) {
             data_right <- list(suffix="") # default
         } else {
             message("\n", "prepare data right yaxis ..")
-            if (varname == "temp2") {
-                if (T) { # CO2 of hist, 1pct and 4CO2
-                    data_right <- list(data=list("co2_hist"=list(x=co2_hist$time, y=co2_hist$co2_ppm, 
-                                                                 col=co2_hist$col, lty=co2_hist$lty, 
-                                                                 lwd=co2_hist$lwd, pch=co2_hist$pch),
-                                                 "co2_1pct"=list(x=co2_1pct$time, y=co2_1pct$co2_ppm, 
-                                                                 col=co2_1pct$col, lty=co2_1pct$lty, 
-                                                                 lwd=co2_1pct$lwd, pch=co2_1pct$pch),
-                                                 "co2_4co2"=list(x="const", y=co2_4co2$co2_ppm, 
-                                                                 col=co2_4co2$col, lty=co2_4co2$lty, 
-                                                                 lwd=co2_4co2$lwd, pch=co2_4co2$pch)),
-                                       label=substitute(paste("CO"[2], " [ppm]")),
-                                       suffix="_with_CO2")
+            data_right <- list(data=list())
+            if (exists("add_co2_hist") && add_co2_hist) {
+                data_right$data$co2_hist <- list(x=co2_hist$time, y=co2_hist$co2_ppm, 
+                                                 col=co2_hist$col, lty=co2_hist$lty, 
+                                                 lwd=co2_hist$lwd, pch=co2_hist$pch)
+                data_right$label <- substitute(paste("CO"[2], " [ppm]"))
+                data_right$suffix <- "_with_CO2"
+            }
+            if (exists("add_co2_1pct") && add_co2_1pct) {
+                data_right$data$co2_1pct <- list(x=co2_1pct$time, y=co2_1pct$co2_ppm, 
+                                                 col=co2_1pct$col, lty=co2_1pct$lty, 
+                                                 lwd=co2_1pct$lwd, pch=co2_1pct$pch)
+                data_right$label <- substitute(paste("CO"[2], " [ppm]"))
+                data_right$suffix <- "_with_CO2"
+            }
+            if (exists("add_co2_4co2") && add_co2_4co2) {
+                data_right$data$co2_4co2 <- list(x="const", y=co2_4co2$co2_ppm, 
+                                                 col=co2_4co2$col, lty=co2_4co2$lty, 
+                                                 lwd=co2_4co2$lwd, pch=co2_4co2$pch)
+                data_right$label <- substitute(paste("CO"[2], " [ppm]"))
+                data_right$suffix <- "_with_CO2"
+            }
+            if (exists("add_orb_berger_eccentricity") && add_orb_berger_eccentricity) {
+                data_right$data$orb_berger_eccentricity <- list(x=orb_berger$time, y=orb_berger$eccentricity, 
+                                                                col=orb_berger$col, lty=orb_berger$lty, 
+                                                                lwd=orb_berger$lwd, pch=orb_berger$pch)
+                data_right$label <- "Eccentricity"
+                data_right$suffix <- "_with_orb_berger_ecc"
+            }
+            if (exists("add_orb_berger_precession") && add_orb_berger_precession) {
+                data_right$data$orb_berger_precession <- list(x=orb_berger$time, y=orb_berger$precession, 
+                                                                col=orb_berger$col, lty=orb_berger$lty, 
+                                                                lwd=orb_berger$lwd, pch=orb_berger$pch)
+                data_right$label <- "Precession"
+                data_right$suffix <- "_with_orb_berger_prec"
+            }
+            if (exists("add_orb_berger_obliquity") && add_orb_berger_obliquity) {
+                data_right$data$orb_berger_obliquity <- list(x=orb_berger$time, y=orb_berger$obliquity, 
+                                                                col=orb_berger$col, lty=orb_berger$lty, 
+                                                                lwd=orb_berger$lwd, pch=orb_berger$pch)
+                data_right$label <- "Obliquity"
+                data_right$suffix <- "_with_orb_berger_obliq"
+            }
+            if (F) {
+                if (F) { # CO2 of hist, 1pct and 4CO2
                 } else if (F) { # volcanic aerosols
                     ncin <- nc_open(paste0("/work/ab0246/a270073/post/echam6/volint/tau_aero_550/",
                                            "hist_echam6_echammon_yearmean_awi-esm-1-1-lr_volint_",
@@ -1412,14 +1659,12 @@ for (vi in 1:length(varnames_unique)) {
                                                                             " " %*% " ", 10^6, "]"))))
                 data_right$suffix <- "_with_siareas"
 
-            } else { # which data_right depending on variable 
-                stop("variable \"", varname, "\" not defined here yet.")
-            } # finished variable specific stuff for add_data_right_yaxis_ts
-            #ylim_at <- c(range(lapply(data_right, "[", "y"))[1],
-            #             seq(300, 500, 
+            } 
+            # finished variable specific stuff for add_data_right_yaxis_ts
+            nsettings_right <- length(data_right$data)
 
             if (add_smoothed) {
-                for (i in 1:nsettings) {
+                for (i in 1:nsettings_right) {
                     data_right$data[[i]]$yma <- filter(data_right$data[[i]]$y, rep(1/n_mas[i], t=n_mas[i]))
                 }
             }
@@ -1428,7 +1673,7 @@ for (vi in 1:length(varnames_unique)) {
                 message("use automatic data right yaxis limits ...")
                 ylim_right <- vector("list", l=length(data_right$data))
                 ylim_right_ma <- ylim_right
-                for (i in 1:length(data_right$data)) {
+                for (i in 1:nsettings_right) {
                     if (length(data_right$data[[i]]$x) == 1 && data_right$data[[i]]$x == "const") {
                         ylim_right[[i]] <- range(data_right$data[[i]]$y, na.rm=T)
                     } else {
@@ -1463,7 +1708,9 @@ for (vi in 1:length(varnames_unique)) {
                 yat_right <- pretty(ylim_right, n=10)
             }
             ylab_right <- format(yat_right, trim=T)
-        } # if add_data_right_yaxis_ts finished prepare right axis data
+        } 
+        # if add_data_right_yaxis_ts finished prepare right axis data
+
 
         # ylims of model data
         if (add_unsmoothed) {
@@ -1536,7 +1783,9 @@ for (vi in 1:length(varnames_unique)) {
         mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
         mar[4] <- 1 # decrease right margin
         if (!add_title) mar[3] <- 1 # decrease upper margin
-        if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
+        if (F) {
+            if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
+        }
         if (add_data_right_yaxis_ts) mar[4] <- mar[2] # same as left  
 
         # open plot
@@ -1545,7 +1794,7 @@ for (vi in 1:length(varnames_unique)) {
              xlim=tlim, ylim=ylim, 
              xaxt="n", yaxt="n",
              xlab=NA, ylab=NA)
-        if (tlabsrt == 0) { # add horizontal labels
+        if (tlabsrt == 0) { # add horizontal labels (the default)
             axis(1, at=tatn, labels=tlablt, cex.axis=tlabcex)
         } else { # add non-horizontal labels with angle
             axis(1, at=tatn, labels=NA)
@@ -1555,6 +1804,14 @@ for (vi in 1:length(varnames_unique)) {
         }
         axis(2, at=yat, labels=ylab, las=2)
 
+        # add time label on x-axis
+        mtext(side=1, tunit, line=3, cex=0.9)
+
+        # add variable label on y-axis
+        first_setting_with_varname <- sapply(lapply(data_infos, names), function(x) which(x == varname))[1]
+        data_info <- data_infos[[names(first_setting_with_varname)]][[first_setting_with_varname]]
+        mtext(side=2, data_info$label, line=4.5, cex=0.9)
+        
         # add title
         if (add_title) {
             title <- paste0(paste(unique(areas), collapse=","), 
@@ -1564,11 +1821,6 @@ for (vi in 1:length(varnames_unique)) {
                             paste(unique(tosp), collapse=","))
             title(title, cex.main=0.75)
         }
-
-        # add variable label
-        first_setting_with_varname <- sapply(lapply(data_infos, names), function(x) which(x == varname))[1]
-        data_info <- data_infos[[names(first_setting_with_varname)]][[first_setting_with_varname]]
-        mtext(side=2, data_info$label, line=4.5, cex=0.9)
 
         # add grid
         if (add_xgrid) {
@@ -1696,7 +1948,7 @@ for (vi in 1:length(varnames_unique)) {
             }
         } # if add_legend
 
-        # add box before potential right axis data
+        # add box before eventual right axis data
         box()
 
         if (add_data_right_yaxis_ts) {
@@ -1706,8 +1958,8 @@ for (vi in 1:length(varnames_unique)) {
                  t="n", xlim=tlim, ylim=ylim_right, 
                  xlab=NA, ylab=NA, axes=F)
 
-            # add right axes in same color as the right data if all colors of
-            # the right data are the same
+            # add right axes in same color as the right data if 
+            # all colors of the right data are the same
             if (length(unique(sapply(data_right$data, "[", "col"))) == 1) {
                 right_axis_col <- data_right$data[[1]]$col
             } else {
@@ -1728,7 +1980,7 @@ for (vi in 1:length(varnames_unique)) {
             # add unsmoothed right data before smoothed
             if (add_unsmoothed) {
                 for (i in 1:length(data_right$data)) {
-                    message(i, "/", length(data_right$data), ": ", names(data_right$data)[i])
+                    message(i, "/", length(data_right$data), ": ", names(data_right$data)[i], " unsmoothed ...")
                     if (length(data_right$data[[i]]$x) == 1 && data_right$data[[i]]$x == "const") {
                         abline(h=data_right$data[[i]]$y, 
                                col=data_right$data[[i]]$col, lty=data_right$data[[i]]$lty,
@@ -1744,7 +1996,7 @@ for (vi in 1:length(varnames_unique)) {
             # add smoothed data after unsmoothed
             if (add_smoothed) {
                 for (i in 1:length(data_right$data)) {
-                    message(i, "/", length(data_right$data), ": ", names(data_right$data)[i])
+                    message(i, "/", length(data_right$data), ": ", names(data_right$data)[i], " smoothed ...")
                     if (length(data_right$data[[i]]$x) == 1 && data_right$data[[i]]$x == "const") {
                         abline(h=data_right$data[[i]]$yma, 
                                col=data_right$data[[i]]$col, lty=data_right$data[[i]]$lty,
@@ -2085,7 +2337,7 @@ if (exists("datasmon")) {
             } # if add_legend
 
             if (add_data_right_yaxis_ts_mon) {
-                message("\n", "add data right yaxis ...")
+                message("\n", "`add_data_right_yaxis_ts_mon` = T --> add data right yaxis mon...")
                 par(new=T)
                 plot(data_right_mon[[1]]$x, data_right_mon[[1]]$y, #log="y", 
                      t="n", xlim=monlim, ylim=ylim_right, 
