@@ -1,0 +1,13 @@
+# ignore everything
+*
+
+# except
+!README.md
+!post_echam.r
+!plot_echam.r
+!namelist.post.r
+!namelist.plot.r
+!CODES.WISO
+!CODES.WISO.txt
+!SMOW.FAC.nc
+
