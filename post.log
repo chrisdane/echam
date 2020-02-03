@@ -1,0 +1,92 @@
+
+Read namelist.post.r ...
+Run on stan1.awi.de:
+   homepath = ~/scripts/r
+   workpath = /ace/user/cdanek
+
+Check user input ...
+check if cdo can be found: run `which cdo`
+cdo = /home/repo/frontend/cdo/cdo-1.7.0/bin/cdo
+cdo_version = 1.7.0
+cdo_silent = ""
+cdo_force = FALSE
+cdo_OpenMP_threads = "-P 4"
+cdo_wout_loop = TRUE
+cdo_set_rel_time = TRUE
+cdo_run_from_script = TRUE
+check if ncap2 can be found: run `which ncap2`
+ncap2 = /usr/bin/ncap2
+check if ncrcat can be found: run `which ncrcat`
+ncrcat = /usr/bin/ncrcat
+add_my_time = FALSE
+verbose = 1
+clean = FALSE
+
+*********** setting 1/1 *************
+datapath = /ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5
+fpattern = Hol-T_echam5_wiso_mm_<YYYY><MM>.nc
+ftype = l
+fvarname = temp2
+model = echam5
+from = 0004
+to = 5903
+season_name = Jan-Dec
+season_inds = 1,2,3,4,5,6,7,8,9,10,11,12
+new_time_origin = 1
+area_out = global
+postpath = /ace/user/cdanek/post/echam5/fldmean/temp2
+mode = fldmean
+
+run `find /ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5 -type l -name 'Hol-T_echam5_wiso_mm_**.nc' -printf "%f\n" | sort` ...
+`find` of 70799 files took 12.7060523033142 secs
+
+found 70799 nc files:
+                       basenames YYYY MM
+1 Hol-T_echam5_wiso_mm_000401.nc 0004 01
+2 Hol-T_echam5_wiso_mm_000402.nc 0004 02
+3 Hol-T_echam5_wiso_mm_000403.nc 0004 03
+4 Hol-T_echam5_wiso_mm_000404.nc 0004 04
+5 Hol-T_echam5_wiso_mm_000405.nc 0004 05
+6 Hol-T_echam5_wiso_mm_000406.nc 0004 06
+7 Hol-T_echam5_wiso_mm_000407.nc 0004 07
+   ⋮
+                           basenames YYYY MM
+70793 Hol-T_echam5_wiso_mm_590306.nc 5903 06
+70794 Hol-T_echam5_wiso_mm_590307.nc 5903 07
+70795 Hol-T_echam5_wiso_mm_590308.nc 5903 08
+70796 Hol-T_echam5_wiso_mm_590309.nc 5903 09
+70797 Hol-T_echam5_wiso_mm_590310.nc 5903 10
+70798 Hol-T_echam5_wiso_mm_590311.nc 5903 11
+70799 Hol-T_echam5_wiso_mm_590312.nc 5903 12
+
+derived years based on file names:
+[1] 4 4 4 4 4 4 4
+   ⋮
+[1] 5903 5903 5903 5903 5903 5903 5903
+
+derived months based on file names:
+[1] 1 2 3 4 5 6 7
+   ⋮
+[1]  6  7  8  9 10 11 12
+
+`cdo_wout_loop=T` --> run only one cdo command with all files as input ...
+
+ ************** for testing **************
+
+
+cdo version 1.7.0 < 1.9.4 --> have to run separate selection and calculation cdo commands:
+run `/home/repo/frontend/cdo/cdo-1.7.0/bin/cdo   -select,name=temp2 <files> /ace/user/cdanek/post/echam5/fldmean/temp2/tmp_selection_25679.nc || echo error`
+    `/home/repo/frontend/cdo/cdo-1.7.0/bin/cdo  -P 4 -fldmean /ace/user/cdanek/post/echam5/fldmean/temp2/tmp_selection_25679.nc /ace/user/cdanek/post/echam5/fldmean/temp2/cosmos-aso-wiso_echam5_holocene_wiso_mm_fldmean_temp2_global_Jan-Dec_0004-5903.nc || echo error`
+
+cdo selection argument list is 6301210 characters long
+--> this is longer than `cdo_nchar_max_arglist` = 2612710 and would yield the error "Argument list too long"
+--> run cdo selection of 70799 files in 3 chunks of maximum 29354 files per chunk:
+chunk 1/3: files 1 to 29354 (29354 files from "Hol-T_echam5_wiso_mm_000401.nc" to "Hol-T_echam5_wiso_mm_245002.nc", nchar(selection cmd) = 2612659) ...
+chunk 2/3: files 29355 to 58708 (29354 files from "Hol-T_echam5_wiso_mm_245003.nc" to "Hol-T_echam5_wiso_mm_489604.nc", nchar(selection cmd) = 2612659) ...
+chunk 3/3: files 58709 to 70799 (12091 files from "Hol-T_echam5_wiso_mm_489605.nc" to "Hol-T_echam5_wiso_mm_590312.nc", nchar(selection cmd) = 1076252) ...
+
+chunk 1/3 cdo selection: run `. /ace/user/cdanek/post/echam5/fldmean/temp2/cmd_25679_chunk_1_of_3.txt` ...
+fout_vec[1] = /ace/user/cdanek/post/echam5/fldmean/temp2/cosmos-aso-wiso_echam5_holocene_wiso_mm_fldmean_temp2_global_Jan-Dec_0004-5903_chunk_1_of_3.nc already exists and `cdo_force`=F. skip ...
+chunk 1/3 selection and calculation took 0.000695705413818359 secs for 29354 files
+
+chunk 2/3 cdo selection: run `. /ace/user/cdanek/post/echam5/fldmean/temp2/cmd_25679_chunk_2_of_3.txt` ...

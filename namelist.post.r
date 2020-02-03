@@ -56,7 +56,7 @@ if (F) { # old hist
     #season_inds <- list(c(12, 1, 2))
     modes <- "fldmean"
     #modes <- "timmean"
-    suffixs <- "dynveg"
+    prefixs <- "dynveg"
     
 } else if (F) { # pi
     datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
@@ -82,7 +82,7 @@ if (F) { # old hist
     tos <- 1941
     #modes <- "fldmean"
     modes <- "timmean"
-    suffixs <- "awi-esm-1-1-lr"
+    prefixs <- "awi-esm-1-1-lr"
 
 } else if (F) { # xiaoxu
     datapaths <- "/mnt/lustre02/work/ba0989/a270064/esm-experiments/lgm_anm/outdata/echam" # 3537:2872 (n=336)
@@ -98,7 +98,7 @@ if (F) { # old hist
     #season_inds <- list(c(9, 10, 11)) # SON
     #modes <- "timmean" 
     modes <- "fldmean"
-    suffixs <- "awi-esm-1-1-lr_lgm"
+    prefixs <- "awi-esm-1-1-lr_lgm"
 
 } else if (T) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
@@ -106,19 +106,17 @@ if (F) { # old hist
     ftypes <- "l" # "f" for files (default) or "l" for links
     fvarnames <- "temp2"
     models <- "echam5"
-    #froms <- "0003"
     froms <- "0004" 
     #tos <- "0013" 
     #tos <- "0011"
     #tos <- "0126"
-    #tos <- "5902"
     tos <- "5903"
     #new_time_origins <- -6999 
     #new_time_origins <- -1
-    new_time_origins <- 0
-    #new_time_origins <- 1
+    new_time_origins <- 1
     #new_time_units <- "years as %Y.%f" # <- no gaps in x-axis with ncview BUT not supported by cdo
     modes <- "fldmean"
+    prefixs <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
 
 # ======================================================
 # 2 settings
@@ -135,7 +133,7 @@ if (F) { # old hist
     tos <- c(1851, 1851)
     #modes <- c("fldmean", "fldmean")
     modes <- c("timmean", "timmean")
-    suffixs <- c("dynveg_noLUH", "dynveg_LUH")
+    prefixs <- c("dynveg_noLUH", "dynveg_LUH")
 
 } else if (F) {
     datapaths <- c("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/echam",
@@ -148,7 +146,7 @@ if (F) { # old hist
     #tos <- c(1859, 1859)
     tos <- c(2099, 2099)
     modes <- c("fldmean", "fldmean")
-    suffixs <- c("dynveg", "dynveg")
+    prefixs <- c("dynveg", "dynveg")
 
 # ======================================================
 # 3 settings
@@ -176,7 +174,7 @@ if (F) { # old hist
     #season_inds <- list(9:11, 9:11, 9:11) # SON
     modes <- c("fldmean", "fldmean", "fldmean")
     #modes <- c("timmean", "timmean", "timmean")
-    suffixs <- rep("awi-esm-1-1-lr", t=3)
+    prefixs <- rep("awi-esm-1-1-lr", t=3)
 
 } else if (F) { # deck pi hist 1pct 4cos2
     datapaths <- c("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam",
@@ -216,6 +214,6 @@ if (F) { # old hist
     #modes <- rep("fldmean", t=4)
     #modes <- rep("timmean", t=4)
     modes <- rep("volint", t=4)
-    suffixs <- rep("awi-esm-1-1-lr", t=4)
+    prefixs <- rep("awi-esm-1-1-lr", t=4)
 }
 

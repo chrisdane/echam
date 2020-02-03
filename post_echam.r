@@ -94,7 +94,7 @@ if (any(file.access(datapaths, mode=4) != 0)) { # check read permission
 datapaths <- normalizePath(datapaths)
 nsettings <- length(datapaths)
 if (!exists("ftypes")) ftypes <- rep("f", t=nsettings)
-if (!exists("suffixs")) suffixs <- rep(NA, t=nsettings)
+if (!exists("prefixs")) prefixs <- rep(NA, t=nsettings)
 if (!exists("new_time_origins")) new_time_origins <- rep(NA, t=nsettings)
 if (F && is.numeric(new_time_origins) && any(new_time_origins == 0) ||
     is.character(new_time_origins) && any(new_time_origins == "0000")) {
@@ -209,14 +209,6 @@ for (i in 1:nsettings) {
     filetype <- unique(filetype)
     if (!any(filetype == c("grb", "nc"))) {
         stop("filetype \"", filetype, "\" not implemented yet")
-    }
-
-    # get prefix: all parts from fpattern without <YYYY>, <MM>, *, etc. and ending
-    prefix <- gsub("\\*", "", fpattern)
-    prefix <- gsub(paste0(".", filetype), "", prefix)
-    # append "_" as last character
-    if (substr(prefix, nchar(prefix), nchar(prefix)) != "_") {
-        prefix <- paste0(prefix, "_")
     }
 
     # identify correct YYYY, MM, etc. based on file names
@@ -470,9 +462,9 @@ for (i in 1:nsettings) {
     if (cdo_wout_loop == T) {
         message("\n", "`cdo_wout_loop=T` --> run only one cdo command with all files as input ...")
         # output fname
-        fout <- paste0(postpaths[i],"/", prefix, 
-                       ifelse(!is.na(suffixs[i]), paste0("_", suffixs[i]), ""),
-                       modes[i],
+        fout <- paste0(postpaths[i], "/", 
+                       ifelse(!is.na(prefixs[i]), prefixs[i], ""),
+                       "_", modes[i],
                        ifelse(filetype == "grb", paste0("_selcode_", codes[i]), ""),
                        "_", fvarnames[i], 
                        ifelse(!is.na(levs_out[i]), paste0("_sellev_", levs_out[i]), ""),
@@ -704,10 +696,13 @@ for (i in 1:nsettings) {
 
                     message("\nchunk ", chunki, "/", nchunks, " ...")
                   
-                    # new years with ncview minimum time origin limit check
+                    # new years based on `new_time_origins` and years from file names (`years_in`;
+                    # NOT years from nc time dimension values)
+                    years_out <- new_time_origins[i] + years_in[chunk_inds_list[[chunki]]] - 1
+                    
+                    # check new years for ncview minimum time origin `ncview_min_origin`
                     if (chunki == 1) {
 
-                        years_out <- new_time_origins[i] + years_in[chunk_inds_list[[chunki]]] # -1?
                         # check if wanted origin is allowed:
                         # Error in utCalendar2: year -6993 is out of range of 
                         # the Gregorian calendar routines; must have year >= -4714
@@ -727,10 +722,10 @@ for (i in 1:nsettings) {
                             new_time_origins[i] <- years_out[1]
                             message(" --> override user `new_time_origins[", i, "]` = ", new_time_origins[i], "\n")
                         }
-                    }
+                    } # if cunki == 1
 
                     # new years with possibly adaped `new_time_origins` for ncview 
-                    years_out <- new_time_origins[i] + years_in[chunk_inds_list[[chunki]]] # -1?
+                    years_out <- new_time_origins[i] + years_in[chunk_inds_list[[chunki]]] - 1
                     
                     # news months
                     if (grepl("<MM>", fpatterns[i])) {
@@ -1018,7 +1013,8 @@ for (i in 1:nsettings) {
             }
             message(paste0("file ", fi, "/", nf, " (timestamp ", stamp, "/", laststamp, ") ")) 
            
-            fout <- paste0(postpaths[i],"/", prefix, suffixs[i],
+            fout <- paste0(postpaths[i], "/", 
+                           ifelse(!is.na(prefixs[i]), prefixs[i], ""), 
                            "_", modes[i],
                            ifelse(filetype == "grb", paste0("_selcode_", codes[i]), ""),
                            "_", fvarnames[i], 
@@ -1193,7 +1189,8 @@ for (i in 1:nsettings) {
             
         # Cat or ensmean (`cdocat`) depending on mode on processed files (fcalcs) 
         message("\n", "Process ", length(fcalcs$basenames), " ", fvarnames[i], " ", modes[i], " files in time ...")
-        fout <- paste0(postpaths[i],"/", prefix, suffixs[i],
+        fout <- paste0(postpaths[i], "/", 
+                       ifelse(!is.na(prefixs[i]), prefixs[i], ""), 
                        "_", modes[i],
                        ifelse(filetype == "grb", paste0("_selcode_", codes[i]), ""),
                        "_", fvarnames[i], 
