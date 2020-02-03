@@ -1,0 +1,479 @@
+&parameter
+  name            = var10
+  out_name        = wisoaprt_d
+  long_name       = "delta of total precipitation"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var11
+  out_name        = wisows_d
+  long_name       = "delta of soil wetness"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var12
+  out_name        = wisosn_d
+  long_name       = "delta of snow cover"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var13
+  out_name        = wisoaprl_d
+  long_name       = "delta of large scale precipitation"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var14
+  out_name        = wisoaprc_d
+  long_name       = "delta of convective precipitation"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var15
+  out_name        = wisoaprs_d
+  long_name       = "delta of snow fall"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var16
+  out_name        = wisorogl_d
+  long_name       = "delta of glacier runoff"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var17
+  out_name        = wisorunoff_d
+  long_name       = "delta of surface runoff and drainage"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var18
+  out_name        = wisoruntoc_d
+  long_name       = "delta of surface runoff into ocean"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var19
+  out_name        = wisoevap_d
+  long_name       = "delta of evaporation"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var20
+  out_name        = wisope_d
+  long_name       = "delta of precip minus evap"
+  units           = "o/oo" 
+/
+
+
+&parameter
+  name            = var21
+  out_name        = wisoq16o_d
+  long_name       = "delta of specific humidity"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var22
+  out_name        = wisoxl16o_d
+  long_name       = "delta of cloud water"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var23
+  out_name        = wisoxi16o_d
+  long_name       = "delta of cloud ice"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var24
+  out_name        = wisoq18o_d
+  long_name       = "delta of specific humidity"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var25
+  out_name        = wisoxl18o_d
+  long_name       = "delta of cloud water"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var26
+  out_name        = wisoxi18o_d
+  long_name       = "delta of cloud ice"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var27
+  out_name        = wisoqhdo_d
+  long_name       = "delta of specific humidity"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var28
+  out_name        = wisoxlhdo_d
+  long_name       = "delta of cloud water"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var29
+  out_name        = wisoxihdo_d
+  long_name       = "delta of cloud ice"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var30
+  out_name        = wisoqvi_d
+  long_name       = "delta of vertically integrated water vapor"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var31
+  out_name        = wisoxlvi_d
+  long_name       = "delta of vertically integrated cloud water"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var32
+  out_name        = wisoxivi_d
+  long_name       = "delta of vertically integrated cloud ice"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var33
+  out_name        = wisosnglac_d
+  long_name       = "delta of snow on glaciers"
+  units           = "o/oo" 
+/
+
+
+&parameter
+  name            = var50
+  out_name        = wisoaprt
+  long_name       = "total precipitation - water isotopes"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var51
+  out_name        = wisows
+  long_name       = "soil wetness - water isotopes"
+  units           = "m" 
+/
+&parameter
+  name            = var52
+  out_name        = wisosn
+  long_name       = "snow cover - water isotopes"
+  units           = "m" 
+/
+&parameter
+  name            = var53
+  out_name        = wisoaprl
+  long_name       = "large scale precipitation - water isotopes"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var54
+  out_name        = wisoaprc
+  long_name       = "convective precipitation - water isotopes"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var55
+  out_name        = wisoaprs
+  long_name       = "snow fall - water isotopes"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var56
+  out_name        = wisoxivi
+  long_name       = "vert. int. cloud ice - water isotopes"
+/
+&parameter
+  name            = var57
+  out_name        = wisorunoff
+  long_name       = "surface runoff and drainage - water isotopes"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var58
+  out_name        = wisodrain
+  long_name       = "drainage - water isotopes"
+/
+&parameter
+  name            = var59
+  out_name        = wisoevap
+  long_name       = "evaporation - water isotopes"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var60
+  out_name        = wisope
+  long_name       = "precip minus evap - water isotopes"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var61
+  out_name        = wisoevapwac
+  long_name       = "evaporation over water - water isotopes"
+/
+&parameter
+  name            = var62
+  out_name        = wisoevaplac
+  long_name       = "evaporation over land - water isotopes"
+/
+&parameter
+  name            = var63
+  out_name        = wisowl
+  long_name       = "skin reservoir content - water isotopes"
+/
+&parameter
+  name            = var64
+  out_name        = wisogld
+  long_name       = "glacier depth - water isotopes"
+/
+&parameter
+  name            = var65
+  out_name        = wisorogl
+  long_name       = "glacier runoff - water isotopes"
+  units           = "o/oo" 
+/
+&parameter
+  name            = var66
+  out_name        = wisosnmel
+  long_name       = "snow melt - water isotopes"
+/
+&parameter
+  name            = var67
+  out_name        = wisoapmegl
+  long_name       = "P-E over land ice - water isotopes"
+/
+&parameter
+  name            = var68
+  out_name        = wisosnacl
+  long_name       = "snow accu. over land - water isotopes"
+/
+&parameter
+  name            = var69
+  out_name        = wisoqvi
+  long_name       = "vert. int. water vapor - water isotopes"
+/
+&parameter
+  name            = var70
+  out_name        = wisoxlvi
+  long_name       = "vert. int. cloud water - water isotopes"
+/
+&parameter
+  name            = var71
+  out_name        = wisosnc
+  long_name       = "snow depth at canopy - water isotopes"
+/
+&parameter
+  name            = var72
+  out_name        = wisosw_d
+  long_name       = "delta of ocean surface" 
+  units           = "mm/month" 
+/
+&parameter
+  name            = var73
+  out_name        = wisoapmeb
+  long_name       = "vert.integr.tendencies of water - water isotopes"
+/
+&parameter
+  name            = var74
+  out_name        = wisoruntoc
+  long_name       = "surface runoff into ocean - water isotopes" 
+  units           = "mm/month" 
+/
+&parameter
+  name            = var75
+  out_name        = snglac
+  long_name       = "snow depth on glaciers" 
+  units           = "mm/month" 
+/
+&parameter
+  name            = var76
+  out_name        = wisosnglac
+  long_name       = "snow depth on glaciers - water isotopes" 
+  units           = "mm/month" 
+/
+
+
+&parameter
+  name            = var130
+  out_name        = st
+  long_name       = "temperature" 
+  units           = "K" 
+/
+&parameter
+  name            = var131
+  out_name        = u
+  long_name       = "u-velocity" 
+  units           = "m/s" 
+/
+&parameter
+  name            = var132
+  out_name        = v
+  long_name       = "v-velocity" 
+  units           = "m/s" 
+/
+&parameter
+  name            = var133
+  out_name        = q
+  long_name       = "specific humidity" 
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var134
+  out_name        = aps
+  long_name       = "surface pressure" 
+  units           = "Pa" 
+/
+&parameter
+  name            = var153
+  out_name        = xl
+  long_name       = "cloud water" 
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var154
+  out_name        = xi
+  long_name       = "cloud ice" 
+  units           = "kg/kg" 
+/
+
+
+&parameter
+  name            = var140
+  out_name        = ws
+  long_name       = "soil wetness"
+  units           = "m" 
+/
+&parameter
+  name            = var141
+  out_name        = sn
+  long_name       = "snow depth"
+  units           = "m" 
+/
+&parameter
+  name            = var142
+  out_name        = aprl
+  long_name       = "large scale precipitation"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var143
+  out_name        = aprc
+  long_name       = "convective precipitation"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var144
+  out_name        = aprs
+  long_name       = "snow fall"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var160
+  out_name        = runoff
+  long_name       = "surface runoff and drainage"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var167
+  out_name        = temp2
+  long_name       = "2m temperature"
+  units           = "C" 
+/
+&parameter
+  name            = var169
+  out_name        = tsurf
+  long_name       = "surface temperature"
+  units           = "C" 
+/
+&parameter
+  name            = var182
+  out_name        = evap
+  long_name       = "evaporation"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var215
+  out_name        = rogl
+  long_name       = "glacier runoff"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var219
+  out_name        = runtoc
+  long_name       = "surface runoff into ocean"
+  units           = "mm/month" 
+/
+
+
+&parameter
+  name            = var241
+  out_name        = wisoq16o
+  long_name       = "specific humidity - H216O"
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var242
+  out_name        = wisoxl16o
+  long_name       = "cloud water - H216O"
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var243
+  out_name        = wisoxi16o
+  long_name       = "cloud ice - H216O"
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var244
+  out_name        = wisoq18o
+  long_name       = "specific humidity - H218O"
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var245
+  out_name        = wisoxl18o
+  long_name       = "cloud water - H218O"
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var246
+  out_name        = wisoxi18o
+  long_name       = "cloud ice - H218O"
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var247
+  out_name        = wisoqhdo
+  long_name       = "specific humidity - HDO"
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var248
+  out_name        = wisoxlhdo
+  long_name       = "cloud water - HDO"
+  units           = "kg/kg" 
+/
+&parameter
+  name            = var249
+  out_name        = wisoxihdo
+  long_name       = "cloud ice - HDO"
+  units           = "kg/kg" 
+/
+
+
+&parameter
+  name            = var260
+  out_name        = aprt
+  long_name       = "total precipitation"
+  units           = "mm/month" 
+/
+&parameter
+  name            = var265
+  out_name        = pe
+  long_name       = "precip minus evap"
+  units           = "mm/month" 
+/

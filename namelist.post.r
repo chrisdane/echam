@@ -101,25 +101,22 @@ if (F) { # old hist
     suffixs <- "awi-esm-1-1-lr_lgm"
 
 } else if (T) { # Hol-T on stan
-    #reorder_inds <- data.frame(stamp_froms=c(2903, 800),
-                               #stamp_tos=c(6699, 2902),
-                               #calendar_froms=c(6997, 3200),
-                               #calendar_tos=c(3201, 1098),
-                               #count_froms=c(4, 3801),
-                               #count_tos=c(3800, 5903))
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
     ftypes <- "l" # "f" for files (default) or "l" for links
     fvarnames <- "temp2"
     models <- "echam5"
+    #froms <- "0003"
     froms <- "0004" 
     #tos <- "0013" 
     #tos <- "0011"
     #tos <- "0126"
+    #tos <- "5902"
     tos <- "5903"
     #new_time_origins <- -6999 
-    #new_time_origins <- -0001
-    new_time_origins <- 0000
+    #new_time_origins <- -1
+    new_time_origins <- 0
+    #new_time_origins <- 1
     #new_time_units <- "years as %Y.%f" # <- no gaps in x-axis with ncview BUT not supported by cdo
     modes <- "fldmean"
 

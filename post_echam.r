@@ -95,9 +95,13 @@ datapaths <- normalizePath(datapaths)
 nsettings <- length(datapaths)
 if (!exists("ftypes")) ftypes <- rep("f", t=nsettings)
 if (!exists("suffixs")) suffixs <- rep(NA, t=nsettings)
-if (!exists("froms_shift")) froms_shift <- rep(NA, t=nsettings)
-if (any(!is.na(froms_shift)) && add_my_time == F) {
-    stop("some of \"froms_shift\" is not NA but \"add_my_time\" is False")
+if (!exists("new_time_origins")) new_time_origins <- rep(NA, t=nsettings)
+if (F && is.numeric(new_time_origins) && any(new_time_origins == 0) ||
+    is.character(new_time_origins) && any(new_time_origins == "0000")) {
+    stop("new_time_origins must not be zero for ncview due to\n",
+         "Error in utCalendar2: the Gregorian calendar has no year 0. ",
+         "Use the \"Gregorian_y0\" calendar if you want to include year 0. ",
+         "internal error: udu_fmt_time can't convert to calendar value!")
 }
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
 if (!exists("areas_out")) areas_out <- rep("global", t=nsettings)
@@ -160,7 +164,7 @@ for (i in 1:nsettings) {
     message("to = ", tos[i])
     message("season_name = ", season_names[i])
     message("season_inds = ", paste0(season_inds[[i]], collapse=","))
-    if (!is.na(froms_shift[i])) message("from_shift = ", froms_shift[i])
+    if (!is.na(new_time_origins[i])) message("new_time_origin = ", new_time_origins[i])
     message("area_out = ", areas_out[i])
     if (!is.na(levs_out[i])) message("lev_out = ", levs_out[i])
     message("postpath = ", postpaths[i])
@@ -1124,8 +1128,8 @@ for (i in 1:nsettings) {
                                          timein_lt=timein_lt,
                                          timeout=timeout)
                         # change possibly senseless spinup years to fromsp
-                        if (!is.na(froms_shift[i]) && froms[i] != froms_shift[i]) {
-                            timeout2 <- rep(froms_shift[i], t=length(year)) + timeout - floor(timeout)
+                        if (!is.na(new_time_origins[i]) && froms[i] != new_time_origins[i]) {
+                            timeout2 <- rep(new_time_origins[i], t=length(year)) + timeout - floor(timeout)
                             df <- data.frame(df, timeout2=timeout2)
                         }
                         op <- getOption("digits")
@@ -1148,7 +1152,7 @@ for (i in 1:nsettings) {
                         message("\n", cmd)
                         system(cmd, wait=T)
 
-                        if (!is.na(froms_shift[i]) && froms[i] != froms_shift[i]) {
+                        if (!is.na(new_time_origins[i]) && froms[i] != new_time_origins[i]) {
                             cmd <- paste0("ncap2 -O -s 'defdim(\"time3\",", length(timeout2), "); time3[time3]={", 
                                           paste0(sprintf("%f", timeout2), collapse=","), 
                                           "}; time3@long_name=\"Time in fraction of a year start from ", timeout2[1], "\"' ",
@@ -1164,7 +1168,7 @@ for (i in 1:nsettings) {
                         cmd <- paste0("ncks -O -4 --mk_rec_dmn time2 ", fout_prep[fi,k], " ", fout_prep[fi,k])
                         message("\n", cmd)
                         system(cmd, wait=T)
-                        if (!is.na(froms_shift[i]) && froms[i] != froms_shift[i]) {
+                        if (!is.na(new_time_origins[i]) && froms[i] != new_time_origins[i]) {
                             cmd <- paste0("ncks -O -4 --mk_rec_dmn time3 ", fout_prep[fi,k], " ", fout_prep[fi,k])
                             message("\n", cmd)
                             system(cmd, wait=T)
