@@ -622,6 +622,11 @@ for (i in 1:nsettings) {
         # POSIXlt as numeric
         #dims[[i]]$timen <- lapply(dims[[i]]$time, as.numeric)
 
+    } else { # if none of file dims is "time"
+
+        if (!exists("fromsp")) fromsp <- fromsf
+        if (!exists("tosp")) tosp <- tosf
+
     } # if any of file dims is "time"
     #stop("asd")
 
@@ -1467,7 +1472,7 @@ for (vi in 1:length(varnames_unique)) {
         if (mode == "area") { # fesom
             add_land <- F
         }
-        image.plot.nxm(x=lon_dim, y=lat_dim, z=z, ip=ip, verbose=F,
+        image.plot.nxm(x=lon_dim, y=lat_dim, z=z, ip=ip, verbose=T,
                        xlab="Longitude [°]", ylab="Latitude [°]", 
                        zlab=data_info$label, znames=names_legend,
                        add_land=add_land)

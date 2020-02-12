@@ -30,8 +30,9 @@ message(paste0("   workpath = ", workpath))
 
 # options across settings
 # echam:
-mode <- "fldmean" 
+#mode <- "fldmean" 
 #mode <- "timmean" 
+mode <- "timsum"
 #mode <- "volint"
 # fesom:
 #mode <- "moc_depth"
@@ -58,15 +59,19 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_tos <- 1990
 
 } else if (T) { # Hol-T
-    prefixes <- "Hol-T_echam5_wiso_mm"
+    #prefixes <- "Hol-T_echam5_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
     models <- "echam5"
     names_short <- "Hol-T"
     names_legend <- "cosmos-aso-wiso"
-    fromsf <- "0004"
-    tosf <- "5903"
+    #fromsf <- "0004"
+    fromsf <- "0100"
+    tosf <- "0129"
+    #tosf <- "5903"
     new_origins <- -6995 # model year 1 = 6999 BP -> model year 4 = 6999 BP - 4 = 6995 BP
-    n_mas <- 1200
-    varnames_in <- "temp2"
+    #n_mas <- 1200
+    #varnames_in <- "temp2"
+    varnames_in <- "aprt"
 
 # =====================================
 # 2 settings

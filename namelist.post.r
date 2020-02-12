@@ -33,7 +33,6 @@ clean <- F # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
 cdo_force <- F # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
-cdo_wout_loop <- T # keep true; run one cdo command on all files or loop through all files
 cdo_set_rel_time <- T # conversion from absolute to relative time
 cdo_run_from_script <- T # create temporary file and run long cdo command from there
 cdo_nchar_max_arglist <- 2612710
@@ -41,7 +40,6 @@ nco_nchar_max_arglist <- 131071
 # --> $(getconf PAGE_SIZE)*32 = 4096*32 = 131072
 # --> getconf ARG_MAX                   = 2097152
 ncview_min_origin <- -4714 # ncview error: the Gregorian calendar routines; must have year >= -4714
-add_my_time <- F # my time for ts output (needs package ncdf4) 
 
 # ======================================================
 # 1 setting
@@ -102,21 +100,30 @@ if (F) { # old hist
 
 } else if (T) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
+    models <- "echam5"
     fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
     ftypes <- "l" # "f" for files (default) or "l" for links
-    fvarnames <- "temp2"
-    models <- "echam5"
-    froms <- "0004" 
+    prefixs <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
+    #fvarnames <- "temp2"
+    fvarnames <- "aprt"
+    #fvarnames <- "wisoaprt"
+    #fvarnames <- "wisoaprt_d"
+    #modes <- "fldmean"
+    #modes <- "yearsum"
+    modes <- "timsum"
+    #froms <- "0004" 
+    froms <- "0100"
     #tos <- "0013" 
     #tos <- "0011"
-    #tos <- "0126"
-    tos <- "5903"
+    tos <- "0129"
+    #tos <- "5903"
     #new_time_origins <- -6999 
     #new_time_origins <- -1
     new_time_origins <- 1
     #new_time_units <- "years as %Y.%f" # <- no gaps in x-axis with ncview BUT not supported by cdo
-    modes <- "fldmean"
-    prefixs <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
+    smow_files <- "~/scripts/r/echam/SMOW.FAC.nc"
+    wiso_code_tables <- "~/scriprts/r/echam/CODES.WISO"
+    wiso_paramater_tables <- "~/scriprts/r/echam/CODES.WISO.txt"
 
 # ======================================================
 # 2 settings
