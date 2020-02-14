@@ -105,12 +105,15 @@ if (F) { # old hist
     ftypes <- "l" # "f" for files (default) or "l" for links
     prefixs <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
     #fvarnames <- "temp2"
-    fvarnames <- "aprt"
+    #fvarnames <- "aprt"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
+    #fvarnames <- "aprt_times_temp2"
+    fvarnames <- "ptemp"
+    #modes <- "select"
     #modes <- "fldmean"
-    #modes <- "yearsum"
-    modes <- "timsum"
+    modes <- "yearsum"
+    #modes <- "timsum"
     #froms <- "0004" 
     froms <- "0100"
     #tos <- "0013" 
@@ -120,10 +123,9 @@ if (F) { # old hist
     #new_time_origins <- -6999 
     #new_time_origins <- -1
     new_time_origins <- 1
-    #new_time_units <- "years as %Y.%f" # <- no gaps in x-axis with ncview BUT not supported by cdo
-    smow_files <- "~/scripts/r/echam/SMOW.FAC.nc"
-    wiso_code_tables <- "~/scriprts/r/echam/CODES.WISO"
-    wiso_paramater_tables <- "~/scriprts/r/echam/CODES.WISO.txt"
+    wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
+    cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
+    cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
 # ======================================================
 # 2 settings
@@ -223,4 +225,23 @@ if (F) { # old hist
     modes <- rep("volint", t=4)
     prefixs <- rep("awi-esm-1-1-lr", t=4)
 }
+
+# https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_calc_wiso_echam5_monmean.sh
+# /ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh
+cdo_known_cmds <- list("wisoaprt_d"=list(cmd=c("<cdo> -setname,wisoaprt_d -setcode,10 -mulc,1000. -subc,1. -div -div <wisoaprt> <aprt> <wiso_smow_files>")),#)#,
+                                               #"-t <cdo_codetables> setpartabn,<cdo_partablesn>")))#,
+                       "wisoaprl_d"=list(cmd="<cdo> -setname,wisoaprl_d -setcode,13 -mulc,1000. -subc,1. -div -div <wisoaprl> <aprl> <wiso_smow_files>"),
+                       "wisoaprc_d"=list(cmd="<cdo> -setname,wisoaprc_d -setcode,14 -mulc,1000. -subc,1. -div -div <wisoaprc> <aprc> <wiso_smow_files>"),
+                       "wisoaprs_d"=list(cmd="<cdo> -setname,wisoaprs_d -setcode,15 -mulc,1000. -subc,1. -div -div <wisoaprs> <aprs> <wiso_smow_files>"),
+                       "wisoevap_d"=list(cmd="<cdo> -setname,wisoevap_d -setcode,19 -mulc,1000. -subc,1. -div -div <wisoevap> <evap> <wiso_smow_files>"),
+                       "wisope_d"=list(cmd="<cdo> -setname,wisope_d -setcode,20 -mulc,1000. -subc,1. -div -div <wisope> <pe> <wiso_smow_files>"),
+                       "wisows_d"=list(cmd="<cdo> -setname,wisows_d -setcode,11 -mulc,1000. -subc,1. -div -div <wisows> <ws> <wiso_smow_files>"),
+                       "wisosn_d"=list(cmd="<cdo> -setname,wisosn_d -setcode,12 -mulc,1000. -subc,1. -div -div <wisosn> <sn> <wiso_smow_files>"),
+                       "wisosnglac_d"=list(cmd="<cdo> -setname,wisoasnglac_d -setcode,33 -mulc,1000. -subc,1. -div -div <wisosnglac> <snglac> <wiso_smow_files>"),
+                       "wisorunoff_d"=list(cmd="<cdo> -setname,wisorunoff_d -setcode,17 -mulc,1000. -subc,1. -div -div <wisorunoff> <runoff> <wiso_smow_files>"),
+                       "aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -mul <aprt> <temp2>",
+                                                     "<nco_ncatted> -O -a code,aprt_times_temp2,d,,")), # delete old code
+                       #"aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -<modes> -mul <aprt> <temp2>",
+                       #                              "<nco_ncatted> -O -a code,aprt_times_temp2,d,,")), # delete old code
+                       "ptemp"=list(cmd="<cdo> -setname,ptemp -setcode,170 -div <aprt_times_temp2> <aprt>"))
 
