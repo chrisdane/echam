@@ -107,19 +107,21 @@ if (F) { # old hist
     #fvarnames <- "temp2"
     #fvarnames <- "aprt"
     #fvarnames <- "wisoaprt"
-    #fvarnames <- "wisoaprt_d"
+    fvarnames <- "wisoaprt_d"
     #fvarnames <- "aprt_times_temp2"
-    fvarnames <- "ptemp"
-    #modes <- "select"
+    #fvarnames <- "ptemp"
+    modes <- "select"
     #modes <- "fldmean"
-    modes <- "yearsum"
+    #modes <- "yearsum"
     #modes <- "timsum"
-    #froms <- "0004" 
-    froms <- "0100"
+    levs_out <- 3
+    froms <- "0004" # beginning of chunk 1
+    #froms <- "0100"
     #tos <- "0013" 
     #tos <- "0011"
-    tos <- "0129"
-    #tos <- "5903"
+    #tos <- "0129"
+    #tos <- "5903" # end of chunk 2
+    tos <- "6173"
     #new_time_origins <- -6999 
     #new_time_origins <- -1
     new_time_origins <- 1

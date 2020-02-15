@@ -274,7 +274,9 @@ if (file.exists(f)) {
     message("set add_nsidc_antarctic_annual=T if you want to add to plot")
 }
 
-# orbital paramter berger
+# todo orbital parameter limits for last 800ka
+
+# holocene orbital paramter berger
 f <- ""
 if (machine_tag == "stan") {
     f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
@@ -426,9 +428,8 @@ for (i in 1:nsettings) {
     dimtmp <- vector("list", l=ncin$ndims)
     names(dimtmp) <- dims_per_setting[[i]]
     for (di in 1:length(dimtmp)) {
-        message(di, ": ", dims_per_setting[[i]][di], " ", appendLF=F)
+        message(di, ": \"", dims_per_setting[[i]][di], "\"")
         dimtmp[[di]] <- ncin$dim[[di]]$vals
-        if (di == length(dimtmp)) message()
     }
     dims[[i]] <- dimtmp
     rm(dimtmp)
@@ -445,8 +446,7 @@ for (i in 1:nsettings) {
     if (any(names(dims[[i]]) == "time")) {
 
         timein_units <- ncin$dim$time$units
-        message("\n", "detected \"time\" dim -> make POSIXlt from timein_units:")
-        print(timein_units)
+        message("\n", "detected \"time\" dim -> make POSIXlt object from timein_units: \"", timein_units, "\"")
         # convert any unit to seconds for POSIX,e.g. 
         # "days since 1538-1-1 00:00:00"
         # "day as %Y%m%d.%f"
@@ -569,8 +569,8 @@ for (i in 1:nsettings) {
 
         } else {
             if (i == 1) fromsp <- tosp <- rep(NA, t=nsettings)
-            fromsp[i] <- timein_lt$year[1]
-            tosp[i] <- timein_lt$year[length(timein_lt)]
+            fromsp[i] <- timein_lt$year[1] + 1900
+            tosp[i] <- timein_lt$year[length(timein_lt)] + 1900
 
         } # if exists("fromsp") || exists("tosp")
         # cut year range if wanted
@@ -1385,7 +1385,7 @@ if (any(ntime_per_setting > 1)) {
             message("some times are < 0 --> use \"abs(times)\" for time labels instead ...")
             neg_inds <- which(tlablt < 0)
             tlablt[neg_inds] <- abs(tlablt[neg_inds])
-            tunit <- "Time BP"
+            tunit <- "Year BP"
         }
     }
 
@@ -1822,7 +1822,7 @@ for (vi in 1:length(varnames_unique)) {
             title <- paste0(paste(unique(areas), collapse=","), 
                             " ", mode, " ", varname, " ", 
                             paste(unique(seasonsp), collapse=","), " ", 
-                            paste(unique(fromsp), collapse=","), "-", 
+                            paste(unique(fromsp), collapse=","), " to ", 
                             paste(unique(tosp), collapse=","))
             title(title, cex.main=0.75)
         }
@@ -2270,7 +2270,7 @@ if (exists("datasmon")) {
                 title <- paste0(paste(unique(areas), collapse=","), 
                                 " ", mode, " ", varname, " ", 
                                 paste(unique(seasonsp), collapse=","), " ", 
-                                paste(unique(fromsp), collapse=","), "-", 
+                                paste(unique(fromsp), collapse=","), " to ", 
                                 paste(unique(tosp), collapse=","))
                 title(title, cex.main=0.75)
             }
@@ -2616,7 +2616,7 @@ if (plot_scatter_var1_vs_var2) {
             title <- paste0(paste(unique(areas), collapse=","), 
                             " ", mode, " ", varname, " ", 
                             paste(unique(seasonsp), collapse=","), " ", 
-                            paste(unique(fromsp), collapse=","), "-", 
+                            paste(unique(fromsp), collapse=","), " to ", 
                             paste(unique(tosp), collapse=","))
             title(title, cex.main=0.5)
         }
@@ -2928,7 +2928,7 @@ if (plot_scatter_var1_vs_var2) {
                                         paste(unique(areas[i]), collapse=","), 
                                         " ", mode, " ", varname, " ", 
                                         paste(unique(seasonsp[i]), collapse=","), " ", 
-                                        paste(unique(fromsp[i]), collapse=","), "-", 
+                                        paste(unique(fromsp[i]), collapse=","), " to ", 
                                         paste(unique(tosp[i]), collapse=","))
                         title(title, cex.main=0.5)
                     }
