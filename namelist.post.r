@@ -35,7 +35,8 @@ cdo_force <- F # redo cdo command although outout file already exists
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
 cdo_set_rel_time <- T # conversion from absolute to relative time
 cdo_run_from_script <- T # create temporary file and run long cdo command from there
-cdo_nchar_max_arglist <- 2612710
+#cdo_nchar_max_arglist <- 2612710 # this worked but not always dont know why
+cdo_nchar_max_arglist <- 2612000
 nco_nchar_max_arglist <- 131071
 # --> $(getconf PAGE_SIZE)*32 = 4096*32 = 131072
 # --> getconf ARG_MAX                   = 2097152
@@ -105,16 +106,17 @@ if (F) { # old hist
     ftypes <- "l" # "f" for files (default) or "l" for links
     prefixs <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
     #fvarnames <- "temp2"
+    #fvarnames <- "tsurf"
     #fvarnames <- "aprt"
     #fvarnames <- "wisoaprt"
     fvarnames <- "wisoaprt_d"
+    levs_out <- 2
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "ptemp"
-    modes <- "select"
-    #modes <- "fldmean"
+    #modes <- "select"
+    modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
-    levs_out <- 3
     froms <- "0004" # beginning of chunk 1
     #froms <- "0100"
     #tos <- "0013" 
@@ -242,8 +244,13 @@ cdo_known_cmds <- list("wisoaprt_d"=list(cmd=c("<cdo> -setname,wisoaprt_d -setco
                        "wisosnglac_d"=list(cmd="<cdo> -setname,wisoasnglac_d -setcode,33 -mulc,1000. -subc,1. -div -div <wisosnglac> <snglac> <wiso_smow_files>"),
                        "wisorunoff_d"=list(cmd="<cdo> -setname,wisorunoff_d -setcode,17 -mulc,1000. -subc,1. -div -div <wisorunoff> <runoff> <wiso_smow_files>"),
                        "aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -mul <aprt> <temp2>",
-                                                     "<nco_ncatted> -O -a code,aprt_times_temp2,d,,")), # delete old code
-                       #"aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -<modes> -mul <aprt> <temp2>",
+                                                     "<nco_ncatted> -O -a code,aprt_times_temp2,d,,", # delete old code
+                                                     "<nco_ncatted> -O -a long_name,aprt_times_temp2,o,c,\"precipitation times temp2\"",
+                                                     "<nco_ncatted> -O -a units,aprt_times_temp2,o,c,\"mm/month times degC\"")),
+                       #"aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -<modes> -mul <aprt> <temp2>", # todo: mode & mul together?
                        #                              "<nco_ncatted> -O -a code,aprt_times_temp2,d,,")), # delete old code
-                       "ptemp"=list(cmd="<cdo> -setname,ptemp -setcode,170 -div <aprt_times_temp2> <aprt>"))
+                       "ptemp"=list(cmd=c("<cdo> -setname,ptemp -setcode,170 -div <aprt_times_temp2> <aprt>",
+                                          "<nco_ncatted> -O -a long_name,ptemp,o,c,\"precipitation weighted temp2\"",
+                                          "<nco_ncatted> -O -a units,ptemp,o,c,\"degC\""))
+                       )
 

@@ -515,7 +515,7 @@ for (i in 1:nsettings) {
                         # nothing to do, let user commands as they are in the namelist
                     } else {
                         for (cmdj in 1:length(replace_inds_open)) {
-                            # check if a variable in the current R workspace exists with the same name
+                            # check if a variable in the current workspace exists with the same name
                             pattern <- substr(cmdsin[cmdi], replace_inds_open[cmdj] + 1, replace_inds_close[cmdj] - 1)
                             if (exists(eval(pattern))) { # variable with the name of the pattern exists
                                 eval(parse(text=paste0("replacement <- ", pattern, "[i]")))
@@ -524,7 +524,7 @@ for (i in 1:nsettings) {
                                 replacement <- fout
                                 replacement <- gsub(fvarnames[i], pattern, replacement)
                                 if (!file.exists(replacement)) {
-                                    stop("\nfound pattern \"<", pattern, ">\" is not a defined variable in the current R workspace",
+                                    stop("\nfound pattern \"<", pattern, ">\" is not a defined variable in the current workspace",
                                          " --> assume it should be an input file. however, file\n   \"", replacement, "\"\n",
                                          "was not found.\n")
                                 }
@@ -699,7 +699,7 @@ for (i in 1:nsettings) {
             if (cmd_calc == "") {
                 # in: result of `-select,name=`
                 # out: wanted `fout`
-                cmd_calc <- paste0("cp -v ", tmpfile_select, " ", fout, " || echo error") 
+                cmd_calc <- paste0("cp -v ", tmpfile, " ", fout, " || echo error") 
             }
             message("\nrun\n",
                     "   1: `", cmd_select, "`\n",

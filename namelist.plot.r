@@ -30,6 +30,7 @@ message(paste0("   workpath = ", workpath))
 
 # options across settings
 # echam:
+#mode <- "select"
 mode <- "fldmean" 
 #mode <- "timmean" 
 #mode <- "timsum"
@@ -70,9 +71,16 @@ if (F) { # awi-esm-1-1-lr hist
     #tosf <- "5903" # end of chunk 2
     tosf <- "6173" # end of chunk 3
     new_origins <- -6995 # model year 1 = 6999 BP -> model year 4 = 6999 BP - 4 = 6995 BP
-    n_mas <- 1200
-    varnames_in <- "temp2"
+    time_frequencies <- "monthly"
+    time_ref <- 1950 # any string, e.g. "BP", or number
+    n_mas <- 120
+    #varnames_in <- "temp2"
+    #varnames_in <- "tsurf"
     #varnames_in <- "aprt"
+    varnames_in <- "wisoaprt_d"
+    #varnames_in <- "ptemp"
+    #areas <- "sibiria"
+    levs <- 2
 
 # =====================================
 # 2 settings
@@ -118,6 +126,22 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " ", season, " ", from, "-", to)),
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
+
+} else if (F) { # Hol-T
+    #prefixes <- "Hol-T_echam5_wiso_mm"
+    prefixes <- rep("cosmos-aso-wiso_echam5_holocene_wiso_mm", t=2)
+    models <- rep("echam5", t=2)
+    names_short <- rep("Hol-T", t=2)
+    names_legend <- c("temp2", "ptemp2")
+    fromsf <- rep("0004", t=2) # beginning of chunk 1
+    #fromsf <- "0100"
+    #tosf <- "0129"
+    #tosf <- "5903" # end of chunk 2
+    tosf <- rep("6173", t=2) # end of chunk 3
+    new_origins <- rep(-6995, t=2) # model year 1 = 6999 BP -> model year 4 = 6999 BP - 4 = 6995 BP
+    time_ref <- 1950 # any string, e.g. "BP", or number
+    n_mas <- rep(120, t=2)
+    varnames_in <- c("temp2", "ptemp")
 
 # =====================================
 # 3 settings
@@ -343,14 +367,26 @@ add_unsmoothed <- T
 add_smoothed <- T
 # time:
 add_sd <- F
-add_linear_trend <- T
+add_linear_trend <- F
 add_nonlinear_trend <- F
 scale_ts <- F
+ts_highlight_seasons <- list(bool=F, suffix="") # default
+ts_highlight_seasons <- list(bool=T,
+                             seasons=c("DJF", "MAM", "JJA", "SON"),
+                             #t="l",
+                             t="p",
+                             #cols=c("blue", "darkgreen", "red", "brown")
+                             cols=rgb(t(col2rgb(c("blue", "darkgreen", "red", "brown"))/255), alpha=alpha),
+                             ltys=c(1,2,3,4),
+                             #pchs=1:4,
+                             pchs=c(16, 16, 16, 16),
+                             suffix="_highlight_seasons") 
 add_first_data_point <- F
 add_data_right_yaxis_ts <- T
 add_data_right_yaxis_ts_mon <- F
 add_legend_right_yaxis <- F
 plot_scatter_var1_vs_var2 <- T
+add_1to1_line_scatter <- T
 # time vs depth:
 add_ts_to_time_vs_depth <- T
 

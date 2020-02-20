@@ -1,7 +1,7 @@
 ## R
 
 #options(warn = 2) # stop on warnings
-if (T) {
+if (F) {
     rm(list=ls())
     fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
     # `[` <- fctbackup 
@@ -20,6 +20,7 @@ source(fnml)
 
 # ignore these variables
 ignore_vars <- c("time_bnds", "timestamp", 
+                 "hyai", "hybi", "hyam", "hybm",
                  "depthvec", 
                  "moc_reg_lat")
 
@@ -63,6 +64,73 @@ co2_4co2 <- list(co2_ppm=1137.2679,
 message("\n", "set 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
 add_co2_4co2 <- F
 message("set add_co2_4co2=T if you want to add to plot")
+
+# koehler et al. 2017 ghg by paul
+f <- ""
+if (machine_tag == "stan") {
+    f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Koehler_GHG_forcing_0.001ka_resolution.dat"
+}
+if (file.exists(f)) {
+    message("\n", "read koehler et al. 2017 ghg forcing from ", f, " from paul ...")
+    koehler_etal_2017_paul <- read.table(f, col.names=c("year_before_1950", "CO2", "CH4", "N2O"))
+    years <- koehler_etal_2017_paul$year_before_1950 # kyr before 1950 in reverse order --> 6.999, 6.998, 6997, ...
+    years <- -1*years*1000 # --> -6999, -6998, -6997, ...
+    # as.POSIXlt("-0001-01-01") --> negative year gives error 
+    # "not in a standard unambiguous format"
+    # --> but shifting works
+    timelt <- as.POSIXlt("0000-01-01", tz="UTC")
+    nyears_to_origin <- timelt$year + 1900 - years[1] + 1
+    timelt <- seq.POSIXt(timelt, l=nyears_to_origin, b="-1 year")[nyears_to_origin]
+    timelt <- seq.POSIXt(timelt, l=length(years), b=paste0(diff(years)[1], " year"))
+    timelt <- as.POSIXlt(timelt)
+    koehler_etal_2017_paul <- list(co2=koehler_etal_2017_paul$CO2,
+                                   ch4=koehler_etal_2017_paul$CH4,
+                                   n2o=koehler_etal_2017_paul$N2O,
+                                   time=timelt, timen=as.numeric(timelt),
+                                   text="Köhler et al. 2017 (paul)", 
+                                   col="red", lty=2, lwd=0.5, pch=NA)
+    add_koehler_etal_2017_paul <- F
+    message("set add_koehler_etal_2017_paul=", !add_koehler_etal_2017_paul, 
+            " if you ", ifelse(add_koehler_etal_2017_paul, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+}
+
+# koehler et al. 2017 ghg original data
+f <- ""
+if (machine_tag == "stan") {
+    f <- "/ace/user/cdanek/data/koehler_etal_2017/datasets/CO2_stack_156K_spline_V2.tab"
+    source("/ace/user/cdanek/data/koehler_etal_2017/read_koehler_etal_2017_function.r")
+}
+if (file.exists(f)) {
+    from <- 6999
+    to <- 0
+    message("\n", "read koehler et al. 2017 ghg forcing from ", f, " from ", from, " to ", to, " ...")
+    koehler_etal_2017_co2 <- read_koehler_etal_2017(f=f, from=from, to=to)
+    # reverse time order from 0-6999 to 6999-0
+    koehler_etal_2017_co2 <- koehler_etal_2017_co2[dim(koehler_etal_2017_co2)[1]:1,]
+    years <- koehler_etal_2017_co2[,1] # kyr before 1950 --> 6.999, 6.998, 6.997, ...
+    years <- -1*years*1000 # --> -6999, -6998, -6997, ...
+    # as.POSIXlt("-0001-01-01") --> negative year gives error 
+    # "not in a standard unambiguous format"
+    # --> but shifting works
+    timelt <- as.POSIXlt("0000-01-01", tz="UTC")
+    nyears_to_origin <- timelt$year + 1900 - years[1] + 1
+    timelt <- seq.POSIXt(timelt, l=nyears_to_origin, b="-1 year")[nyears_to_origin]
+    timelt <- seq.POSIXt(timelt, l=length(years), b=paste0(diff(years)[1], " year"))
+    timelt <- as.POSIXlt(timelt)
+    koehler_etal_2017 <- list(co2=koehler_etal_2017_co2[,2],
+                              time=timelt, timen=as.numeric(timelt),
+                              text="Köhler et al. 2017", 
+                              col="red", lty=2, lwd=0.5, pch=NA)
+    add_koehler_etal_2017_co2 <- F
+    message("set add_koehler_etal_2017_co2=", !add_koehler_etal_2017_co2, 
+            " if you ", ifelse(add_koehler_etal_2017_co2, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+}
 
 # cmip6 historical monthly total solar irradiance 
 f <- ""
@@ -274,25 +342,23 @@ if (file.exists(f)) {
     message("set add_nsidc_antarctic_annual=T if you want to add to plot")
 }
 
-# todo orbital parameter limits for last 800ka
-
-# holocene orbital paramter berger
+# berger holocene orbital parameter from paul
 f <- ""
 if (machine_tag == "stan") {
     f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
 }
 if (file.exists(f)) {
-    message("\n", "read berger orbital parameters from ", f, " ...")
-    orb_berger <- read.table(f, col.names=c("year BP", "eccentricity", "precession", "obliquity"))
-    years <- orb_berger$year.BP # kyr BP in reverse order --> 6.999, 6.998, 6997, ...
-    years <- -1*years*1000
+    message("\n", "read pauls berger orbital parameters from ", f, " ...")
+    orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
+    years <- orb_berger$year_before_1950 # kyr before 1950 in reverse order --> 6.999, 6.998, 6997, ...
+    years <- -1*years*1000 # --> -6999, -6998, -6997, ...
     # as.POSIXlt("-0001-01-01") --> negative year gives error 
     # "not in a standard unambiguous format"
     # --> but shifting works
     timelt <- as.POSIXlt("0000-01-01", tz="UTC")
     nyears_to_origin <- timelt$year + 1900 - years[1] + 1
     timelt <- seq.POSIXt(timelt, l=nyears_to_origin, b="-1 year")[nyears_to_origin]
-    timelt <- seq.POSIXt(timelt, l=length(years), b="1 year")
+    timelt <- seq.POSIXt(timelt, l=length(years), b=paste0(diff(years)[1], " year"))
     orb_berger <- list(eccentricity=orb_berger$eccentricity, 
                        precession=orb_berger$precession,
                        obliquity=orb_berger$obliquity,
@@ -318,8 +384,285 @@ if (file.exists(f)) {
             " to add this data to plot")
 }
 
+# berger orbital parameter for last 800ka
+f <- ""
+if (machine_tag == "stan") {
+    f <- "/home/ace/cdanek/scripts/fortran/berger_1978/berger_1978_years_-800_to_0_kyears_before_1950.txt1"
+}
+if (file.exists(f)) {
+    message("\n", "read my berger orbital parameters from ", f, " ...")
+    my_orb_berger <- read.table(f, header=T)
+    # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: calendar_day_of_perihelion 5: angle_of_perihelion_deg_from_vernal_equinox
+    years <- my_orb_berger$kyear_from_1950 # kyr before 1950 in reverse order --> -800, -799, -798, ...
+    years <- years*1000
+    origin_in <- 1950 # year
+    origin_out <- 1950 # year; which reference is wanted for plotting
+
+    # construct time with possibly new origin as POSIX object:
+    new_origin <- as.POSIXlt(paste0(origin_out, "-01-01"), tz="UTC")
+    shift_by <- origin_in - (new_origin$year + 1900) # years
+    by <- paste0(diff(years)[1], " year") # time step of input data
+    if (years[1] < 0) { # there are negative times with respect to `origin_in`
+        # as.POSIXlt("-0001-01-01") --> negative year gives error 
+        # "not in a standard unambiguous format"
+        # --> but shifting works
+        nyears_from_0 <- years[1] + shift_by - 1
+        by_tmp <- "1 year"
+        if (nyears_from_0 < 0) {
+            nyears_from_0 <- abs(nyears_from_0)
+            by_tmp <- "-1 year"
+        }
+        timelt <- seq.POSIXt(from=as.POSIXlt("0000-01-01", tz="UTC"), 
+                             l=nyears_from_0, b=by_tmp)[nyears_from_0]
+        # time with possibly negative origin as POSIX object:
+        timelt <- seq.POSIXt(timelt, l=length(years), b=by)
+    } else { # there are not negative years within `origin_in`
+        stop("asd")
+    }
+    timelt <- as.POSIXlt(timelt)
+    my_orb_berger <- list(eccentricity=my_orb_berger$ecc, 
+                          obliquity=my_orb_berger$obl_deg,
+                          calendar_day_of_perihelion=my_orb_berger$calendar_day_of_perihelion,
+                          angle_of_perihelion_deg_from_vernal_equinox=my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox,
+                          time=timelt, timen=as.numeric(timelt), origin=new_origin,
+                          text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
+    add_my_orb_berger_eccentricity <- F
+    message("set add_my_orb_berger_eccentricity=", !add_my_orb_berger_eccentricity, 
+            " if you ", ifelse(add_my_orb_berger_eccentricity, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    add_my_orb_berger_precession <- F
+    message("set add_my_orb_berger_precession=", !add_my_orb_berger_precession, 
+            " if you ", ifelse(add_my_orb_berger_precession, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    add_my_orb_berger_obliquity <- F
+    message("set add_my_orb_berger_obliquity=", !add_my_orb_berger_obliquity, 
+            " if you ", ifelse(add_my_orb_berger_obliquity, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    if (F) { # plot berger
+        message("plot ...")
+        xlim <- range(unclass(my_orb_berger$time)$year + 1900)
+        xat <- pretty(xlim, n=20)
+        if (any(!(xat %in% xlim))) {
+            out_inds <- which(xat > max(xlim))
+            if (length(out_inds) > 0) xat <- xat[-out_inds]
+            out_inds <- which(xat < min(xlim))
+            if (length(out_inds) > 0) xat <- xat[-out_inds]
+        }
+        png("~/berger.png", width=4000, height=8000, res=400)
+        par(mfrow=c(4, 1))
+        # ecc
+        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$eccentricity, t="l", 
+             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Eccentricity")
+        axis(1, at=xat, labels=abs(xat)/1000)
+        axis(2, at=pretty(my_orb_berger$eccentricity, n=8), las=2)
+        # obl
+        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$obliquity, t="l", 
+             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Obliquity [deg]")
+        axis(1, at=xat, labels=abs(xat)/1000)
+        axis(2, at=pretty(my_orb_berger$obliquity, n=8), las=2)
+        # calendar_day_of_perihelion
+        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$calendar_day_of_perihelion, t="l", 
+             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Calendar day of perihelion")
+        axis(1, at=xat, labels=abs(xat)/1000)
+        axis(2, at=pretty(my_orb_berger$calendar_day_of_perihelion, n=8), las=2)
+        # angle_of_perihelion_deg_from_vernal_equinox
+        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox, t="l", 
+             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Angle of perihelion [deg from v.e.]")
+        axis(1, at=xat, labels=abs(xat)/1000)
+        axis(2, at=pretty(my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox, n=8), las=2)
+        dev.off()
+    }
+}
+
+# laskar orbital parameter for last 800ka
+f <- ""
+if (machine_tag == "stan") {
+    f <- "/home/ace/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt1"
+}
+if (file.exists(f)) {
+    message("\n", "read laskar orbital parameters from ", f, " ...")
+    my_orb_laskar <- read.table(f, header=T)
+    # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: angle_of_perihelion_deg_from_vernal_equinox
+    years <- my_orb_laskar$kyear_from_2000 # kyr before 2000 in reverse order --> -800, -799, -798, ...
+    years <- years*1000 # -800000, -799000, -798000, ...
+    origin_in <- 2000 # year
+    origin_out <- 1950 # year; which reference is wanted for plotting
+
+    # construct time with possibly new origin as POSIX object:
+    new_origin <- as.POSIXlt(paste0(origin_out, "-01-01"), tz="UTC")
+    shift_by <- origin_in - (new_origin$year + 1900) # years
+    by <- paste0(diff(years)[1], " year") # time step of input data
+    if (years[1] < 0) { # there are negative times with respect to `origin_in`
+        # as.POSIXlt("-0001-01-01") --> negative year gives error 
+        # "not in a standard unambiguous format"
+        # --> but shifting works
+        nyears_from_0 <- years[1] + shift_by - 1
+        by_tmp <- "1 year"
+        if (nyears_from_0 < 0) {
+            nyears_from_0 <- abs(nyears_from_0)
+            by_tmp <- "-1 year"
+        }
+        timelt <- seq.POSIXt(from=as.POSIXlt("0000-01-01", tz="UTC"), 
+                             l=nyears_from_0, b=by_tmp)[nyears_from_0]
+        # time with possibly negative origin as POSIX object:
+        timelt <- seq.POSIXt(timelt, l=length(years), b=by)
+    } else { # there are not negative years within `origin_in`
+        stop("asd")
+    }
+    timelt <- as.POSIXlt(timelt)
+    my_orb_laskar <- list(eccentricity=my_orb_laskar$ecc, 
+                          obliquity=my_orb_laskar$obl_deg,
+                          angle_of_perihelion_deg_from_vernal_equinox=my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox,
+                          time=timelt, timen=as.numeric(timelt), origin=new_origin,
+                          text="Laskar", col="blue", lty=2, lwd=0.5, pch=NA)
+    add_my_orb_laskar_eccentricity <- F
+    message("set add_my_orb_laskar_eccentricity=", !add_my_orb_laskar_eccentricity, 
+            " if you ", ifelse(add_my_orb_laskar_eccentricity, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    add_my_orb_laskar_precession <- F
+    message("set add_my_orb_laskar_precession=", !add_my_orb_laskar_precession, 
+            " if you ", ifelse(add_my_orb_laskar_precession, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    add_my_orb_laskar_obliquity <- F
+    message("set add_my_orb_laskar_obliquity=", !add_my_orb_laskar_obliquity, 
+            " if you ", ifelse(add_my_orb_laskar_obliquity, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    if (F) { # plot laskar
+        message("plot ...")
+        xlim <- range(unclass(my_orb_laskar$time)$year + 1900)
+        xat <- pretty(xlim, n=20)
+        if (any(!(xat %in% xlim))) {
+            out_inds <- which(xat > max(xlim))
+            if (length(out_inds) > 0) xat <- xat[-out_inds]
+            out_inds <- which(xat < min(xlim))
+            if (length(out_inds) > 0) xat <- xat[-out_inds]
+        }
+        png("~/laskar.png", width=4000, height=6000, res=400)
+        par(mfrow=c(3, 1))
+        # ecc
+        plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$eccentricity, t="l", 
+             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Eccentricity")
+        axis(1, at=xat, labels=abs(xat)/1000)
+        axis(2, at=pretty(my_orb_laskar$eccentricity, n=8), las=2)
+        # obl
+        plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$obliquity, t="l", 
+             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Obliquity [deg]")
+        axis(1, at=xat, labels=abs(xat)/1000)
+        axis(2, at=pretty(my_orb_laskar$obliquity, n=8), las=2)
+        # angle_of_perihelion_deg_from_vernal_equinox
+        plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox, t="l", 
+             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Angle of perihelion [deg from v.e.]")
+        axis(1, at=xat, labels=abs(xat)/1000)
+        axis(2, at=pretty(my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox, n=8), las=2)
+        dev.off()
+    }
+}
+
+if (F) { # compare koehler et al. 2017 vs paul
+
+    message("plot koehler et al. 2017 vs paul ...")
+    xlim <- range(unclass(koehler_etal_2017$time)$year + 1900)
+    xlim <- range(xlim, unclass(koehler_etal_2017_paul$time)$year + 1900)
+    xat <- pretty(xlim, n=20)
+    if (any(!(xat %in% xlim))) {
+        out_inds <- which(xat > max(xlim))
+        if (length(out_inds) > 0) xat <- xat[-out_inds]
+        out_inds <- which(xat < min(xlim))
+        if (length(out_inds) > 0) xat <- xat[-out_inds]
+    }
+    png("~/koehler_etal_2017_vs_paul.png", width=4000, height=2500, res=400)
+    par(mar=c(5.1, 6.1, 4.1, 6.1) + 0.1)
+    # co2
+    ylim <- range(koehler_etal_2017$co2, koehler_etal_2017_paul$co2)
+    plot(unclass(koehler_etal_2017$time)$year + 1900, koehler_etal_2017$co2, t="l", 
+         xlim=xlim, ylim=ylim, xaxt="n", yaxt="n", 
+         xlab="kyear before 1950", ylab="CO2 [µmol/mol]")
+    axis(1, at=xat, labels=abs(xat)/1000)
+    axis(2, at=pretty(ylim, n=8), las=2)
+    lines(unclass(koehler_etal_2017_paul$time)$year + 1900, koehler_etal_2017_paul$co2, col="red")
+    legend("topleft", c("Köhler et al. 2017", "Köhler et al. 2017 (paul)"), 
+           col=c("black", "red"), lty=1, bty="n")
+    # co2 differences
+    par(new=T)
+    ydiff <- koehler_etal_2017_paul$co2 - koehler_etal_2017$co2
+    ylim <- range(ydiff)
+    plot(unclass(koehler_etal_2017$time)$year + 1900, ydiff,
+         t="l", col="blue",
+         axes=F, xlab=NA, ylab=NA)
+    abline(h=0, col="blue", lwd=0.5)
+    axis(4, at=pretty(ylim, n=15), las=2, col="blue", col.axis="blue", col.ticks="blue")
+    mtext(side=4, "Difference Paul minus Köhler [µmol/mol]", line=4.5, cex=0.9, col="blue")
+    dev.off()
+
+} # compare koehler et al. 2017 vs paul
+
+if (F) { # compare berger and laskar orb
+
+    message("plot berger vs laskar ...")
+    xlim <- range(unclass(my_orb_laskar$time)$year + 1900)
+    xlim <- range(xlim, unclass(my_orb_berger$time)$year + 1900)
+    xat <- pretty(xlim, n=20)
+    if (any(!(xat %in% xlim))) {
+        out_inds <- which(xat > max(xlim))
+        if (length(out_inds) > 0) xat <- xat[-out_inds]
+        out_inds <- which(xat < min(xlim))
+        if (length(out_inds) > 0) xat <- xat[-out_inds]
+    }
+    png("~/berger_vs_laskar.png", width=4000, height=7500, res=400)
+    par(mfrow=c(3, 1))
+    par(mar=c(5.1, 6.1, 4.1, 6.1) + 0.1)
+    for (i in 1:3) {
+        if (i == 1) {
+            ylab <- "Obliquity [deg]"
+            yberger <- my_orb_berger$obliquity
+            ylaskar <- my_orb_laskar$obliquity
+        } else if (i == 2) {
+            ylab <- "Eccentricity"
+            yberger <- my_orb_berger$eccentricity
+            ylaskar <- my_orb_laskar$eccentricity
+        } else if (i == 3) {
+            ylab <- "Anlge of perihelion [deg]"
+            yberger <- my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox
+            ylaskar <- my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox
+        }
+        # obl
+        ylim <- range(yberger, ylaskar)
+        plot(unclass(my_orb_berger$time)$year + 1900, yberger, t="l", 
+             xlim=xlim, ylim=ylim, xaxt="n", yaxt="n", 
+             xlab=paste0("kyear before ", origin_out), ylab=ylab)
+        axis(1, at=xat, labels=abs(xat)/1000)
+        axis(2, at=pretty(ylim, n=8), las=2)
+        lines(unclass(my_orb_laskar$time)$year + 1900, ylaskar, col="red")
+        legend("bottomleft", c("Berger", "Laskar"), col=c("black", "red"), lty=1, bty="n")
+        # obl differences
+        par(new=T)
+        ydiff <- yberger - ylaskar
+        ylim <- range(ydiff)
+        plot(unclass(my_orb_berger$time)$year + 1900, ydiff,
+             t="l", col="blue",
+             axes=F, xlab=NA, ylab=NA)
+        abline(h=0, col="blue", lwd=0.5)
+        axis(4, at=pretty(ylim, n=15), las=2, col="blue", col.axis="blue", col.ticks="blue")
+        mtext(side=4, "Difference Berger minus Laskar", line=4.5, cex=0.9, col="blue")
+    }
+    dev.off()
+
+} # comapre berger and laskar orb
+
 # clean
-for (obj in c("f", "time", "years", "timelt", "nyears_to_origin")) {
+for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin")) {
     if (exists(obj)) rm(obj)
 }
 # finished reading extra datasets depending on machine
@@ -333,10 +676,11 @@ if (!exists("depths")) depths <- rep("", t=nsettings)
 codesf <- codes
 codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
 levsf <- levs
-levsf[levs != ""] <- paste0("_", levs[levs != ""], "m")
+levsf[levs != ""] <- paste0("_sellevel_", levs[levs != ""])
 depthsf <- rep("", t=nsettings)
 depthsf[depths != ""] <- paste0("_", depths[depths != ""], "m")
 if (!exists("new_origins")) new_origins <- rep(NA, t=nsettings)
+if (!exists("time_ref")) time_ref <- NA # only one
 if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
 if (!exists("seasonsp")) seasonsp <- seasonsf
 season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1:12])
@@ -376,23 +720,29 @@ if (!exists("scatterpchs")) scatterpchs <- rep(16, t=nsettings)
 if (!exists("scatterpchs_vstime")) scatterpchs_vstime <- 1:nsettings
 if (!exists("scattercexs")) scattercexs <- rep(1, t=nsettings)
 if (!exists("cols")) {
-    # default: black, red, blue
-    cols <- c("black", "#E41A1C", "#377EB8")
-    if (nsettings > 3) {
-        if (F) {
-            cols <- c(cols, 4:nsettings)
-        } else if (T) {
-            library(RColorBrewer) # https://www.r-bloggers.com/palettes-in-r/
-            cols <- c(cols, brewer.pal(max(3, nsettings), "Dark2")[1:(nsettings-3)])
+    if (nsettings == 1) {
+        cols <- "black"
+    } else if (nsettings == 2) {
+        cols <- c("black", "#E41A1C")
+    } else if (nsettings >= 3) {
+        # my default: (black, red, blue) instead of R default (black, blue, red)
+        cols <- c("black", "#E41A1C", "#377EB8")
+        if (nsettings > 3) {
+            if (F) {
+                cols <- c(cols, 4:nsettings)
+            } else if (T) {
+                library(RColorBrewer) # https://www.r-bloggers.com/palettes-in-r/
+                cols <- c(cols, brewer.pal(max(3, nsettings), "Dark2")[1:(nsettings-3)])
+            }
         }
     }
 }
 if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
 if (!exists("postpaths")) { # default from post_echam.r
-    postpaths <- paste(workpath, "post", models, mode, varnames_in, sep="/")
+    postpaths <- paste0(workpath, "/post")
 }
 if (!exists("plotpath")) { # default from post_echam.r
-    plotpath <- paste(workpath, "plots", paste(unique(models), collapse="_vs_"), sep="/")
+    plotpath <- paste0(workpath, "/plots/", paste(unique(models), collapse="_vs_"))
 }
 base <- 10
 power <- 0 # default: 0 --> 10^0 = 1e0 = 1 --> nothing happens
@@ -410,14 +760,14 @@ for (i in 1:nsettings) {
 
     message("\n", "*********************************************")
     message("setting ", i, "/", nsettings, ": ", names_short[i], " ...")
-    inpath <- postpaths[i]
+    inpath <- paste0(postpaths[i], "/", models[i], "/", mode, "/", varnames_in[i])
     fname <- paste0(prefixes[i], "_", mode, 
                     codesf[i], "_", varnames_in[i], 
-                    "_", areas[i],
+                    levsf, "_", areas[i],
                     "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
                     depthsf[i], 
                     reg_dxsf[i], reg_dysf[i],
-                    ".nc") # todo: levs 
+                    ".nc") 
 
     message("\n", "open ", inpath, "/", fname, " ...")
     ncin <- nc_open(paste0(inpath, "/", fname))
@@ -428,13 +778,14 @@ for (i in 1:nsettings) {
     dimtmp <- vector("list", l=ncin$ndims)
     names(dimtmp) <- dims_per_setting[[i]]
     for (di in 1:length(dimtmp)) {
-        message(di, ": \"", dims_per_setting[[i]][di], "\"")
+        message(di, ": \"", dims_per_setting[[i]][di], "\", n=", length(ncin$dim[[di]]$vals))
         dimtmp[[di]] <- ncin$dim[[di]]$vals
     }
     dims[[i]] <- dimtmp
     rm(dimtmp)
 
     # drop time dim if not longer than 1
+    # todo: why not checking for all length-1-dims here?
     if (any(names(dims[[i]]) == "time")) {
         if (length(dims[[i]]$time) == 1) {
             message("\n", "detected \"time\" dim but its length is 1. drop this dim ...")
@@ -490,6 +841,21 @@ for (i in 1:nsettings) {
         } # which timein_units "days since", "day as", etc.
         message("range(timein_lt) = ", appendLF=F)
         print(range(timein_lt))
+
+        # find out temoral interval (e.g. 1hr, 3hr, 6hr, day, week, month, year)
+        if (exists("time_frequencies")) {
+            if (length(time_frequencies) != nsettings || class(time_frequencies) != "character") {
+                stop("\n`time_frequencies` is set but not of class \"character\" and/or of length ", nsettings)
+            } else {
+                message("\nprovided `time_frequencies` = \"", paste(time_frequencies, collapse="\", \""), "\"")
+                dims[[i]]$time_frequency <- time_frequencies[i]
+            }
+        } else {
+            message("\n`time_frequencies` not set")
+            dims[[i]]$time_frequency <- ""
+        }
+        # finished getting tempral interval (e.g. 1hr, 3hr, 6hr, day, week, month, year)
+
 
         # shift times due to e.g. senseless spinup years
         # as.POSIXlt's 'year' starts at 1900
@@ -669,7 +1035,7 @@ for (i in 1:nsettings) {
         
         # ignore variable
         if (any(ignore_vars == vars_per_file[vi])) {
-            message("this variable is included in `ignore_vars` --> ignore this variable ...")
+            message(" --> this variable is included in `ignore_vars` --> ignore this variable ...")
             next # variable
         }
         
@@ -695,7 +1061,7 @@ for (i in 1:nsettings) {
             names(dim_lengths) <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[", "name")
             if (any(dim_lengths == 1)) {
                 len1_dim_inds <- which(dim_lengths == 1)
-                message("drop \"", paste0(names(len1_dim_inds), collapse="\",\""), 
+                message(" --> drop \"", paste0(names(len1_dim_inds), collapse="\",\""), 
                         "\" dim", ifelse(length(len1_dim_inds) > 1, "s", ""), " of length 1 ...")
                 dimids <- dimids[-len1_dim_inds]
             } # if var has dims of length 1 
@@ -1196,7 +1562,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))
     datasmon <- datas
     monlim <- NA
     for (i in 1:nsettings) {
-        if (i == 1) message("\n", "calc monthly means of setting")
+        if (i == 1) message("\n", "calc monthly climatology of setting")
         message(i, "/", nsettings, ": ", names_short[i], " ...")
         if (dims[[i]]$time_frequency == "monthly" && seasonsp[i] == "Jan-Dec") {    
             for (vi in 1:length(datas[[i]])) { # for all vars per setting
@@ -1339,7 +1705,7 @@ if (any(ntime_per_setting > 1)) {
     tlabsrt <- 0
 
     # time labels
-    tlablt <- as.POSIXlt(pretty(tlimlt, n=10))
+    tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with very small negative years, e.g. -800000 (800ka BP) 
 
     # remove lables which are possibly out of limits due to pretty
     tlab_diff_secs <- as.numeric(diff(range(tlablt)), units="secs") # total time label distance
@@ -1377,17 +1743,16 @@ if (any(ntime_per_setting > 1)) {
     # if all dates < 0, use "abs(dates) BP" instead
     tunit <- "Time"
     if (any(tlablt < 0)) {
-        if (F) {
-            message("some times are < 0 --> use \"abs(times) BP\" for time labels instead ...")
-            neg_inds <- which(tlablt < 0)
-            tlablt[neg_inds] <- paste0(abs(tlablt[neg_inds]), " BP")
-        } else if (T) {
-            message("some times are < 0 --> use \"abs(times)\" for time labels instead ...")
-            neg_inds <- which(tlablt < 0)
-            tlablt[neg_inds] <- abs(tlablt[neg_inds])
-            tunit <- "Year BP"
+        message("some times are < 0 --> use \"abs(times)\" for time labels instead ...")
+        neg_inds <- which(tlablt < 0)
+        tlablt[neg_inds] <- abs(tlablt[neg_inds])
+        if (!is.na(time_ref)) {
+            tunit <- paste0("Year before ", time_ref)
+        } else {
+            tunit <- "Year before `time_ref`"
         }
     }
+
 
     message("tlablt = ", paste(tlablt, collapse=", "))
     message("tunit = ", tunit)
@@ -1568,9 +1933,7 @@ for (vi in 1:length(varnames_unique)) {
         message("\n", varname, " ", mode, " plot vs time ...")
 
         # prepare right axis data if necessary
-        if (!add_data_right_yaxis_ts) {
-            data_right <- list(suffix="") # default
-        } else {
+        if (add_data_right_yaxis_ts) {
             message("\n", "prepare data right yaxis ..")
             data_right <- list(data=list())
             if (exists("add_co2_hist") && add_co2_hist) {
@@ -1666,6 +2029,21 @@ for (vi in 1:length(varnames_unique)) {
 
             } 
             # finished variable specific stuff for add_data_right_yaxis_ts
+            
+            # check
+            if (length(data_right$data) == 0) {
+                warning("you provided `add_data_right_yaxis_ts=T` but did not ",
+                        "define which data should be plotted on right yaxis.\n",
+                        " --> set `add_data_right_yaxis_ts=F` and continue ...")
+                add_data_right_yaxis_ts <- F
+                data_right <- list(suffix="") # default
+            }
+
+        } # if add_data_right_yaxis_ts
+
+        # after check
+        if (add_data_right_yaxis_ts) {
+            
             nsettings_right <- length(data_right$data)
 
             if (add_smoothed) {
@@ -1770,7 +2148,7 @@ for (vi in 1:length(varnames_unique)) {
                            varname, "_",
                            paste0(names_short, "_", seasonsp, 
                                   "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
-                           data_right$suffix,
+                           data_right$suffix, ts_highlight_seasons$suffix,
                            ".", p$plot_type)
         dir.create(dirname(plotname), recursive=T, showWarnings=F)
         if (p$plot_type == "png") {
@@ -1880,10 +2258,76 @@ for (vi in 1:length(varnames_unique)) {
         # unsmoothed before smoothed data
         #if (!is.null(data[[i]])) {
         if (add_unsmoothed) {
-            for (i in 1:nsettings) {
-                lines(time_dim[[i]], z[[i]], 
-                      col=ifelse(add_smoothed, cols_rgb[i], cols[i]), 
-                      lty=ltys[i], lwd=lwds[i], pch=pchs[i])
+            if (ts_highlight_seasons$bool) {
+                message("\n`ts_highlight_seasons$bool`=T ...")
+                for (i in 1:nsettings) {
+                    season_numbers_all <- dims[[i]]$timelt$mon + 1 # numeric [1,...,12] (i.e. not e.g. "01")
+                    for (seasi in 1:length(ts_highlight_seasons$seasons)) {
+                        season <- ts_highlight_seasons$season[seasi]
+                        season_inds <- regexpr(season, season_check$string)
+                        if (any(season_inds != -1)) {
+                            season_numbers <- season_check$inds[season_inds:(season_inds+attributes(season_inds)$match.length-1)]
+                        } else {
+                            stop("implement")
+                        }
+                        message("   ", seasi, "/", length(ts_highlight_seasons$seasons), ": \"", 
+                                season, "\" -> found season numbers = ", paste(season_numbers, collapse=","))
+                        season_inds <- match(season_numbers_all, season_numbers)
+                        #data.frame(dims[[1]]$timelt[1:100], season_inds[1:100])
+                        season_inds <- which(!is.na(season_inds))
+                        #data.frame(dims[[1]]$timelt[season_inds[1:100]], season_inds[1:100])
+                        if (length(season_inds) == 0) {
+                            warning("did not find any of these month numbers in time dimension values of data, skip")
+                        } else {
+                            message("   --> min / max (dims[[", i, "]]$timelt[season_inds]) = ", 
+                                    min(dims[[i]]$timelt[season_inds]), " / ", max(dims[[i]]$timelt[season_inds]))
+                            lines(time_dim[[i]][season_inds], z[[i]][season_inds], 
+                                  t=ts_highlight_seasons$t,
+                                  col=ts_highlight_seasons$cols[seasi],
+                                  #lty=ltys[i], 
+                                  lty=ts_highlight_seasons$ltys[seasi],
+                                  lwd=lwds[i], 
+                                  #pch=pchs[i]
+                                  pch=ts_highlight_seasons$pchs[seasi], cex=0.2
+                                 )
+                        } # if wanted month numbers were found in time dimension values of data
+                    } # for seasi in ts_highlight_seasons$seasons
+                } # for i nsettings
+                
+                if (add_legend && i == nsettings) {
+                    message("\n", "add default stuff to ", mode, " legend ...")
+                    le <- list()
+                    le$pos <- "bottom" 
+                    le$ncol <- length(ts_highlight_seasons$seasons)
+                    le$text <- ts_highlight_seasons$seasons
+                    le$col <- ts_highlight_seasons$cols
+                    le$pch <- ts_highlight_seasons$pchs
+                    le$lty <- rep(NA, t=length(ts_highlight_seasons$seasons))
+                    le$lwd <- rep(NA, t=length(ts_highlight_seasons$seasons))
+                    le$cex <- 0.85
+                    # reorder reading direction from R's default "top-to-bottom-and-then-left-to-right" 
+                    # to "left-to-right-and-then-top-to-bottom"
+                    le <- reorder_legend(le)
+                    if (length(le$pos) == 1) {
+                        legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
+                               pch=le$pch, col=le$col, ncol=le$ncol,
+                               x.intersp=0.2, cex=le$cex, bty="n")
+                    } else if (length(le$pos) == 2) {
+                        legend(x=le$pos[1], y=le$pos[2],
+                               legend=le$text, lty=le$lty, lwd=le$lwd,
+                               pch=le$pch, col=le$col, ncol=le$ncol,
+                               x.intersp=0.2, cex=le$cex, bty="n")
+                    }
+                } # add season legend
+                
+                # finished if ts_highlight_seasons$bool
+
+            } else { # default 
+                for (i in 1:nsettings) {
+                    lines(time_dim[[i]], z[[i]], 
+                          col=ifelse(add_smoothed, cols_rgb[i], cols[i]), 
+                          lty=ltys[i], lwd=lwds[i], pch=pchs[i])
+                }
             }
         }
 
@@ -1924,8 +2368,8 @@ for (vi in 1:length(varnames_unique)) {
             le$text <- names_legend
             le$col <- cols
             le$lty <- ltys
-            le$lwds <- lwds
-            le$pchs <- pchs
+            le$lwd <- lwds
+            le$pch <- pchs
             le$cex <- 1
             le$cex <- 0.85
             # add stuf to legend here
@@ -2117,7 +2561,7 @@ for (vi in 1:length(varnames_unique)) {
                             
             # save moc ts as nc
             for (i in 1:nsettings) {
-                outpath <- gsub(mode, "moc_ts", postpaths[i])
+                outpath <- paste0(postpaths[i], "/", models[i], "/moc_ts/", fvarnames_in[i])
                 dir.create(outpath, recursive=T, showWarnings=F)
                 outname <- paste0(outpath, "/", 
                                   prefixes[i], "_moc_ts", 
@@ -2549,22 +2993,30 @@ if (exists("datasltm")) {
 ## plot var1 vs var2 of `datas`
 if (plot_scatter_var1_vs_var2) {
 
-    message("\n", "****************** start plotting of `plot_scatter_var1_vs_var2` ***************************")
+    message("\n", "****************** `plot_scatter_var1_vs_var2`=T --> scatterplot varx vs vary ***************************")
 
     # set here
-    varnamex <- "temp2"
-    varnamey <- "toa_imbalance"
+    if (F) { # TOA imbalance gregory et al. 2004 stuff 
+        varnamex <- "temp2"
+        varnamey <- "toa_imbalance"
+    } else if (T) { # temp2 vs precipitation weighted temp2
+        varnamex <- "temp2"
+        varnamey <- "ptemp"
+    }
 
     if (exists(paste0(varnamex, "_datas")) 
         && exists(paste0(varnamey, "_datas"))) {
 
         varname <- paste0(varnamex, "_vs_", varnamey)
+        message("\nvarnamex = \"", varnamex, "\"\n",
+                 "varnamey = \"", varnamey, "\"\n",
+                 "varname = \"", varname, "\"")
         eval(parse(text=paste0("varx <- ", varnamex, "_datas")))
         eval(parse(text=paste0("vary <- ", varnamey, "_datas")))
         eval(parse(text=paste0("varx_infos <- ", varnamex, "_infos")))
         eval(parse(text=paste0("vary_infos <- ", varnamey, "_infos")))
 
-        if (T) {
+        if (varname == "temp2_vs_toa_imbalance" && T) {
             message("\n", "substract last PI value from experiments ...")
             for (i in 2:nsettings) {
                 varx[[i]] <- varx[[i]] - rep(varx[[1]][length(varx[[1]])], t=length(length(varx[[1]])))
@@ -2585,9 +3037,8 @@ if (plot_scatter_var1_vs_var2) {
         plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                            varname, "_", 
                            paste0(names_short, "_", seasonsp, 
-                                  "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
+                                  "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
                            ".", p$plot_type)
-        message("\n", "`plot_scatter_var1_vs_var2` = T --> plot ", plotname, " ...")
         dir.create(dirname(plotname), recursive=T, showWarnings=F)
         if (p$plot_type == "png") {
             png(plotname, width=p$scatter_width, height=p$scatter_height,
@@ -2596,6 +3047,9 @@ if (plot_scatter_var1_vs_var2) {
             pdf(plotname, width=p$inch, height=p$inch,
                 family=p$family_pdf)
         }
+        
+        message("xlim = ", min(xlim), " / ", max(xlim))
+        message("ylim = ", min(ylim), " / ", max(ylim))
 
         # set plot margins
         mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
@@ -2631,18 +3085,28 @@ if (plot_scatter_var1_vs_var2) {
             abline(v=0, col="gray", lwd=0.5)
         }
 
+        # if add 1:1 line to scatter plot
+        if (add_1to1_line_scatter) {
+            message("add 1:1 line ...")
+            abline(a=0, b=1, col="gray") # a=intercept, b=slope
+        }
+
         # add data to scatter plot
+        message("add data ...")
         plotorder <- 1:nsettings
-        if (any(names_short == "piControl")) {
+        
+        # special: change plot order
+        if (varname == "temp2_vs_toa_imbalance" && any(names_short == "piControl")) {
             message("change plot order from ", paste0(plotorder, collapse=","), " to ", appendLF=F)
             plotorder <- c(plotorder[-which(names_short == "piControl")], which(names_short == "piControl"))
             message(paste(plotorder, collapse=","), " ...")
         }
 
         # add gray dots of data first
-        if (T) {
+        if (varname == "temp2_vs_toa_imbalance") {
             for (i in plotorder) {
                 if (names_short[i] == "piControl") {
+                    # nothing
                 } else {
                     points(varx[[i]], vary[[i]], 
                            #col=cols_rgb[i], 
@@ -2654,38 +3118,36 @@ if (plot_scatter_var1_vs_var2) {
         
         # now add real data 
         for (i in plotorder) {
-            if (names_short[i] == "piControl") {
+            if (varname == "temp2_vs_toa_imbalance" && names_short[i] == "piControl") {
                 message("special: plot only time mean")
                 points(mean(varx[[i]]), mean(vary[[i]]), 
                        #col=cols_rgb[i], 
                        col=cols[i],
                        pch=scatterpchs[i], cex=scattercexs[i])
+            } else if (varname == "temp2_vs_toa_imbalance" && T) { 
+                message("special: use year as symbols")
+                #years_of_setting_to_show <- c(1:10, seq(25, 250, b=25))
+                years_of_setting_to_show <- c(1:10, 15, seq(20, 100, b=10), seq(125, 250, b=25))
+                tmpx <- varx[[i]]
+                tmpy <- vary[[i]]
+                tmpx[years_of_setting_to_show] <- NA
+                tmpy[years_of_setting_to_show] <- NA
+                #points(tmpx, tmpy, 
+                #       col=cols_rgb[i], 
+                #       #col=cols[i],
+                #       pch=scatterpchs[i], cex=scattercexs[i])
+                # add wanted years as text
+                text(varx[[i]][years_of_setting_to_show], 
+                     vary[[i]][years_of_setting_to_show], 
+                     labels=years_of_setting_to_show,
+                     #col=cols_rgb[i], 
+                     col=cols[i], 
+                     cex=scattercexs[i])
             } else {
-                if (T) { # special: plot years as symbol
-                    message("special: use year as symbols")
-                    #years_of_setting_to_show <- c(1:10, seq(25, 250, b=25))
-                    years_of_setting_to_show <- c(1:10, 15, seq(20, 100, b=10), seq(125, 250, b=25))
-                    tmpx <- varx[[i]]
-                    tmpy <- vary[[i]]
-                    tmpx[years_of_setting_to_show] <- NA
-                    tmpy[years_of_setting_to_show] <- NA
-                    #points(tmpx, tmpy, 
-                    #       col=cols_rgb[i], 
-                    #       #col=cols[i],
-                    #       pch=scatterpchs[i], cex=scattercexs[i])
-                    # add wanted years as text
-                    text(varx[[i]][years_of_setting_to_show], 
-                         vary[[i]][years_of_setting_to_show], 
-                         labels=years_of_setting_to_show,
-                         #col=cols_rgb[i], 
-                         col=cols[i], 
-                         cex=scattercexs[i])
-                } else {
-                    points(varx[[i]], vary[[i]], 
-                           #col=cols_rgb[i], 
-                           col=cols[i],
-                           pch=scatterpchs[i], cex=scattercexs[i])
-                }
+                points(varx[[i]], vary[[i]], 
+                       col=cols_rgb[i], 
+                       #col=cols[i],
+                       pch=scatterpchs[i], cex=scattercexs[i])
             } # special plots depending on setting
         } # finished add data to scatter plot 
 
@@ -2882,10 +3344,39 @@ if (plot_scatter_var1_vs_var2) {
 
         ## scatter plot for each setting colored by time or season
         if (T) {
+            message("\nspecial: scatter vs seasons ...")
 
             for (i in 1:nsettings) {
 
                 if (dims[[i]]$time_frequency == "monthly") {
+                    
+                    # color data by time or seasons
+                    if (F) { # by time
+                        message("color by time ...")
+                        timecols <- colorRampPalette(c("blue", "red"))(length(varx[[i]]))
+                        scatter_suffix <- "_bytime"
+                    } else if (T) { # by season
+                        message("color by season ...")
+                        if (i == 1) scatterpchs_vstime <- 1:4
+                        season_cols <- c(DJF="blue", MAM="darkgreen", JJA="red", SON="brown")
+                        timecols <- rep(NA, t=length(varx[[i]]))
+                        season_pchs <- timecols
+                        djf_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(1, 2, 12))))
+                        mam_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(3, 4, 5))))
+                        jja_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(6, 7, 8))))
+                        son_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(9, 10, 11))))
+                        timecols[djf_inds] <- season_cols["DJF"]
+                        timecols[mam_inds] <- season_cols["MAM"]
+                        timecols[jja_inds] <- season_cols["JJA"]
+                        timecols[son_inds] <- season_cols["SON"]
+                        season_pchs[djf_inds] <- scatterpchs_vstime[1]
+                        season_pchs[mam_inds] <- scatterpchs_vstime[2]
+                        season_pchs[jja_inds] <- scatterpchs_vstime[3]
+                        season_pchs[son_inds] <- scatterpchs_vstime[4]
+                        scatter_suffix <- "_byseason"
+                    }
+                    timecols_rgb <- rgb(t(col2rgb(timecols)/255), alpha=alpha)
+                    
                     xlim <- range(varx[[i]], na.rm=T)
                     ylim <- range(vary[[i]], na.rm=T)
                     xat <- pretty(xlim, n=10)
@@ -2896,9 +3387,10 @@ if (plot_scatter_var1_vs_var2) {
                     plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                        varname, "_", 
                                        paste0(names_short[i], "_", seasonsp[i], 
-                                              "_", fromsp[i], "-", tosp[i], "_", areas[i], collapse="_vs_"), 
+                                              "_", fromsp[i], "_to_", tosp[i], "_", 
+                                              areas[i], collapse="_vs_"), 
+                                       scatter_suffix,
                                        ".", p$plot_type)
-                    message("\n", "plot ", names_short[i], " ", plotname, " ...")
                     dir.create(dirname(plotname), recursive=T, showWarnings=F)
                     if (p$plot_type == "png") {
                         png(plotname, width=p$scatter_width, height=p$scatter_height,
@@ -2943,27 +3435,14 @@ if (plot_scatter_var1_vs_var2) {
                         abline(v=0, col="gray", lwd=0.5)
                     }
 
-                    # add data to scatter plot colored by time
-                    if (F) { # by time
-                        timecols <- colorRampPalette(c("blue", "red"))(length(varx[[i]]))
-                    } else if (T) { # by season
-                        season_cols <- c(DJF="blue", MAM="darkgreen", JJA="red", SON="brown")
-                        timecols <- rep(NA, t=length(varx[[i]]))
-                        season_pchs <- timecols
-                        djf_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(1, 2, 12))))
-                        mam_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(3, 4, 5))))
-                        jja_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(6, 7, 8))))
-                        son_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(9, 10, 11))))
-                        timecols[djf_inds] <- season_cols["DJF"]
-                        timecols[mam_inds] <- season_cols["MAM"]
-                        timecols[jja_inds] <- season_cols["JJA"]
-                        timecols[son_inds] <- season_cols["SON"]
-                        season_pchs[djf_inds] <- scatterpchs_vstime[1]
-                        season_pchs[mam_inds] <- scatterpchs_vstime[2]
-                        season_pchs[jja_inds] <- scatterpchs_vstime[3]
-                        season_pchs[son_inds] <- scatterpchs_vstime[4]
+                    # add 1:1 line
+                    if (add_1to1_line_scatter) {
+                        message("add 1:1 line ...")
+                        abline(a=0, b=1, col="gray") # a=intercept, b=slope
                     }
-                    timecols_rgb <- rgb(t(col2rgb(timecols)/255), alpha=alpha)
+                    
+                    # add data to scatter plot colored by time
+                    message("add data")
                     points(varx[[i]], vary[[i]], 
                            col=timecols,
                            #col=timecols_rgb,
@@ -2973,9 +3452,9 @@ if (plot_scatter_var1_vs_var2) {
 
                     # add legend if wanted
                     if (add_legend) {
-                        message("\n", "add default stuff to plot_scatter_var1_vs_var2 legend ...")
                         le <- list()
-                        le$pos <- "topright"
+                        le$pos <- "topleft"
+                        #le$pos <- "topright"
                         le$ncol <- 1
                         #le$ncol <- 2 
                         le$text <- names(season_cols) #names_legend[i]
@@ -2986,12 +3465,6 @@ if (plot_scatter_var1_vs_var2) {
                         le$pchs <- scatterpchs_vstime
                         le$cex <- 1
                         le$cex <- 0.85
-                        # add stuf to legend here
-                        if (F) {
-                            message("\n", "add non default stuff to plot_scatter_var1_vs_var2 legend ...")
-
-                        }
-                        # reorder reading direction from R's default top->bottom to left->right
                         if (T) {
                             le <- reorder_legend(le)
                         }
