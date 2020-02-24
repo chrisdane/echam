@@ -15,6 +15,11 @@ if (regexpr("ollie", machine) != -1 ||
     homepath <- "~/scripts/r"
     #workpath <- "/work/ba0941/a270073"
     workpath <- "/work/ab0246/a270073"
+} else if (regexpr("paleosrv", machine) != -1) {
+    machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
+    machine_tag <- "paleosrv"
+    homepath <- "~/scripts/r"
+    workpath <- "/isibhv/projects/paleo_work/cdanek"
 } else if (regexpr("stan", machine) != -1) {
     machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
     machine_tag <- "stan"
@@ -99,7 +104,37 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixs <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv
+    datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
+    models <- "echam5"
+    fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
+    #ftypes <- "l" # "f" for files (default) or "l" for links
+    prefixs <- "cosmos-aso-wiso_echam5_holocenex10_wiso_mm"
+    fvarnames <- "temp2"
+    #fvarnames <- "tsurf"
+    #fvarnames <- "srad0"
+    #fvarnames <- "aprt"
+    #fvarnames <- "wisoaprt"
+    #fvarnames <- "wisoaprt_d"
+    #levs_out <- 2
+    #fvarnames <- "aprt_times_temp2"
+    #fvarnames <- "ptemp"
+    #modes <- "select"
+    modes <- "fldmean"
+    #modes <- "yearsum"
+    #modes <- "timsum"
+    #modes <- "zonmean"
+    froms <- "2901" # beginning
+    tos <- "2994"
+    #tos <- "3601" # end 
+    #new_time_origins <- -6999 
+    #new_time_origins <- -1
+    new_time_origins <- 1
+    wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
+    cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
+    cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
+
+} else if (F) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     models <- "echam5"
     fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
