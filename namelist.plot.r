@@ -60,7 +60,6 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_tos <- 1990
 
 } else if (T) { # Hol-T
-    #prefixes <- "Hol-T_echam5_wiso_mm"
     prefixes <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
     models <- "echam5"
     names_short <- "Hol-T"
@@ -364,7 +363,7 @@ add_xgrid <- F
 add_ygrid <- F
 add_zeroline <- T
 add_unsmoothed <- T
-add_smoothed <- T
+add_smoothed <- F
 # time:
 add_sd <- F
 add_linear_trend <- F
@@ -395,6 +394,6 @@ plot_redfit <- F
 # map plot options
 proj <- "rectangular" #"rectangular"
 add_land <- T
-reorder_lon_from_0360_to_180180 <- T
+reorder_lon_from_0360_to_180180 <- F
 add_grid <- F
 

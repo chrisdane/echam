@@ -29,7 +29,7 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 verbose <- 1 # 0,1
-clean <- F # remove tmp files
+clean <- T # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
 cdo_force <- F # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
@@ -102,21 +102,25 @@ if (F) { # old hist
 } else if (T) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     models <- "echam5"
-    fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
+    fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
     ftypes <- "l" # "f" for files (default) or "l" for links
-    prefixs <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
+    prefixs <- "cosmos-aso-wiso_echam5_holocene_main_mm"
+    #prefixs <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
+    fvarnames <- "srad0"
     #fvarnames <- "aprt"
     #fvarnames <- "wisoaprt"
-    fvarnames <- "wisoaprt_d"
-    levs_out <- 2
+    #fvarnames <- "wisoaprt_d"
+    #levs_out <- 2
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "ptemp"
     #modes <- "select"
-    modes <- "fldmean"
+    #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
+    modes <- "zonmean"
     froms <- "0004" # beginning of chunk 1
     #froms <- "0100"
     #tos <- "0013" 

@@ -3,6 +3,9 @@
 rm(list=ls()); graphics.off()
 
 # load packages if not interactive
+is.leap <- function(years) {
+    return(((years %% 4 == 0) & (years %% 100 != 0)) | (years %% 400 == 0))
+}
 if (!interactive()) {
     ht <- function(d, n=7) { # headtail
         print(head(d, n))
@@ -616,22 +619,14 @@ for (i in 1:nsettings) {
 
         # construct necessary cdo commands
         # (n-2)-th command: calculation
+        cdocalc <- paste0("-", modes[i]) # e.g. "-fldmean"
         if (modes[i] == "select") {
             cdocalc <- "" # variable selection only
-        } else if (modes[i] == "timmean") {
-            cdocalc <- "-timmean"
-        } else if (modes[i] == "fldmean") {
-            cdocalc <- "-fldmean"
         } else if (modes[i] == "volint") {
             message("only test")
             cdocalc <- "-fldsum -vertsum"
-        } else if (modes[i] == "yearsum") {
-            cdocalc <- "-yearsum" 
-        } else if (modes[i] == "timsum") {
-            cdocalc <- "-timsum"
-        } else {
-            stop("calculation for mode '", modes[i], "' not defined.")
         } # which calculation depending on mode
+        message("`modes[", i, "]` = \"", modes[i], "\" --> `cdocalc` = \"", cdocalc, "\" ...")
 
         # (n-3)-th command: select level
         cdosellevel <- "" # default
@@ -1014,6 +1009,9 @@ for (i in 1:nsettings) {
                     #        stop("not definedddd")
                     #    }
                     #}
+                    
+                    # new dates as YYYY-MM-DD before checks
+                    dates_out <- paste0(years_out, "-", months_out, "-", days_out)
 
                     # check new dates for February 30
                     # `cdo showdate` of the result of `cdo yearsum` yields "YYYY-06-30"
@@ -1022,15 +1020,29 @@ for (i in 1:nsettings) {
                     # "YYYY-02-30" are possible.
                     feb30_inds <- which(months_out == 2 & days_out == 30)
                     if (length(feb30_inds) > 0) {
+                        message("new time would yield february 30:")
+                        ht(dates_out[feb30_inds])
+                        message(" --> set day of these time points to 28")
                         days_out[feb30_inds] <- 28
                     }
 
-                    # new dates as YYYY-MM-DD
+                    # check new dates for February 29 of new non-leap years
+                    feb29_inds <- months_out == 2 & days_out == 29
+                    leap_inds <- is.leap(years_out)
+                    feb29_nonleap_inds <- which(feb29_inds & !leap_inds)
+                    if (length(feb29_nonleap_inds) > 0) {
+                        message("new time would yield february 29 in non-leap years:")
+                        ht(dates_out[feb29_nonleap_inds])
+                        message(" --> set day of these time points to 28")
+                        days_out[feb29_nonleap_inds] <- 28
+                    }
+
+                    # new dates as YYYY-MM-DD after checks
                     #dates_out <- paste0(sprintf("%04i", years_out), "-", 
                     #                    sprintf("%02i", months_out), "-",
                     #                    sprintf("%02i", days_out))
                     dates_out <- paste0(years_out, "-", months_out, "-", days_out)
-                    message("dates_out:")
+                    message("\ndates_out:")
                     ht(dates_out, n=25)
 
                     #if (chunki == 2) stop("asd")
