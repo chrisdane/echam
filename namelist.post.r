@@ -106,10 +106,11 @@ if (F) { # old hist
 
 } else if (T) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
+    #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata"
     models <- "echam5"
     fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
     #ftypes <- "l" # "f" for files (default) or "l" for links
-    prefixs <- "cosmos-aso-wiso_echam5_holocenex10_wiso_mm"
+    prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
     fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
@@ -119,17 +120,20 @@ if (F) { # old hist
     #levs_out <- 2
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "ptemp"
-    #modes <- "select"
-    modes <- "fldmean"
+    modes <- "select"
+    #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
+    #froms <- "0001" # beginning counting from 1
     froms <- "2901" # beginning
-    tos <- "2994"
-    #tos <- "3601" # end 
-    #new_time_origins <- -6999 
-    #new_time_origins <- -1
+    #tos <- "0011"
+    #tos <- "2910"
+    tos <- "3601" # end 
+    #tos <- "7001" # end counting from 1 
+    new_time_use_filename_years <- F
     new_time_origins <- 1
+    new_time_bys <- 10
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
@@ -165,8 +169,7 @@ if (F) { # old hist
     #tos <- "0129"
     #tos <- "5903" # end of chunk 2
     tos <- "6173"
-    #new_time_origins <- -6999 
-    #new_time_origins <- -1
+    new_time_use_filename_years <- T
     new_time_origins <- 1
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"

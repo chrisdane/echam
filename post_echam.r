@@ -254,7 +254,8 @@ for (i in 1:nsettings) {
         ticcmd <- Sys.time()
         files <- system(cmd, intern=T)
         toccmd <- Sys.time()
-        if (length(files) == 0) stop("no files found")
+        if (length(files) == 0) stop("no files found (are `datapaths` and `fpattern` correct? ",
+                                     "are input files maybe links? if yes,n set `ftypes[", i, "]`=\"l\")")
         elapsedcmd <- toccmd - ticcmd
         message("`find` of ", length(files), " files took ", elapsedcmd, " ", attributes(elapsedcmd)$units) 
 
@@ -285,15 +286,15 @@ for (i in 1:nsettings) {
             message("\n", "found ", length(files), " ", filetype, " file", 
                     ifelse(length(files) > 1, "s", ""), ":")
             if (length(files) > 1) {
-                ht(df)
+                ht(df, n=30)
             } else {
                 print(df)
             }
             message("\nderived years based on file names:")
-            ht(years_in)
+            ht(years_in, n=30)
             if (grepl("<MM>", fpatterns[i])) {
                 message("\nderived months based on file names:")
-                ht(MM_in)
+                ht(MM_in, n=30)
             }
         }
 
@@ -935,20 +936,47 @@ for (i in 1:nsettings) {
                 for (chunki in seq_len(nchunks)) {
 
                     message("\nchunk ", chunki, "/", nchunks, " ...")
-                  
+                    
                     # new years based on `new_time_origins` and years from file names 
-                    # (`years_in`) and NOT the years from nc time dimension values
-                    # --> workaround for wrong model years due to echam calendar limitations
-                    # --> `cdo shifttime` would not work
-                    if (ntime_out == ntime_in) {
-                        years_out <- new_time_origins[i] + years_in[chunk_inds_list[[chunki]]] - 1
-                    } else if (ntime_out == length(years_wanted)) {
-                        years_out <- new_time_origins[i] + years_wanted[dates_in_list[[chunki]]$inds] - 1
-                    } else if (ntime_out == 1) { # through e.g. `cdo timsum`
-                        years_out <- new_time_origins[i] + floor(mean(years_wanted)) - 1
-                    } else { 
-                        stop("not definedddddd")
-                    }
+                    # (`new_time_use_filename_years`=T (see with `years_in`), and not 
+                    # the years from nc time dimension values or 
+                    #  
+                    # --> workaround for possibly wrong model years (`cdo shifttime` would not work)
+                    if (chunki == 1) {
+                        if (!exists("new_time_use_filename_years")) {
+                            new_time_use_filename_years <- T # default
+                        } else {
+                            if (!new_time_use_filename_years) {
+                                if (!exists("new_time_bys")) {
+                                    stop("you provided `new_time_use_filename_years`=", 
+                                         new_time_use_filename_years, " but not `new_time_bys`")
+                                }
+                            }
+                        }
+                    } # if chunki == 1
+                    
+                    # new years
+                    if (new_time_use_filename_years) {
+                        if (ntime_out == ntime_in) {
+                            years_out <- new_time_origins[i] + years_in[chunk_inds_list[[chunki]]] - 1
+                        } else if (ntime_out == length(years_wanted)) {
+                            years_out <- new_time_origins[i] + years_wanted[dates_in_list[[chunki]]$inds] - 1
+                        } else if (ntime_out == 1) { # through e.g. `cdo timsum`
+                            years_out <- new_time_origins[i] + floor(mean(years_wanted)) - 1
+                        } else { 
+                            stop("not definedddddd here")
+                        }
+                    } else if (!new_time_use_filename_years) {
+                        if (ntime_out == ntime_in) {
+                            years_out <- seq(new_time_origins[i], b=new_time_bys[i], l=ntime_out)
+                        } else if (ntime_out == length(years_wanted)) {
+                            stop("how?")
+                        } else if (ntime_out == 1) { # through e.g. `cdo timsum`
+                            stop("how?")
+                        } else { 
+                            stop("not definedddddd here2")
+                        }
+                    } # if new_time_use_filename_years or not
 
                     # check new years for ncview minimum time origin `ncview_min_origin`
                     if (chunki == 1) {
@@ -975,14 +1003,28 @@ for (i in 1:nsettings) {
                     } # if chunki == 1
 
                     # new years with possibly adapted `new_time_origins` for ncview 
-                    if (ntime_out == ntime_in) {
-                        years_out <- new_time_origins[i] + years_in[chunk_inds_list[[chunki]]] - 1
-                    } else if (ntime_out == length(years_wanted)) {
-                        years_out <- new_time_origins[i] + years_wanted[dates_in_list[[chunki]]$inds] - 1
-                    } else if (ntime_out == 1) {
-                        years_out <- new_time_origins[i] + floor(mean(years_wanted)) - 1
+                    if (new_time_use_filename_years) {
+                        if (ntime_out == ntime_in) {
+                            years_out <- new_time_origins[i] + years_in[chunk_inds_list[[chunki]]] - 1
+                        } else if (ntime_out == length(years_wanted)) {
+                            years_out <- new_time_origins[i] + years_wanted[dates_in_list[[chunki]]$inds] - 1
+                        } else if (ntime_out == 1) { # through e.g. `cdo timsum`
+                            years_out <- new_time_origins[i] + floor(mean(years_wanted)) - 1
+                        } else { 
+                            stop("not definedddddd here")
+                        }
+                    } else if (!new_time_use_filename_years) {
+                        if (ntime_out == ntime_in) {
+                            years_out <- seq(new_time_origins[i], b=new_time_bys[i], l=ntime_out)
+                        } else if (ntime_out == length(years_wanted)) {
+                            stop("how?")
+                        } else if (ntime_out == 1) { # through e.g. `cdo timsum`
+                            stop("how?")
+                        } else { 
+                            stop("not definedddddd here2")
+                        }
                     }
-                    
+
                     # new months
                     months_out <- dates_in_list[[chunki]]$months
                     #if (ntime_out == ntime_in && grepl("<MM>", fpatterns[i])) {
