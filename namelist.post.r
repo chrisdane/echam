@@ -110,17 +110,19 @@ if (F) { # old hist
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     fvarnames <- "srad0"
+    #fvarnames <- "srad0d"
+    #fvarnames <- "trad0"
     #fvarnames <- "aprt"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
     #levs_out <- 2
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "ptemp"
-    #modes <- "select"
+    modes <- "select"
     #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
-    modes <- "zonmean"
+    #modes <- "zonmean"
     froms <- "0004" # beginning of chunk 1
     #froms <- "0100"
     #tos <- "0013" 
@@ -236,7 +238,8 @@ if (F) { # old hist
 
 # https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_calc_wiso_echam5_monmean.sh
 # /ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh
-cdo_known_cmds <- list("wisoaprt_d"=list(cmd=c("<cdo> -setname,wisoaprt_d -setcode,10 -mulc,1000. -subc,1. -div -div <wisoaprt> <aprt> <wiso_smow_files>")),#)#,
+cdo_known_cmds <- list("toa_imbalace="=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
+                       "wisoaprt_d"=list(cmd=c("<cdo> -setname,wisoaprt_d -setcode,10 -mulc,1000. -subc,1. -div -div <wisoaprt> <aprt> <wiso_smow_files>")),#)#,
                                                #"-t <cdo_codetables> setpartabn,<cdo_partablesn>")))#,
                        "wisoaprl_d"=list(cmd="<cdo> -setname,wisoaprl_d -setcode,13 -mulc,1000. -subc,1. -div -div <wisoaprl> <aprl> <wiso_smow_files>"),
                        "wisoaprc_d"=list(cmd="<cdo> -setname,wisoaprc_d -setcode,14 -mulc,1000. -subc,1. -div -div <wisoaprc> <aprc> <wiso_smow_files>"),

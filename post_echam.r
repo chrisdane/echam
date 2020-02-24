@@ -592,7 +592,7 @@ for (i in 1:nsettings) {
         } else { 
            
             message("--> requested variable was found in first file")
-            if (clean) system("rm -v ", tmpfile)
+            if (clean) system(paste0("rm -v ", tmpfile))
         
         } # finished check if requested variable is in first found file
 

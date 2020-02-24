@@ -31,9 +31,10 @@ message(paste0("   workpath = ", workpath))
 # options across settings
 # echam:
 #mode <- "select"
-mode <- "fldmean" 
+#mode <- "fldmean" 
 #mode <- "timmean" 
 #mode <- "timsum"
+mode <- "zonmean"
 #mode <- "volint"
 # fesom:
 #mode <- "moc_depth"
@@ -60,7 +61,8 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_tos <- 1990
 
 } else if (T) { # Hol-T
-    prefixes <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_holocene_main_mm"
+    #prefixes <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
     models <- "echam5"
     names_short <- "Hol-T"
     names_legend <- "cosmos-aso-wiso"
@@ -72,14 +74,19 @@ if (F) { # awi-esm-1-1-lr hist
     new_origins <- -6995 # model year 1 = 6999 BP -> model year 4 = 6999 BP - 4 = 6995 BP
     time_frequencies <- "monthly"
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- 120
+    n_mas <- 1
+    remove_mean_froms <- -827
+    remove_mean_tos <- -827
+    #seasonsp <- "Jun"
+    seasonsp <- "Dec"
     #varnames_in <- "temp2"
     #varnames_in <- "tsurf"
     #varnames_in <- "aprt"
-    varnames_in <- "wisoaprt_d"
+    #varnames_in <- "wisoaprt_d"
     #varnames_in <- "ptemp"
+    varnames_in <- "srad0"
     #areas <- "sibiria"
-    levs <- 2
+    #levs <- 2
 
 # =====================================
 # 2 settings
@@ -349,8 +356,8 @@ add_title <- T
 add_legend <- T
 p <- setDefaultPlotOptions(plot_type="png", 
                            #plot_type="pdf",
-                           family_png="Droid Sans Mono", 
-                           family_pdf="Droid Sans Mono"
+                           #family_png="Droid Sans Mono", 
+                           #family_pdf="Droid Sans Mono"
                            )
                            #family_pdf="CM Roman")
 alpha <- 0.2 # transparent: 0,1 (0 fully transparent)
@@ -363,7 +370,7 @@ add_xgrid <- F
 add_ygrid <- F
 add_zeroline <- T
 add_unsmoothed <- T
-add_smoothed <- F
+add_smoothed <- T
 # time:
 add_sd <- F
 add_linear_trend <- F

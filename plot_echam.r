@@ -1,7 +1,7 @@
 ## R
 
 #options(warn = 2) # stop on warnings
-if (F) {
+if (T) {
     rm(list=ls())
     fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
     # `[` <- fctbackup 
@@ -944,7 +944,7 @@ for (i in 1:nsettings) {
         # subset seasons from data if wanted (=seasonsp)
         # check which seasonsf and seasonp differ
         if (seasonsp[i] != seasonsf[i]) {
-            message("\n", "cut season from `seasonf[", i, "]` = \"", seasonsf[i], 
+            message("\n", "cut season from `seasonsf[", i, "]` = \"", seasonsf[i], 
                     "\" to `seasonsp[", i, "] = \"", seasonsp[i], "\" ...")
             if (is.character(seasonsp[i])) { # "DJF" or "Jul"
                 # check if substring is in DJFMAM ...
@@ -978,15 +978,21 @@ for (i in 1:nsettings) {
         # finished time stuff
         timein_ct <- as.POSIXct(timein_lt)
         if (exists("time_inds")) {
-            dims[[i]]$time_inds <- time_inds
+            dims[[i]]$time_inds <- which(time_inds)
         }
         dims[[i]]$timen <- dims[[i]]$time # replace original numeric time with POSIX time object
         dims[[i]]$timelt <- timein_lt
         dims[[i]]$time <- timein_ct
+        if (exists("time_inds")) {
+            dims[[i]]$timen <- dims[[i]]$timen[time_inds]
+        }
         dims[[i]]$timeunits <- timein_units
         
         # POSIXlt as numeric
         #dims[[i]]$timen <- lapply(dims[[i]]$time, as.numeric)
+
+        message("\nmin/max(dims[[", i, "]]$timelt) = ", 
+                min(dims[[i]]$timelt),  " / ", max(dims[[i]]$timelt))
 
     } else { # if none of file dims is "time"
 
@@ -1261,11 +1267,32 @@ for (i in 1:nsettings) {
         } # if depth values are not increasing
     } # if this file has depth dim
 
+    # if two dimensions and one is time, make it x-dim
+    if (length(dims_per_setting[[i]]) == 2 &&
+        any(names(dims[[i]]) == "time") && any(names(dims[[i]]) == "lat")) {
+
+        message("\n", "detected time and lat dim; check if permutation from (lat x time) to (time x lat is necessary) ...") 
+        vars_with_timedim_inds <- lapply(dims_per_setting, function(x) regexpr("time", x) != -1)
+        vars_with_latdim_inds <- lapply(dims_per_setting, function(x) regexpr("lat", x) != -1)
+        for (vi in 1:length(datas[[i]])) {
+            if (any(vars_with_timedim_inds[[i]]) &&
+                any(vars_with_latdim_inds[[i]])) { # if var has time and lat dim 
+                if (vars_with_timedim_inds[[i]][2] &&
+                    vars_with_latdim_inds[[i]][1]) { # if vars first dim is lat and 2nd time
+                    message("aperm(datas[[", i, "]][[", vi, "]], c(2, 1)) ...")
+                    datas[[i]][[vi]] <- aperm(datas[[i]][[vi]], c(2, 1)) # permutate
+                    attributes(datas[[i]][[vi]]) <- list(dim=dim(datas[[i]][[vi]]),
+                                                         dims=dims_of_var[c(2 ,1)])
+                }
+            }
+        }
+
+    } # if any dim is time and lat
+
 } # for i nsettings
 message("\n", "****************** reading data finished ***************************")
 
 varnames_unique <- unique(as.vector(unlist(sapply(datas, names))))
-
 
 # save data before applying offset, multiplication factors, etc. for later
 message("\n", "save original data without multiplication factors or offsets or removal of a temporal mean etc. ...")
@@ -1305,11 +1332,11 @@ for (i in 1:nsettings) {
             label <- data_infos[[i]][[vi]]$long_name
         }
         if (!is.na(remove_mean_froms[i])) {
-            label <- paste0(label, " anomaly wrt ", 
+            label <- paste0(label, "\nanomaly wrt ", 
                             paste(unique(remove_mean_froms[i], remove_mean_tos[i]), collapse="-"))
         }
         if (!is.na(remove_setting)) {
-            label <- paste0(label, " anomaly wrt ", remove_setting)
+            label <- paste0(label, "\nanomaly wrt ", remove_setting)
         }
         if (!is.null(data_infos[[i]][[vi]]$units)) {
             label <- paste0(label, " [", data_infos[[i]][[vi]]$units, "]")
@@ -1323,7 +1350,7 @@ for (i in 1:nsettings) {
                 data_infos[[i]][[vi]]$label <- "2m temperature anomaly [°C]"
             }
             if (!is.na(remove_setting)) {
-                data_infos[[i]][[vi]]$label <- paste0("2m temperature anomaly wrt ", remove_setting)
+                data_infos[[i]][[vi]]$label <- paste0("2m temperature\nanomaly wrt ", remove_setting)
             }
             if (F) { # anomaly:
                 message("*** special label ***")
@@ -1436,46 +1463,64 @@ if (!is.na(remove_setting)) {
     # update varnames_unique
     varnames_unique <- unique(as.vector(unlist(sapply(datas, names))))
 
+} else {
+    message("\n`remove_setting` = NA --> do not remove a setting mean")
 } # if !is.na(remove_setting)
 # finished removing setting mean from all settings
 
 
 # remove some temporal mean if defined
 if (any(!is.na(remove_mean_froms))) {
-    message("\n", "remove temporal means ...")
+    message("\n", "remove temporal means between")
     for (i in 1:nsettings) {
+        message(i, "/", nsettings, ": ", names_short[i], " ...")
         if (!is.na(remove_mean_froms[i])) {
+            message("   `remove_mean_froms[", i, "]` = ", remove_mean_froms[i], "\n",
+                    "   `remove_mean_tos[", i, "]` = ", remove_mean_tos[i])
             if (any(names(dims[[i]]) == "time")) {
-                remove_fromslt <- as.POSIXlt(paste0(remove_mean_froms[i], "-01-01 00:00:00"), tz="UTC")
-                remove_toslt <- as.POSIXlt(paste0(remove_mean_tos[i], "-12-31 23:59:59"), tz="UTC")
+                if (remove_mean_froms[i] < 0) {
+                    remove_fromslt <- as.POSIXlt(paste0("0-01-01 00:00:00"), tz="UTC")
+                    remove_fromslt <- seq.POSIXt(remove_fromslt, by="-1 year", l=abs(remove_mean_froms[i]) + 1)
+                    remove_fromslt <- remove_fromslt[length(remove_fromslt)]
+                } else {
+                    remove_fromslt <- as.POSIXlt(paste0(remove_mean_froms[i], "-01-01 00:00:00"), tz="UTC")
+                }
+                if (remove_mean_tos[i] < 0) {
+                    remove_toslt <- as.POSIXlt(paste0("0-12-31 00:00:00"), tz="UTC")
+                    remove_toslt <- seq.POSIXt(remove_toslt, by="-1 year", l=abs(remove_mean_tos[i]) + 1)
+                    remove_toslt <- remove_toslt[length(remove_toslt)]
+                } else {
+                    remove_toslt <- as.POSIXlt(paste0(remove_mean_tos[i], "-12-31 23:59:59"), tz="UTC")
+                }
                 time_inds <- which(dims[[i]]$time >= remove_fromslt & dims[[i]]$time <= remove_toslt)
                 if (length(time_inds) == 0) {
-                    stop("no data found between `remove_mean_froms[", i, "]` = \"", remove_mean_froms[i], 
-                         "\" and `remove_mean_tos[", i, "]` = \"", remove_mean_tos[i], 
-                         "\". cannot remove this temporal mean.")
+                    stop("no data found between these given dates.")
                 } else {
                     for (vi in 1:length(datas[[i]])) {
+                        message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi]) 
                         # check if variable has time dimension 
                         dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                         timedimind <- which(dims_of_var == "time")
                         if (length(timedimind) == 1) {
-                            message("remove temporal mean between ", remove_mean_froms[i], "-", 
-                                    remove_mean_tos[i], " `remove_mean_froms[", i, "]` to `remove_mean_tos[", i, "]` ...")
+                            message("      found ", length(time_inds), " time points between these dates (between ", 
+                                    min(dims[[i]]$time[time_inds]), " and ", max(dims[[i]]$time[time_inds]), ")")
                             apply_dims <- 1:length(dims_of_var)
                             mu <- rep(",", t=length(dims_of_var))
                             mu[timedimind] <- paste0("time_inds")
                             if (length(apply_dims) == 1) { # data is vector
-                                mu <- paste0("mu <- mean(datas[[", i, "]][[", vi, "]][", paste0(mu, collapse=""), "], na.rm=T)")
-                                message(mu)
+                                mu <- paste0("mu <- mean(datas[[", i, "]][[", vi, "]][", 
+                                             paste0(mu, collapse=""), "], na.rm=T)")
+                                message("      ", mu)
                                 eval(parse(text=mu))
-                                message("   mu = ", mu, " ", data_infos[[i]][[vi]]$units)
+                                message("      mu = ", mu, " ", data_infos[[i]][[vi]]$units)
                                 datas[[i]][[vi]] <- datas[[i]][[vi]] - mu 
                             } else { # data is array
                                 apply_dims <- apply_dims[-timedimind]
                                 mu <- paste0("mu <- apply(datas[[", i, "]][[", vi, "]][", paste0(mu, collapse=""), 
                                              "], c(", paste(apply_dims, collapse=","), "), mean, na.rm=T)")
-                                message(mu)
+                                message("      ", mu)
                                 eval(parse(text=mu))
+                                message("      min/max mu = ", min(mu), " / ", max(mu), " ", data_infos[[i]][[vi]]$units)
                                 if (length(dims_of_var) == 2) {
                                     datas[[i]][[vi]] <- datas[[i]][[vi]] - t(array(mu, dim=dim(t(datas[[i]][[vi]]))))
                                 } else {
@@ -1483,7 +1528,7 @@ if (any(!is.na(remove_mean_froms))) {
                                 }
                             } # if data is vector or array
                         } else {
-                            message("variable ", vi, " \"", names(datas[[i]])[vi], "\" has no time dim.")
+                            message("   variable ", vi, " \"", names(datas[[i]])[vi], "\" has no time dim.")
                         } # remove temporal mean if variable has time dim
                     } # for vi all variables per setting
                 } # if temporal mean can be removed
@@ -1493,6 +1538,8 @@ if (any(!is.na(remove_mean_froms))) {
             } # if any variable has time dimension or not
         } # if remove_mean_froms[i] is not NA
     } # for i nsettings
+} else {
+    message("\n", "`remove_mean_froms` all NA --> do not remove temporal means ...")
 } # finished removing a temporal mean
 
 
@@ -1514,12 +1561,14 @@ for (vi in 1:length(varnames_unique)) {
 # apply moving average to datas
 if (add_smoothed && 
     any(sapply(lapply(lapply(dims, names), "==", "time"), any)) &&
-    any(seasonsp == "Jan-Dec") && !all(n_mas == 1)) {
+    #any(seasonsp == "Jan-Dec") && 
+    !all(n_mas == 1)) {
     message("\n", "`add_smoothed` = T --> apply moving averages ...")
     datasma <- datas
     for (i in 1:nsettings) {
         message(i, "/", nsettings, ": ", names_short[i], " ...")
-        if (seasonsp[i] == "Jan-Dec" && n_mas[i] != 1) { # applying moving average
+        #if (seasonsp[i] == "Jan-Dec" && n_mas[i] != 1) { # applying moving average
+        if (n_mas[i] != 1) {
             for (vi in 1:length(datas[[i]])) { 
                 dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                 timedimind <- which(dims_of_var == "time")
@@ -1531,7 +1580,7 @@ if (add_smoothed &&
                             ": n_mas[", i, "]: ", n_mas[i], " (ntime = ", length(dims[[i]]$time), 
                             ", npy = ", npy, " --> ", n_mas[i], "/", npy, " = ", n_mas[i]/npy, 
                             " year running mean)") 
-                    if (length(apply_dims) == 1) { # variable has only 1 dim and its time
+                    if (length(dims_of_var) == 1) { # variable has only 1 dim and its time
                         datasma[[i]][[vi]] <- stats::filter(datas[[i]][[vi]], filter=rep(1/n_mas[i], t=n_mas[i]))
                     } else { # variable has more than 1 dims
                         apply_dims <- apply_dims[-timedimind]
@@ -1539,7 +1588,7 @@ if (add_smoothed &&
                                       "apply(datas[[", i, "]][[", vi, "]], ",
                                       "c(", paste(apply_dims, collapse=","), "), ",
                                       "function(x) filter(x, rep(1/", n_mas[i], ", t=", n_mas[i], ")))")
-                        message(cmd)
+                        message("   ", cmd)
                         eval(parse(text=cmd))
                     }
                 } else { # variable has no time dim
@@ -1554,6 +1603,9 @@ if (add_smoothed &&
     } # for i nsettings
 } # if add_smoothed && any(attributes(datas[[i]][[vi]])$dims == "time") && !all(n_mas == 1)
 if (!exists("datasma")) {
+    message("\n", "`datasma` does not exist. --> set `add_smoothed` = T ",
+            "and/or `n_mas` not equal 1\n",
+            "in order to apply moving averages ...")
     add_smoothed <- F
 }
 # finished applying moving average
@@ -1567,7 +1619,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))
     monlim <- NA
     for (i in 1:nsettings) {
         if (i == 1) {
-            message("\n", "`dims[[", i, "]]$time_frequency == \"monhly\" ",
+            message("\n", "`dims[[", i, "]]$time_frequency == \"monthly\" ",
                     "--> calc monthly climatology of setting")
         }
         message(i, "/", nsettings, ": ", names_short[i], " ...")
@@ -1595,7 +1647,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))
                         indslhs <- indsrhs <- rep(",", t=length(dims_of_var))
                         indslhs[timedimind] <- mi
                         indsrhs[timedimind] <- paste0("time_inds")
-                        if (length(apply_dims) == 1) { # var has only time dim
+                        if (length(datasmon_dims) == 1) { # var has only time dim
                             cmd1 <- paste0("tmp2 <- mean(datas[[", i, "]][[", vi, "]][",
                                            paste(indsrhs, collapse=""), "], na.rm=T)")
                         } else {
@@ -1760,7 +1812,6 @@ if (any(ntime_per_setting > 1)) {
         }
     }
 
-
     message("tlablt = ", paste(tlablt, collapse=", "))
     message("tunit = ", tunit)
 
@@ -1782,8 +1833,10 @@ for (vi in 1:length(varnames_unique)) {
         if (length(varind) == 1) {
             z[[i]] <- datas[[i]][[varind]]
             if (exists("datasma")) zma[[i]] <- datasma[[i]][[varind]]
+        } else {
+            stop("not defined")
         }
-    }
+    } # for all settings
     vardims <- lapply(z, function(x) attributes(x)$dims)
     vardims_unique <- c()
     for (i in 1:nsettings) {
@@ -1810,6 +1863,8 @@ for (vi in 1:length(varnames_unique)) {
     message("\n", "var ", vi, "/", length(varnames_unique), ": \"", varname, "\" of `datas` has dims \"", 
             paste(vardims_unique, collapse="\",\""), "\". check if this case is defined ...")
 
+
+    ### 2 dims
     ## plot `datas` as lon vs lat
     if (ndims_unique == 2 && all(vardims_unique %in% c("lon", "lat"))) {
 
@@ -1826,7 +1881,7 @@ for (vi in 1:length(varnames_unique)) {
         plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                            varname, "_", 
                            paste0(names_short, "_", seasonsp, 
-                                  "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
+                                  "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
                            ".", p$plot_type)
         message("plot ", plotname, " ...")
         dir.create(dirname(plotname), recursive=T, showWarnings=F)
@@ -1852,13 +1907,116 @@ for (vi in 1:length(varnames_unique)) {
         message("\n", "save plot ", plotname, " ...")
         dev.off()
         if (p$plot_type == "pdf") {
-            embed_fonts(plotname, outfile=plotname)
+            if("extrafont" %in% (.packages())){
+                extrafont::embed_fonts(plotname, outfile=plotname)
+            } else {
+                grDevices::embedFonts(plotname, outfile=plotname)
+            }
         }
     
     } # if (ndims_unique == 2 && all(vardims_unique %in% c("lon", "lat"))) {
     # finished plot `datas` as lon vs lat
 
+
+    ## plot `datas` as time vs lat
+    if (ndims_unique == 2 && all(vardims_unique %in% c("time", "lat"))) {
     
+        message("\n", varname, " ", mode, " plot time vs lat ...")
+        data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]][[varname]]
+
+        if (add_smoothed) {
+            message("\n", "`add_smoothed` = T --> replace z with zma ...")
+            z <- zma
+        }
+        
+        if (F) {
+            message("\nspecial: plot values relative to last time point")
+            for (i in 1:nsettings) {
+                tmp <- drop(z[[i]][length(dims[[i]]$time),])
+                message("min / max (z[[", i, "]][", length(dims[[i]]$time), ",] = ", 
+                        min(tmp, na.rm=T), " / ", max(tmp, na.rm=T))
+                tmp <- replicate(tmp, n=length(dims[[i]]$time))
+                tmp <- aperm(tmp, c(2, 1))
+                z[[i]] <- tmp - z[[i]]
+            }
+            data_info$label <- paste0(data_info$label, "\nw.r.t. present")
+            message("\n")
+        }
+
+        message("get global zlim ... ", appendLF=F)
+        zlim <- range(z, na.rm=T)
+        message("min/max = ", zlim[1], " / ", zlim[2])
+        nlevels <- 20
+        if (varname == "srad0" && F) {
+            message("special zlevels")
+            # levels/colors as marcott et al. 2013 Fig. 2 A December
+            zlevels <- seq(-34, 10, b=4)
+            if (min(zlevels) > zlim[1]) zlevels <- c(zlim[1], zlevels)
+            if (max(zlevels) < zlim[2]) zlevels <- c(zlevels, zlim[2])
+            pos_cols <- c("#fbe4f3", "#f7b9de", "#f591cb", "#ec1168")
+            neg_cols <- c("#5b58b0", "#5b58b0", "#c6b7df", "#edeaf7", "#fafbfb")
+        } else if (varname == "srad0" && F) {
+            message("special zlevels")
+            # levels/colors as marcott et al. 2013 Fig. 2 B June
+            zlevels <- seq(-4, 36, b=4)
+            if (min(zlevels) > zlim[1]) zlevels <- c(zlim[1], zlevels)
+            if (max(zlevels) < zlim[2]) zlevels <- c(zlevels, zlim[2])
+            pos_cols <- c("#fbd3eb", "#f693cc", "#f584c6", "#ef47a8", "#ec0f64")
+            neg_cols <- "#5b5cb2"
+        } else {
+            zlevels <- NULL
+            pos_cols <- NULL
+            neg_cols <- NULL
+            nlevles <- NULL
+        }
+        source(paste0(homepath, "/functions/image.plot.pre.r"))
+        ip <- image.plot.pre(zlim, nlevels=nlevels,
+                             palname="RdBu", 
+                             center_include=T, pos_cols=pos_cols, neg_cols=neg_cols)
+
+        plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                           varname, "_",  
+                           paste0(names_short, "_", areas, "_", seasonsp, "_", 
+                                  fromsp, "_to_", tosp, 
+                                  collapse="_vs_"), 
+                           ".", p$plot_type)
+        message("plot ", plotname, " ...")
+        dir.create(dirname(plotname), recursive=T, showWarnings=F)
+        
+        # determine number of rows and columns
+        source(paste0(homepath, "/functions/image.plot.nxm.r"))
+        nm <- image.plot.nxm(x=time_dim, y=lat_dim, z=z, ip=ip, dry=T)
+        
+        if (p$plot_type == "png") {
+            png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
+                res=p$dpi, family=p$family_png)
+        } else if (p$plot_type == "pdf") {
+            pdf(plotname, width=nm$ncol*p$inch, height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
+                family=p$family_pdf)
+        }
+
+        # plot
+        image.plot.nxm(x=time_dim, y=lat_dim, z=z, ip=ip, verbose=F,
+                       add_contour=F,
+                       #xlim=tlimct, 
+                       x_at=tatn, x_labels=tlablt, 
+                       xlab=tunit, ylab="Latitude [°]",
+                       zlab=data_info$label, znames=names_legend)
+    
+        message("\n", "save plot ", plotname, " ...")
+        dev.off()
+        if (p$plot_type == "pdf") {
+            if("extrafont" %in% (.packages())){
+                extrafont::embed_fonts(plotname, outfile=plotname)
+            } else {
+                grDevices::embedFonts(plotname, outfile=plotname)
+            }
+        }
+
+    } # if (ndims_unique == 2 && all(vardims_unique %in% c("time", "lat"))) {
+    # finished plot `datas` as time vs lat
+    
+
     ## plot `datas` as time vs depth
     if (ndims_unique == 2 && all(vardims_unique %in% c("time", "depth"))) {
    
@@ -1897,7 +2055,7 @@ for (vi in 1:length(varnames_unique)) {
         plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                            varname, "_", 
                            paste0(names_short, "_", areas, "_", seasonsp, "_", 
-                                  fromsp, "-", tosp, "_", 
+                                  fromsp, "_to_", tosp, "_", 
                                   depth_fromsp, "-", depth_tosp, "m",
                                   collapse="_vs_"), 
                            ".", p$plot_type)
@@ -1922,13 +2080,18 @@ for (vi in 1:length(varnames_unique)) {
         message("\n", "save plot ", plotname, " ...")
         dev.off()
         if (p$plot_type == "pdf") {
-            embed_fonts(plotname, outfile=plotname)
+            if("extrafont" %in% (.packages())){
+                extrafont::embed_fonts(plotname, outfile=plotname)
+            } else {
+                grDevices::embedFonts(plotname, outfile=plotname)
+            }
         }
 
     } # if (ndims_unique == 2 && all(vardims_unique %in% c("time", "depth"))) {
     # finished plot `datas` as time vs depth
 
 
+    ### 1 dim
     ## plot `datas` as time 
     if (ndims_unique == 1 && vardims_unique == "time") {
 
@@ -2155,7 +2318,7 @@ for (vi in 1:length(varnames_unique)) {
         plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                            varname, "_",
                            paste0(names_short, "_", seasonsp, 
-                                  "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
+                                  "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
                            data_right$suffix, ts_highlight_seasons$suffix,
                            ".", p$plot_type)
         dir.create(dirname(plotname), recursive=T, showWarnings=F)
@@ -2501,7 +2664,11 @@ for (vi in 1:length(varnames_unique)) {
         message("\n", "save plot ", plotname, " ...")
         dev.off()
         if (p$plot_type == "pdf") {
-            embed_fonts(plotname, outfile=plotname)
+            if("extrafont" %in% (.packages())){
+                extrafont::embed_fonts(plotname, outfile=plotname)
+            } else {
+                grDevices::embedFonts(plotname, outfile=plotname)
+            }
         }
 
     } # if (ndims_unique == 1 && vardims_unique == "time") {
@@ -2688,7 +2855,7 @@ if (exists("datasmon")) {
             plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                varname, "_",
                                paste0(names_short, "_", seasonsp, 
-                                      "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
+                                      "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
                                "_months",
                                data_right_mon$suffix,
                                ".", p$plot_type)
@@ -2859,7 +3026,11 @@ if (exists("datasmon")) {
             message("\n", "save plot ", plotname, " ...")
             dev.off()
             if (p$plot_type == "pdf") {
-                embed_fonts(plotname, outfile=plotname)
+                if("extrafont" %in% (.packages())){
+                    extrafont::embed_fonts(plotname, outfile=plotname)
+                } else {
+                    grDevices::embedFonts(plotname, outfile=plotname)
+                }
             }
         
         } # if (ndims_unique_mon == 1 && vardims_unique_mon == "time") {
@@ -2966,7 +3137,7 @@ if (exists("datasltm")) {
             plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                varname, "_", 
                                paste0(names_short, "_", seasonsp, 
-                                      "_", fromsp, "-", tosp, "_", areas, collapse="_vs_"), 
+                                      "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
                                ".", p$plot_type)
             message("plot ", plotname, " ...")
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
@@ -2988,7 +3159,11 @@ if (exists("datasltm")) {
             message("\n", "save plot ", plotname, " ...")
             dev.off()
             if (p$plot_type == "pdf") {
-                embed_fonts(plotname, outfile=plotname)
+                if("extrafont" %in% (.packages())){
+                    extrafont::embed_fonts(plotname, outfile=plotname)
+                } else {
+                    grDevices::embedFonts(plotname, outfile=plotname)
+                }
             }
 
         } # for vi in unique_varnames_ltm
@@ -3352,7 +3527,11 @@ if (plot_scatter_var1_vs_var2) {
             message("\n", "save plot ", plotname, " ...")
             dev.off()
             if (p$plot_type == "pdf") {
-                embed_fonts(plotname, outfile=plotname)
+                if("extrafont" %in% (.packages())){
+                    extrafont::embed_fonts(plotname, outfile=plotname)
+                } else {
+                    grDevices::embedFonts(plotname, outfile=plotname)
+                }
             }
 
             ## scatter plot for each setting colored by time or season
@@ -3497,7 +3676,11 @@ if (plot_scatter_var1_vs_var2) {
                         message("\n", "save plot ", plotname, " ...")
                         dev.off()
                         if (p$plot_type == "pdf") {
-                            embed_fonts(plotname, outfile=plotname)
+                            if("extrafont" %in% (.packages())){
+                                extrafont::embed_fonts(plotname, outfile=plotname)
+                            } else {
+                                grDevices::embedFonts(plotname, outfile=plotname)
+                            }
                         }
 
                     } # if dims[[i]]$time_frequency == "monthly"
