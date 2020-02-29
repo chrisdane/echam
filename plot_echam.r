@@ -13,6 +13,10 @@ if (!interactive()) {
     library(ncdf4)
 }
 
+# helper functions
+message("\n", "Read helper_functions.r ...")
+source("helper_functions.r")
+
 # user input
 fnml <- "namelist.plot.r"
 message("\n", "Read ", fnml, " ...")
@@ -25,7 +29,8 @@ ignore_vars <- c("time_bnds", "timestamp",
                  "moc_reg_lat")
 
 # load special data
-    
+message("\n", "start reading special data sets ...")
+
 # cmip6 co2 hist
 f <- ""
 if (machine_tag == "mistral") {
@@ -204,7 +209,32 @@ if (file.exists(f)) {
                                      text="HadCRUT4", lty=1, lwd=1, pch=NA)
     add_hadcrut4_sat_anom_annual <- F
     message("set add_hadcrut4_sat_anom_annual=T if you want to add to plot")
+} # hadcrut4 global annual temperature anomaly wrt 1961-1990
+
+# marcott et al temperature anomaly wrt 1961-1990
+f <- ""
+if (machine_tag == "paleosrv") {
+    f <- "/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/Marcott.SM.database.S1.xlsx"
+    source("/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/read_marcott_etal_2013_function.r")
 }
+if (file.exists(f)) {
+    message("\n", "read marcott et al. 2013 temperature anomalies wrt to 1961-1990 from ", f, " ...")
+    marcott_etal_2013 <- read_marcott_etal_2013_function(f)
+    time <- marcott_etal_2013$year_before_1950 # -50 -30 -10  10 ... 11210 11230 11250 11270 11290
+    time <- rev(-1*time) # -11290 -11270 -11250 -11230 -11210 -11190 -11170 ... -70 -50 -30 -10  10  30  50
+    timelt <- make_posixlt_origin_function(time, origin_in=1950, origin_out=1950, verbose=0)
+    marcott_etal_2013 <- list(marcott_etal_2013_anom=rev(marcott_etal_2013$"temp_anom_1961-1990_global_5x5"),
+                              marcott_etal_2013_anom_sd=rev(marcott_etal_2013$"temp_anom_1961-1990_global_5x5_sd"),
+                              time=timelt, timen=as.numeric(timelt), col="black",
+                              col_rgb=rgb(t(col2rgb("black")/255), alpha=0.1),
+                              text="Marcott et al. 2013", lty=1, lwd=1, pch=NA)
+    add_marcott_etal_2013_anom <- F
+    message("set add_marcott_etal_2013_anom=", !add_marcott_etal_2013_anom, 
+            " if you ", ifelse(add_marcott_etal_2013_anom, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+} # marcott et al. 2013
 
 # gistempv4 global annual temperature anomaly wrt 1951-1980
 f <- ""
@@ -346,19 +376,15 @@ if (file.exists(f)) {
 f <- ""
 if (machine_tag == "stan") {
     f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
+} else if (machine_tag == "paleosrv") {
+    f <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
 }
 if (file.exists(f)) {
     message("\n", "read pauls berger orbital parameters from ", f, " ...")
     orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
     years <- orb_berger$year_before_1950 # kyr before 1950 in reverse order --> 6.999, 6.998, 6997, ...
     years <- -1*years*1000 # --> -6999, -6998, -6997, ...
-    # as.POSIXlt("-0001-01-01") --> negative year gives error 
-    # "not in a standard unambiguous format"
-    # --> but shifting works
-    timelt <- as.POSIXlt("0000-01-01", tz="UTC")
-    nyears_to_origin <- timelt$year + 1900 - years[1] + 1
-    timelt <- seq.POSIXt(timelt, l=nyears_to_origin, b="-1 year")[nyears_to_origin]
-    timelt <- seq.POSIXt(timelt, l=length(years), b=paste0(diff(years)[1], " year"))
+    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
     orb_berger <- list(eccentricity=orb_berger$eccentricity, 
                        precession=orb_berger$precession,
                        obliquity=orb_berger$obliquity,
@@ -376,55 +402,31 @@ if (file.exists(f)) {
                                "dont want (or set add_data_right_yaxis_ts=F)", 
                                "want (set also add_data_right_yaxis_ts=T)"), 
             " to add this data to plot")
-    add_orb_berger_obliquity <- T
+    add_orb_berger_obliquity <- F
     message("set add_orb_berger_obliquity=", !add_orb_berger_obliquity, 
             " if you ", ifelse(add_orb_berger_obliquity, 
                                "dont want (or set add_data_right_yaxis_ts=F)", 
                                "want (set also add_data_right_yaxis_ts=T)"), 
             " to add this data to plot")
-}
+} # berger holocene orbital parameter from paul
 
 # berger orbital parameter for last 800ka
 f <- ""
 if (machine_tag == "stan") {
-    f <- "/home/ace/cdanek/scripts/fortran/berger_1978/berger_1978_years_-800_to_0_kyears_before_1950.txt1"
+    f <- "/home/ace/cdanek/scripts/fortran/berger_1978/berger_1978_years_-800_to_0_kyears_before_1950.txt"
 }
 if (file.exists(f)) {
     message("\n", "read my berger orbital parameters from ", f, " ...")
     my_orb_berger <- read.table(f, header=T)
     # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: calendar_day_of_perihelion 5: angle_of_perihelion_deg_from_vernal_equinox
     years <- my_orb_berger$kyear_from_1950 # kyr before 1950 in reverse order --> -800, -799, -798, ...
-    years <- years*1000
-    origin_in <- 1950 # year
-    origin_out <- 1950 # year; which reference is wanted for plotting
-
-    # construct time with possibly new origin as POSIX object:
-    new_origin <- as.POSIXlt(paste0(origin_out, "-01-01"), tz="UTC")
-    shift_by <- origin_in - (new_origin$year + 1900) # years
-    by <- paste0(diff(years)[1], " year") # time step of input data
-    if (years[1] < 0) { # there are negative times with respect to `origin_in`
-        # as.POSIXlt("-0001-01-01") --> negative year gives error 
-        # "not in a standard unambiguous format"
-        # --> but shifting works
-        nyears_from_0 <- years[1] + shift_by - 1
-        by_tmp <- "1 year"
-        if (nyears_from_0 < 0) {
-            nyears_from_0 <- abs(nyears_from_0)
-            by_tmp <- "-1 year"
-        }
-        timelt <- seq.POSIXt(from=as.POSIXlt("0000-01-01", tz="UTC"), 
-                             l=nyears_from_0, b=by_tmp)[nyears_from_0]
-        # time with possibly negative origin as POSIX object:
-        timelt <- seq.POSIXt(timelt, l=length(years), b=by)
-    } else { # there are not negative years within `origin_in`
-        stop("asd")
-    }
-    timelt <- as.POSIXlt(timelt)
+    years <- years*1000 # -800000, -799000, -798000, ...
+    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
     my_orb_berger <- list(eccentricity=my_orb_berger$ecc, 
                           obliquity=my_orb_berger$obl_deg,
                           calendar_day_of_perihelion=my_orb_berger$calendar_day_of_perihelion,
                           angle_of_perihelion_deg_from_vernal_equinox=my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox,
-                          time=timelt, timen=as.numeric(timelt), origin=new_origin,
+                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                           text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
     add_my_orb_berger_eccentricity <- F
     message("set add_my_orb_berger_eccentricity=", !add_my_orb_berger_eccentricity, 
@@ -483,43 +485,21 @@ if (file.exists(f)) {
 # laskar orbital parameter for last 800ka
 f <- ""
 if (machine_tag == "stan") {
-    f <- "/home/ace/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt1"
+    f <- "/home/ace/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
+} else if (machine_tag == "paleosrv") {
+    f <- "/home/csys/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
 }
 if (file.exists(f)) {
     message("\n", "read laskar orbital parameters from ", f, " ...")
     my_orb_laskar <- read.table(f, header=T)
     # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: angle_of_perihelion_deg_from_vernal_equinox
-    years <- my_orb_laskar$kyear_from_2000 # kyr before 2000 in reverse order --> -800, -799, -798, ...
-    years <- years*1000 # -800000, -799000, -798000, ...
-    origin_in <- 2000 # year
-    origin_out <- 1950 # year; which reference is wanted for plotting
-
-    # construct time with possibly new origin as POSIX object:
-    new_origin <- as.POSIXlt(paste0(origin_out, "-01-01"), tz="UTC")
-    shift_by <- origin_in - (new_origin$year + 1900) # years
-    by <- paste0(diff(years)[1], " year") # time step of input data
-    if (years[1] < 0) { # there are negative times with respect to `origin_in`
-        # as.POSIXlt("-0001-01-01") --> negative year gives error 
-        # "not in a standard unambiguous format"
-        # --> but shifting works
-        nyears_from_0 <- years[1] + shift_by - 1
-        by_tmp <- "1 year"
-        if (nyears_from_0 < 0) {
-            nyears_from_0 <- abs(nyears_from_0)
-            by_tmp <- "-1 year"
-        }
-        timelt <- seq.POSIXt(from=as.POSIXlt("0000-01-01", tz="UTC"), 
-                             l=nyears_from_0, b=by_tmp)[nyears_from_0]
-        # time with possibly negative origin as POSIX object:
-        timelt <- seq.POSIXt(timelt, l=length(years), b=by)
-    } else { # there are not negative years within `origin_in`
-        stop("asd")
-    }
-    timelt <- as.POSIXlt(timelt)
+    years <- my_orb_laskar$kyear_from_2000 # kyr before 2000 in reverse order --> -800, -799, -798, ..., -3, -2, -1,  0
+    years <- years*1000 # -800000, -799000, -798000, ..., -3000, -2000, -1000,  0
+    timelt <- make_posixlt_origin_function(years, origin_in=2000, origin_out=1950, verbose=0)
     my_orb_laskar <- list(eccentricity=my_orb_laskar$ecc, 
                           obliquity=my_orb_laskar$obl_deg,
                           angle_of_perihelion_deg_from_vernal_equinox=my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox,
-                          time=timelt, timen=as.numeric(timelt), origin=new_origin,
+                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                           text="Laskar", col="blue", lty=2, lwd=0.5, pch=NA)
     add_my_orb_laskar_eccentricity <- F
     message("set add_my_orb_laskar_eccentricity=", !add_my_orb_laskar_eccentricity, 
@@ -665,6 +645,8 @@ if (F) { # compare berger and laskar orb
 for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin")) {
     if (exists(obj)) rm(obj)
 }
+
+message("\n", "finished reading special data sets ...")
 # finished reading extra datasets depending on machine
 
 
@@ -675,10 +657,8 @@ if (!exists("levs")) levs <- rep("", t=nsettings)
 if (!exists("depths")) depths <- rep("", t=nsettings)
 codesf <- codes
 codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
-levsf <- levs
-levsf[levs != ""] <- paste0("_sellevel_", levs[levs != ""])
-depthsf <- rep("", t=nsettings)
-depthsf[depths != ""] <- paste0("_", depths[depths != ""], "m")
+if (!exists("fromsp")) fromsp <- rep(NA, t=nsettings)
+if (!exists("tosp")) tosp <- rep(NA, t=nsettings)
 if (!exists("new_origins")) new_origins <- rep(NA, t=nsettings)
 if (!exists("time_ref")) time_ref <- NA # only one
 if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
@@ -695,6 +675,10 @@ if (all(n_mas == 1)) {
         add_smoothed <- F
     }
 }
+levsf <- levs
+levsf[levs != ""] <- paste0("_sellevel_", levs[levs != ""])
+depthsf <- rep("", t=nsettings)
+depthsf[depths != ""] <- paste0("_", depths[depths != ""], "m")
 if (!exists("depth_fromsf")) depth_fromsf <- rep(NA, t=nsettings)
 if (!exists("depth_tosf")) depth_tosf <- rep(NA, t=nsettings)
 if (!exists("depth_fromsp")) depth_fromsp <- depth_fromsf
@@ -739,7 +723,7 @@ if (!exists("cols")) {
 }
 if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
 if (!exists("postpaths")) { # default from post_echam.r
-    postpaths <- paste0(workpath, "/post")
+    postpaths <- rep(paste0(workpath, "/post"), t=nsettings)
 }
 if (!exists("plotpath")) { # default from post_echam.r
     plotpath <- paste0(workpath, "/plots/", paste(unique(models), collapse="_vs_"))
@@ -752,7 +736,7 @@ cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha)
 # allocate
 datas <- vector("list", l=nsettings)
 names(datas) <- names_short
-data_infos <- dims <- dims_per_setting <- datas
+data_infos <- dims <- dims_per_setting_in <- datas
 
 # read data
 message("\n", "Read data ...")
@@ -774,11 +758,11 @@ for (i in 1:nsettings) {
 
     # get dims of file
     message("\n", "get dims ...")
-    dims_per_setting[[i]] <- names(ncin$dim)
+    dims_per_setting_in[[i]] <- names(ncin$dim)
     dimtmp <- vector("list", l=ncin$ndims)
-    names(dimtmp) <- dims_per_setting[[i]]
+    names(dimtmp) <- dims_per_setting_in[[i]]
     for (di in 1:length(dimtmp)) {
-        message(di, ": \"", dims_per_setting[[i]][di], "\", n=", length(ncin$dim[[di]]$vals))
+        message(di, ": \"", dims_per_setting_in[[i]][di], "\", n=", length(ncin$dim[[di]]$vals))
         dimtmp[[di]] <- ncin$dim[[di]]$vals
     }
     dims[[i]] <- dimtmp
@@ -847,7 +831,7 @@ for (i in 1:nsettings) {
             if (length(time_frequencies) != nsettings || class(time_frequencies) != "character") {
                 stop("\n`time_frequencies` is set but not of class \"character\" and/or of length ", nsettings)
             } else {
-                message("\nprovided `time_frequencies` = \"", paste(time_frequencies, collapse="\", \""), "\"")
+                message("\nprovided `time_frequencies[", i, "]` = \"", time_frequencies[i], "\"")
                 dims[[i]]$time_frequency <- time_frequencies[i]
             }
         } else {
@@ -856,7 +840,6 @@ for (i in 1:nsettings) {
         }
         # finished getting tempral interval (e.g. 1hr, 3hr, 6hr, day, week, month, year)
 
-
         # shift times due to e.g. senseless spinup years
         # as.POSIXlt's 'year' starts at 1900
         if (!is.na(new_origins[i])) {
@@ -864,10 +847,12 @@ for (i in 1:nsettings) {
             message("\n", "new_origins is given --> new_origins[", i, "] = ", new_origins[i])
             message("shift range(timein_lt) = ", appendLF=F)
             print(range(timein_lt))
-            shift_by <- -(timein_lt$year[1] + 1900 - new_origins[i]) 
-            message("by shift_by = -(", timein_lt$year[1] + 1900, " - ", 
-                    new_origins[i], ") = ", shift_by, " years") 
-            timein_lt$year <- timein_lt$year + shift_by - 1
+            #shift_by <- -(timein_lt$year[1] + 1900 - new_origins[i]) 
+            shift_by <- new_origins[i] - (timein_lt$year[1] + 1900) #- 1
+            message("by shift_by = ", 
+                    new_origins[i], " - ", timein_lt$year[1] + 1900, #" - 1 ", 
+                    " = ", shift_by, " years") 
+            timein_lt$year <- timein_lt$year + shift_by
             message("--> new range(timein_lt) = ", appendLF=F)
             print(range(timein_lt))
 
@@ -875,9 +860,9 @@ for (i in 1:nsettings) {
         # set new origin
 
         # find temporal subset based on given fromsp and tosp
-        if (exists("fromsp") || exists("tosp")) {
+        if (!is.na(fromsp[i]) || !is.na(tosp[i])) {
             message("\n", appendLF=F)
-            if (exists("fromsp") && !is.na(fromsp[i])) {
+            if (!is.na(fromsp[i])) {
                 message("fromsp is given --> fromsp[", i, "] = ", fromsp[i])
                 if (fromsp[i] < 0) {
                     # as.POSIXlt("-0001-01-01") --> negative year gives error 
@@ -893,7 +878,7 @@ for (i in 1:nsettings) {
                 if (i == 1) fromsp <- rep(NA, t=nsettings)
                 fromsp[i] <- fromsplt$year + 1900
             }
-            if (exists("tosp") && !is.na(tosp[i])) {
+            if (!is.na(tosp[i])) {
                 message("tosp is given --> tosp[", i, "] = ", tosp[i])
                 if (tosp[i] < 0) {
                     # as.POSIXlt("-0001-01-01") --> negative year gives error 
@@ -1042,7 +1027,7 @@ for (i in 1:nsettings) {
         # ignore variable
         if (any(ignore_vars == vars_per_file[vi])) {
             message(" --> this variable is included in `ignore_vars` --> ignore this variable ...")
-            next # variable
+            next # variable of this setting
         }
         
         if (vars_per_file[vi] == paste0("var", codes[i])) {
@@ -1067,15 +1052,15 @@ for (i in 1:nsettings) {
             names(dim_lengths) <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[", "name")
             if (any(dim_lengths == 1)) {
                 len1_dim_inds <- which(dim_lengths == 1)
-                message(" --> drop \"", paste0(names(len1_dim_inds), collapse="\",\""), 
-                        "\" dim", ifelse(length(len1_dim_inds) > 1, "s", ""), " of length 1 ...")
+                message(" --> drop dims of length 1: \"", 
+                        paste0(names(len1_dim_inds), collapse="\",\""), "\" ...")
                 dimids <- dimids[-len1_dim_inds]
             } # if var has dims of length 1 
         } else {
             stop("not implemented")
         } # if squeeze_data
-        attributes(vars[[vi]]) <- list(dim=dim(vars[[vi]]), dims=dims_per_setting[[i]][dimids])
-        #cmd <- paste0("tmp <- list(", paste0(dims_per_setting[[i]][dimids], "=ncin$dim[[", dimids, "]]$vals", collapse=", "), ")")
+        attributes(vars[[vi]]) <- list(dim=dim(vars[[vi]]), dims=dims_per_setting_in[[i]][dimids])
+        #cmd <- paste0("tmp <- list(", paste0(dims_per_setting_in[[i]][dimids], "=ncin$dim[[", dimids, "]]$vals", collapse=", "), ")")
     } # for vi nvars per setting
     
     # finally remove all variables to ignore
@@ -1091,7 +1076,7 @@ for (i in 1:nsettings) {
     data_infos[[i]] <- var_infos
     rm(vars, var_infos)
 
-    # all dimensions per setting
+    # update dimensions per setting
     dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
 
     # cut temporal subset from data
@@ -1268,7 +1253,7 @@ for (i in 1:nsettings) {
     } # if this file has depth dim
 
     # if two dimensions and one is time, make it x-dim
-    if (length(dims_per_setting[[i]]) == 2 &&
+    if (length(dims_per_setting) == 2 &&
         any(names(dims[[i]]) == "time") && any(names(dims[[i]]) == "lat")) {
 
         message("\n", "detected time and lat dim; check if permutation from (lat x time) to (time x lat is necessary) ...") 
@@ -3709,7 +3694,6 @@ if (plot_scatter_var1_vs_var2) {
     } # if (ndims_unique == 1 && vardims_unique == "time") {
 
 } # if plot_scatter_var1_vs_var2 of `datas`
-
 
 message("\n", "finish", "\n")
 

@@ -15,6 +15,11 @@ if (regexpr("ollie", machine) != -1 ||
     homepath <- "~/scripts/r"
     #workpath <- "/work/ba0941/a270073"
     workpath <- "/work/ab0246/a270073"
+} else if (regexpr("paleosrv", machine) != -1) {
+    machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
+    machine_tag <- "paleosrv"
+    homepath <- "~/scripts/r"
+    workpath <- "/isibhv/projects/paleo_work/cdanek"
 } else if (regexpr("stan", machine) != -1) {
     machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
     machine_tag <- "stan"
@@ -31,10 +36,10 @@ message(paste0("   workpath = ", workpath))
 # options across settings
 # echam:
 #mode <- "select"
-#mode <- "fldmean" 
+mode <- "fldmean" 
 #mode <- "timmean" 
 #mode <- "timsum"
-mode <- "zonmean"
+#mode <- "zonmean"
 #mode <- "volint"
 # fesom:
 #mode <- "moc_depth"
@@ -60,7 +65,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-T
+} else if (F) { # Hol-T
     prefixes <- "cosmos-aso-wiso_echam5_holocene_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
     models <- "echam5"
@@ -133,8 +138,26 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (F) { # Hol-T
-    #prefixes <- "Hol-T_echam5_wiso_mm"
+} else if (T) { # Hol-T with versus without orbital acceleration
+    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_holocene_wiso_mm")
+    models <- c("echam5", "echam5")
+    names_short <- c("Hol-Tx10", "Hol-T")
+    names_legend <- names_short
+    fromsf <- c("0001", "0004")
+    tosf <- c("7001", "6173")
+    new_origins <- c(-7000, -6996) 
+    # model year 1 = 7000 BP 
+    # model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 years = 6996 BP
+    time_frequencies <- c("monthly", "monthly")
+    time_ref <- 1950 # any string, e.g. "BP", or number
+    n_mas <- c(120, 120)
+    #remove_mean_froms <- -827
+    #remove_mean_tos <- -827
+    #seasonsp <- "Jun"
+    #seasonsp <- "Dec"
+    varnames_in <- c("temp2", "temp2")
+    
+} else if (F) { # temp2 vs ptemp of Hol-T
     prefixes <- rep("cosmos-aso-wiso_echam5_holocene_wiso_mm", t=2)
     models <- rep("echam5", t=2)
     names_short <- rep("Hol-T", t=2)
@@ -377,16 +400,18 @@ add_linear_trend <- F
 add_nonlinear_trend <- F
 scale_ts <- F
 ts_highlight_seasons <- list(bool=F, suffix="") # default
-ts_highlight_seasons <- list(bool=T,
-                             seasons=c("DJF", "MAM", "JJA", "SON"),
-                             #t="l",
-                             t="p",
-                             #cols=c("blue", "darkgreen", "red", "brown")
-                             cols=rgb(t(col2rgb(c("blue", "darkgreen", "red", "brown"))/255), alpha=alpha),
-                             ltys=c(1,2,3,4),
-                             #pchs=1:4,
-                             pchs=c(16, 16, 16, 16),
-                             suffix="_highlight_seasons") 
+if (F) {
+    ts_highlight_seasons <- list(bool=T,
+                                 seasons=c("DJF", "MAM", "JJA", "SON"),
+                                 #t="l",
+                                 t="p",
+                                 #cols=c("blue", "darkgreen", "red", "brown")
+                                 cols=rgb(t(col2rgb(c("blue", "darkgreen", "red", "brown"))/255), alpha=alpha),
+                                 ltys=c(1,2,3,4),
+                                 #pchs=1:4,
+                                 pchs=c(16, 16, 16, 16),
+                                 suffix="_highlight_seasons") 
+}
 add_first_data_point <- F
 add_data_right_yaxis_ts <- T
 add_data_right_yaxis_ts_mon <- F

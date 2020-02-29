@@ -5,6 +5,7 @@
 !README.md
 !post_echam.r
 !plot_echam.r
+!helper_functions.r
 !namelist.post.r
 !namelist.plot.r
 !wiso/

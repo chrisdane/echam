@@ -120,8 +120,8 @@ if (F) { # old hist
     #levs_out <- 2
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "ptemp"
-    modes <- "select"
-    #modes <- "fldmean"
+    #modes <- "select"
+    modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
@@ -131,9 +131,10 @@ if (F) { # old hist
     #tos <- "2910"
     tos <- "3601" # end 
     #tos <- "7001" # end counting from 1 
-    new_time_use_filename_years <- F
-    new_time_origins <- 1
-    new_time_bys <- 10
+    new_date_list <- list(list(years=rep(seq(1, b=10, l=701), e=12), 
+                               nc_time_origin=1))
+    # 2 missing files of Hol-Tx10: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
+    new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
