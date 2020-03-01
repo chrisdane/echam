@@ -372,7 +372,43 @@ if (file.exists(f)) {
     message("set add_nsidc_antarctic_annual=T if you want to add to plot")
 }
 
-# berger holocene orbital parameter from paul
+# berger holocene accelerated orbital parameter from paul
+f <- ""
+if (machine_tag == "paleosrv") {
+    f <- "/scratch/simulation_database/incoming/Hol-Tx10/script/HOL_ORB_forcing_0.01ka_resolution_combined.dat"
+}
+if (file.exists(f)) {
+    message("\n", "read pauls accelerated berger orbital parameters from ", f, " ...")
+    orb_berger_acc <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
+    years <- orb_berger_acc$year_before_1950 # kyr before 1950 --> 7.00 6.99 6.98 6.97 ... 0.03 0.02 0.01 0.00
+    years <- -1*years*1000 # --> -7000 -6990 -6980 -6970 -6960 ... -40 -30 -20 -10   0
+    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+    orb_berger_acc <- list(eccentricity=orb_berger_acc$eccentricity, 
+                       precession=orb_berger_acc$precession,
+                       obliquity=orb_berger_acc$obliquity,
+                       time=timelt, timen=as.numeric(timelt),
+                       text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
+    add_orb_berger_acc_eccentricity <- F
+    message("set add_orb_berger_acc_eccentricity=", !add_orb_berger_acc_eccentricity, 
+            " if you ", ifelse(add_orb_berger_acc_eccentricity, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    add_orb_berger_acc_precession <- F
+    message("set add_orb_berger_acc_precession=", !add_orb_berger_acc_precession, 
+            " if you ", ifelse(add_orb_berger_acc_precession, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+    add_orb_berger_acc_obliquity <- F
+    message("set add_orb_berger_acc_obliquity=", !add_orb_berger_acc_obliquity, 
+            " if you ", ifelse(add_orb_berger_acc_obliquity, 
+                               "dont want (or set add_data_right_yaxis_ts=F)", 
+                               "want (set also add_data_right_yaxis_ts=T)"), 
+            " to add this data to plot")
+} # berger holocene accelerated orbital parameter from paul
+
+# berger holocene transient orbital parameter from paul
 f <- ""
 if (machine_tag == "stan") {
     f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
@@ -380,9 +416,9 @@ if (machine_tag == "stan") {
     f <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
 }
 if (file.exists(f)) {
-    message("\n", "read pauls berger orbital parameters from ", f, " ...")
+    message("\n", "read pauls transient berger orbital parameters from ", f, " ...")
     orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
-    years <- orb_berger$year_before_1950 # kyr before 1950 in reverse order --> 6.999, 6.998, 6997, ...
+    years <- orb_berger$year_before_1950 # kyr before 1950 --> 6.999, 6.998, 6997, ...
     years <- -1*years*1000 # --> -6999, -6998, -6997, ...
     timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
     orb_berger <- list(eccentricity=orb_berger$eccentricity, 
@@ -408,7 +444,7 @@ if (file.exists(f)) {
                                "dont want (or set add_data_right_yaxis_ts=F)", 
                                "want (set also add_data_right_yaxis_ts=T)"), 
             " to add this data to plot")
-} # berger holocene orbital parameter from paul
+} # berger holocene transient orbital parameter from paul
 
 # berger orbital parameter for last 800ka
 f <- ""

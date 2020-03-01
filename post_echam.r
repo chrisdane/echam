@@ -975,11 +975,11 @@ for (i in 1:nsettings) {
                 if (is.null(new_date_list[[i]]$years)) { # construct new years only if not provided
                     if (new_date_list[[i]]$use == "filename") {
                         if (ntime_out == ntime_in) {
-                            years_out <- new_time_origins[i] + years_in[chunk_inds_list[[chunki]]] - 1
+                            years_out <- new_date_list[[i]]$year_origin + years_in[chunk_inds_list[[chunki]]] - 1
                         } else if (ntime_out == length(years_wanted)) {
-                            years_out <- new_time_origins[i] + years_wanted[dates_in_list[[chunki]]$inds] - 1
+                            years_out <- new_date_list[[i]]$year_origin + years_wanted[dates_in_list[[chunki]]$inds] - 1
                         } else if (ntime_out == 1) { # through e.g. `cdo timsum`
-                            years_out <- new_time_origins[i] + floor(mean(years_wanted)) - 1
+                            years_out <- new_date_list[[i]]$year_origin + floor(mean(years_wanted)) - 1
                         } else { 
                             stop("not definedddddd here")
                         }
@@ -1061,24 +1061,15 @@ for (i in 1:nsettings) {
                             if (is.null(new_date_list[[i]]$nc_time_origin)) {
                                 stop("`cdo_set_rel_time`=T but new_date_list[[", i, "]]$nc_time_origin is not set.")
                             }
-                            #new_time_units <- paste0(sprintf("%04i", new_time_origins[i]), "-",
-                            #                         sprintf("%02i", months_out[1]), "-",
-                            #                         sprintf("%02i", days_out[1]))
-                            #new_time_units <- paste0(new_time_origins[i], "-",
-                            #                         months_out[1], "-",
-                            #                         days_out[1])
-                            #new_time_units <- paste0("days since ", dates_out[1], " 00:00:00")
-                            #new_time_units <- paste0("days since ", dates_out[1])
-                            #new_time_units <- paste0("days since ", new_time_origins[i], "-", months_out[1], "-", days_out[1])
-                            new_time_units <- paste0("days since ", new_date_list[[i]]$nc_time_origin, "-01-01")
-                            new_time_units <- rep(new_time_units, t=nsettings)
+                            nc_time_units <- paste0("days since ", new_date_list[[i]]$nc_time_origin, "-01-01")
+                            nc_time_units <- rep(nc_time_units, t=nsettings)
                         } else { # absolute time
-                            new_time_units <- rep("day as %Y%m%d.%f", t=nsettings) # only allowed absolute time for cdo
+                            nc_time_units <- rep("day as %Y%m%d.%f", t=nsettings) # only allowed absolute time for cdo
                         }
                         message("\n`new_date_list[[", i, "]]$nc_time_units` is not set and `cdo_set_rel_time`=", 
-                                cdo_set_rel_time, " --> use default \"", new_time_units, "\"")
-                        new_date_list[[i]]$nc_time_units <- new_time_units
-                    } # if `new_time_units` was not set by user
+                                cdo_set_rel_time, " --> use default \"", nc_time_units, "\"")
+                        new_date_list[[i]]$nc_time_units <- nc_time_units
+                    } # if `nc_time_units` was not set by user
                 } # only once at beginning
 
                 message("\nconstruct new times values with `new_date_list[[", 

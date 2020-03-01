@@ -66,8 +66,8 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_tos <- 1990
 
 } else if (F) { # Hol-T
-    prefixes <- "cosmos-aso-wiso_echam5_holocene_main_mm"
-    #prefixes <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     models <- "echam5"
     names_short <- "Hol-T"
     names_legend <- "cosmos-aso-wiso"
@@ -139,7 +139,7 @@ if (F) { # awi-esm-1-1-lr hist
     }
 
 } else if (T) { # Hol-T with versus without orbital acceleration
-    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_holocene_wiso_mm")
+    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
     models <- c("echam5", "echam5")
     names_short <- c("Hol-Tx10", "Hol-T")
     names_legend <- names_short
@@ -158,7 +158,7 @@ if (F) { # awi-esm-1-1-lr hist
     varnames_in <- c("temp2", "temp2")
     
 } else if (F) { # temp2 vs ptemp of Hol-T
-    prefixes <- rep("cosmos-aso-wiso_echam5_holocene_wiso_mm", t=2)
+    prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=2)
     models <- rep("echam5", t=2)
     names_short <- rep("Hol-T", t=2)
     names_legend <- c("temp2", "ptemp2")

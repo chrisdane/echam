@@ -145,8 +145,8 @@ if (F) { # old hist
     fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
     ftypes <- "l" # "f" for files (default) or "l" for links
-    prefixs <- "cosmos-aso-wiso_echam5_holocene_main_mm"
-    #prefixs <- "cosmos-aso-wiso_echam5_holocene_wiso_mm"
+    prefixs <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
+    #prefixs <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     fvarnames <- "srad0"
@@ -170,8 +170,9 @@ if (F) { # old hist
     #tos <- "0129"
     #tos <- "5903" # end of chunk 2
     tos <- "6173"
-    new_time_use_filename_years <- T
-    new_time_origins <- 1
+    new_date_list <- list(list(use="filename", 
+                               year_origin=1,
+                               nc_time_origin=1))
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
