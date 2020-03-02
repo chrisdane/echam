@@ -152,19 +152,19 @@ if (!exists("new_date_list")) {
     for (i in 1:nsettings) {
         if (is.null(new_date_list[[i]]$years)) {
             # user did not provide final years to use 
-            if (!is.null(new_date_list[[i]]$origin) && 
+            if (!is.null(new_date_list[[i]]$year_origin) && 
                 is.null(new_date_list[[i]]$use)) {
                 new_date_list[[i]]$use <- "filename" # default
-                message("`new_date_list[[", i, "]]$origin` = ", new_date_list[[i]]$origin, 
+                message("`new_date_list[[", i, "]]$year_origin` = ", new_date_list[[i]]$year_origin, 
                         " but its not mentioned which numbers to use for the new years. set `new_date_list[[", i, "]]$use = \"",
                         new_date_list[[i]]$use, "\" (default) and continue ...")
             }
             if (!is.null(new_date_list[[i]]$use) && 
-                is.null(new_date_list[[i]]$origin)) {
-                new_date_list[[i]]$origin <- 0 # default
+                is.null(new_date_list[[i]]$year_origin)) {
+                new_date_list[[i]]$year_origin <- 0 # default
                 message("`new_date_list[[", i, "]]$use` = ", new_date_list[[i]]$use,
-                        " but the origin of the new years is not mentioned. set `new_date_list[[", i, "]]$origin = ",
-                        new_date_list[[i]]$origin, " (default) and continue ...")
+                        " but the origin of the new years is not mentioned. set `new_date_list[[", i, "]]$year_origin = ",
+                        new_date_list[[i]]$year_origin, " (default) and continue ...")
             }
         } else if (!is.null(new_date_list[[i]]$years)) {
             # user did provide final years to use 
@@ -174,10 +174,10 @@ if (!exists("new_date_list")) {
                 message(" but also `new_date_list[[", i, "]]$use` = ", new_date_list[[i]]$use, 
                         " is given. the latter will be ignored.")
             }
-            if (!is.null(new_date_list[[i]]$origin)) {
+            if (!is.null(new_date_list[[i]]$year_origin)) {
                 message("`new_date_list[[", i, "]]$years` = ")
                 ht(new_date_list[[i]]$years)
-                message(" but also `new_date_list[[", i, "]]$origin` = ", new_date_list[[i]]$origin, 
+                message(" but also `new_date_list[[", i, "]]$year_origin` = ", new_date_list[[i]]$year_origin, 
                         " is given. the latter will be ignored.")
             }
         } # final years are given or not
@@ -215,7 +215,7 @@ for (i in 1:nsettings) {
             ht(new_date_list[[i]]$years)
         } else {
             message("new_date_list[[", i, "]]$use = ", new_date_list[[i]]$use, "\n",
-                    "new_date_list[[", i, "]]$origin = ", new_date_list[[i]]$origin)
+                    "new_date_list[[", i, "]]$year_origin = ", new_date_list[[i]]$year_origin)
         }
     }
 

@@ -45,7 +45,6 @@ cdo_nchar_max_arglist <- 2612000
 nco_nchar_max_arglist <- 131071
 # --> $(getconf PAGE_SIZE)*32 = 4096*32 = 131072
 # --> getconf ARG_MAX                   = 2097152
-ncview_min_origin <- -4714 # ncview error: the Gregorian calendar routines; must have year >= -4714
 
 # ======================================================
 # 1 setting
@@ -104,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixs <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv
+} else if (F) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata"
     models <- "echam5"
@@ -139,18 +138,18 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (F) { # Hol-T on stan
+} else if (T) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     models <- "echam5"
-    fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
     ftypes <- "l" # "f" for files (default) or "l" for links
-    prefixs <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
-    #prefixs <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
+    #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
+    fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
+    #prefixs <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
+    prefixs <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
-    fvarnames <- "srad0"
-    #fvarnames <- "srad0d"
+    #fvarnames <- "srad0"
+    fvarnames <- "srad0d"
     #fvarnames <- "trad0"
     #fvarnames <- "aprt"
     #fvarnames <- "wisoaprt"
@@ -158,18 +157,18 @@ if (F) { # old hist
     #levs_out <- 2
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "ptemp"
-    modes <- "select"
+    #modes <- "select"
     #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
-    #modes <- "zonmean"
+    modes <- "zonmean"
     froms <- "0004" # beginning of chunk 1
     #froms <- "0100"
     #tos <- "0013" 
     #tos <- "0011"
     #tos <- "0129"
     #tos <- "5903" # end of chunk 2
-    tos <- "6173"
+    tos <- "6821"
     new_date_list <- list(list(use="filename", 
                                year_origin=1,
                                nc_time_origin=1))
