@@ -103,16 +103,17 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixs <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
-    #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata"
     models <- "echam5"
-    fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
-    #ftypes <- "l" # "f" for files (default) or "l" for links
-    prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
-    fvarnames <- "temp2"
+    fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
+    prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
+    #prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
+    #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
+    fvarnames <- "srad0d"
     #fvarnames <- "aprt"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
@@ -120,10 +121,10 @@ if (F) { # old hist
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "ptemp"
     #modes <- "select"
-    modes <- "fldmean"
+    #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
-    #modes <- "zonmean"
+    modes <- "zonmean"
     #froms <- "0001" # beginning counting from 1
     froms <- "2901" # beginning
     #tos <- "0011"
@@ -138,7 +139,7 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     models <- "echam5"
     ftypes <- "l" # "f" for files (default) or "l" for links

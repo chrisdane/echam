@@ -144,7 +144,7 @@ if (F) { # awi-esm-1-1-lr hist
     names_short <- c("Hol-Tx10", "Hol-T")
     names_legend <- names_short
     fromsf <- c("0001", "0004")
-    tosf <- c("7001", "6173")
+    tosf <- c("7001", "6821")
     new_origins <- c(-7000, -6996) 
     # model year 1 = 7000 BP 
     # model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 years = 6996 BP
