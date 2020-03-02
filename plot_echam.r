@@ -415,7 +415,7 @@ if (machine_tag == "stan") {
 } else if (machine_tag == "paleosrv") {
     f <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
 }
-if (file.exists(f)) {
+if (F && file.exists(f)) {
     message("\n", "read pauls transient berger orbital parameters from ", f, " ...")
     orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
     years <- orb_berger$year_before_1950 # kyr before 1950 --> 6.999, 6.998, 6997, ...
@@ -1014,6 +1014,8 @@ for (i in 1:nsettings) {
 
         message("\nmin/max(dims[[", i, "]]$timelt) = ", 
                 min(dims[[i]]$timelt),  " / ", max(dims[[i]]$timelt))
+        message("min/max(dims[[", i, "]]$timelt$mon+1) = ", 
+                min(dims[[i]]$timelt$mon+1),  " / ", max(dims[[i]]$timelt$mon+1))
 
     } else { # if none of file dims is "time"
 
@@ -1289,21 +1291,28 @@ for (i in 1:nsettings) {
     } # if this file has depth dim
 
     # if two dimensions and one is time, make it x-dim
-    if (length(dims_per_setting) == 2 &&
-        any(names(dims[[i]]) == "time") && any(names(dims[[i]]) == "lat")) {
-
-        message("\n", "detected time and lat dim; check if permutation from (lat x time) to (time x lat is necessary) ...") 
-        vars_with_timedim_inds <- lapply(dims_per_setting, function(x) regexpr("time", x) != -1)
+    if (any(names(dims[[i]]) == "time") && any(names(dims[[i]]) == "lat")) {
+        message("\n", "detected time and lat dims; check if permutation from (lat x time) to (time x lat is necessary) ...") 
+        vars_with_timedim_inds <- lapply(dims_per_setting, function(x) grep("time", x) != -1)
+        vars_with_timedim_inds <- which(sapply(vars_with_timedim_inds, any))
         vars_with_latdim_inds <- lapply(dims_per_setting, function(x) regexpr("lat", x) != -1)
-        for (vi in 1:length(datas[[i]])) {
-            if (any(vars_with_timedim_inds[[i]]) &&
-                any(vars_with_latdim_inds[[i]])) { # if var has time and lat dim 
-                if (vars_with_timedim_inds[[i]][2] &&
-                    vars_with_latdim_inds[[i]][1]) { # if vars first dim is lat and 2nd time
-                    message("aperm(datas[[", i, "]][[", vi, "]], c(2, 1)) ...")
-                    datas[[i]][[vi]] <- aperm(datas[[i]][[vi]], c(2, 1)) # permutate
-                    attributes(datas[[i]][[vi]]) <- list(dim=dim(datas[[i]][[vi]]),
-                                                         dims=dims_of_var[c(2 ,1)])
+        vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
+        vars_with_timedim_and_latdim_inds <- intersect(vars_with_timedim_inds, vars_with_latdim_inds)
+        if (length(vars_with_timedim_and_latdim_inds) > 0) {
+            for (vi in 1:length(vars_with_timedim_and_latdim_inds)) {
+                var_with_timedim_and_latdim <- vars_with_timedim_and_latdim_inds[vi]
+                if (length(attributes(datas[[i]][[vi]])$dims) == 2) {
+                    if (attributes(datas[[i]][[vi]])$dims[1] == "lat" &&
+                        attributes(datas[[i]][[vi]])$dims[2] == "time") {
+                        message("aperm(datas[[", i, "]][[", var_with_timedim_and_latdim, "]], c(2, 1)) ...")
+                        datas[[i]][[var_with_timedim_and_latdim]] <- aperm(datas[[i]][[var_with_timedim_and_latdim]], c(2, 1)) # permutate
+                        attributes(datas[[i]][[var_with_timedim_and_latdim]]) <- list(dim=dim(datas[[i]][[var_with_timedim_and_latdim]]),
+                                                             dims=dims_of_var[c(2 ,1)])
+                    } else {
+                        # dims are already time x lat; nothing to do
+                    }
+                } else {
+                    stop("not implemented yet ...")
                 }
             }
         }
@@ -1523,8 +1532,8 @@ if (any(!is.na(remove_mean_froms))) {
                         dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                         timedimind <- which(dims_of_var == "time")
                         if (length(timedimind) == 1) {
-                            message("      found ", length(time_inds), " time points between these dates (between ", 
-                                    min(dims[[i]]$time[time_inds]), " and ", max(dims[[i]]$time[time_inds]), ")")
+                            message("      found ", length(time_inds), " time points between ", 
+                                    min(dims[[i]]$time[time_inds]), " and ", max(dims[[i]]$time[time_inds]))
                             apply_dims <- 1:length(dims_of_var)
                             mu <- rep(",", t=length(dims_of_var))
                             mu[timedimind] <- paste0("time_inds")
@@ -1968,7 +1977,7 @@ for (vi in 1:length(varnames_unique)) {
         zlim <- range(z, na.rm=T)
         message("min/max = ", zlim[1], " / ", zlim[2])
         nlevels <- 20
-        if (varname == "srad0" && F) {
+        if (varname == "srad0d" && F) {
             message("special zlevels")
             # levels/colors as marcott et al. 2013 Fig. 2 A December
             zlevels <- seq(-34, 10, b=4)
@@ -1976,7 +1985,7 @@ for (vi in 1:length(varnames_unique)) {
             if (max(zlevels) < zlim[2]) zlevels <- c(zlevels, zlim[2])
             pos_cols <- c("#fbe4f3", "#f7b9de", "#f591cb", "#ec1168")
             neg_cols <- c("#5b58b0", "#5b58b0", "#c6b7df", "#edeaf7", "#fafbfb")
-        } else if (varname == "srad0" && F) {
+        } else if (varname == "srad0d" && F) {
             message("special zlevels")
             # levels/colors as marcott et al. 2013 Fig. 2 B June
             zlevels <- seq(-4, 36, b=4)
@@ -1988,7 +1997,7 @@ for (vi in 1:length(varnames_unique)) {
             zlevels <- NULL
             pos_cols <- NULL
             neg_cols <- NULL
-            nlevles <- NULL
+            nlevels <- 11
         }
         source(paste0(homepath, "/functions/image.plot.pre.r"))
         ip <- image.plot.pre(zlim, nlevels=nlevels,

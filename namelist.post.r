@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixs <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     models <- "echam5"
     fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
@@ -133,13 +133,15 @@ if (F) { # old hist
     #tos <- "7001" # end counting from 1 
     new_date_list <- list(list(years=rep(seq(1, b=10, l=701), e=12), 
                                nc_time_origin=1))
-    # 2 missing files of Hol-Tx10: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
-    new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
+    # 1 missing *_main_mm_* files: 334812 (Dec 2530 BP; model year 448)
+    new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
+    # 2 missing *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
+    #new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     models <- "echam5"
     ftypes <- "l" # "f" for files (default) or "l" for links

@@ -35,11 +35,11 @@ message(paste0("   workpath = ", workpath))
 
 # options across settings
 # echam:
-mode <- "select"
+#mode <- "select"
 #mode <- "fldmean" 
 #mode <- "timmean" 
 #mode <- "timsum"
-#mode <- "zonmean"
+mode <- "zonmean"
 #mode <- "volint"
 # fesom:
 #mode <- "moc_depth"
@@ -65,7 +65,26 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-T
+} else if (T) { # Hol-Tx10
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
+    models <- "echam5"
+    names_short <- "Hol-Tx10"
+    names_legend <- names_short
+    fromsf <- "0001"
+    tosf <- "7001"
+    new_origins <- -7000
+    time_frequencies <- "monthly"
+    time_ref <- 1950 # any string, e.g. "BP", or number
+    n_mas <- 120
+    remove_mean_froms <- 0
+    remove_mean_tos <- 0
+    #seasonsp <- "Dec"
+    #seasonsp <- "Jun"
+    varnames_in <- "srad0d"
+
+} else if (F) { # Hol-T
     prefixes <- "cosmos-aso-wiso_echam5_Hol-T"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
