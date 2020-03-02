@@ -95,7 +95,7 @@ if (!all(sapply(exist_checks, exists))) {
 }
 if (any(file.access(datapaths, mode=4) != 0)) { # check read permission
     nonreadable_paths <- which(file.access(datapaths, mode=2) != 0)
-    stop("have not read permission in datapath", ifelse(length(nonreadable_paths) > 1, "s", ""),
+    stop("not existing/no permission to read of datapath", ifelse(length(nonreadable_paths) > 1, "s", ""),
          " '", paste0(datapaths[nonreadable_paths], collapse="', '"), "'.")
 }
 datapaths <- normalizePath(datapaths)

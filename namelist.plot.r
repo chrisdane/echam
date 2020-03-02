@@ -35,8 +35,8 @@ message(paste0("   workpath = ", workpath))
 
 # options across settings
 # echam:
-#mode <- "select"
-mode <- "fldmean" 
+mode <- "select"
+#mode <- "fldmean" 
 #mode <- "timmean" 
 #mode <- "timsum"
 #mode <- "zonmean"
@@ -65,8 +65,9 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-T
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
+} else if (T) { # Hol-T
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-T"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     models <- "echam5"
     names_short <- "Hol-T"
@@ -76,20 +77,22 @@ if (F) { # awi-esm-1-1-lr hist
     #tosf <- "0129"
     #tosf <- "5903" # end of chunk 2
     tosf <- "6173" # end of chunk 3
-    new_origins <- -6995 # model year 1 = 6999 BP -> model year 4 = 6999 BP - 4 = 6995 BP
+    new_origins <- -6996 # model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
     time_frequencies <- "monthly"
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- 1
-    remove_mean_froms <- -827
-    remove_mean_tos <- -827
+    n_mas <- 120
+    #remove_mean_froms <- -827
+    #remove_mean_tos <- -827
     #seasonsp <- "Jun"
-    seasonsp <- "Dec"
+    #seasonsp <- "Dec"
     #varnames_in <- "temp2"
     #varnames_in <- "tsurf"
     #varnames_in <- "aprt"
     #varnames_in <- "wisoaprt_d"
     #varnames_in <- "ptemp"
-    varnames_in <- "srad0"
+    #varnames_in <- "srad0"
+    #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
+    varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
     #areas <- "sibiria"
     #levs <- 2
 
@@ -138,7 +141,7 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (T) { # Hol-T with versus without orbital acceleration
+} else if (F) { # Hol-T with versus without orbital acceleration
     prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
     models <- c("echam5", "echam5")
     names_short <- c("Hol-Tx10", "Hol-T")
@@ -167,7 +170,7 @@ if (F) { # awi-esm-1-1-lr hist
     #tosf <- "0129"
     #tosf <- "5903" # end of chunk 2
     tosf <- rep("6173", t=2) # end of chunk 3
-    new_origins <- rep(-6995, t=2) # model year 1 = 6999 BP -> model year 4 = 6999 BP - 4 = 6995 BP
+    new_origins <- rep(-6996, t=2) # model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
     time_ref <- 1950 # any string, e.g. "BP", or number
     n_mas <- rep(120, t=2)
     varnames_in <- c("temp2", "ptemp")
