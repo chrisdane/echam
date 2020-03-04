@@ -338,13 +338,17 @@ for (i in 1:nsettings) {
 
         # check if some wanted years are out of found years, which were found based on the file names
         if (any(years_wanted %in% years_in == F)) {
-            stop("wanted year", 
-                 ifelse(length(which(!(years_wanted %in% years_in))) > 1, "s", ""),
-                 " ", paste0(years_wanted[!(years_wanted %in% years_in)], collapse=","),
-                 " ", ifelse(length(which(!(years_wanted %in% years_in))) > 1, "are", "is"),
-                 " not included in found year", 
-                 ifelse(length(years_in) > 1, "s", ""), " ", 
-                 paste0(range(years_in), collapse="-"), ".")
+            if (fvarnames[i] %in% names(cdo_known_cmds)) {
+                # try to apply command later
+            } else {
+                stop("wanted year", 
+                     ifelse(length(which(!(years_wanted %in% years_in))) > 1, "s", ""),
+                     " ", paste0(years_wanted[!(years_wanted %in% years_in)], collapse=","),
+                     " ", ifelse(length(which(!(years_wanted %in% years_in))) > 1, "are", "is"),
+                     " not included in found year", 
+                     ifelse(length(years_in) > 1, "s", ""), " ", 
+                     paste0(range(years_in), collapse="-"), ".")
+            }
         }
 
         # remove found years (which were found based on the file names) out of wanted years
@@ -421,9 +425,10 @@ for (i in 1:nsettings) {
         # 2   Hol-T_echam5_wiso_mm_699712.nc 6997 12
         # 86  Hol-T_echam5_wiso_mm_699702.nc 6997 02
         # sort years
-        if (!all(diff(years_in) >= 0) && !all(diff(years_in) <= 0) || # not monotonically increasing/decreasing
-            years_in[1] != as.numeric(froms[i]) || years_in[length(years_in)] != as.numeric(tos[i])) { # or files are not in wanted order
-            message("\n", "years obtained from file names are not monotonically increasing or decreasing\n",
+        if ((!all(years_in == cummax(years_in)) && !all(years_in == cummin(years_in))) # not monotonically increasing/decreasing
+            #|| years_in[1] != as.numeric(froms[i]) || years_in[length(years_in)] != as.numeric(tos[i]) # or files are not in wanted order
+            ) { 
+            message("\n", "years obtained from filenames are not monotonically increasing or decreasing\n",
                     " --> sort according to `froms[", i, "]` = \"", froms[i], 
                     "\" to `tos[", i, "]` = \"", tos[i], "\" ...")
             #years_in_ordered_inds <- sort(years_unique, index.return=T)$ix 
@@ -525,7 +530,7 @@ for (i in 1:nsettings) {
             #if (fvarnames[i] %in% known_wiso_d_vars$vars) {
             if (fvarnames[i] %in% names(cdo_known_cmds)) {
 
-                message("\nrequested variable \"", fvarnames[i], "\" is one of the variables defined in `cdo_known_cmds`:")
+                message("however, requested variable \"", fvarnames[i], "\" is one of the variables defined in `cdo_known_cmds`:")
                 for (vari in 1:length(cdo_known_cmds)) {
                     message("   ", vari, " \"", names(cdo_known_cmds)[vari], "\": ", appendLF=F)
                     if (length(cdo_known_cmds[[vari]]$cmd) == 1) {
@@ -542,7 +547,7 @@ for (i in 1:nsettings) {
                 cmdsin <- cdo_known_cmds[[fvarnames[i]]]$cmd
                 cmdsout <- cmdsin
                 for (cmdi in 1:length(cmdsin)) {
-                    message("\ncheck user cmd ", cmdi, "/", length(cmdsin), " for \"<\" and \">\": \"", cmdsin[cmdi], "\" ...")
+                    message("\ncheck user cmd ", cmdi, "/", length(cmdsin), " for \"<\" and \">\": `", cmdsin[cmdi], "` ...")
                     replace_inds_open <- gregexpr("<", cmdsin[cmdi])[[1]]
                     replace_inds_close <- gregexpr(">", cmdsin[cmdi])[[1]]
                     if (length(replace_inds_open) != length(replace_inds_close)) {
@@ -576,9 +581,9 @@ for (i in 1:nsettings) {
                 } # for cmdi all commands of cdo_known_cmds$variable
 
                 # run modified cdo commands
+                tmpfiles <- c()
                 for (cmdi in 1:length(cmdsout)) {
                     cmd <- cmdsout[cmdi]
-                    tmpfiles <- c()
                     if (length(cmdsout) > 1) {
                         if (cmdi == 1) { # first
                             tmpfile <- paste0(postpaths[i], "/cmdout_", cmdi, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
@@ -603,9 +608,11 @@ for (i in 1:nsettings) {
                     system(cmd)
                 } # run all (possibly modifed) user commands
 
-                if (clean) {
+                if (clean) { 
                     for (fi in tmpfiles) {
-                        system(paste0("rm -v ", fi))
+                        if (file.exists(fi)) {
+                            system(paste0("rm -v ", fi))
+                        }
                     }
                 }
                

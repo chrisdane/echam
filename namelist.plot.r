@@ -35,11 +35,11 @@ message(paste0("   workpath = ", workpath))
 
 # options across settings
 # echam:
-#mode <- "select"
+mode <- "select"
 #mode <- "fldmean" 
 #mode <- "timmean" 
 #mode <- "timsum"
-mode <- "zonmean"
+#mode <- "zonmean"
 #mode <- "volint"
 # fesom:
 #mode <- "moc_depth"
@@ -65,9 +65,9 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
+} else if (F) { # Hol-Tx10
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
     models <- "echam5"
     names_short <- "Hol-Tx10"
@@ -78,11 +78,17 @@ if (F) { # awi-esm-1-1-lr hist
     time_frequencies <- "monthly"
     time_ref <- 1950 # any string, e.g. "BP", or number
     n_mas <- 120
-    remove_mean_froms <- 0
-    remove_mean_tos <- 0
+    #remove_mean_froms <- 0
+    #remove_mean_tos <- 0
     #seasonsp <- "Dec"
     #seasonsp <- "Jun"
-    varnames_in <- "srad0d"
+    #varnames_in <- "temp2"
+    #varnames_in <- "srad0d"
+    #varnames_in <- "wisoaprt_d"
+    #levs <- 2
+    #varnames_in <- "ptemp"
+    #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
+    varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
 
 } else if (F) { # Hol-T
     prefixes <- "cosmos-aso-wiso_echam5_Hol-T"
@@ -90,7 +96,7 @@ if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     models <- "echam5"
     names_short <- "Hol-T"
-    names_legend <- "cosmos-aso-wiso"
+    names_legend <- names_short
     fromsf <- "0004" # beginning of chunk 1
     #fromsf <- "0100"
     #tosf <- "0129"
@@ -110,8 +116,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "wisoaprt_d"
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
-    #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
-    varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
+    varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
+    #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
     #areas <- "sibiria"
     #levs <- 2
 
@@ -160,24 +166,31 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (F) { # Hol-T with versus without orbital acceleration
-    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
+} else if (T) { # Hol-T with versus without orbital acceleration
+    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10", "cosmos-aso-wiso_echam5_Hol-T")
+    #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_main_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
+    #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
     models <- c("echam5", "echam5")
     names_short <- c("Hol-Tx10", "Hol-T")
     names_legend <- names_short
     fromsf <- c("0001", "0004")
-    tosf <- c("7001", "6821")
+    tosf <- c("7001", "6173")
+    #tosf <- c("7001", "6821")
     new_origins <- c(-7000, -6996) 
-    # model year 1 = 7000 BP 
-    # model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 years = 6996 BP
     time_frequencies <- c("monthly", "monthly")
     time_ref <- 1950 # any string, e.g. "BP", or number
+    n_mas <- c(1, 1)
     n_mas <- c(120, 120)
-    #remove_mean_froms <- -827
-    #remove_mean_tos <- -827
-    #seasonsp <- "Jun"
-    #seasonsp <- "Dec"
-    varnames_in <- c("temp2", "temp2")
+    #remove_mean_froms <- c(0, -179)
+    #remove_mean_tos <- c(0, -179)
+    #seasonsf <- c("annual", "annual")
+    #seasonsp <- c("Jun", "Jun")
+    #seasonsp <- c("Dec", "Dec")
+    #seasonsp <- c("annual", "annual")
+    #varnames_in <- c("temp2", "temp2")
+    #varnames_in <- c("srad0d", "srad0d")
+    #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
+    varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
     
 } else if (F) { # temp2 vs ptemp of Hol-T
     prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=2)
@@ -430,6 +443,7 @@ if (F) {
                                  #cols=c("blue", "darkgreen", "red", "brown")
                                  cols=rgb(t(col2rgb(c("blue", "darkgreen", "red", "brown"))/255), alpha=alpha),
                                  ltys=c(1,2,3,4),
+                                 lwds=c(1,1,1,1),
                                  #pchs=1:4,
                                  pchs=c(16, 16, 16, 16),
                                  suffix="_highlight_seasons") 

@@ -783,7 +783,7 @@ for (i in 1:nsettings) {
     inpath <- paste0(postpaths[i], "/", models[i], "/", mode, "/", varnames_in[i])
     fname <- paste0(prefixes[i], "_", mode, 
                     codesf[i], "_", varnames_in[i], 
-                    levsf, "_", areas[i],
+                    levsf[i], "_", areas[i],
                     "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
                     depthsf[i], 
                     reg_dxsf[i], reg_dysf[i],
@@ -935,76 +935,88 @@ for (i in 1:nsettings) {
             
             # take temporal subset
             time_inds <- which(timein_lt >= fromsplt & timein_lt <= tosplt)
-            if (length(time_inds) > 0 && length(time_inds) != length(timein_lt)) { 
-                message("found temporal subset of length ", length(time_inds), " out of ", 
-                        length(dims[[i]]$time), " total time points ...")
-                message("before range(timein_lt) = ", appendLF=F)
-                print(range(timein_lt))
-                timein_lt <- timein_lt[time_inds]
-                message("after range(timein_lt) = ", appendLF=F)
-                print(range(timein_lt))
-                # cut from time dimension
-                dims[[i]]$time <- dims[[i]]$time[time_inds]
+            if (length(time_inds) == 0) {
+                stop("temporal subset is of length 0")
             } else {
-                if (length(time_inds) == 0) {
-                    stop("temporal subset is of length 0")
-                } else if (length(time_inds) == length(dims[[i]]$time)) {
+                if (length(time_inds) != length(timein_lt)) { 
+                    message("found temporal subset of length ", length(time_inds), " out of ", 
+                            length(dims[[i]]$time), " total time points ...")
+                    message("before range(timein_lt) = ", appendLF=F)
+                    print(range(timein_lt))
+                    timein_lt <- timein_lt[time_inds]
+                    message("after range(timein_lt) = ", appendLF=F)
+                    print(range(timein_lt))
+                    # cut from time dimension
+                    dims[[i]]$time <- dims[[i]]$time[time_inds]
+                } else {
                     message(" --> use complete time dimension of ", 
                             length(dims[[i]]$time), " time points ...")
                 }
             }
 
         } else {
-            if (i == 1) fromsp <- tosp <- rep(NA, t=nsettings)
             fromsp[i] <- timein_lt$year[1] + 1900
             tosp[i] <- timein_lt$year[length(timein_lt)] + 1900
-
+            time_inds <- NULL # default
+            
         } # if exists("fromsp") || exists("tosp")
         # cut year range if wanted
 
         # subset seasons from data if wanted (=seasonsp)
         # check which seasonsf and seasonp differ
         if (seasonsp[i] != seasonsf[i]) {
-            message("\n", "cut season from `seasonsf[", i, "]` = \"", seasonsf[i], 
-                    "\" to `seasonsp[", i, "] = \"", seasonsp[i], "\" ...")
-            if (is.character(seasonsp[i])) { # "DJF" or "Jul"
-                # check if substring is in DJFMAM ...
-                season_inds <- regexpr(seasonsp[i], season_check$string)
-                if (any(season_inds != -1)) {
-                    season_inds <- season_check$inds[season_inds:(season_inds+attributes(season_inds)$match.length-1)]
-                } else {
-                    # check if "Jul", etc ...
-                    season_inds <- regexpr(seasonsp[i], season_check$names)
-                    if (length(which(season_inds != -1)) == 1) {
-                        season_inds <- which(season_inds != -1)
+            
+            # special case:  
+            if (seasonsp[i] == "annual" && seasonsf[i] == "Jan-Dec") {
+
+            # all other season cases:
+            } else { # not seasonsp="annual" & seasonsf="Jan-Dec"
+                message("\n", "cut season from `seasonsf[", i, "]` = \"", seasonsf[i], 
+                        "\" to `seasonsp[", i, "] = \"", seasonsp[i], "\" ...")
+                if (is.character(seasonsp[i])) { # "DJF" or "Jul"
+                    # check if substring is in DJFMAM ...
+                    season_inds <- regexpr(seasonsp[i], season_check$string)
+                    if (any(season_inds != -1)) {
+                        season_inds <- season_check$inds[season_inds:(season_inds+attributes(season_inds)$match.length-1)]
                     } else {
-                        stop("do not understand `seasonsp[", i, "]` = \"", seasonsp[i], "\".")
+                        # check if "Jul", etc ...
+                        season_inds <- regexpr(seasonsp[i], season_check$names)
+                        if (length(which(season_inds != -1)) == 1) {
+                            season_inds <- which(season_inds != -1)
+                        } else {
+                            stop("do not understand `seasonsp[", i, "]` = \"", seasonsp[i], "\".")
+                        }
                     }
+                } else if (is.numeric(seasonsp[i])) {
+                    stop("not yet")
                 }
-            } else if (is.numeric(seasonsp[i])) {
-                stop("not yet")
-            }
-            months_in <- unclass(timein_lt)$mon + 1
-            month_inds <- months_in %in% season_inds
-            timein_lt <- timein_lt[month_inds]
-            if (exists("time_inds")) {
-                time_inds <- time_inds[month_inds]
-            } else {
-                time_inds <- month_inds
-            }
-        
+                months_in <- unclass(timein_lt)$mon + 1
+                month_inds <- months_in %in% season_inds
+                month_inds <- which(month_inds)
+                message("found ", length(month_inds), " month_inds")
+                timein_lt <- timein_lt[month_inds]
+                if (!is.null(time_inds)) {
+                    time_inds <- time_inds[month_inds]
+                } else {
+                    time_inds <- month_inds
+                }
+            } # if (seasonsp[i] == "annual" && seasonsf[i] == "Jan-Dec") 
         } # if seasonsp[i] != seasonsf[i]
         # cut season if wanted
 
         # finished time stuff
         timein_ct <- as.POSIXct(timein_lt)
-        if (exists("time_inds")) {
-            dims[[i]]$time_inds <- which(time_inds)
+        if (!is.null(time_inds)) {
+            if (class(time_inds) == "logical") {
+                dims[[i]]$time_inds <- which(time_inds)
+            } else {
+                dims[[i]]$time_inds <- time_inds
+            }
         }
         dims[[i]]$timen <- dims[[i]]$time # replace original numeric time with POSIX time object
         dims[[i]]$timelt <- timein_lt
         dims[[i]]$time <- timein_ct
-        if (exists("time_inds")) {
+        if (!is.null(time_inds)) {
             dims[[i]]$timen <- dims[[i]]$timen[time_inds]
         }
         dims[[i]]$timeunits <- timein_units
@@ -1018,9 +1030,6 @@ for (i in 1:nsettings) {
                 min(dims[[i]]$timelt$mon+1),  " / ", max(dims[[i]]$timelt$mon+1))
 
     } else { # if none of file dims is "time"
-
-        if (!exists("fromsp")) fromsp <- fromsf
-        if (!exists("tosp")) tosp <- tosf
 
     } # if any of file dims is "time"
     #stop("asd")
@@ -1078,6 +1087,12 @@ for (i in 1:nsettings) {
         }
         vars[[vi]] <- ncvar_get(ncin, vars_per_file[vi], collapse_degen=squeeze_data) 
 
+        # special
+        if (names_short[i] == "Hol-Tx10" && mode == "zonmean" && vars_per_file[vi] == "srad0d" && seasonsf[i] == "annual") {
+            message("\nspecial: set ", dims[[i]]$timelt[448], " to NA ...\n")
+            vars[[vi]][,448] <- NA
+        }
+
         # get infos of variable
         names(var_infos)[vi] <- names(vars)[vi]
         var_infos[[vi]] <- ncatt_get(ncin, vars_per_file[vi])
@@ -1116,6 +1131,13 @@ for (i in 1:nsettings) {
 
     # update dimensions per setting
     dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
+
+    # make annual from monthly data if wanted and possible
+    if (seasonsp[i] == "annual" && seasonsf[i] == "Jan-Dec") {
+
+        stop("asdasdasd")
+
+    } # if (seasonsp[i] == "annual" && seasonsf[i] == "Jan-Dec")
 
     # cut temporal subset from data
     if (!is.null(dims[[i]]$time_inds)) {
@@ -1893,6 +1915,26 @@ for (vi in 1:length(varnames_unique)) {
     message("\n", "var ", vi, "/", length(varnames_unique), ": \"", varname, "\" of `datas` has dims \"", 
             paste(vardims_unique, collapse="\",\""), "\". check if this case is defined ...")
 
+    make_regular_grid <- F
+    if (make_regular_grid) {
+        message("\n", "`make_regular_grid`=T --> make regular grid for using `useRaster`=T")
+        for (di in 1:ndims_unique) {
+            for (i in 1:nsettings) {
+                dimind <- which(attributes(z[[i]])$dims == vardims_unique[di])
+                if (length(dimind) == 1) {
+                    #cmd <- paste0(vardims_unique[di], "_dim[[", i, "]] <- dims[[i]]$", vardims_unique[di])
+                    #message(cmd)
+                    #eval(parse(text=cmd))
+                    #z[[i]][[vi]] <- interp.surface.grid(obj=list(x=time_list[[i]],
+                    #                                   y=depth_list[[i]],
+                    #                                   z=datats_list[[i]][[varinds[j]]]),
+                    #                          grid.list=list(x=time_list[[i]],
+                    #                                         y=depths_interp_all[[i]]))$z
+                }
+            }
+        }
+    } # if make_regular_grid
+
 
     ### 2 dims
     ## plot `datas` as lon vs lat
@@ -2015,7 +2057,7 @@ for (vi in 1:length(varnames_unique)) {
         
         # determine number of rows and columns
         source(paste0(homepath, "/functions/image.plot.nxm.r"))
-        nm <- image.plot.nxm(x=time_dim, y=lat_dim, z=z, ip=ip, dry=T)
+        nm <- image.plot.nxm(x=time_dim, y=lat_dim, z=z, n=1, m=2, ip=ip, dry=T)
         
         if (p$plot_type == "png") {
             png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
@@ -2026,7 +2068,7 @@ for (vi in 1:length(varnames_unique)) {
         }
 
         # plot
-        image.plot.nxm(x=time_dim, y=lat_dim, z=z, ip=ip, verbose=F,
+        image.plot.nxm(x=time_dim, y=lat_dim, z=z, n=1, m=2, ip=ip, verbose=F,
                        add_contour=F,
                        #xlim=tlimct, 
                        x_at=tatn, x_labels=tlablt, 
@@ -2485,9 +2527,9 @@ for (vi in 1:length(varnames_unique)) {
                             lines(time_dim[[i]][season_inds], z[[i]][season_inds], 
                                   t=ts_highlight_seasons$t,
                                   col=ts_highlight_seasons$cols[seasi],
-                                  #lty=ltys[i], 
                                   lty=ts_highlight_seasons$ltys[seasi],
-                                  lwd=lwds[i], 
+                                  #lty=ltys[i], 
+                                  lwd=ts_highlight_seasons$lwds[seasi],
                                   #pch=pchs[i]
                                   pch=ts_highlight_seasons$pchs[seasi], cex=0.2
                                  )
@@ -3215,10 +3257,10 @@ if (plot_scatter_var1_vs_var2) {
         if (F) { # TOA imbalance gregory et al. 2004 stuff 
             varnamex <- "temp2"
             varnamey <- "toa_imbalance"
-        } else if (F) { # temp2 vs precipitation weighted temp2
+        } else if (T) { # temp2 vs precipitation weighted temp2
             varnamex <- "temp2"
             varnamey <- "ptemp"
-        } else if (T) {
+        } else if (F) {
             varnamex <- "temp2"
             varnamey <- "wisoaprt_d"
         }
