@@ -1354,9 +1354,13 @@ for (vi in 1:length(varnames_unique)) {
     cmd <- paste0("names(", varnames_unique[vi], "_datas_orig) <- names(datas)")
     eval(parse(text=cmd))
     for (i in 1:nsettings) {
-        cmd <- paste0(varnames_unique[vi], "_datas_orig[[", i, "]] <- datas[[", i, "]][[", vi, "]]")
-        if (vi == 1 && i == 1) message("run `", cmd, "` ...")
-        eval(parse(text=cmd))
+        if (varnames_unique[vi] %in% names(datas[[i]])) { # if variables is present in setting
+            cmd <- paste0(varnames_unique[vi], "_datas_orig[[", i, "]] <- datas[[", i, "]][[", vi, "]]")
+            if (vi == 1 && i == 1) message("run `", cmd, "` ...")
+            eval(parse(text=cmd))
+        } else { # if variable is not preset in setting
+            # nothing
+        }
     }
 } 
 

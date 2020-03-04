@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixs <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     models <- "echam5"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
@@ -142,7 +142,7 @@ if (F) { # old hist
         new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
     } else if (froms[1] == "3572" && tos[1] == "3601") { # model year 6711 since 0; last 30 years
         if (modes[1] == "timmean") { # model years: mean(6711, 7001) = 6856
-            new_date_list <- list(list(years=6856,
+            new_date_list <- list(list(years=c(6711, 7001),
                                        nc_time_origin=1))
         } else {
             new_date_list <- list(list(years=rep(seq(6711, b=10, l=30), e=12), 
@@ -153,7 +153,7 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     models <- "echam5"
     ftypes <- "l" # "f" for files (default) or "l" for links

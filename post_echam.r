@@ -966,10 +966,6 @@ for (i in 1:nsettings) {
             if (!is.null(new_date_list[[i]]$years)) {
                 # check if user provided years is of same length as actual data
                 ntime_in <- length(new_date_list[[i]]$years)
-                if (ntime_in != ntime_out) {
-                    stop("length(`new_date_list[[", i, "]]$years) = ", length(new_date_list[[i]]$years), 
-                         " but ntime of input is ", ntime_out, ". cannot use these provided years.")
-                }
             } else {
                 ntime_in <- length(years_in) # not needed anymore?
             } 
@@ -996,7 +992,9 @@ for (i in 1:nsettings) {
                 } else {
                     # new years are given by user
                     if (ntime_out == 1) { # through e.g. `cdo timmean` or `timsum`
-                        years_out <- new_date_list[[i]]$years
+                        message("ntime_out = 1; take mean of `new_date_list[[", i, "]]$years = ")
+                        ht(new_date_list[[i]]$years)
+                        years_out <- mean(new_date_list[[i]]$years)
                     } else if (ntime_out == length(years_wanted)) { # through e.g `cdo yearmean` or `yearsum`
                         stop("asldakfhakdakjhdkahskhd")
                     } else {
@@ -1337,8 +1335,13 @@ for (i in 1:nsettings) {
         if (!is.null(new_date_list)) {
             message("\nupdate new output years in fout ...")
             cmd <- paste0("mv -v ", fout, " ")
-            from_new <- range(sapply(dates_out_list, "[", "years"))[1]
-            to_new <- range(sapply(dates_out_list, "[", "years"))[2]
+            if (!is.null(new_date_list[[i]]$years)) {
+                from_new <- min(new_date_list[[i]]$years)
+                to_new <- max(new_date_list[[i]]$years)
+            } else {
+                from_new <- range(sapply(dates_out_list, "[", "years"))[1]
+                to_new <- range(sapply(dates_out_list, "[", "years"))[2]
+            }
             fout <- gsub(paste0(froms[i], "-", tos[i]), 
                          paste0(sprintf(paste0("%0", nchar(froms[i]), "i"), from_new), "-",
                                 sprintf(paste0("%0", nchar(tos[i]), "i"), to_new)),

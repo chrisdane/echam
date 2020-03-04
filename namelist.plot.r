@@ -174,8 +174,8 @@ if (F) { # awi-esm-1-1-lr hist
     names_short <- c("Hol-Tx10", "Hol-T")
     names_legend <- names_short
     fromsf <- c("0001", "0004")
-    tosf <- c("7001", "6173")
-    #tosf <- c("7001", "6821")
+    #tosf <- c("7001", "6173")
+    tosf <- c("7001", "6821")
     new_origins <- c(-7000, -6996) 
     time_frequencies <- c("monthly", "monthly")
     time_ref <- 1950 # any string, e.g. "BP", or number
@@ -190,7 +190,9 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("temp2", "temp2")
     #varnames_in <- c("srad0d", "srad0d")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
-    varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
+    #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
+    #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_tsurf", "lm_wisoaprt_d_sellevel_2_as_tsurf")
+    varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptsurf", "lm_wisoaprt_d_sellevel_2_as_ptsurf")
     
 } else if (F) { # temp2 vs ptemp of Hol-T
     prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=2)
