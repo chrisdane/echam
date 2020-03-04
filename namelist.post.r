@@ -103,14 +103,14 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixs <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     models <- "echam5"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
     fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
     #prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
-    #fvarnames <- "temp2"
+    fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
     #fvarnames <- "srad0d"
@@ -121,27 +121,39 @@ if (F) { # old hist
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "aprt_times_tsurf"
     #fvarnames <- "ptemp"
-    fvarnames <- "ptsurf"
-    modes <- "select"
+    #fvarnames <- "ptsurf"
+    #modes <- "select"
+    modes <- "timmean"
     #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
-    froms <- "0001" # beginning counting from 1
+    #froms <- "0001" # beginning counting from 1
     #froms <- "2901" # beginning
-    #tos <- "3601" # end 
-    tos <- "7001" # end counting from 1 
-    #new_date_list <- list(list(years=rep(seq(1, b=10, l=701), e=12), 
-    #                           nc_time_origin=1))
-    # 1 missing *_main_mm_* files: 334812 (Dec 2530 BP; model year 448)
-    #new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
-    # 2 missing *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
-    #new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
+    froms <- "3572"
+    tos <- "3601" # end 
+    #tos <- "7001" # end counting from 1 
+    if (froms[1] == "2901" && tos[1] == "3601") {
+        new_date_list <- list(list(years=rep(seq(1, b=10, l=701), e=12), 
+                                   nc_time_origin=1))
+        # 1 missing *_main_mm_* files: 334812 (Dec 2530 BP; model year 448)
+        #new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
+        # 2 missing *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
+        new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
+    } else if (froms[1] == "3572" && tos[1] == "3601") { # model year 6711 since 0; last 30 years
+        if (modes[1] == "timmean") { # model years: mean(6711, 7001) = 6856
+            new_date_list <- list(list(years=6856,
+                                       nc_time_origin=1))
+        } else {
+            new_date_list <- list(list(years=rep(seq(6711, b=10, l=30), e=12), 
+                                       nc_time_origin=1))
+        }
+    }
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     models <- "echam5"
     ftypes <- "l" # "f" for files (default) or "l" for links

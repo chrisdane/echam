@@ -983,9 +983,9 @@ for (i in 1:nsettings) {
                     if (new_date_list[[i]]$use == "filename") {
                         if (ntime_out == ntime_in) {
                             years_out <- new_date_list[[i]]$year_origin + years_in[chunk_inds_list[[chunki]]] - 1
-                        } else if (ntime_out == length(years_wanted)) {
+                        } else if (ntime_out == length(years_wanted)) { # through e.g `cdo yearmean` or `yearsum`
                             years_out <- new_date_list[[i]]$year_origin + years_wanted[dates_in_list[[chunki]]$inds] - 1
-                        } else if (ntime_out == 1) { # through e.g. `cdo timsum`
+                        } else if (ntime_out == 1) { # through e.g. `cdo timmean` or `timsum`
                             years_out <- new_date_list[[i]]$year_origin + floor(mean(years_wanted)) - 1
                         } else { 
                             stop("not definedddddd here")
@@ -994,7 +994,14 @@ for (i in 1:nsettings) {
                         stop("cdo not yetttt")
                     } # use filename or cdo years
                 } else {
-                    years_out <- new_date_list[[i]]$years[chunk_inds_list[[chunki]]]
+                    # new years are given by user
+                    if (ntime_out == 1) { # through e.g. `cdo timmean` or `timsum`
+                        years_out <- new_date_list[[i]]$years
+                    } else if (ntime_out == length(years_wanted)) { # through e.g `cdo yearmean` or `yearsum`
+                        stop("asldakfhakdakjhdkahskhd")
+                    } else {
+                        years_out <- new_date_list[[i]]$years[chunk_inds_list[[chunki]]]
+                    }
                 }
                 
                 # new months
