@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixs <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv
+} else if (F) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     models <- "echam5"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
@@ -192,6 +192,17 @@ if (F) { # old hist
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
+
+} else if (T) { # echam5-wiso; T127L95; ERA-5 nudging; ollie
+    datapaths <- "/work/ollie/mwerner/echam6-wiso/T127L95/NUDGING_ERA5_T127L95/MONMEAN"
+    models <- "echam5"
+    fpatterns <- "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
+    prefixs <- "recT127_echam5_erai"
+    fvarnames <- "temp2"
+    #modes <- "select"
+    modes <- "fldmean"
+    froms <- 1979
+    tos <- 2018
 
 # ======================================================
 # 2 settings

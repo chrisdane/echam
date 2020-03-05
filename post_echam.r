@@ -2,6 +2,9 @@
 
 rm(list=ls()); graphics.off()
 
+# necessary libraries
+library(stringr)
+
 # helper functions
 message("\n", "Read helper_functions.r ...")
 source("helper_functions.r")
@@ -281,7 +284,8 @@ for (i in 1:nsettings) {
         # todo: search for files and links and compare
         #cmd <- paste0("ls ", datapaths[i], "/", fpattern) 
         # --> this may result in `-bash: /bin/ls: Argument list too long`
-        cmd <- paste0("find ", datapaths[i], " -type ", ftypes[i], " -name '", fpattern, "' -printf \"%f\\n\" | sort")
+        #cmd <- paste0("find ", datapaths[i], " -type ", ftypes[i], " -name '", fpattern, "' -printf \"%f\\n\" | sort")
+        cmd <- paste0("find ", datapaths[i], " -name '", fpattern, "' -printf \"%f\\n\" | sort")
         # --> `find` does not have this limit 
         message("\n", "run `", cmd, "` ...")
         ticcmd <- Sys.time()
@@ -350,6 +354,32 @@ for (i in 1:nsettings) {
                      paste0(range(years_in), collapse="-"), ".")
             }
         }
+
+        # update files:
+        # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
+        # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
+        # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
+        filesp <- rep(fpatterns[i], t=length(df$YYY))
+        filesp <- stringr::str_replace(string=filesp, 
+                                       pattern="<YYYY>", 
+                                       replacement=df$YYYY)
+        if (grepl("<MM>", fpatterns[i])) {
+            filesp <- stringr::str_replace(string=filesp, 
+                                           pattern="<MM>", 
+                                           replacement=df$MM)
+        }
+        if (any(!(files %in% filesp))) {
+            wrong_file_inds <- which(!files %in% filesp)
+            message("\nthese ", length(wrong_file_inds), " files differ from wanted `fpatterns[", i, "]` = ", fpatterns[i], ":")
+            ht(files[wrong_file_inds])
+            message("remove them ...")
+            files <- files[-wrong_file_inds]
+            dirnames <- dirnames[-wrong_file_inds]
+            basenames <- basenames[-wrong_file_inds]
+            df <- df[-wrong_file_inds,]
+            years_in <- years_in[-wrong_file_inds]
+            if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[-wrong_file_inds]
+        } # if any found files differ from wanted `fpatterns[i]`
 
         # remove found years (which were found based on the file names) out of wanted years
         outside_years_inds <- which(years_in %in% years_wanted == F)
@@ -835,20 +865,24 @@ for (i in 1:nsettings) {
                           #" ", cmdcat, 
                           " ", cdocalc, " ", cdoselmon, " ", cdosellevel, " ", cdoselect,  
                           " <files> ", fout, " || echo error")
+            # replace multiple spaces by single spaces
+            cmd <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd, perl=T)
             message("\n", "run `", cmd, "`")
             
             # check if cmd command is longer than cdo_nchar_max_arglist = 2612710
             cmd_tmp <- gsub("<files>", paste(paste0(datapaths[i], "/", files), collapse=" "), cmd)
             nchar_cmd <- nchar(substr(cmd_tmp, start=nchar(cdo) + 1, stop=nchar(cmd_tmp))) 
             message("\n", "cdo argument list is ", nchar_cmd, " characters long")
-            if (nchar_cmd_select > cdo_nchar_max_arglist) { # too long
+            
+            if (nchar_cmd > cdo_nchar_max_arglist) { # too long
                 message("--> this is longer than `cdo_nchar_max_arglist` = ", 
                         cdo_nchar_max_arglist, " and would yield the error ",
                         "\"Argument list too long\"")
                 stop("check for argument list too long")
             } else {
-                cmd_list <- list(cmd=cmd, n=length(files))
-                nchunks <- length(cmd_list)
+                cmd_list <- list(list(cmd=cmd_tmp, n=length(files)))
+                nchunks <- 1
+                fout_vec <- fout
             }
 
         } # if cdo_version >= 1.9.4 or not
@@ -883,11 +917,13 @@ for (i in 1:nsettings) {
                 if (!file.exists(fout_vec[chunki])) {
                     stop("fout_vec[", chunki, "] = ", fout_vec[chunki], " does not exist but it should")
                 }
-                if (clean && cdo_chain == "old"){
-                    if (nchunks > 1) { 
-                        system(paste0("rm -v ", tmpfile_vec[chunki]))
-                    } else if (nchunks == 1) {
-                        system(paste0("rm -v ", tmpfile))
+                if (clean) {
+                    if (cdo_chain == "old"){
+                        if (nchunks > 1) { 
+                            system(paste0("rm -v ", tmpfile_vec[chunki]))
+                        } else if (nchunks == 1) {
+                            system(paste0("rm -v ", tmpfile))
+                        }
                     }
                     system(paste0("rm -v ", scriptname))
                 }
@@ -1297,7 +1333,7 @@ for (i in 1:nsettings) {
         
         } else { 
             
-            message("\n`new_date_list` not set --> no need to set new time dimension values")
+            message("\n`new_date_list` not set --> no need to set new time dimension values\n")
 
         } # !is.null(new_date_list))
 
@@ -1316,9 +1352,11 @@ for (i in 1:nsettings) {
         
         # or rename of necessary 
         } else {
-            cmd_rename <- paste0("mv -v ", fout_vec, " ", fout)
-            message("run `", cmd_rename, "` ...")
-            system(cmd_rename)
+            if (fout_vec != fout) {
+                cmd_rename <- paste0("mv -v ", fout_vec, " ", fout)
+                message("run `", cmd_rename, "` ...")
+                system(cmd_rename)
+            }
         }
 
         # clean chunk files which were catted
@@ -1354,7 +1392,7 @@ for (i in 1:nsettings) {
     } # if fout_exist_check (if output file already exists or not)
 
     # set relative time axis
-    if (F && cdo_set_rel_time) {
+    if (cdo_set_rel_time && is.null(new_date_list)) {
         message("\n", "`cdo_set_rel_time`=T --> set relative time axis ...")
         tmpfile <- paste0(postpaths[i], "/tmp_reltime_", Sys.getpid())
         cmd <- paste0("cdo ", cdo_silent, " -r copy ", fout, " ", tmpfile, 
