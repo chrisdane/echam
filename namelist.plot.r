@@ -166,7 +166,7 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (T) { # Hol-T with versus without orbital acceleration
+} else if (F) { # Hol-T with versus without orbital acceleration
     prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10", "cosmos-aso-wiso_echam5_Hol-T")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_main_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
@@ -405,7 +405,26 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("temp2", t=4)
     varnames_in <- rep("srad0", t=4)
     
-}
+} else if (T) { # compare cdo remap* Hol-T*
+    prefixes <- rep("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", t=4)
+    models <- rep("echam5", t=4)
+    names_short <- rep("Hol-Tx10", t=4)
+    names_legend <- c("nn", "bil", "bic", "dis")
+    fromsf <- rep("0001", t=4) # beginning of chunk 1
+    tosf <- rep("7001", t=4) # end of chunk 3
+    new_origins <- rep(-7000, t=4)
+    time_frequencies <- rep("monthly", t=4)
+    time_ref <- 1950 # any string, e.g. "BP", or number
+    n_mas <- rep(120, t=4)
+    varnames_in <- rep("temp2", t=4)
+    areas <- c("ladoga_remapnn", "ladoga_remapbil", "ladoga_remapbic", "ladoga_remapdis")
+    #areas <- c("shuchye_remapnn", "shuchye_remapbil", "shuchye_remapbic", "shuchye_remapdis")
+    #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapbil", "levinson-lessing_remapbic", "levinson-lessing_remapdis")
+    #areas <- c("taymyr_remapnn", "taymyr_remapbil", "taymyr_remapbic", "taymyr_remapdis")
+    #areas <- c("emanda_remapnn", "emanda_remapbil", "emanda_remapbic", "emanda_remapdis")
+    #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapbil", "elgygytgyn_remapbic", "elgygytgyn_remapdis")
+
+} # which settings
 # ==================================================
 
 # script options
