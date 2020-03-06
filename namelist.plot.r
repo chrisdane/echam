@@ -406,24 +406,24 @@ if (F) { # awi-esm-1-1-lr hist
     varnames_in <- rep("srad0", t=4)
     
 } else if (T) { # compare cdo remap* Hol-T*
-    prefixes <- rep("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", t=4)
-    #prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=4)
+    #prefixes <- rep("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", t=4)
+    prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=4)
     models <- rep("echam5", t=4)
-    names_short <- rep("Hol-Tx10", t=4)
-    #names_short <- rep("Hol-T", t=4)
+    #names_short <- rep("Hol-Tx10", t=4)
+    names_short <- rep("Hol-T", t=4)
     names_legend <- c("nn", "bil", "bic", "dis")
-    fromsf <- rep("0001", t=4) # beginning of chunk 1
-    #fromsf <- rep("0004", t=4)
-    #tosf <- rep("6821", t=4)
-    tosf <- rep("7001", t=4) # end of chunk 3
+    #fromsf <- rep("0001", t=4) # beginning of chunk 1
+    fromsf <- rep("0004", t=4)
+    tosf <- rep("6821", t=4)
+    #tosf <- rep("7001", t=4) # end of chunk 3
     #seasonsp <- rep("Jul", t=4)
-    #seasonsp <- rep("Jan", t=4)
-    #new_origins <- rep(-6996, t=4)
-    new_origins <- rep(-7000, t=4)
+    seasonsp <- rep("Jan", t=4)
+    new_origins <- rep(-6996, t=4)
+    #new_origins <- rep(-7000, t=4)
     time_frequencies <- rep("monthly", t=4)
     time_ref <- 1950 # any string, e.g. "BP", or number
-    #n_mas <- rep(30, t=4)
-    n_mas <- rep(120, t=4)
+    n_mas <- rep(30, t=4)
+    #n_mas <- rep(120, t=4)
     #varnames_in <- rep("temp2", t=4)
     varnames_in <- rep("aprt", t=4)
     areas <- c("ladoga_remapnn", "ladoga_remapbil", "ladoga_remapbic", "ladoga_remapdis")

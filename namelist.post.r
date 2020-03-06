@@ -193,11 +193,22 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # echam5-wiso; T127L95; ERA-5 nudging; ollie
-    datapaths <- "/work/ollie/mwerner/echam6-wiso/T127L95/NUDGING_ERA5_T127L95/MONMEAN"
+} else if (T) { # echam5-wiso; T106L31; ERA-Interim nudging; stan
+    datapaths <- "/ace/user/mwerner/echam5-wiso/T106L31/EXP007_MB/MONMEAN"
     models <- "echam5"
+    fpatterns <- "EXP007_T106_MB_195801.201312.combined.monmean.wiso.nc"
+    prefixs <- "recT106erai_echam5"
+    fvarnames <- "temp2"
+    modes <- "select"
+    #modes <- "fldmean"
+    froms <- 1958
+    tos <- 2013
+
+} else if (F) { # echam6-wiso; T127L95; ERA-5 nudging; ollie
+    datapaths <- "/work/ollie/mwerner/echam6-wiso/T127L95/NUDGING_ERA5_T127L95/MONMEAN"
+    models <- "echam6"
     fpatterns <- "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
-    prefixs <- "recT127_echam5_erai"
+    prefixs <- "recT127era5_echam6"
     fvarnames <- "temp2"
     #modes <- "select"
     modes <- "fldmean"

@@ -284,8 +284,8 @@ for (i in 1:nsettings) {
         # todo: search for files and links and compare
         #cmd <- paste0("ls ", datapaths[i], "/", fpattern) 
         # --> this may result in `-bash: /bin/ls: Argument list too long`
-        #cmd <- paste0("find ", datapaths[i], " -type ", ftypes[i], " -name '", fpattern, "' -printf \"%f\\n\" | sort")
-        cmd <- paste0("find ", datapaths[i], " -name '", fpattern, "' -printf \"%f\\n\" | sort")
+        #cmd <- paste0("find ", datapaths[i], " -type ", ftypes[i], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
+        cmd <- paste0("find ", datapaths[i], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
         # --> `find` does not have this limit 
         message("\n", "run `", cmd, "` ...")
         ticcmd <- Sys.time()
@@ -301,7 +301,17 @@ for (i in 1:nsettings) {
         basenames <- basename(files)
         df <- data.frame(basenames)
 
-        # identify correct YYYY, MM, etc. based on file names
+        if (verbose > 0) {
+            message("\n", "found ", length(files), " ", filetype, " file", 
+                    ifelse(length(files) > 1, "s", ""), ":")
+            if (length(files) > 1) {
+                ht(df, n=30)
+            } else {
+                print(df)
+            }
+        }
+
+        # identify correct YYYY, MM, etc. based on file names or `cdo showdate`
         if (grepl("<YYYY>", fpatterns[i])) {
             patterninds <- regexpr("<YYYY>", fpatterns[i])
             patterninds <- c(patterninds, 
@@ -309,7 +319,16 @@ for (i in 1:nsettings) {
             df$YYYY <- substr(basenames, patterninds[1], patterninds[2]) 
             years_in <- as.integer(df$YYYY)
         } else {
-            stop("<YYYY> should be included in `fpatterns[", i, "]`=", fpatterns[i], " !?")
+            message("\n<YYYY> not included in `fpatterns[", i, "]` = \"", fpatterns[i], "\"\n",
+                    " --> derive input years by `cdo showdate` ...")
+            for (fi in seq_along(files)) {
+                cmd <- paste0(cdo, " showdate ", datapaths[i], "/", files[fi])
+                message(cmd)
+                dates <- system(cmd, intern=T)
+                cmd_select <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd_select, perl=T)
+                stop("asd")
+            }
+            
         }
         if (grepl("<MM>", fpatterns[i])) {
             patterninds <- regexpr("<MM>", fpatterns[i])
@@ -320,13 +339,6 @@ for (i in 1:nsettings) {
         }
         
         if (verbose > 0) {
-            message("\n", "found ", length(files), " ", filetype, " file", 
-                    ifelse(length(files) > 1, "s", ""), ":")
-            if (length(files) > 1) {
-                ht(df, n=30)
-            } else {
-                print(df)
-            }
             message("\nderived years based on file names:")
             ht(years_in, n=30)
             if (grepl("<MM>", fpatterns[i])) {
