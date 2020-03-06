@@ -65,7 +65,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10
+} else if (F) { # Hol-Tx10 on paeosrv
     prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
@@ -90,35 +90,48 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
     varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
 
-} else if (F) { # Hol-T
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-T"
+} else if (T) { # Hol-T on stan
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     models <- "echam5"
     names_short <- "Hol-T"
     names_legend <- names_short
+    #names_legend <- "Ladoga"
+    #names_legend <- "Shuchye"
+    #names_legend <- "Levinson-Lessing"
+    #names_legend <- "Taymyr"
+    #names_legend <- "Emanda"
+    names_legend <- "Elgygytgyn"
     fromsf <- "0004" # beginning of chunk 1
     #fromsf <- "0100"
     #tosf <- "0129"
     #tosf <- "5903" # end of chunk 2
-    tosf <- "6173" # end of chunk 3
+    #tosf <- "6173" # end of chunk 3
+    tosf <- "6821" # end of chunk 3
     new_origins <- -6996 # model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
     time_frequencies <- "monthly"
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- 120
+    n_mas <- 1200
     #remove_mean_froms <- -827
     #remove_mean_tos <- -827
     #seasonsp <- "Jun"
     #seasonsp <- "Dec"
-    #varnames_in <- "temp2"
+    varnames_in <- "temp2"
     #varnames_in <- "tsurf"
     #varnames_in <- "aprt"
     #varnames_in <- "wisoaprt_d"
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
-    varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
+    #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
     #areas <- "sibiria"
+    #areas <- "ladoga_remapnn"
+    #areas <- "shuchye_remapnn"
+    #areas <- "levinson-lessing_remapnn"
+    #areas <- "taymyr_remapnn"
+    #areas <- "emanda_remapnn"
+    areas <- "elgygytgyn_remapnn"
     #levs <- 2
 
 # =====================================
@@ -405,7 +418,7 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("temp2", t=4)
     varnames_in <- rep("srad0", t=4)
     
-} else if (T) { # compare cdo remap* Hol-T*
+} else if (F) { # compare cdo remap* Hol-T*
     #prefixes <- rep("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", t=4)
     prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=4)
     models <- rep("echam5", t=4)
@@ -457,7 +470,7 @@ alpha <- 0.2 # transparent: 0,1 (0 fully transparent)
 add_xgrid <- F
 add_ygrid <- F
 add_zeroline <- T
-add_unsmoothed <- T
+add_unsmoothed <- F
 add_smoothed <- T
 # time:
 add_sd <- F
@@ -480,7 +493,8 @@ if (F) {
 }
 add_first_data_point <- F
 add_data_right_yaxis_ts <- T
-add_data_right_yaxis_ts_mon <- F
+add_cor_data_left_and_right_ts <- T
+add_data_right_yaxis_ts_mon <- T
 add_legend_right_yaxis <- F
 plot_scatter_var1_vs_var2 <- T
 add_1to1_line_scatter <- T

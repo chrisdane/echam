@@ -2253,7 +2253,8 @@ for (vi in 1:length(varnames_unique)) {
                                            suffix="_with_volcanic_aerosols_and_TSI_and_CO2")
                     }
                 }
-            } else if (varname == "siarean") {
+            }
+            if (varname == "siarean") {
                 data_right <- list(data=vector("list", l=nsettings))
                 names(data_right$data) <- names_short
                 for (i in 1:nsettings) {
@@ -2272,8 +2273,29 @@ for (vi in 1:length(varnames_unique)) {
                 data_right$label <- eval(substitute(expression(paste("SH sea ice extent [km"^2, 
                                                                             " " %*% " ", 10^6, "]"))))
                 data_right$suffix <- "_with_siareas"
-
-            } 
+            } # siarean
+            if (varname == "temp2") {
+                data_right <- list(data=vector("list", l=nsettings))
+                names(data_right$data) <- names_short
+                for (i in 1:nsettings) {
+                    inpath <- paste0(workpath, "/post/", models[i], "/", mode, "/wisoaprt_d") 
+                    fname <- paste0(prefixes[i], "_", mode, 
+                                    codesf[i], "_wisoaprt_d_sellevel_2_", areas[i],
+                                    "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
+                                    depthsf[i], 
+                                    ".nc") # todo: levs 
+                    ncin <- nc_open(paste0(inpath, "/", fname))
+                    message("read ", inpath, "/", fname, " ...")
+                    data_right$data[[i]] <- list(x=time_dim[[i]],
+                                                 y=ncvar_get(ncin, "wisoaprt_d"),
+                                                 text="wisoaprt_d_sellevel_2", 
+                                                 #col=cols[i], 
+                                                 cols="#E41A1C",
+                                                 lty=1, lwd=1, pch=NA)
+                }
+                data_right$label <- eval(substitute(expression(paste(delta, ""^18, "O [\u2030]")))) 
+                data_right$suffix <- "_with_wisoaprt_d_sellevel_2"
+            } # temp2
             # finished variable specific stuff for add_data_right_yaxis_ts
             
             # check
@@ -2333,14 +2355,13 @@ for (vi in 1:length(varnames_unique)) {
             } # if add nsidc
             message("\n", "ylim_right=", appendLF=F)
             dput(ylim_right)
-            if (!exists("yat_at")) {
+            if (!exists("yat_right")) {
                 message("use automatic data right yaxis labels ...")
-                yat_right <- pretty(ylim_right, n=10)
+                yat_right <- pretty(ylim_right, n=8)
             }
             ylab_right <- format(yat_right, trim=T)
         } 
         # if add_data_right_yaxis_ts finished prepare right axis data
-
 
         # ylims of model data
         if (add_unsmoothed) {
@@ -2387,7 +2408,7 @@ for (vi in 1:length(varnames_unique)) {
 
         message("\n", "ylim=", appendLF=F)
         dput(ylim)
-        yat <- pretty(ylim, n=10)
+        yat <- pretty(ylim, n=8)
         ylab <- format(yat, trim=T)
 
         # plotname
@@ -2605,9 +2626,9 @@ for (vi in 1:length(varnames_unique)) {
         if (add_legend) {
             message("\n", "add default stuff to ", mode, " legend ...")
             le <- list()
-            #le$pos <- "topleft" 
+            le$pos <- "topleft" 
             #le$pos <- "bottomleft" 
-            le$pos <- "topright"
+            #le$pos <- "topright"
             #le$pos <- "bottomright" 
             #le$ncol <- nsettings/2
             le$ncol <- 1
@@ -2734,6 +2755,17 @@ for (vi in 1:length(varnames_unique)) {
                            x.intersp=0.2, cex=le$cex, bty="n")
                 }
             } # if add_legend
+
+            if (add_cor_data_left_and_right_ts) {
+
+                cor <- cor.test(datas[[i]][[1]], data_right$data[[i]]$y)
+                # plusminus: %+-%
+                subtitle <- substitute(paste("cor(", x, ",", y, ") = ", rfrom-rto),
+                                       list(x=names(datas[[i]])[1], y=data_right$data[[i]]$text,
+                                            rfrom=round(cor$conf.int[1], 3), rto=round(cor$conf.int[2], 3)))
+                mtext(subtitle, cex=0.7)
+
+            } # if add_cor_data_left_and_right_ts
 
         } # if add_data_right_yaxis_ts
 
@@ -2907,25 +2939,83 @@ if (exists("datasmon")) {
         if (ndims_unique_mon == 1 && vardims_unique_mon == "month") {
 
             message("\n", varname, " ", mode, " plot vs months ...")
-
-            # prepare right axis data if necessary
-            if (!add_data_right_yaxis_ts_mon) {
-                data_right_mon <- list(suffix="") # default
-            } else {
-                stop("not yet")
-            } # if add_data_right_yaxis_ts_mon finished prepare right axis data
-
+            
             # ylims for fldmean versus months plot
             message("\n", mode, " versus months min / mean / max ", varname, " zmon:")
             for (i in 1:nsettings) {
                 message(names_short[i], ": ", min(zmon[[i]], na.rm=T), " / ",
                         mean(zmon[[i]], na.rm=T), " / ", max(zmon[[i]], na.rm=T))
             }
-            ylim <- range(zmon, na.rm=T)
-            message("\n", "ylim=", appendLF=F)
-            dput(ylim)
-            yat <- pretty(ylim, n=10)
-            ylab <- format(yat, trim=T)
+            ylim_mon <- range(zmon, na.rm=T)
+            message("\n", "ylim_mon=", appendLF=F)
+            dput(ylim_mon)
+            yat_mon <- pretty(ylim_mon, n=10)
+            ylab_mon <- format(yat_mon, trim=T)
+
+            # prepare right axis data if necessary
+            if (!add_data_right_yaxis_ts_mon) {
+                data_right_mon <- list(suffix="") # default
+            } else {
+                if (varname == "temp2") {
+                    data_right_mon <- list(data=vector("list", l=nsettings))
+                    names(data_right_mon$data) <- names_short
+                    for (i in 1:nsettings) {
+                        inpath <- paste0(workpath, "/post/", models[i], "/", mode, "/wisoaprt_d") 
+                        fname <- paste0(prefixes[i], "_", mode, 
+                                        codesf[i], "_wisoaprt_d_sellevel_2_", areas[i],
+                                        "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
+                                        depthsf[i], 
+                                        ".nc") # todo: levs 
+                        ncin <- nc_open(paste0(inpath, "/", fname))
+                        message("read ", inpath, "/", fname, " ...")
+                        tmp <- ncvar_get(ncin, "wisoaprt_d")
+                        if (length(dim(tmp)) != 1) {
+                            stop("not yet")
+                        } else {
+                            tmp <- apply(array(tmp, c(12, dim(tmp)/12)), 1, mean, na.rm=T)
+                        }
+                        data_right_mon$data[[i]] <- list(x=dims[[i]]$month,
+                                                         y=tmp,
+                                                         text="wisoaprt_d_sellevel_2", 
+                                                         #col=cols[i], 
+                                                         cols="#E41A1C",
+                                                         lty=1, lwd=1, pch=NA)
+                    }
+                    data_right_mon$label <- eval(substitute(expression(paste(delta, ""^18, "O [\u2030]")))) 
+                    data_right_mon$suffix <- "_with_wisoaprt_d_sellevel_2"
+                } # temp2
+            
+                # check
+                if (length(data_right_mon$data) == 0) {
+                    warning("you provided `add_data_right_yaxis_ts_mon=T` but did not ",
+                            "define which data should be plotted on right yaxis.\n",
+                            " --> set `add_data_right_yaxis_ts_mon=F` and continue ...")
+                    add_data_right_yaxis_ts_mon <- F
+                    data_right_mon <- list(suffix="") # default
+                }
+            } # if add_data_right_yaxis_ts_mon
+            
+            # if add_data_right_yaxis_ts after check
+            if (add_data_right_yaxis_ts_mon) {
+                
+                nsettings_right_mon <- length(data_right_mon$data)
+
+                if (!exists("ylim_right_mon")) { # possibly set by user
+                    ylim_right_mon <- vector("list", l=length(data_right$data))
+                    for (i in seq_len(nsettings_right_mon)) {
+                        ylim_right_mon[[i]] <- range(data_right_mon$data[[i]]$y, na.rm=T)
+                    }
+                    ylim_right_mon <- range(ylim_right_mon)
+                } # if ylim_right_mon does not already exist
+                
+                message("\n", "ylim_right_mon=", appendLF=F)
+                dput(ylim_right_mon)
+                if (!exists("yat_right_mon")) {
+                    message("use automatic data right yaxis labels ...")
+                    yat_right_mon <- pretty(ylim_right_mon, n=10)
+                }
+                ylab_right_mon <- format(yat_right_mon, trim=T)
+            } # if add_data_right_yaxis_ts_mon finished prepare right axis data
 
             # plotname
             plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
@@ -2954,11 +3044,11 @@ if (exists("datasmon")) {
             # open plot
             par(mar=mar)
             plot(month_dim[[1]], zmon[[1]], t="n",
-                 xlim=monlim, ylim=ylim, 
+                 xlim=monlim, ylim=ylim_mon, 
                  xaxt="n", yaxt="n",
                  xlab=NA, ylab=NA)
             axis(1, at=monat, labels=monlab, cex.axis=tlabcex)
-            axis(2, at=yat, labels=ylab, las=2)
+            axis(2, at=yat_mon, labels=ylab_mon, las=2)
 
             # add title
             if (add_title) {
@@ -3000,9 +3090,9 @@ if (exists("datasmon")) {
             if (add_legend) {
                 message("\n", "add default stuff to ", mode, " mon legend ...")
                 le <- list()
-                le$pos <- "top"
+                le$pos <- "topleft" 
+                #le$pos <- "top"
                 #le$pos <- "bottom"
-                #le$pos <- "topleft" 
                 #le$pos <- "bottomleft" 
                 #le$pos <- "bottomright" 
                 #le$ncol <- nsettings/2
@@ -3039,28 +3129,36 @@ if (exists("datasmon")) {
             if (add_data_right_yaxis_ts_mon) {
                 message("\n", "`add_data_right_yaxis_ts_mon` = T --> add data right yaxis mon...")
                 par(new=T)
-                plot(data_right_mon[[1]]$x, data_right_mon[[1]]$y, #log="y", 
-                     t="n", xlim=monlim, ylim=ylim_right, 
+                plot(data_right_mon$data[[1]]$x, data_right_mon$data[[1]]$y, #log="y", 
+                     t="n", xlim=monlim, ylim=ylim_right_mon, 
                      xlab=NA, ylab=NA, axes=F)
-                axis(4, at=yat_right, labels=ylab_right, las=2)
-                mtext(side=4, data_right_mon_label, line=3.4, cex=0.9)
-
+                
+                # add right axes in same color as the right data if 
+                # all colors of the right data are the same
+                if (length(unique(sapply(data_right$data, "[", "col"))) == 1) {
+                    right_axis_col <- data_right$data[[1]]$col
+                } else {
+                    right_axis_col <- "black" # default
+                }
+                axis(4, at=yat_right_mon, labels=ylab_right_mon, las=2, 
+                     col=right_axis_col, col.axis=right_axis_col, col.ticks=right_axis_col)
+                mtext(side=4, data_right_mon$label, line=4.5, cex=0.9, col=right_axis_col)
+                
                 # add right data
-                for (i in 1:length(data_right_mon)) {
-                    if (length(data_right_mon[[i]]$x) == 1 && data_right_mon[[i]]$x == "const") {
-                        abline(h=data_right_mon[[i]]$y, 
-                               col=data_right_mon[[i]]$col, lty=data_right_mon$lty,
-                               lwd=data_right_mon[[i]]$lwd)
+                for (i in seq_len(nsettings_right_mon)) {
+                    if (length(data_right_mon$data[[i]]$x) == 1 && data_right_mon$data[[i]]$x == "const") {
+                        abline(h=data_right_mon$data[[i]]$y, 
+                               col=data_right_mon$data[[i]]$col, lty=data_right_mon$data[[i]]$lty,
+                               lwd=data_right_mon$data[[i]]$lwd)
                     } else {
-                        lines(data_right_mon[[i]]$x, data_right_mon[[i]]$y, 
-                              col=data_right_mon[[i]]$col, lty=data_right_mon$lty,
-                              lwd=data_right_mon[[i]]$lwd)
+                        lines(data_right_mon$data[[i]]$x, data_right_mon$data[[i]]$y, 
+                              col=data_right_mon$data[[i]]$col, lty=data_right_mon$data[[i]]$lty,
+                              lwd=data_right_mon$data[[i]]$lwd)
                     }
                 }
 
-                if (add_legend) {
-                    stop("asd")
-                    message("\n", "add default stuff to ", mode, " right_data legend ...")
+                if (add_legend_right_yaxis) {
+                    message("\n", "add default stuff to ", mode, " right_data mon legend ...")
                     le <- list()
                     le$pos <- "top" 
                     le$ncol <- 1
