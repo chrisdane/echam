@@ -28,7 +28,7 @@ tar -xvf fort_32900101_32901231.tar
 #   change e.g "  CODE=1" to "  name=var12"
 cdo -f nc copy TIMESER.32900101_32901231.ext TIMESER.32900101_32901231.ext.nc
 cdo setpartabn,mpiom_wiso_zeitser_partabn_corrected.txt TIMESER.32900101_32901231.ext.nc tmp && mv tmp TIMESER.32900101_32901231.ext.nc
-# but
+# but for *.grb mpiom output
 cdo -t mpiom1 -f nc copy Hol-Tx10_mpiom_32900101_32901231.grb Hol-Tx10_mpiom_32900101_32901231.grb.nc
 ```
 
