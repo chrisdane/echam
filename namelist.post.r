@@ -103,8 +103,9 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixs <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
-    datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
+} else if (T) { # Hol-Tx10 on paleosrv
+    datapath
+    s <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     models <- "echam5"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
     fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"

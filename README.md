@@ -15,7 +15,7 @@ ncatted -O -a table,any3Dvar,d,, mpiom_r360x180L40_geographic_grid_standard.nc m
 
 corrected `zeitser-wiso.partab` for time series data (`*.ext`) of mpiom wiso:
 ```bash
-tar -xvf fort_32900101_32901231.tar
+tar -xf fort_32900101_32901231.tar -C /target_dir
 #   fort.75: var100 (gmoc), var101 (amoc)
 #   fort.90: var69 (todo: find out)
 #   fort.100: codetable var1-var223
