@@ -13,4 +13,21 @@ ncatted -a _FillValue,,m,i,0 mpiom_r360x180L40_geographic_grid_standard.nc mpiom
 ncap2 -s where(SAO >= 0) SAO = 1 SAO_3D_COSMOS_standard.nc mpiom_r360x180L40_geographic_grid_standard.nc\n"
 ```
 
+corrected `zeitser-wiso.partab` for time series data of mpiom wiso:
+```
+tar -xvf fort_32900101_32901231.tar
+#   fort.75: var100 (gmoc), var101 (amoc)
+#   fort.90: var69 (todo: find out)
+#   fort.100: codetable var1-var223
+#   fort.101: codetable var1-var223
+#   fort.102: codetable var1-var223
+#   TIMESER.32900101_32901231.asc: ascii data
+#   TIMESER.32900101_32901231.ext: grb: var1-var223
+# mpiom_functions.r: correct_mpiom_partabn(partabn_file=zeitser-wiso.partab)
+#   change e.g. "  NAME=c1_PSIGULF" to "  out_name=c1_PSIGULF"
+#   change e.g "  CODE=1" to "  name=var12"
+cdo -f nc copy TIMESER.32900101_32901231.ext TIMESER.32900101_32901231.ext.nc
+cdo setpartabn,mpiom_wiso_zeitser_partabn_corrected.txt TIMESER.32900101_32901231.ext.nc tmp && mv tmp TIMESER.32900101_32901231.ext.nc
+```
+
 
