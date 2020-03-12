@@ -1,0 +1,28 @@
+   3  UKO           zon. velocity [m/s]
+   4  VKE           mer. velocity [m/s]
+   2  THO           temperature [C]
+   5  SAO           salinity [psu]
+   7  WO            ver. velocity [m/s]
+ 207  WGO           GM vertical velocity [m/s]
+ 112  var112      
+ 214  var214      
+ 110  AVO           vertical impuls diffusion [m**2/s]
+ 111  DVO           vertical T,S diffusion [m**2/s]
+  67  EMINPO        freshwaterflux by restoring [m/s]
+   1  ZO            sealevel [m]
+  70  FLUM          total heatflux [W/m**2]
+  79  PEM           total freshwaterflux [m/s]
+  13  SICTHO        ice thickness [m]
+  15  SICOMO        ice compactness [frac.]
+  35  SICUO         zon. ice velocity [m/s]
+  36  SICVE         mer. ice velocity [m/s]
+ 141  SICSNO        snow thickness [m]
+ 142  SICTRU        seaice transport x [m**2/s]
+ 143  SICTRV        seaice transport y [m**2/s]
+ 159  var159      
+ 160  var160      
+ 176  QSWO          heat flux shortwave [W/m**2]
+ 148  var148      
+  65  PRECO         net freshwater flux + runoff [m/s]
+  27  PSIUWE        hor. bar. streamfunction [Sv]
+ 183  zmld          mixed layer depth (SJ) [m]

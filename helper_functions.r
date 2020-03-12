@@ -97,7 +97,7 @@ make_posixlt_origin_function <- function(years, origin_in=0, origin_out=0, verbo
     } else if (is.null(neg_posixlt) && !is.null(pos_posixlt)) {
         posixlt <- pos_posixlt
     } else {
-        stop("this shoud not happen")
+        stop("this should not happen")
     }
     if (verbose > 0) message("3 class(posixlt) = ", class(posixlt))
         
@@ -126,4 +126,7 @@ make_posixlt_origin_function <- function(years, origin_in=0, origin_out=0, verbo
     return(posixlt)
 
 } # make_posixlt_origin_function
+
+
+
 

@@ -133,7 +133,7 @@ if (F) { # old hist
     froms <- "3572"
     tos <- "3601" # end 
     #tos <- "7001" # end counting from 1 
-    if (froms[1] == "2901" && tos[1] == "3601") {
+    if (froms[1] == "2901" && tos[1] == "3601") { # complete model period
         new_date_list <- list(list(years=rep(seq(1, b=10, l=701), e=12), 
                                    nc_time_origin=1))
         # 1 missing *_main_mm_* files: 334812 (Dec 2530 BP; model year 448)
@@ -343,6 +343,7 @@ cdo_known_cmds <- list("toa_imbalace="=list(cmd="<cdo> -setname,toa_imbalance -a
                                           "<nco_ncatted> -O -a units,ptemp,o,c,\"degC\"")),
                        "ptsurf"=list(cmd=c("<cdo> -setname,ptsurf -div <aprt_times_tsurf> <aprt>",
                                            "<nco_ncatted> -O -a long_name,ptsurf,o,c,\"precipitation weighted tsurf\"",
-                                           "<nco_ncatted> -O -a units,ptsurf,o,c,\"degC\""))
-                       )
+                                           "<nco_ncatted> -O -a units,ptsurf,o,c,\"degC\"")),
+                       "amoc"=list(cmd="")
+                      ) # cdo_known_cmds
 
