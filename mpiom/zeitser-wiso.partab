@@ -1,0 +1,1339 @@
+
+&PARAMETER
+  CODE=1
+  NAME=c1_PSIGULF
+  LONG_NAME="Maximum_of_Barotropic_Streamfunction_in_Subtropical_Atlantic"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=2
+  NAME=c2_PSIKURO
+  LONG_NAME="Maximum_of_Barotropic_Streamfunction_in_Subtropical_Pacific"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=3
+  NAME=c3_PSIBANDA
+  LONG_NAME="Barotropic_Transport_through_Indonesian_Archipelago"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=4
+  NAME=c4_PSIDRAKE
+  LONG_NAME="Barotropic_Transport_through_Drake_Passage"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=5
+  NAME=c5_PSIBERING
+  LONG_NAME="Barotropic_Transport_through_Bering_Strait"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=6
+  NAME=c6_PSISPG
+  LONG_NAME="Maximum_of_Barotropic_Streamfunction_in_Subpolar_Atlantic"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=7
+  NAME=c7_CO2
+  LONG_NAME="Mass_Fraction_of_Carbon_Dioxide_in_Air"
+  UNITS="ppm"
+/
+&PARAMETER
+  CODE=8
+  NAME=c8_CO2flux
+  LONG_NAME="Downward_Carbon_flux_at_Surface"
+  UNITS="mole m-2"
+/
+&PARAMETER
+  CODE=9
+  NAME=c9_AABW2
+  LONG_NAME="Mass_Transport_Below_1000m_in_Atlantic_Around_60N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=10
+  NAME=c10_NADW2
+  LONG_NAME="Mass_Transport_Below_1000m_in_Atlantic_Around_60N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=11
+  NAME=c11_AABW3
+  LONG_NAME="Mass_Transport_Below_1000m_in_Atlantic_Around_50N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=12
+  NAME=c12_NADW3
+  LONG_NAME="Mass_Transport_Below_1000m_in_Atlantic_Around_50N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=13
+  NAME=c13_AABW4
+  LONG_NAME="Mass_Transport_Below_1000m_in_Atlantic_Around_30N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=14
+  NAME=c14_NADW4
+  LONG_NAME="Mass_Transport_Below_1000m_in_Atlantic_Around_30N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=15
+  NAME=c15_AABW5
+  LONG_NAME="Mass_Transport_Below_1000m_in_Atlantic_Around_30S"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=16
+  NAME=c16_NADW5
+  LONG_NAME="Mass_Transport_Below_1000m_in_Atlantic_Around_30S"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=17
+  NAME=c17_TVQUER1
+  LONG_NAME="Heat_Transport_by_Advection_in_Pacific_at_65N"
+  UNITS="W"
+/
+&PARAMETER
+  CODE=18
+  NAME=c18_SVQUER1
+  LONG_NAME="SALT_Transport_by_Advection_in_Pacific_at_65N"
+  UNITS="g s-1"
+/
+&PARAMETER
+  CODE=19
+  NAME=c19_TMERCI1
+  LONG_NAME="Mass_Transport_in_Pacific_at_65N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=20
+  NAME=c20_TVQUER2
+  LONG_NAME="Heat_Transport_by_Advection_in_Atlantic_at_60N"
+  UNITS="W"
+/
+&PARAMETER
+  CODE=21
+  NAME=c21_SVQUER2
+  LONG_NAME="SALT_Transport_by_Advection_in_Atlantic_at_60N"
+  UNITS="g s-1"
+/
+&PARAMETER
+  CODE=22
+  NAME=c22_TMERCI2
+  LONG_NAME="Mass_Transport_in_Atlantic_at_60N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=23
+  NAME=c23_TVQUER3
+  LONG_NAME="Heat_Transport_by_Advection_in_Atlantic_at_50N"
+  UNITS="W"
+/
+&PARAMETER
+  CODE=24
+  NAME=c24_SVQUER3
+  LONG_NAME="SALT_Transport_by_Advection_in_Atlantic_at_50N"
+  UNITS="g s-1"
+/
+&PARAMETER
+  CODE=25
+  NAME=c25_TMERCI3
+  LONG_NAME="Mass_Transport_in_Atlantic_at_50N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=26
+  NAME=c26_TVQUER4
+  LONG_NAME="Heat_Transport_by_Advection_in_Atlantic_at_30N"
+  UNITS="W"
+/
+&PARAMETER
+  CODE=27
+  NAME=c27_SVQUER4
+  LONG_NAME="SALT_Transport_by_Advection_in_Atlantic_at_30N"
+  UNITS="g s-1"
+/
+&PARAMETER
+  CODE=28
+  NAME=c28_TMERCI4
+  LONG_NAME="Mass_Transport_in_Atlantic_at_30N"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=29
+  NAME=c29_TVQUER5
+  LONG_NAME="Heat_Transport_by_Advection_in_Atlantic_at_30S"
+  UNITS="W"
+/
+&PARAMETER
+  CODE=30
+  NAME=c30_SVQUER5
+  LONG_NAME="SALT_Transport_by_Advection_in_Atlantic_at_30S"
+  UNITS="g s-1"
+/
+&PARAMETER
+  CODE=31
+  NAME=c31_TMERCI5
+  LONG_NAME="Mass_Transport_in_Atlantic_at_30S"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=32
+  NAME=c32_TVNET2
+  LONG_NAME="Net_Heat_Transport_by_Advection_in_Atlantic_at_60N"
+  UNITS="W"
+/
+&PARAMETER
+  CODE=33
+  NAME=c33_SVNET2
+  LONG_NAME="Net_Salt_Transport_by_Advection_in_Atlantic_at_60N"
+  UNITS="g s-1"
+/
+&PARAMETER
+  CODE=34
+  NAME=c34_TVNET3
+  LONG_NAME="Net_Heat_Transport_by_Advection_in_Atlantic_at_50N"
+  UNITS="W"
+/
+&PARAMETER
+  CODE=35
+  NAME=c35_SVNET3
+  LONG_NAME="Net_Salt_Transport_by_Advection_in_Atlantic_at_50N"
+  UNITS="g s-1"
+/
+&PARAMETER
+  CODE=36
+  NAME=c36_TVNET4
+  LONG_NAME="Net_Heat_Transport_by_Advection_in_Atlantic_at_30N"
+  UNITS="W"
+/
+&PARAMETER
+  CODE=37
+  NAME=c37_SVNET4
+  LONG_NAME="Net_Salt_Transport_by_Advection_in_Atlantic_at_30N"
+  UNITS="g s-1"
+/
+&PARAMETER
+  CODE=38
+  NAME=c38_TVNET5
+  LONG_NAME="Net_Heat_Transport_by_Advection_in_Atlantic_at_30S"
+  UNITS="W"
+/
+&PARAMETER
+  CODE=39
+  NAME=c39_SVNET5
+  LONG_NAME="Net_Salt_Transport_by_Advection_in_Atlantic_at_30S"
+  UNITS="g s-1"
+/
+&PARAMETER
+  CODE=40
+  NAME=c40_TRBERING
+  LONG_NAME="Mass_Transport_through_Bering_Strait"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=41
+  NAME=c41_TRDENMARK
+  LONG_NAME="OVERFLOW_Transport_through_Denmark_Strait"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=42
+  NAME=c42_TRFAROER
+  LONG_NAME="OVERFLOW_Transport_through_Faroer_Bank_Channel"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=43
+  NAME=c43_SFRAM
+  LONG_NAME="Seaice_Transport_through_Fram_Strait"
+  UNITS="m3 s-1"
+/
+&PARAMETER
+  CODE=44
+  NAME=c44_ICEARE_GIN
+  LONG_NAME="Seaice_Area_GIN_Sea"
+  UNITS="m2"
+/
+&PARAMETER
+  CODE=45
+  NAME=c45_ICEVOL_GIN
+  LONG_NAME="Seaice_Volume_GIN_Sea"
+  UNITS="m3"
+/
+&PARAMETER
+  CODE=46
+  NAME=c46_HFL_GIN
+  LONG_NAME="Downward_Heatflux_into_GIN_Sea"
+  UNITS="W"  
+/
+&PARAMETER
+  CODE=47
+  NAME=c47_WFL_GIN
+  LONG_NAME="Downward_Waterflux_into_GIN_Sea"
+  UNITS="m3 s-1"  
+/
+&PARAMETER
+  CODE=48
+  NAME=cSST_GIN
+  LONG_NAME="Sea_Surface_Temperature_GIN_Sea"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=49
+  NAME=c49_SSS_GIN
+  LONG_NAME="Sea_Surface_Salinity_GIN_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=50
+  NAME=c50_T200_GIN
+  LONG_NAME="Potential_Temperature_200m_GIN_Sea"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=51
+  NAME=c51_S200_GIN
+  LONG_NAME="Salinity_200m_GIN_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=52
+  NAME=c52_T700_GIN
+  LONG_NAME="Potential_Temperature_700m_GIN_Sea"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=53
+  NAME=c53_S700_GIN
+  LONG_NAME="Salinity_700m_GIN_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=54
+  NAME=c54_T2200_GIN
+  LONG_NAME="Potential_Temperature_2200m_GIN_Sea"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=55
+  NAME=c55_S2200_GIN
+  LONG_NAME="Salinity_2200m_GIN_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=56
+  NAME=c56_d18Osw_GIN
+  LONG_NAME="Sea_Surface_d18O_GIN_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=57
+  NAME=c57_dDsw_GIN
+  LONG_NAME="Sea_Surface_dD_GIN_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=58
+  NAME=c58_d18O200_GIN
+  LONG_NAME="d18O_200m_GIN_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=59
+  NAME=c59_dD200_GIN
+  LONG_NAME="dD_200m_GIN_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=60
+  NAME=c60_d18O700_GIN
+  LONG_NAME="d18O_700m_GIN_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=61
+  NAME=c61_dD700_GIN
+  LONG_NAME="dD_700m_GIN_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=62
+  NAME=c62_d18O2200_GIN
+  LONG_NAME="d18O_2200m_GIN_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=63
+  NAME=c63_dD2200_GIN
+  LONG_NAME="dD_2200m_GIN_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=64
+  NAME=c64_ICEARE_ARC
+  LONG_NAME="Seaice_Area_Arctic_Ocean"
+  UNITS="m2"
+/
+&PARAMETER
+  CODE=65
+  NAME=c65_ICEVOL_ARC
+  LONG_NAME="Seaice_Volume_Arctic_Ocean"
+  UNITS="m3"
+/
+&PARAMETER
+  CODE=66
+  NAME=c66_HFL_ARC
+  LONG_NAME="Downward_Heatflux_into_Arctic_Ocean"
+  UNITS="W"  
+/
+&PARAMETER
+  CODE=67
+  NAME=c67_WFL_ARC
+  LONG_NAME="Downward_Waterflux_into_Arctic_Ocean"
+  UNITS="m3 s-1"  
+/
+&PARAMETER
+  CODE=68
+  NAME=c68_SST_ARC
+  LONG_NAME="Sea_Surface_Temperature_Arctic_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=69
+  NAME=c69_SSS_ARC
+  LONG_NAME="Sea_Surface_Salinity_Arctic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=70
+  NAME=c70_T200_ARC
+  LONG_NAME="Potential_Temperature_200m_Arctic_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=71
+  NAME=c71_S200_ARC
+  LONG_NAME="Salinity_200m_Arctic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=72
+  NAME=c72_T700_ARC
+  LONG_NAME="Potential_Temperature_700m_Arctic_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=73
+  NAME=c73_S700_ARC
+  LONG_NAME="Salinity_700m_Arctic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=74
+  NAME=c74_T2200_ARC
+  LONG_NAME="Potential_Temperature_2200m_Arctic_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=75
+  NAME=c75_S2200_ARC
+  LONG_NAME="Salinity_2200m_Arctic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=76
+  NAME=c76_d18Osw_ARC
+  LONG_NAME="Sea_Surface_d18O_Arctic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=77
+  NAME=c77_dDsw_ARC
+  LONG_NAME="Sea_Surface_dD_Arctic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=78
+  NAME=c78_d18O200_ARC
+  LONG_NAME="d18O_200m_Arctic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=79
+  NAME=c79_dD200_ARC
+  LONG_NAME="dD_200m_Arctic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=80
+  NAME=c80_d18O700_ARC
+  LONG_NAME="d18O_700m_Arctic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=81
+  NAME=c81_dD700_ARC
+  LONG_NAME="dD_700m_Arctic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=82
+  NAME=c82_d18O2200_ARC
+  LONG_NAME="d18O_2200m_Arctic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=83
+  NAME=c83_dD2200_ARC
+  LONG_NAME="dD_2200m_Arctic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=84
+  NAME=c84_ICEARE_LAB
+  LONG_NAME="Seaice_Area_Labrador_Sea"
+  UNITS="m2"
+/
+&PARAMETER
+  CODE=85
+  NAME=c85_ICEVOL_LAB
+  LONG_NAME="Seaice_Volume_Labrador_Sea"
+  UNITS="m3"
+/
+&PARAMETER
+  CODE=86
+  NAME=c86_HFL_LAB
+  LONG_NAME="Downward_Heatflux_into_Labrador_Sea"
+  UNITS="W"  
+/
+&PARAMETER
+  CODE=87
+  NAME=c87_WFL_LAB
+  LONG_NAME="Downward_Waterflux_into_Labrador_Sea"
+  UNITS="m3 s-1"  
+/
+&PARAMETER
+  CODE=88
+  NAME=c88_SST_LAB
+  LONG_NAME="Sea_Surface_Temperature_Labrador_Sea"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=89
+  NAME=c89_SSS_LAB
+  LONG_NAME="Sea_Surface_Salinity_Labrador_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=90
+  NAME=c90_T200_LAB
+  LONG_NAME="Potential_Temperature_200m_Labrador_Sea"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=91
+  NAME=c91_S200_LAB
+  LONG_NAME="Salinity_200m_Labrador_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=92
+  NAME=c92_T700_LAB
+  LONG_NAME="Potential_Temperature_700m_Labrador_Sea"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=93
+  NAME=c93_S700_LAB
+  LONG_NAME="Salinity_700m_Labrador_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=94
+  NAME=c94_T2200_LAB
+  LONG_NAME="Potential_Temperature_2200m_Labrador_Sea"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=95
+  NAME=c95_S2200_LAB
+  LONG_NAME="Salinity_2200m_Labrador_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=96
+  NAME=c96_d18Osw_LAB
+  LONG_NAME="Sea_Surface_d18O_Labrador_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=97
+  NAME=c97_dDsw_LAB
+  LONG_NAME="Sea_Surface_dD_Labrador_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=98
+  NAME=c98_d18O200_LAB
+  LONG_NAME="d18O_200m_Labrador_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=99
+  NAME=c99_dD200_LAB
+  LONG_NAME="dD_200m_Labrador_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=100
+  NAME=c100_d18O700_LAB
+  LONG_NAME="d18O_700m_Labrador_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=101
+  NAME=c101_dD700_LAB
+  LONG_NAME="dD_700m_Labrador_Sea"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=102
+  NAME=c102_d18O2200_LAB
+  LONG_NAME="d18O_2200m_Labrador_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=103
+  NAME=c103_dD2200_LAB
+  LONG_NAME="dD_2200m_Labrador_Sea"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=104
+  NAME=c104_ICEARE_NAT
+  LONG_NAME="Seaice_Area_North_Atlantic"
+  UNITS="m2"
+/
+&PARAMETER
+  CODE=105
+  NAME=c105_ICEVOL_NAT
+  LONG_NAME="Seaice_Volume_North_Atlantic"
+  UNITS="m3"
+/
+&PARAMETER
+  CODE=106
+  NAME=c106_HFL_NAT
+  LONG_NAME="Downward_Heatflux_into_North_Atlantic"
+  UNITS="W"  
+/
+&PARAMETER
+  CODE=107
+  NAME=c107_WFL_NAT
+  LONG_NAME="Downward_Waterflux_into_North_Atlantic"
+  UNITS="m3 s-1"  
+/
+&PARAMETER
+  CODE=108
+  NAME=c108_SST_NAT
+  LONG_NAME="Sea_Surface_Temperature_North_Atlantic"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=109
+  NAME=c109_SSS_NAT
+  LONG_NAME="Sea_Surface_Salinity_North_Atlantic"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=110
+  NAME=c110_T200_NAT
+  LONG_NAME="Potential_Temperature_200m_North_Atlantic"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=111
+  NAME=c111_S200_NAT
+  LONG_NAME="Salinity_at_200m_North_Atlantic"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=112
+  NAME=c112_T700_NAT
+  LONG_NAME="Potential_Temperature_700m_North_Atlantic"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=113
+  NAME=c113_S700_NAT
+  LONG_NAME="Salinity_700m_North_Atlantic"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=114
+  NAME=c114_T2200_NAT
+  LONG_NAME="Potential_Temperature_2200m_North_Atlantic"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=115
+  NAME=c115_S2200_NAT
+  LONG_NAME="Salinity_2200m_North_Atlantic"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=116
+  NAME=c116_d18Osw_NAT
+  LONG_NAME="Sea_Surface_d18O_North_Atlantic"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=117
+  NAME=c117_dDsw_NAT
+  LONG_NAME="Sea_Surface_dD_North_Atlantic"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=118
+  NAME=c118_d18O200_NAT
+  LONG_NAME="d18O_200m_North_Atlantic"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=119
+  NAME=c119_dD200_NAT
+  LONG_NAME="dD_200m_North_Atlantic"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=120
+  NAME=c120_d18O700_NAT
+  LONG_NAME="d18O_700m_North_Atlantic"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=121
+  NAME=c121_dD700_NAT
+  LONG_NAME="dD_700m_North_Atlantic"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=122
+  NAME=c122_d18O2200_NAT
+  LONG_NAME="d18O_2200m_North_Atlantic"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=123
+  NAME=c123_dD2200_NAT
+  LONG_NAME="dD_2200m_North_Atlantic"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=124
+  NAME=c124_ICEARE_ATL
+  LONG_NAME="Seaice_Area_Atlantic_Ocean"
+  UNITS="m2"
+/
+&PARAMETER
+  CODE=125
+  NAME=c125_ICEVOL_ATL
+  LONG_NAME="Seaice_Volume_Atlantic_Ocean"
+  UNITS="m3"
+/
+&PARAMETER
+  CODE=126
+  NAME=c126_HFL_ATL
+  LONG_NAME="Downward_Heatflux_into_Atlantic_Ocean"
+  UNITS="W"  
+/
+&PARAMETER
+  CODE=127
+  NAME=c127_WFL_ATL
+  LONG_NAME="Downward_Waterflux_into_Atlantic_Ocean"
+  UNITS="m3 s-1"  
+/
+&PARAMETER
+  CODE=128
+  NAME=c128_SST_ATL
+  LONG_NAME="Sea_Surface_Temperature_Atlantic_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=129
+  NAME=c129_SSS_ATL
+  LONG_NAME="Sea_Surface_Salinity_Atlantic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=130
+  NAME=c130_T200_ATL
+  LONG_NAME="Potential_Temperature_200m_Atlantic_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=131
+  NAME=c131_S200_ATL
+  LONG_NAME="Salinity_200m_Atlantic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=132
+  NAME=c132_T700_ATL
+  LONG_NAME="Potential_Temperature_700m_Atlantic_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=133
+  NAME=c133_S700_ATL
+  LONG_NAME="Salinity_700m_Atlantic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=134
+  NAME=c134_T2200_ATL
+  LONG_NAME="Potential_Temperature_2200m_Atlantic_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=135
+  NAME=c135_S2200_ATL
+  LONG_NAME="Salinity_2200m_Atlantic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=136
+  NAME=c136_d18Osw_ATL
+  LONG_NAME="Sea_Surface_d18O_Atlantic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=137
+  NAME=c137_dDsw_ATL
+  LONG_NAME="Sea_Surface_dD_Atlantic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=138
+  NAME=c138_d18O200_ATL
+  LONG_NAME="d18O_200m_Atlantic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=139
+  NAME=c139_dD200_ATL
+  LONG_NAME="dD_200m_Atlantic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=140
+  NAME=c140_d18O700_ATL
+  LONG_NAME="d18O_700m_Atlantic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=141
+  NAME=c141_dD700_ATL
+  LONG_NAME="dD_700m_Atlantic_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=142
+  NAME=c142_d18O2200_ATL
+  LONG_NAME="d18O_2200m_Atlantic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=143
+  NAME=c143_dD2200_ATL
+  LONG_NAME="dD_2200m_Atlantic_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=144
+  NAME=c144_ICEARE_SO
+  LONG_NAME="Seaice_Area_Southern_Ocean"
+  UNITS="m2"
+/
+&PARAMETER
+  CODE=145
+  NAME=c145_ICEVOL_SO
+  LONG_NAME="Seaice_Volume_Southern_Ocean"
+  UNITS="m3"
+/
+&PARAMETER
+  CODE=146
+  NAME=c146_HFL_SO
+  LONG_NAME="Downward_Heatflux_into_Southern_Ocean"
+  UNITS="W"  
+/
+&PARAMETER
+  CODE=147
+  NAME=c147_WFL_SO
+  LONG_NAME="Downward_Waterflux_into_Southern_Ocean"
+  UNITS="m3 s-1"  
+/
+&PARAMETER
+  CODE=148
+  NAME=c148_SST_SO
+  LONG_NAME="Sea_Surface_Temperature_Southern_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=149
+  NAME=c149_SSS_SO
+  LONG_NAME="Sea_Surface_Salinity_Southern_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=150
+  NAME=c150_T200_SO
+  LONG_NAME="Potential_Temperature_200m_Southern_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=151
+  NAME=c151_S200_SO
+  LONG_NAME="Salinity_200m_Southern_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=152
+  NAME=c152_T700_SO
+  LONG_NAME="Potential_Temperature_700m_Southern_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=153
+  NAME=c153_S700_SO
+  LONG_NAME="Salinity_700m_Southern_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=154
+  NAME=c154_T2200_SO
+  LONG_NAME="Potential_Temperature_2200m_Southern_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=155
+  NAME=c155_S2200_SO
+  LONG_NAME="Salinity_2200m_Southern_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=156
+  NAME=c156_d18Osw_SO
+  LONG_NAME="Sea_Surface_d18O_Southern_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=157
+  NAME=c157_dDsw_SO
+  LONG_NAME="Sea_Surface_dD_Southern_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=158
+  NAME=c158_d18O200_SO
+  LONG_NAME="d18O_200m_Southern_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=159
+  NAME=c159_dD200_SO
+  LONG_NAME="dD_200m_Southern_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=160
+  NAME=c160_d18O700_SO
+  LONG_NAME="d18O_700m_Southern_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=161
+  NAME=c161_dD700_SO
+  LONG_NAME="dD_700m_Southern_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=162
+  NAME=c162_d18O2200_SO
+  LONG_NAME="d18O_2200m_Southern_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=163
+  NAME=c163_dD2200_SO
+  LONG_NAME="dD_2200m_Southern_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=164
+  NAME=c164_CEARE_PAC
+  LONG_NAME="Seaice_Area_Pacific_Ocean"
+  UNITS="m2"
+/
+&PARAMETER
+  CODE=165
+  NAME=c165_ICEVOL_PAC
+  LONG_NAME="Seaice_Volume_Pacific_Ocean"
+  UNITS="m3"
+/
+&PARAMETER
+  CODE=166
+  NAME=c166_HFL_PAC
+  LONG_NAME="Downward_Heatflux_into_Pacific_Ocean"
+  UNITS="W"  
+/
+&PARAMETER
+  CODE=167
+  NAME=c167_WFL_PAC
+  LONG_NAME="Downward_Waterflux_into_Pacific_Ocean"
+  UNITS="m3 s-1"  
+/
+&PARAMETER
+  CODE=168
+  NAME=c168_SST_PAC
+  LONG_NAME="Sea_Surface_Temperature_Pacific_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=169
+  NAME=c169_SSS_PAC
+  LONG_NAME="Sea_Surface_Salinity_Pacific_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=170
+  NAME=c170_T200_PAC
+  LONG_NAME="Potential_Temperature_200m_Pacific_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=171
+  NAME=c171_S200_PAC
+  LONG_NAME="Salinity_200m_Pacific_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=172
+  NAME=c172_T700_PAC
+  LONG_NAME="Potential_Temperature_700m_Pacific_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=173
+  NAME=c173_S700_PAC
+  LONG_NAME="Salinity_700m_Pacific_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=174
+  NAME=c174_T2200_PAC
+  LONG_NAME="Potential_Temperature_2200m_Pacific_Ocean"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=175
+  NAME=c175_S2200_PAC
+  LONG_NAME="Salinity_2200m_Pacific_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=176
+  NAME=c176_d18Osw_PAC
+  LONG_NAME="Sea_Surface_d18O_Pacific_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=177
+  NAME=c177_dDsw_PAC
+  LONG_NAME="Sea_Surface_dD_Pacific_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=178
+  NAME=c178_d18O200_PAC
+  LONG_NAME="d18O_200m_Pacific_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=179
+  NAME=c179_dD200_PAC
+  LONG_NAME="dD_200m_Pacific_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=180
+  NAME=c180_d18O700_PAC
+  LONG_NAME="d18O_700m_Pacific_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=181
+  NAME=c181_dD700_PAC
+  LONG_NAME="dD_700m_Pacific_Ocean"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=182
+  NAME=c182_d18O2200_PAC
+  LONG_NAME="d18O_2200m_Pacific_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=183
+  NAME=c183_dD2200_PAC
+  LONG_NAME="dD_2200m_Pacific_Ocean"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=184
+  NAME=c184_ICEARE_NI3
+  LONG_NAME="Seaice_Area_Nino_3"
+  UNITS="m2"
+/
+&PARAMETER
+  CODE=185
+  NAME=c185_ICEVOL_NI3
+  LONG_NAME="Seaice_Volume_Nino_3"
+  UNITS="m3"
+/
+&PARAMETER
+  CODE=186
+  NAME=c186_HFL_NI3
+  LONG_NAME="Downward_Heatflux_into_Nino_3_Ocean"
+  UNITS="W"  
+/
+&PARAMETER
+  CODE=187
+  NAME=c187_WFL_NI3
+  LONG_NAME="Downward_Waterflux_into_Nino_3_Ocean"
+  UNITS="m3 s-1"  
+/
+&PARAMETER
+  CODE=188
+  NAME=c188_SST_NI3
+  LONG_NAME="Sea_Surface_Temperature_Nino_3"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=189
+  NAME=c189_SSS_NI3
+  LONG_NAME="Sea_Surface_Salinity_Nino_3"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=190
+  NAME=c190_T200_NI3
+  LONG_NAME="Potential_Temperature_200m_Nino_3"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=191
+  NAME=c191_S200_NI3
+  LONG_NAME="Salinity_200m_Nino_3"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=192
+  NAME=c192_T700_NI3
+  LONG_NAME="Potential_Temperature_700m_Nino_3"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=193
+  NAME=c193_S700_NI3
+  LONG_NAME="Salinity_700m_Nino_3"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=194
+  NAME=c194_T2200_NI3
+  LONG_NAME="Potential_Temperature_2200m_Nino_3"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=195
+  NAME=c195_S2200_NI3
+  LONG_NAME="Salinity_2200m_Nino_3"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=196
+  NAME=c196_d18Osw_NI3
+  LONG_NAME="Sea_Surface_d18O_Nino_3"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=197
+  NAME=c197_dDsw_NI3
+  LONG_NAME="Sea_Surface_dD_Nino_3"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=198
+  NAME=c198_d18O200_NI3
+  LONG_NAME="d18O_200m_Nino_3"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=199
+  NAME=c199_dD200_NI3
+  LONG_NAME="dD_200m_Nino_3"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=200
+  NAME=c200_d18O700_NI3
+  LONG_NAME="d18O_700m_Nino_3"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=201
+  NAME=c201_dD700_NI3
+  LONG_NAME="dD_700m_Nino_3"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=202
+  NAME=c202_d18O2200_NI3
+  LONG_NAME="d18O_2200m_Nino_3"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=203
+  NAME=c203_dD2200_NI3
+  LONG_NAME="dD_2200m_Nino_3"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=204
+  NAME=c204_ICEARE_GLO
+  LONG_NAME="Seaice_Area_Global"
+  UNITS="m2"
+/
+&PARAMETER
+  CODE=205
+  NAME=c205_ICEVOL_GLO
+  LONG_NAME="Seaice_Volume_Global"
+  UNITS="m3"
+/
+&PARAMETER
+  CODE=206
+  NAME=c206_HFL_GLO
+  LONG_NAME="Downward_Heatflux_into_Global_Ocean"
+  UNITS="W"  
+/
+&PARAMETER
+  CODE=207
+  NAME=c207_WFL_GLO
+  LONG_NAME="Downward_Waterflux_into_Global_Ocean"
+  UNITS="m3 s-1"  
+/
+&PARAMETER
+  CODE=208
+  NAME=c208_SST_GLO
+  LONG_NAME="Sea_Surface_Temperature_Global"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=209
+  NAME=c209_SSS_GLO
+  LONG_NAME="Sea_Surface_Salinity_Global"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=210
+  NAME=c210_T200_GLO
+  LONG_NAME="Potential_Temperature_200m_Global"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=211
+  NAME=c211_S200_GLO
+  LONG_NAME="Salinity_200m_Global"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=212
+  NAME=c212_T700_GLO
+  LONG_NAME="Potential_Temperature_700m_Global"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=213
+  NAME=c213_S700_GLO
+  LONG_NAME="Salinity_700m_Global"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=214
+  NAME=c214_T2200_GLO
+  LONG_NAME="Potential_Temperature_2200m_Global"
+  UNITS="deg C"  
+/
+&PARAMETER
+  CODE=215
+  NAME=c215_S2200_GLO
+  LONG_NAME="Salinity_2200m_Global"
+  UNITS="psu"  
+/
+&PARAMETER
+  CODE=216
+  NAME=c216_d18Osw_GLO
+  LONG_NAME="Sea_Surface_d18O_Global"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=217
+  NAME=c217_dDsw_GLO
+  LONG_NAME="Sea_Surface_dD_Global"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=218
+  NAME=c218_d18O200_GLO
+  LONG_NAME="d18O_200m_Global"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=219
+  NAME=c219_dD200_GLO
+  LONG_NAME="dD_200m_Global"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=220
+  NAME=c220_d18O700_GLO
+  LONG_NAME="d18O_700m_Global"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=221
+  NAME=c221_dD700_GLO
+  LONG_NAME="dD_700m_Global"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=222
+  NAME=c222_d18O2200_GLO
+  LONG_NAME="d18O_2200m_Global"
+  UNITS="per mille"  
+/
+&PARAMETER
+  CODE=223
+  NAME=c223_dD2200_GLO
+  LONG_NAME="dD_2200m_Global"
+  UNITS="per mille"  
+/
