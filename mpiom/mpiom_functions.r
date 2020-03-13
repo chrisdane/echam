@@ -13,6 +13,7 @@ mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, verbose=T) {
     if (file.access(partab_ext, mode=4)) { # mode=4: read
         stop("partable defined by `partab_ext` = \"", partab_ext, "\" not readable")
     }
+    partab_ext <- normalizePath(partab_ext)
     
     if (missing(outpath)) {
         outpath <- dirname(ext_files[1])
@@ -35,7 +36,7 @@ mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, verbose=T) {
 
     for (fi in seq_along(ext_files)) {
         
-        if (verbose) message("file ", fi, "/", length(ext_files), ": ", ext_files[fi])
+        if (verbose) message("\nfile ", fi, "/", length(ext_files), ": ", ext_files[fi])
         
         fout <- paste0(outpath, "/", basename(ext_files[fi]), ".nc")
         
@@ -79,7 +80,7 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
 
     for (fi in seq_along(fort_tar_files)) {
 
-        if (verbose) message("file ", fi, "/", length(fort_tar_files), ": ", fort_tar_files[fi])
+        if (verbose) message("\nfile ", fi, "/", length(fort_tar_files), ": ", fort_tar_files[fi])
 
         # get files from tar file
         cmd <- paste0("tar -tf ", fort_tar_files[fi])
@@ -108,6 +109,7 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
                     if (file.access(partab_ext, mode=4)) { # mode=4: read
                         stop("partable defined by `partab_ext` = \"", partab_ext, "\" not readable")
                     }
+                    partab_ext <- normalizePath(partab_ext)
                 }
                 cmd <- paste0("cdo -f nc -setpartab,", partab_ext, " ", 
                               outpath, "/", timeser_ext_file, " ", 
@@ -125,7 +127,7 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
         
         # files fort.75 (var 100, 101), fort.90 (var 69), fort.100, fort.101, fort.102 
         # would be overwritten by output of next tar file
-        if (keep_fort.75) {
+        if (keep_fort.75) { 
             if (verbose) message("   `keep_fort.75`=T")
             if (any(tarfiles == "fort.75")) {
                 cmd <- paste0("tar -xf ", fort_tar_files[fi], " -C ", outpath, " fort.75")
