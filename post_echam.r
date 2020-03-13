@@ -103,7 +103,7 @@ if (any(file.access(datapaths, mode=4) != 0)) { # check read permission
 }
 datapaths <- normalizePath(datapaths)
 nsettings <- length(datapaths)
-if (!exists("ftypes")) ftypes <- rep("f", t=nsettings)
+#if (!exists("ftypes")) ftypes <- rep("f", t=nsettings)
 if (!exists("prefixs")) prefixs <- rep(NA, t=nsettings)
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
 if (!exists("areas_out")) areas_out <- rep("global", t=nsettings)
@@ -201,7 +201,7 @@ for (i in 1:nsettings) {
     message("datapath = ", datapaths[i])
     message("model = ", models[i])
     message("fpattern = ", fpatterns[i])
-    message("ftype = ", ftypes[i])
+    #message("ftype = ", ftypes[i])
     message("fvarname = ", fvarnames[i])
     if (!is.na(codes[i])) message("code = ", codes[i])
     message("postpath = ", postpaths[i])
@@ -291,8 +291,9 @@ for (i in 1:nsettings) {
         ticcmd <- Sys.time()
         files <- system(cmd, intern=T)
         toccmd <- Sys.time()
-        if (length(files) == 0) stop("no files found (are `datapaths` and `fpattern` correct? ",
-                                     "are input files maybe links? if yes,n set `ftypes[", i, "]`=\"l\")")
+        if (length(files) == 0) stop("no files found (are `datapaths` and `fpattern` correct?",
+                                     #" are input files maybe links? if yes,n set `ftypes[", i, "]`=\"l\")"
+                                     )
         elapsedcmd <- toccmd - ticcmd
         message("`find` of ", length(files), " files took ", elapsedcmd, " ", attributes(elapsedcmd)$units) 
 
@@ -313,6 +314,7 @@ for (i in 1:nsettings) {
 
         # identify correct YYYY, MM, etc. based on file names or `cdo showdate`
         if (grepl("<YYYY>", fpatterns[i])) {
+            n_yyyy_patterns <- length(gregexpr("<YYYY>", fpatterns[i])[[1]]) 
             patterninds <- regexpr("<YYYY>", fpatterns[i])
             patterninds <- c(patterninds, 
                              patterninds + attributes(patterninds)$match.length - 3) 
@@ -321,6 +323,7 @@ for (i in 1:nsettings) {
         } else {
             message("\n<YYYY> not included in `fpatterns[", i, "]` = \"", fpatterns[i], "\"\n",
                     " --> derive input years by `cdo showdate` ...")
+            n_yyyy_patterns <- 0
             for (fi in seq_along(files)) {
                 cmd <- paste0(cdo, " showdate ", datapaths[i], "/", files[fi])
                 message(cmd)
@@ -372,13 +375,17 @@ for (i in 1:nsettings) {
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
         # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
         filesp <- rep(fpatterns[i], t=length(df$YYY))
-        filesp <- stringr::str_replace(string=filesp, 
-                                       pattern="<YYYY>", 
-                                       replacement=df$YYYY)
-        if (grepl("<MM>", fpatterns[i])) {
+        for (yyyy_patterni in seq_len(n_yyyy_patterns)) { 
             filesp <- stringr::str_replace(string=filesp, 
-                                           pattern="<MM>", 
-                                           replacement=df$MM)
+                                           pattern="<YYYY>", 
+                                           replacement=df$YYYY)
+        }
+        if (grepl("<MM>", fpatterns[i])) {
+            for (mm_patterni in seq_len(n_mm_patterns)) { 
+                filesp <- stringr::str_replace(string=filesp, 
+                                               pattern="<MM>", 
+                                               replacement=df$MM)
+            }
         }
         if (any(!(files %in% filesp))) {
             wrong_file_inds <- which(!files %in% filesp)
@@ -914,7 +921,7 @@ for (i in 1:nsettings) {
                 }
                 cmd_source <- paste0(". ", scriptname)
                 message("run `", cmd_source, "`")
-                if (nfiles_per_chunk > 1000) {
+                if (nfiles_per_chunk > 500) {
                     message("this may take some time for ", nfiles_per_chunk, " files ...")
                 }
                 ticcmd <- Sys.time()
@@ -1010,13 +1017,14 @@ for (i in 1:nsettings) {
             } # for chunki nchunks
 
             # construct and apply new dates
-            ntime_out <- sum(sapply(sapply(dates_in_list, "[", "dates"), length))
+            ntime_fout <- sum(sapply(sapply(dates_in_list, "[", "dates"), length)) # all time points of final fout
             if (!is.null(new_date_list[[i]]$years)) {
                 # check if user provided years is of same length as actual data
-                ntime_in <- length(new_date_list[[i]]$years)
-            } else {
-                ntime_in <- length(years_in) # not needed anymore?
-            } 
+                if (length(new_date_list[[i]]$years) != ntime_fout) {
+                    stop("provided `new_date_list[[", i, "]]$years` is of length ", length(new_date_list[[i]]$years), 
+                         " but the output file is of length ", ntime_fout)
+                }
+            }
             dates_out_list <- vector("list", l=nchunks)
             for (chunki in seq_len(nchunks)) {
 
@@ -1025,34 +1033,23 @@ for (i in 1:nsettings) {
                 # new years
                 if (is.null(new_date_list[[i]]$years)) { # construct new years only if not provided
                     if (new_date_list[[i]]$use == "filename") {
-                        if (ntime_out == ntime_in) {
-                            years_out <- new_date_list[[i]]$year_origin + years_in[chunk_inds_list[[chunki]]] - 1
-                        } else if (ntime_out == length(years_wanted)) { # through e.g `cdo yearmean` or `yearsum`
-                            years_out <- new_date_list[[i]]$year_origin + years_wanted[dates_in_list[[chunki]]$inds] - 1
-                        } else if (ntime_out == 1) { # through e.g. `cdo timmean` or `timsum`
+                        if (ntime_fout == 1) { # through e.g. `cdo timmean` or `timsum`
                             years_out <- new_date_list[[i]]$year_origin + floor(mean(years_wanted)) - 1
+                        } else if (ntime_fout == length(years_wanted)) { # through e.g `cdo yearmean` or `yearsum`
+                            years_out <- new_date_list[[i]]$year_origin + years_wanted[dates_in_list[[chunki]]$inds] - 1
                         } else { 
-                            stop("not definedddddd here")
+                            years_out <- new_date_list[[i]]$year_origin + years_in[chunk_inds_list[[chunki]]] - 1
                         }
                     } else if (new_date_list[[i]]$use == "cdo") {
                         stop("cdo not yetttt")
                     } # use filename or cdo years
-                } else {
-                    # new years are given by user
-                    if (ntime_out == 1) { # through e.g. `cdo timmean` or `timsum`
-                        message("ntime_out = 1; take mean of `new_date_list[[", i, "]]$years = ")
-                        ht(new_date_list[[i]]$years)
-                        years_out <- mean(new_date_list[[i]]$years)
-                    } else if (ntime_out == length(years_wanted)) { # through e.g `cdo yearmean` or `yearsum`
-                        stop("asldakfhakdakjhdkahskhd")
-                    } else {
-                        years_out <- new_date_list[[i]]$years[chunk_inds_list[[chunki]]]
-                    }
+                } else { # if new years are given by user
+                    years_out <- new_date_list[[i]]$years[dates_in_list[[chunki]]$inds]
                 }
                 
                 # new months
                 months_out <- dates_in_list[[chunki]]$months
-                #if (ntime_out == ntime_in && grepl("<MM>", fpatterns[i])) {
+                #if (ntime_fout == ntime_foutn && grepl("<MM>", fpatterns[i])) {
                 #    # if months were detected from input file names, use them
                 #    months_out <- MM_in[chunk_inds_list[[chunki]]]
                 #} else {
@@ -1146,7 +1143,7 @@ for (i in 1:nsettings) {
                                     as.POSIXlt(paste0(new_date_list[[i]]$nc_time_origin, "-01-01"), tz="UTC"), 
                                     units="days")
                     tmp <- as.numeric(tmp) # days since first date
-                    if (ntime_out > 1){
+                    if (ntime_fout > 1){
                         dates_out_ncap <- difftime(dates_out_ncap[2:length(dates_out_ncap)], 
                                                    dates_out_ncap[1:(length(dates_out_ncap) - 1)], 
                                                    units="days")
@@ -1365,7 +1362,7 @@ for (i in 1:nsettings) {
         # or rename of necessary 
         } else {
             if (fout_vec != fout) {
-                cmd_rename <- paste0("mv -v ", fout_vec, " ", fout)
+                cmd_rename <- paste0("mv ", fout_vec, " ", fout)
                 message("run `", cmd_rename, "` ...")
                 system(cmd_rename)
             }
@@ -1383,8 +1380,8 @@ for (i in 1:nsettings) {
 
         # change from/to in final fout if new dates were applied
         if (!is.null(new_date_list)) {
-            message("\nupdate new output years in fout ...")
-            cmd <- paste0("mv -v ", fout, " ")
+            message("\nupdate new output years YYYY in fout ...")
+            cmd <- paste0("mv ", fout, " ")
             if (!is.null(new_date_list[[i]]$years)) {
                 from_new <- min(new_date_list[[i]]$years)
                 to_new <- max(new_date_list[[i]]$years)

@@ -103,15 +103,18 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixs <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv
-    datapath
-    s <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
+} else if (F) { # Hol-Tx10 on paleosrv
+    datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
+    datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
     models <- "echam5"
+    models <- "mpiom1"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
-    fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
+    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
-    prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
-    fvarnames <- "temp2"
+    #prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
+    prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext"
+    #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
     #fvarnames <- "srad0d"
@@ -123,31 +126,41 @@ if (F) { # old hist
     #fvarnames <- "aprt_times_tsurf"
     #fvarnames <- "ptemp"
     #fvarnames <- "ptsurf"
-    #modes <- "select"
-    modes <- "timmean"
+    fvarnames <- "c25_TMERCI3" # Mass_Transport_in_Atlantic_at_50N [m3 s-1]
+    modes <- "select"
+    #modes <- "timmean"
     #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
     #froms <- "0001" # beginning counting from 1
-    #froms <- "2901" # beginning
-    froms <- "3572"
-    tos <- "3601" # end 
+    froms <- "2901" # beginning
+    #froms <- "3572"
+    #tos <- "2910"
+    tos <- "3601" # end
     #tos <- "7001" # end counting from 1 
-    if (froms[1] == "2901" && tos[1] == "3601") { # complete model period
-        new_date_list <- list(list(years=rep(seq(1, b=10, l=701), e=12), 
-                                   nc_time_origin=1))
-        # 1 missing *_main_mm_* files: 334812 (Dec 2530 BP; model year 448)
-        #new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
-        # 2 missing *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
-        new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
-    } else if (froms[1] == "3572" && tos[1] == "3601") { # model year 6711 since 0; last 30 years
+    # monthly frequency every 10 years
+    new_date_list <- list(list(years=rep(seq(1, b=10, l=length(froms:tos)), e=12), nc_time_origin=1))
+    if (grepl("_main_mm", prefixs)) {
+        # 1 missing Hol-Tx10 *_main_mm_* file: 334812 (Dec 2530 BP; model year 448)
+        if (any(new_date_list[[1]]$years == 4471)) {
+            message("remove Dec of 4471")
+            new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
+        }
+    }
+    if (grepl("_wiso_mm", prefixs)) {
+        # 2 missing Hol-Tx10 *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
+        if (any(new_date_list[[1]]$years == 4471)) {
+            message("remove Nov+Dec of 4471")
+            new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
+        }
+    }
+    # model year 6711 since 0; last 30 years
+    if (froms[1] == "3572" && tos[1] == "3601") { 
         if (modes[1] == "timmean") { # model years: mean(6711, 7001) = 6856
-            new_date_list <- list(list(years=c(6711, 7001),
-                                       nc_time_origin=1))
+            new_date_list <- list(list(years=c(6711, 7001), nc_time_origin=1))
         } else {
-            new_date_list <- list(list(years=rep(seq(6711, b=10, l=30), e=12), 
-                                       nc_time_origin=1))
+            new_date_list <- list(list(years=rep(seq(6711, b=10, l=30), e=12), nc_time_origin=1))
         }
     }
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
@@ -194,7 +207,7 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # echam5-wiso; T106L31; ERA-Interim nudging; stan
+} else if (F) { # echam5-wiso; T106L31; ERA-Interim nudging; stan
     datapaths <- "/ace/user/mwerner/echam5-wiso/T106L31/EXP007_MB/MONMEAN"
     models <- "echam5"
     fpatterns <- "EXP007_T106_MB_195801.201312.combined.monmean.wiso.nc"
@@ -215,6 +228,16 @@ if (F) { # old hist
     modes <- "fldmean"
     froms <- 1979
     tos <- 2018
+
+} else if (T) { # E280_280ppm
+    datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/E280_280ppm/outdata/mpiom"
+    models <- "mpiom1"
+    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
+    prefixs <- "E280_280ppm_mpiom_timeser"
+    fvarnames <- "c25_TMERCI3"
+    modes <- "select"
+    froms <- "2650"
+    tos <- "2749"
 
 # ======================================================
 # 2 settings

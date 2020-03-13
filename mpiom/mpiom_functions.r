@@ -1,54 +1,55 @@
 # r
 
-correct_mpiom_partabn <- function(partabn_file) {
+mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, verbose=T) {
 
-    if (missing(partabn_file) || !is.character(partabn_file)) {
-        stop("provide `partabn_file=\"/path/to/mpiom_partabn\"`")
+    if (missing(ext_files) || !is.character(ext_files)) {
+        stop("provide `fort_tar_files=\"/path/to/TIMESER.YYYY0101_YYYY1231.ext\"` or\n",
+             "`fort_tar_files=c(\"/path/to/TIMESER.YYYY0101_YYYY1231.ext\", \"/path/to/TIMESER.ZZZZ0101_ZZZZ1231.ext\")`")
     }
     
-    partabn <- readLines(partabn_file)
-
-    # "  NAME=c1_PSIGULF" --> "  out_name=c1_PSIGULF"
-    # -> keep indents! 
-    name_inds <- which(grepl("  NAME=", partabn))
-    if (length(name_inds) > 0) {
-        for (i in seq_along(name_inds)) {
-            laste_equal_sign_character_ind <- regexpr("\\=[^\\=]*$", partabn[name_inds[i]])
-            given_name <- substr(partabn[name_inds[i]], 
-                                 laste_equal_sign_character_ind+1, 
-                                 nchar(partabn[name_inds[i]]))
-            message(i, "/", length(name_inds), ": \"", partabn[name_inds[i]], "\" --> ", appendLF=F)
-            partabn[name_inds[i]] <- paste0("  out_name=", given_name) 
-            message("\"", partabn[name_inds[i]], "\"")
+    if (missing(partab_ext)) { # check if partable exists
+        stop("provide partable for mpiom time series data via `partab_ext=\"/path/to/partable\"`")
+    }
+    if (file.access(partab_ext, mode=4)) { # mode=4: read
+        stop("partable defined by `partab_ext` = \"", partab_ext, "\" not readable")
+    }
+    
+    if (missing(outpath)) {
+        outpath <- dirname(ext_files[1])
+        if (verbose) {
+            message("`outpath` not given, use dirname(ext_files[1]=\"", 
+                    ext_files[fi], "\") = \"", outpath, "\"")
+        }
+    } else {
+        if (length(outpath) != 1) {
+            stop("`outpath` needs to be of length 1 and not ", length(outpath))
+        }
+    }
+    if (file.access(outpath, mode=0)) { # exitance?
+        dir.create(outpath, recursive=T)
+    } else {
+        if (file.access(outpath, mode=2)) { # write permission?
+            stop("no write permission in `outpath` = \"", outpath, "\"")
         }
     }
 
-    # "  CODE=1" --> "  name=var12"
-    # -> keep indents! 
-    code_inds <- which(grepl("  CODE=", partabn))
-    if (length(code_inds) > 0) {
-        for (i in seq_along(code_inds)) {
-            laste_equal_sign_character_ind <- regexpr("\\=[^\\=]*$", partabn[code_inds[i]])
-            given_code_number <- substr(partabn[code_inds[i]], 
-                                        laste_equal_sign_character_ind+1, 
-                                        nchar(partabn[code_inds[i]]))
-            message(i, "/", length(code_inds), ": \"", partabn[code_inds[i]], "\" --> ", appendLF=F)
-            partabn[code_inds[i]] <- paste0("  name=var", given_code_number) 
-            message("\"", partabn[code_inds[i]], "\"")
-        }
-    }
+    for (fi in seq_along(ext_files)) {
+        
+        if (verbose) message("file ", fi, "/", length(ext_files), ": ", ext_files[fi])
+        
+        fout <- paste0(outpath, "/", basename(ext_files[fi]), ".nc")
+        
+        # apply partable and convert .ext to nc
+        cmd <- paste0("cdo -f nc -setpartab,", partab_ext, " ", ext_files[fi], " ", fout)
+        if (verbose) message("   run `", cmd, "` ...")
+        system(cmd)
+            
+    } # for fi ext_files
 
-    fout <- paste0(dirname(partabn_file), "/", 
-                   tools::file_path_sans_ext(basename(partabn_file)),
-                   "_corrected.txt")
-    message("\nsave \"", fout, "\" ...")
-    write(partabn, file=fout)
-
-} # correct_mpiom_partabn
-
+} # mpiom_ext_to_nc
 
 mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath, 
-                                        keep_ext=T, partabn_ext,
+                                        keep_ext=T, partab_ext,
                                         keep_fort.75=T, keep_fort.90=T, 
                                         verbose=T) {
 
@@ -60,12 +61,19 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
     if (missing(outpath)) {
         outpath <- dirname(fort_tar_files[1])
         if (verbose) {
-            message("mpiom_extract_timeser_data(): `outpath` not given, use dirname(fort_tar_files[1]=\"", 
+            message("`outpath` not given, use dirname(fort_tar_files[1]=\"", 
                     fort_tar_files[fi], "\") = \"", outpath, "\"")
         }
     } else {
         if (length(outpath) != 1) {
             stop("`outpath` needs to be of length 1 and not ", length(outpath))
+        }
+    }
+    if (file.access(outpath, mode=0)) { # exitance?
+        dir.create(outpath, recursive=T)
+    } else {
+        if (file.access(outpath, mode=2)) { # write permission?
+            stop("no write permission in `outpath` = \"", outpath, "\"")
         }
     }
 
@@ -92,26 +100,21 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
                 if (verbose) message("      run `", cmd, "` ...")
                 system(cmd)
 
-                # convert .ext to nc
-                cmd <- paste0("cdo -f nc copy ", outpath, "/", timeser_ext_file, " ", outpath, "/", timeser_ext_file, ".nc")
+                # apply partable and convert .ext to nc
+                if (fi == 1) { 
+                    if (missing(partab_ext)) { # check if partable exists
+                        stop("provide partable for mpiom time series data via `partab_ext=\"/path/to/partable\"`")
+                    }
+                    if (file.access(partab_ext, mode=4)) { # mode=4: read
+                        stop("partable defined by `partab_ext` = \"", partab_ext, "\" not readable")
+                    }
+                }
+                cmd <- paste0("cdo -f nc -setpartab,", partab_ext, " ", 
+                              outpath, "/", timeser_ext_file, " ", 
+                              outpath, "/", timeser_ext_file, ".nc")
                 if (verbose) message("      run `", cmd, "` ...")
                 system(cmd)
 
-                # apply partable
-                if (fi == 1) { 
-                    if (missing(partabn_ext)) { # check if partable exists
-                        stop("provide partable for mpiom time series data via `partabn_ext=\"/path/to/partable\"`")
-                    }
-                    if (file.access(partabn_ext, mode=4)) { # mode=4: read
-                        stop("partable defined by `partabn_ext` = \"", partabn_ext, "\" not readable")
-                    }
-                }
-                cmd <- paste0("cdo -setpartabn,", partabn_ext, " ", 
-                              outpath, "/", timeser_ext_file, ".nc ", outpath, "/tmp && mv ", 
-                              outpath, "/tmp ", outpath, "/", timeser_ext_file, ".nc")
-                if (verbose) message("      run `", cmd, "` ...")
-                system(cmd)
-                
                 # remove original file
                 file.remove(paste0(outpath, "/", timeser_ext_file))
 
