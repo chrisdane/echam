@@ -10,7 +10,12 @@ ncatted -a _FillValue,,o,f,-127 SAO_3D_COSMOS_standard.nc mpiom_r360x180L40_geog
 ncpdq -O -M hgh_byt mpiom_r360x180L40_geographic_grid_byte.nc mpiom_r360x180L40_geographic_grid_byte.nc
 ```
 
-corrected `zeitser-wiso.partab` for time series data (`*.ext`) of mpiom wiso:
+convert mpiom data (`*.grb`) to nc and apply default parameter table:
+```
+cdo -t mpiom1 -f nc copy Hol-Tx10_mpiom_32900101_32901231.grb Hol-Tx10_mpiom_32900101_32901231.grb.nc
+```
+
+convert mpiom time series data (`*.ext`) to nc and apply parameter table `zeitser-wiso.partab`:
 ```bash
 tar -xf fort_32900101_32901231.tar -C /target_dir
 #   fort.75: var100 (gmoc), var101 (amoc)
@@ -20,12 +25,6 @@ tar -xf fort_32900101_32901231.tar -C /target_dir
 #   fort.102: codetable var1-var223
 #   TIMESER.32900101_32901231.asc: ascii data
 #   TIMESER.32900101_32901231.ext: grb: var1-var223
-# mpiom_functions.r: correct_mpiom_partabn(partabn_file="zeitser-wiso.partab")
-#   change e.g. "  NAME=c1_PSIGULF" to "  out_name=c1_PSIGULF"
-#   change e.g "  CODE=1" to "  name=var12"
-cdo -f nc copy TIMESER.32900101_32901231.ext TIMESER.32900101_32901231.ext.nc
-cdo setpartabn,mpiom_wiso_zeitser_partabn_corrected.txt TIMESER.32900101_32901231.ext.nc tmp && mv tmp TIMESER.32900101_32901231.ext.nc
-# but for *.grb mpiom output
-cdo -t mpiom1 -f nc copy Hol-Tx10_mpiom_32900101_32901231.grb Hol-Tx10_mpiom_32900101_32901231.grb.nc
+cdo -f nc copy -setpartab,zeitser-wiso.partab TIMESER.32900101_32901231.ext TIMESER.32900101_32901231.ext.nc
 ```
 
