@@ -781,11 +781,12 @@ for (i in 1:nsettings) {
     message("\n", "*********************************************")
     message("setting ", i, "/", nsettings, ": ", names_short[i], " ...")
     inpath <- paste0(postpaths[i], "/", models[i], "/", mode, "/", varnames_in[i])
+    
     fname <- paste0(prefixes[i], "_", mode, 
                     codesf[i], "_", varnames_in[i], 
-                    levsf[i], "_", areas[i],
-                    "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
-                    depthsf[i], 
+                    levsf[i], depthsf[i], "_",
+                    areas[i], "_", 
+                    seasonsf[i], "_", fromsf[i], "-", tosf[i], 
                     reg_dxsf[i], reg_dysf[i],
                     ".nc") 
 
@@ -1108,6 +1109,9 @@ for (i in 1:nsettings) {
                 message(" --> drop dims of length 1: \"", 
                         paste0(names(len1_dim_inds), collapse="\",\""), "\" ...")
                 dimids <- dimids[-len1_dim_inds]
+                for (di in seq_along(len1_dim_inds)) {
+                    dims[[i]][names(len1_dim_inds)[di]] <- NULL
+                }
             } # if var has dims of length 1 
         } else {
             stop("not implemented")
@@ -2476,11 +2480,11 @@ for (vi in 1:length(varnames_unique)) {
                            data_right$suffix, ts_highlight_seasons$suffix,
                            ".", p$plot_type)
         if (nchar(plotname) > nchar_max_foutname) {
-        plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
-                           varname, "_",
-                           paste0(names_short, "_", areas, collapse="_vs_"), 
-                           data_right$suffix, ts_highlight_seasons$suffix,
-                           ".", p$plot_type)
+            plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                               varname, "_",
+                               paste0(names_short, "_", areas, collapse="_vs_"), 
+                               data_right$suffix, ts_highlight_seasons$suffix,
+                               ".", p$plot_type)
         }
         dir.create(dirname(plotname), recursive=T, showWarnings=F)
         if (p$plot_type == "png") {
@@ -2865,16 +2869,16 @@ for (vi in 1:length(varnames_unique)) {
                                "_subplots", data_right$suffix, ts_highlight_seasons$suffix,
                                ".", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
-            plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
-                               varname, "_",
-                               paste0(names_short, "_", areas, collapse="_vs_"), 
-                               "_subplots", data_right$suffix, ts_highlight_seasons$suffix,
-                               ".", p$plot_type)
+                plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                                   varname, "_",
+                                   paste0(names_short, "_", areas, collapse="_vs_"), 
+                                   "_subplots", data_right$suffix, ts_highlight_seasons$suffix,
+                                   ".", p$plot_type)
             }
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             
             source(paste0(homepath, "/functions/plot.nxm.r"))
-            nm <- plot.nxm(time_dim, aprt_datas, dry=T) 
+            nm <- plot.nxm(time_dim, datas, dry=T) 
             
             message("plot ", plotname, " ...")
             if (p$plot_type == "png") { 
@@ -3137,6 +3141,14 @@ if (exists("datasmon")) {
                                "_months",
                                data_right_mon$suffix,
                                ".", p$plot_type)
+            if (nchar(plotname) > nchar_max_foutname) {
+                plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                                   varname, "_",
+                                   paste0(names_short, "_", areas, collapse="_vs_"), 
+                                   "_months",
+                                   data_right$suffix, 
+                                   ".", p$plot_type)
+            }
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             if (p$plot_type == "png") {
                 png(plotname, width=p$ts_width_m, height=p$ts_height_m,
@@ -3394,9 +3406,9 @@ if (exists("datasan")) {
                 data_right_an <- list(suffix="") # default
             } else {
                 message("\n`add_data_right_yaxis_ts_an`=T ...")
+                data_right_an <- list(data=vector("list", l=nsettings))
+                names(data_right_an$data) <- names_short
                 if (varname == "temp2") {
-                    data_right_an <- list(data=vector("list", l=nsettings))
-                    names(data_right_an$data) <- names_short
                     for (i in 1:nsettings) {
                         inpath <- paste0(workpath, "/post/", models[i], "/", mode, "/wisoaprt_d") 
                         fname <- paste0(prefixes[i], "_", mode, 
@@ -3418,8 +3430,8 @@ if (exists("datasan")) {
                 } # temp2
             
                 # check
-                if (length(data_right_an$data) == 0) {
-                    warning("you provided `add_data_right_yaxis_ts_an=T` but did not ",
+                if (all(sapply(data_right_an$data, is.null))) {
+                    message("\nyou provided `add_data_right_yaxis_ts_an=T` but did not ",
                             "define which data should be plotted on right yaxis.\n",
                             " --> set `add_data_right_yaxis_ts_an=F` and continue ...")
                     add_data_right_yaxis_ts_an <- F
@@ -3481,9 +3493,17 @@ if (exists("datasan")) {
                                varname, "_",
                                paste0(names_short, "_", seasonsp, 
                                       "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
-                               "_years",
+                               "_annual",
                                data_right_an$suffix,
                                ".", p$plot_type)
+            if (nchar(plotname) > nchar_max_foutname) {
+                plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                                   varname, "_",
+                                   paste0(names_short, "_", areas, collapse="_vs_"), 
+                                   "_annual",
+                                   data_right_an$suffix,
+                                   ".", p$plot_type)
+            }
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             if (p$plot_type == "png") {
                 png(plotname, width=p$ts_width, height=p$ts_height,

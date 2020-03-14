@@ -929,9 +929,7 @@ for (i in 1:nsettings) {
                         }
                         cmd_source <- paste0(". ", scriptname)
                         message("run `", cmd_source, "`")
-                        if (nfiles_per_chunk > 500) {
-                            message("this may take some time for ", nfiles_per_chunk, " files ...")
-                        }
+                        message("this may take some time for ", nfiles_per_chunk, " files ...")
                         ticcmd <- Sys.time()
                         if (file.exists(fout_vec[chunki]) && !cdo_force) {
                             message("fout_vec[", chunki, "] = ", fout_vec[chunki], 
@@ -1402,7 +1400,7 @@ for (i in 1:nsettings) {
         }
 
         # change from/to in final fout if new dates were applied
-        if (!is.null(new_date_list)) {
+        if (modes[i] != "timmean" && !is.null(new_date_list)) {
             message("\nupdate new output years YYYY in fout ...")
             cmd <- paste0("mv ", fout, " ")
             if (!is.null(new_date_list[[i]]$years)) {
@@ -1454,7 +1452,28 @@ for (i in 1:nsettings) {
         cmd <- paste0(cmd, ")")
         message("run `", cmd, "`")
         eval(parse(text=cmd))
-   
+
+        # get moc time series if not timmean
+        if (modes[i] != "timmean") {
+
+            message("\n`modes[", i, "] = \"", modes[i], "\" != \"timmean", 
+                    "\" --> get moc time series --> run mpiom_moc_extract_ts() ...")
+           
+            cmd <- "mpiom_moc_extract_ts(fin=fout"
+            if (exists("mpiom_moc_extract_ts_arg_list")) {
+                for (argi in seq_along(mpiom_moc_extract_ts_arg_list[[i]])) {
+                    cmd <- paste0(cmd, ", ", 
+                                  names(mpiom_moc_extract_ts_arg_list[[i]])[argi], 
+                                  "=mpiom_moc_extract_ts_arg_list[[", i, "]]$",
+                                  names(mpiom_moc_extract_ts_arg_list[[i]])[argi])
+                }
+            }
+            cmd <- paste0(cmd, ")")
+            message("run `", cmd, "`")
+            eval(parse(text=cmd))
+
+        } # if modes[i] != "timmean"
+
     } # if mpiom1 and *moc
 
     toc <- Sys.time()

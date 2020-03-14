@@ -34,7 +34,7 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 verbose <- 1 # 0,1
-clean <- F # remove tmp files
+clean <- T # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
 cdo_force <- F # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
@@ -131,8 +131,20 @@ if (F) { # old hist
     #fvarnames <- "c25_TMERCI3" # Mass_Transport_in_Atlantic_at_50N [m3 s-1]
     fvarnames <- "amoc"
     codes <- 101
-    mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(horiz="GR30", lev="L40"), 
+    mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(setup="GR30", nlev="L40"), 
                                                      reg_res=c(nlon=360, nlat=180)))
+    mpiom_moc_extract_ts_arg_list <- list(list(sellevidx=list(c(from=15, to=31), # 1
+                                                              c(from=15, to=31), # 2
+                                                              c(from=1, to=40), # 3
+                                                              c(from=1, to=40), # 4
+                                                              c(from=1, to=40), # 5
+                                                              c(from=1, to=40)), # 6
+                                               sellonlatbox=list(c(lon1=0, lon2=0, lat1=45, lat2=60), # 1
+                                                                 c(lon1=0, lon2=0, lat1=30, lat2=60), # 2
+                                                                 c(lon1=0, lon2=0, lat1=45, lat2=60), # 3
+                                                                 c(lon1=0, lon2=0, lat1=30, lat2=60), # 4
+                                                                 c(lon1=0, lon2=0, lat1=26.5, lat2=26.5), # 5
+                                                                 c(lon1=0, lon2=0, lat1=50, lat2=50)))) # 6
     #modes <- "select"
     #modes <- "timmean"
     #modes <- "yearmean"
@@ -145,33 +157,33 @@ if (F) { # old hist
     #froms <- "0001" # beginning counting from 1
     froms <- "2901" # beginning
     #froms <- "3572"
-    tos <- "2910"
-    #tos <- "3601" # end
+    #tos <- "2910"
+    tos <- "3601" # end
     #tos <- "7001" # end counting from 1 
-    ## monthly frequency every 10 years:
-    new_date_list <- list(list(years=rep(seq(1, b=10, l=length(froms:tos)), e=12), nc_time_origin=1))
-    if (grepl("_main_mm", prefixes)) {
-        # 1 missing Hol-Tx10 *_main_mm_* file: 334812 (Dec 2530 BP; model year 448)
-        if (any(new_date_list[[1]]$years == 4471)) {
-            message("remove Dec of 4471")
-            new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
-        }
-    }
-    if (grepl("_wiso_mm", prefixes)) {
-        # 2 missing Hol-Tx10 *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
-        if (any(new_date_list[[1]]$years == 4471)) {
-            message("remove Nov+Dec of 4471")
-            new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
-        }
-    }
-    # model year 6711 since 0; last 30 years
-    if (froms[1] == "3572" && tos[1] == "3601") { 
-        if (modes[1] == "timmean") { # model years: mean(6711, 7001) = 6856
-            new_date_list <- list(list(years=c(6711, 7001), nc_time_origin=1))
+    if (modes[1] == "timmean") {
+        if (froms[1] == "2901" && tos[1] == "3601") {
+            new_date_list <- list(list(years=mean(c(1, 7001)), nc_time_origin=1))
         } else {
-            new_date_list <- list(list(years=rep(seq(6711, b=10, l=30), e=12), nc_time_origin=1))
+            stop("asd")
         }
-    }
+    } else if (modes[1] != "timmean") {
+        # monthly:
+        new_date_list <- list(list(years=rep(seq(1, b=10, l=length(froms:tos)), e=12), nc_time_origin=1))
+        if (grepl("_main_mm", prefixes[1])) {
+            # 1 missing Hol-Tx10 *_main_mm_* file: 334812 (Dec 2530 BP; model year 448)
+            if (any(new_date_list[[1]]$years == 4471)) {
+                message("remove Dec of 4471")
+                new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
+            }
+        }
+        if (grepl("_wiso_mm", prefixes[1])) {
+            # 2 missing Hol-Tx10 *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
+            if (any(new_date_list[[1]]$years == 4471)) {
+                message("remove Nov+Dec of 4471")
+                new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
+            }
+        }
+    } # new time depending on output frequency
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"

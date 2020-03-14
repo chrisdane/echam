@@ -34,8 +34,9 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 # options across settings
+mode <- "monmean"
 # echam:
-mode <- "select"
+#mode <- "select"
 #mode <- "fldmean" 
 #mode <- "timmean" 
 #mode <- "timsum"
@@ -436,7 +437,7 @@ if (F) { # awi-esm-1-1-lr hist
 
 # ==================================================
 # 6 settings
-} else if (T) { # compare PLOT lakes
+} else if (F) { # compare PLOT lakes
     #prefixes <- rep("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", t=6)
     prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=6)
     models <- rep("echam5", t=6)
@@ -458,6 +459,23 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("temp2", t=6)
     varnames_in <- rep("aprt", t=6)
     areas <- c("ladoga_remapnn", "shuchye_remapnn", "levinson-lessing_remapnn", "taymyr_remapnn", "emanda_remapnn", "elgygytgyn_remapnn")
+
+} else if (T) { # compare moc time series
+    prefixes <- rep("cosmos-aso-wiso_echam5_Hol-Tx10_fort_75", t=6)
+    models <- rep("mpiom1", t=6)
+    names_short <- rep("Hol-Tx10", t=6)
+    fromsf <- rep("0001", t=6) # beginning of chunk 1
+    tosf <- rep("7001", t=6) # end of chunk 3
+    new_origins <- rep(-7000, t=6)
+    time_frequencies <- rep("monthly", t=6)
+    time_ref <- 1950 # any string, e.g. "BP", or number
+    #n_mas <- rep(30, t=6)
+    n_mas <- rep(120, t=6)
+    varnames_in <- rep("amoc", t=6)
+    codes <- rep(101, t=6)
+    areas <- c("moc45to60N", "moc30to60N", "moc50N", "moc45to60N", "moc30to60N", "moc26.5N")
+    levs <- c("-285to-2180m", "-285to-2180m", "-0to-5420m", "-0to-5420m", "-0to-5420m", "-0to-5420m")
+    names_legend <- paste0(areas, " ", levs)
 
 } # which settings
 # ==================================================
@@ -506,7 +524,7 @@ if (F) {
                                  suffix="_highlight_seasons") 
 }
 add_first_data_point <- F
-ts_plot_each_setting_in_subplot <- T
+ts_plot_each_setting_in_subplot <- F
 add_data_right_yaxis_ts <- F
 add_cor_data_left_and_right_ts <- T
 add_data_right_yaxis_ts_mon <- F

@@ -175,7 +175,7 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
 
 
 mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout, 
-                                       mpiom_model_res=c(horiz="GR30", lev="L40"), reg_res=c(nlon=360, nlat=180), 
+                                       mpiom_model_res=c(setup="GR30", nlev="L40"), reg_res=c(nlon=360, nlat=180), 
                                        verbose=T) {
    
     # adapted from https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_make_amoc.sh
@@ -201,8 +201,8 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
 
     if (class(mpiom_model_res) != "character" ||
         length(mpiom_model_res) != 2 ||
-        names(mpiom_model_res) != c("horiz", "lev")) {
-        stop("provide `mpiom_model_res` as e.g. `mpiom_model_res=c(horiz=\"GR30\", lev=\"L40\")`")
+        names(mpiom_model_res) != c("setup", "nlev")) {
+        stop("provide `mpiom_model_res` as e.g. `mpiom_model_res=c(setup=\"GR30\", nlev=\"L40\")`")
     }
     
     if (class(reg_res) != "numeric" ||
@@ -213,7 +213,7 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
 
     # get format of input files
     cmd <- paste0("cdo showformat ", fin)
-    if (verbose) message("run `", cmd, "`")
+    if (verbose) message("\nrun `", cmd, "`")
     input_format <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
     if (!is.null(input_format$warning)) {
         stop(input_format$warning)
@@ -239,7 +239,7 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
 
     # get bottom topography based on available model resolution files
     tracer_file <- paste0(pwd, "/mpiom/mpiom_r", reg_res["nlon"], "x", reg_res["nlat"], 
-                          mpiom_model_res["lev"], "_geographic_grid.nc") 
+                          mpiom_model_res["nlev"], "_geographic_grid.nc") 
     if (!file.exists(tracer_file)) {
         stop("`tracer_file` = \"", tracer_file, "\" does not exist")
     }
@@ -250,7 +250,7 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
 
     # generate moc mask file, i.e. set basins out of moc area to miss val
     basin_mask_file <- paste0(pwd, "/mpiom/mpiom_r", 
-                              reg_res["nlon"], "x", reg_res["nlat"], mpiom_model_res["lev"],
+                              reg_res["nlon"], "x", reg_res["nlat"], mpiom_model_res["nlev"],
                               "_", varname, "_mask.nc")
     if (!file.exists(basin_mask_file)) {
         
@@ -275,11 +275,13 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
         if (verbose) message("run `", cmd, "`")
         system(cmd)
 
+    } else {
+        message("\nfound `basin_mask_file` = \"", basin_mask_file, "\"")
     } # if !file.exists(basin_mask_file)
 
     # calculate zonal average sea floor elevation
     basin_zonmean_mask_file <- paste0(pwd, "/mpiom/mpiom_r",
-                                      reg_res["nlon"], "x", reg_res["nlat"], mpiom_model_res["lev"],
+                                      reg_res["nlon"], "x", reg_res["nlat"], mpiom_model_res["nlev"],
                                       "_", varname, "_mask_zonmean.nc") 
     if (!file.exists(basin_zonmean_mask_file)) {
         
@@ -323,7 +325,7 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
         } # for fi split_files
         
         basin_zonmean_max_depth_file <- paste0(pwd, "/mpiom/mpiom_r",
-                                               reg_res["nlon"], "x", reg_res["nlat"], mpiom_model_res["lev"],
+                                               reg_res["nlon"], "x", reg_res["nlat"], mpiom_model_res["nlev"],
                                                "_", varname, "_zonal_max_depths.nc")
         #${cdo} ensmax depths*.nc max_depth.nc
         cmd <- paste0(cdo, " ensmax ", paste(depth_files, collapse=" "), " ", basin_zonmean_max_depth_file)
@@ -332,13 +334,15 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
         file.remove(depth_files)
 
         basin_zonmean_mean_depth_file <- paste0(pwd, "/mpiom/mpiom_r", 
-                                                reg_res["nlon"], "x", reg_res["nlat"], mpiom_model_res["lev"],
+                                                reg_res["nlon"], "x", reg_res["nlat"], mpiom_model_res["nlev"],
                                                 "_", varname, "_zonal_mean_depths.nc")
         #${cdo} zonmean max_depth.nc zon_mean_depth.nc
         cmd <- paste0(cdo, " zonmean ", basin_zonmean_max_depth_file, " ", basin_zonmean_mean_depth_file)
         if (verbose) message("\nrun `", cmd, "`")
         system(cmd)
     
+    } else {
+        message("\nfound `basin_zonmean_mask_file` = \"", basin_zonmean_mask_file, "\"")
     } # if !file.exists(basin_zonmean_mask_file)
 
     #we need to cut the lowest level in the overturning data set (since the salinity data set has one level less)
@@ -365,6 +369,8 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
 	#fi
     #done
     levels <- levels[-length(levels)]
+    write(cbind(seq_along(levels), levels), ncolumns=2, 
+          file=paste0(pwd, "/mpiom/mpiom_", mpiom_model_res["nlev"], "_levels.txt"))
 
     #extract AMOC for all levels except the lowest one from the data set
     #${cdo} sellevel,$level_str -selvar,var101 $streamfun_infile tmp.nc
@@ -386,7 +392,25 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
 
     #clean up
     #rm split* mask.nc depths* basin_mask.nc basin_zonal_average.nc max_depth.nc zon_mean_depth.nc
-    # --> keep depth files re-use if needed
+
+    if (F) {
+        #${cdo} -s -divc,1e6 -setgrid,r180x40 tmp ${expid}_mpiom_MOC_complete_180x40_Sv.nc
+        cmd <- paste0(cdo, " -setgrid,r", reg_res["nlat"], "x", mpiom_model_res["nlev"], " ", fout, " ",
+                      outpath, "/tmp && mv ", outpath, "/tmp ", fout)
+        if (verbose) message("\nrun `", cmd, "`")
+        system(cmd)
+        # Error (gridDefine) : ysize undefined!
+    }
+
+    if (F) { # set units m3 s-1
+        cmd <- paste0(cdo, " setunit,\"m3 s-1\" ", fout, " ",
+                      outpath, "/tmp && mv ", outpath, "/tmp ", fout)
+    } else if (T) { # set units Sv
+        cmd <- paste0(cdo, " -setunit,\"Sv\" -divc,1e6 ", fout, " ",
+                      outpath, "/tmp && mv ", outpath, "/tmp ", fout)
+    }
+    if (verbose) message("\nrun `", cmd, "`")
+    system(cmd)
 
     # "var101" --> "amoc"
     cmd <- paste0(cdo, " setname,", varname, " ", fout, " ", 
@@ -396,4 +420,114 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
 
 } # mpiom_moc_make_bottom_topo
 
+
+mpiom_moc_extract_ts <- function(cdo="cdo", fin, outpath,
+                                 sellevidx=list(c(from=15, to=31)), 
+                                 sellevel, 
+                                 sellonlatbox=list(c(lon1=0, lon2=0, lat1=45, lat2=60)),
+                                 verbose=T) {
+   
+    # adapted from https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_make_amoc.sh
+
+    if (missing(fin)) {
+        stop("provide `fin=\"/path/to/mpiom/[ag]moc/result/of/post_echam.r\"`")
+    }
+
+    if (missing(outpath)) {
+        outpath <- dirname(fin)
+    }
+    if (file.access(outpath, mode=0)) { # existance?
+        dir.create(outpath, recursive=T)
+    } else {
+        if (file.access(outpath, mode=2)) { # write permission?
+            stop("no write permission in `outpath` = dirname(`fin`) = \"", outpath, "\"")
+        }
+    }
+
+    if (!is.list(sellonlatbox)) stop("`sellonlatbox` must be a list")
+    
+    if (!missing(sellevel)) { # use depth values
+        if (!is.list(sellevel)) stop("`sellevel` must be a list")
+        if (length(sellevel) != length(sellonlatbox)) {
+            stop("`sellevel` is given but of different length as `sellonlatbox` (", 
+                 length(sellevel), " != ", length(sellonlatbox))
+        }
+    } else { # use depth index
+        if (!is.list(sellevidx)) stop("`sellevidx` must be a list")
+        if (length(sellevidx) != length(sellonlatbox)) {
+            stop("`sellevidx` is of different length as `sellonlatbox` (", 
+                 length(sellevidx), " != ", length(sellonlatbox))
+        }
+    }
+   
+    # get input depth levels
+    cmd <- paste0(cdo, " showlevel ", fin)
+    if (verbose) message("\nrun `", cmd, "`")
+    levels <- system(cmd, intern=T)
+    levels <- strsplit(levels, " ")[[1]]
+    if (any(levels == "")) {
+        levels <- levels[-which(levels == "")]
+    }
+
+    if (!missing(sellevel)) {
+        sellevidx <- vector("list", l=length(sellonlatbox))
+    }
+
+    # for all wanted regions
+    for (i in seq_along(sellonlatbox)) {
+
+        if (verbose) message("\nmoc ts setting ", i, "/", length(sellonlatbox), ":")
+
+        #${cdo} -s -vertmax -mermax -sellevidx,15/31 -sellonlatbox,0,0,45,60 ${expid}_mpiom_MOC_complete_180x40_Sv.nc ${expid}_mpiom_MOC_complete_180x40_Sv_index_45-60N.nc
+        cmd <- cdo
+        if (!missing(sellevel)) { # use depth values if provided
+            sellevidx[[i]] <- list(from=which.min(abs(levels - sellevel[[i]]["from"])),
+                                   to=which.min(abs(levels - sellevel[[i]]["to"])))
+            if (sellevel[[i]]["from"] == sellevel[[i]]["to"]) { # maximum at one depth
+                cmd_sellev <- paste0("intlevel,", sellevel[[i]]["from"])
+                depth_fname <- paste0("-", sellevel[[i]]["from"])
+            } else { # maximum in depth range
+                cmd <- paste0(cmd, " -vertmax")
+                cmd_sellev <- paste0("intlevel,", sellevel[[i]]["from"], "", sellevel[[i]]["to"])
+                depth_fname <- paste0("-", sellevel[[i]]["from"], "to-", sellevel[[i]]["to"])
+            }
+        } else if (missing(sellevel)) { # use depth index
+            if (sellevidx[[i]]["from"] == sellevidx[[i]]["to"]) { # maximum at one depth
+                stop("todo")
+                cmd_sellev <- ""
+                depth_fname <- paste0("-", levels[sellevidx[[i]]["from"]])
+            } else { # maximum in depth range
+                cmd <- paste0(cmd, " -vertmax")
+                cmd_sellev <- paste0("sellevidx,", sellevidx[[i]]["from"], "/", sellevidx[[i]]["to"])
+                depth_fname <- paste0("-", levels[sellevidx[[i]]["from"]], "to-", levels[sellevidx[[i]]["to"]])
+            }
+        } # if missing(sellevel) or not
+        depth_fname <- paste0("_sellevel_", depth_fname, "m")
+
+        if (sellonlatbox[[i]]["lat1"] == sellonlatbox[[i]]["lat2"]) { # maximum along lat
+            cmd_sellonlat <- paste0("remapnn,lon=0/lat=", sellonlatbox[[i]]["lat1"])
+            area_fname <- sellonlatbox[[i]]["lat1"]
+        } else { # maximum in latitude range
+            cmd <- paste0(cmd, " -mermax")
+            cmd_sellonlat <- paste0("sellonlatbox,", paste0(sellonlatbox[[i]], collapse=","))
+            area_fname <- paste0(sellonlatbox[[i]]["lat1"], "to", sellonlatbox[[i]]["lat2"])
+        }
+        area_fname <- paste0("_moc", area_fname, "N")
+        fout_replacement <- paste0(depth_fname, area_fname, "_")
+
+        fout <- gsub("_global_", fout_replacement, basename(fin))
+        cmd <- paste0(cmd, " -", cmd_sellev, " -", cmd_sellonlat, " ", fin, " ", 
+                      outpath, "/", fout)
+        if (verbose) message("run `", cmd, "`")
+        system(cmd)
+
+        # add used sellevidx as global argument to file
+        cmd <- paste0(cdo, " setattribute,sellevidx=\"", paste(sellevidx[[i]], collapse="to"), "\" ", fout, " ",
+                      outpath, "/tmp && mv ", outpath, "/tmp ", fout)
+        if (verbose) message("run `", cmd, "`")
+        system(cmd)
+
+    } # for i sellonlatbox
+
+} # mpiom_moc_extract_ts
 
