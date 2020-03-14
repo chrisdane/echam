@@ -34,7 +34,7 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 verbose <- 1 # 0,1
-clean <- T # remove tmp files
+clean <- F # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
 cdo_force <- F # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
@@ -59,7 +59,7 @@ if (F) { # old hist
     #season_inds <- list(c(12, 1, 2))
     modes <- "fldmean"
     #modes <- "timmean"
-    prefixs <- "dynveg"
+    prefixes <- "dynveg"
     
 } else if (F) { # pi
     datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
@@ -85,7 +85,7 @@ if (F) { # old hist
     tos <- 1941
     #modes <- "fldmean"
     modes <- "timmean"
-    prefixs <- "awi-esm-1-1-lr"
+    prefixes <- "awi-esm-1-1-lr"
 
 } else if (F) { # xiaoxu
     datapaths <- "/mnt/lustre02/work/ba0989/a270064/esm-experiments/lgm_anm/outdata/echam" # 3537:2872 (n=336)
@@ -101,19 +101,21 @@ if (F) { # old hist
     #season_inds <- list(c(9, 10, 11)) # SON
     #modes <- "timmean" 
     modes <- "fldmean"
-    prefixs <- "awi-esm-1-1-lr_lgm"
+    prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
     models <- "echam5"
     models <- "mpiom1"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
-    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
-    #prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
-    #prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
-    prefixs <- "cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext"
+    #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
+    fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_fort_75"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
@@ -126,9 +128,16 @@ if (F) { # old hist
     #fvarnames <- "aprt_times_tsurf"
     #fvarnames <- "ptemp"
     #fvarnames <- "ptsurf"
-    fvarnames <- "c25_TMERCI3" # Mass_Transport_in_Atlantic_at_50N [m3 s-1]
-    modes <- "select"
+    #fvarnames <- "c25_TMERCI3" # Mass_Transport_in_Atlantic_at_50N [m3 s-1]
+    fvarnames <- "amoc"
+    codes <- 101
+    mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(horiz="GR30", lev="L40"), 
+                                                     reg_res=c(nlon=360, nlat=180)))
+    #modes <- "select"
     #modes <- "timmean"
+    #modes <- "yearmean"
+    modes <- "monmean"
+    #modes <- "ymonmean"
     #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
@@ -136,19 +145,19 @@ if (F) { # old hist
     #froms <- "0001" # beginning counting from 1
     froms <- "2901" # beginning
     #froms <- "3572"
-    #tos <- "2910"
-    tos <- "3601" # end
+    tos <- "2910"
+    #tos <- "3601" # end
     #tos <- "7001" # end counting from 1 
-    # monthly frequency every 10 years
+    ## monthly frequency every 10 years:
     new_date_list <- list(list(years=rep(seq(1, b=10, l=length(froms:tos)), e=12), nc_time_origin=1))
-    if (grepl("_main_mm", prefixs)) {
+    if (grepl("_main_mm", prefixes)) {
         # 1 missing Hol-Tx10 *_main_mm_* file: 334812 (Dec 2530 BP; model year 448)
         if (any(new_date_list[[1]]$years == 4471)) {
             message("remove Dec of 4471")
             new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
         }
     }
-    if (grepl("_wiso_mm", prefixs)) {
+    if (grepl("_wiso_mm", prefixes)) {
         # 2 missing Hol-Tx10 *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
         if (any(new_date_list[[1]]$years == 4471)) {
             message("remove Nov+Dec of 4471")
@@ -173,8 +182,8 @@ if (F) { # old hist
     ftypes <- "l" # "f" for files (default) or "l" for links
     #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
-    #prefixs <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
-    prefixs <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
@@ -211,7 +220,7 @@ if (F) { # old hist
     datapaths <- "/ace/user/mwerner/echam5-wiso/T106L31/EXP007_MB/MONMEAN"
     models <- "echam5"
     fpatterns <- "EXP007_T106_MB_195801.201312.combined.monmean.wiso.nc"
-    prefixs <- "recT106erai_echam5"
+    prefixes <- "recT106erai_echam5"
     fvarnames <- "temp2"
     modes <- "select"
     #modes <- "fldmean"
@@ -222,18 +231,18 @@ if (F) { # old hist
     datapaths <- "/work/ollie/mwerner/echam6-wiso/T127L95/NUDGING_ERA5_T127L95/MONMEAN"
     models <- "echam6"
     fpatterns <- "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
-    prefixs <- "recT127era5_echam6"
+    prefixes <- "recT127era5_echam6"
     fvarnames <- "temp2"
     #modes <- "select"
     modes <- "fldmean"
     froms <- 1979
     tos <- 2018
 
-} else if (T) { # E280_280ppm
+} else if (F) { # E280_280ppm
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/E280_280ppm/outdata/mpiom"
     models <- "mpiom1"
     fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
-    prefixs <- "E280_280ppm_mpiom_timeser"
+    prefixes <- "E280_280ppm_mpiom_timeser"
     fvarnames <- "c25_TMERCI3"
     modes <- "select"
     froms <- "2650"
@@ -254,7 +263,7 @@ if (F) { # old hist
     tos <- c(1851, 1851)
     #modes <- c("fldmean", "fldmean")
     modes <- c("timmean", "timmean")
-    prefixs <- c("dynveg_noLUH", "dynveg_LUH")
+    prefixes <- c("dynveg_noLUH", "dynveg_LUH")
 
 } else if (F) {
     datapaths <- c("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/echam",
@@ -267,7 +276,7 @@ if (F) { # old hist
     #tos <- c(1859, 1859)
     tos <- c(2099, 2099)
     modes <- c("fldmean", "fldmean")
-    prefixs <- c("dynveg", "dynveg")
+    prefixes <- c("dynveg", "dynveg")
 
 # ======================================================
 # 3 settings
@@ -295,7 +304,7 @@ if (F) { # old hist
     #season_inds <- list(9:11, 9:11, 9:11) # SON
     modes <- c("fldmean", "fldmean", "fldmean")
     #modes <- c("timmean", "timmean", "timmean")
-    prefixs <- rep("awi-esm-1-1-lr", t=3)
+    prefixes <- rep("awi-esm-1-1-lr", t=3)
 
 } else if (F) { # deck pi hist 1pct 4cos2
     datapaths <- c("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam",
@@ -335,7 +344,7 @@ if (F) { # old hist
     #modes <- rep("fldmean", t=4)
     #modes <- rep("timmean", t=4)
     modes <- rep("volint", t=4)
-    prefixs <- rep("awi-esm-1-1-lr", t=4)
+    prefixes <- rep("awi-esm-1-1-lr", t=4)
 }
 
 # https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_calc_wiso_echam5_monmean.sh
@@ -354,20 +363,19 @@ cdo_known_cmds <- list("toa_imbalace="=list(cmd="<cdo> -setname,toa_imbalance -a
                        "wisorunoff_d"=list(cmd="<cdo> -setname,wisorunoff_d -setcode,17 -mulc,1000. -subc,1. -div -div <wisorunoff> <runoff> <wiso_smow_files>"),
                        "aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -mul <aprt> <temp2>",
                                                      "<nco_ncatted> -O -a code,aprt_times_temp2,d,,", # delete old code
-                                                     "<nco_ncatted> -O -a long_name,aprt_times_temp2,o,c,\"precipitation times temp2\"",
+                                                     "<nco_ncatted> -O -a long_name,aprt_times_temp2,o,c,\"aprt times temp2\"",
                                                      "<nco_ncatted> -O -a units,aprt_times_temp2,o,c,\"mm/month degC\"")),
                        #"aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -<modes> -mul <aprt> <temp2>", # todo: mode & mul together?
                        #                              "<nco_ncatted> -O -a code,aprt_times_temp2,d,,")), # delete old code
                        "aprt_times_tsurf"=list(cmd=c("<cdo> -setname,aprt_times_tsurf -mul <aprt> <tsurf>",
                                                      "<nco_ncatted> -O -a code,aprt_times_tsurf,d,,", # delete old code
-                                                     "<nco_ncatted> -O -a long_name,aprt_times_tsurf,o,c,\"precipitation times tsurf\"",
+                                                     "<nco_ncatted> -O -a long_name,aprt_times_tsurf,o,c,\"aprt times tsurf\"",
                                                      "<nco_ncatted> -O -a units,aprt_times_tsurf,o,c,\"mm/month degC\"")),
                        "ptemp"=list(cmd=c("<cdo> -setname,ptemp -setcode,170 -div <aprt_times_temp2> <aprt>",
                                           "<nco_ncatted> -O -a long_name,ptemp,o,c,\"precipitation weighted temp2\"",
                                           "<nco_ncatted> -O -a units,ptemp,o,c,\"degC\"")),
                        "ptsurf"=list(cmd=c("<cdo> -setname,ptsurf -div <aprt_times_tsurf> <aprt>",
                                            "<nco_ncatted> -O -a long_name,ptsurf,o,c,\"precipitation weighted tsurf\"",
-                                           "<nco_ncatted> -O -a units,ptsurf,o,c,\"degC\"")),
-                       "amoc"=list(cmd="")
+                                           "<nco_ncatted> -O -a units,ptsurf,o,c,\"degC\""))
                       ) # cdo_known_cmds
 

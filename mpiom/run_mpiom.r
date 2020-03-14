@@ -1,5 +1,6 @@
 # r
 
+source("../helper_functions.r")
 source("mpiom_functions.r")
 
 # extract mpiom tar files

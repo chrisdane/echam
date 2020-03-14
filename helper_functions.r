@@ -7,6 +7,21 @@ ht <- function(d, n=7) {
     print(tail(d, n))
 }
 
+# catch errors
+tryCatch.W.E <- function(expr) {
+
+    # from `demo(error.catching)`
+    W <- NULL
+    w.handler <- function(w) { # warning handler
+        W <<- w
+        invokeRestart("muffleWarning")
+    }
+    list(value=withCallingHandlers(tryCatch(expr, error=function(e) e),
+                                   warning=w.handler), 
+         warning=W)
+
+} # tryCatch.W.E
+
 # leap year
 is.leap <- function(years) {
     return(((years %% 4 == 0) & (years %% 100 != 0)) | (years %% 400 == 0))

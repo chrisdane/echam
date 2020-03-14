@@ -5,14 +5,14 @@ rm(list=ls()); graphics.off()
 # necessary libraries
 library(stringr)
 
-# helper functions
-message("\n", "Read helper_functions.r ...")
-source("helper_functions.r")
-
-# user input
-fnml <- "namelist.post.r"
-message("\n", "Read ", fnml, " ...")
-source(fnml)
+# load functions and user input
+pwd <- getwd()
+message("\n", paste0("Load ", pwd, "/helper_functions.r ..."))
+source(paste0(pwd, "/helper_functions.r"))
+message(paste0("Load ", pwd, "/mpiom/mpiom_functions.r ..."))
+source(paste0(pwd, "/mpiom/mpiom_functions.r"))
+message("Read ", pwd, "/namelist.post.r ...")
+source(paste0(pwd, "/namelist.post.r"))
 
 # Check user input and set defaults
 message("\n", "Check user input ...")
@@ -104,7 +104,7 @@ if (any(file.access(datapaths, mode=4) != 0)) { # check read permission
 datapaths <- normalizePath(datapaths)
 nsettings <- length(datapaths)
 #if (!exists("ftypes")) ftypes <- rep("f", t=nsettings)
-if (!exists("prefixs")) prefixs <- rep(NA, t=nsettings)
+if (!exists("prefixes")) prefixes <- rep(NA, t=nsettings)
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
 if (!exists("areas_out")) areas_out <- rep("global", t=nsettings)
 # check if postpaths can be created/have writing rights
@@ -222,22 +222,11 @@ for (i in 1:nsettings) {
         }
     }
 
-    # get file type
-    if (!exists("filetypes")) {
-        # lazy approach: take everything after last . (dot) in file name
-        filetype <- substr(fpatterns[i], regexpr("\\.[^\\.]*$", fpatterns[i]) + 1, nchar(fpatterns[i]))
-    } else {
-        filetype <- filetypes[i]
-    }
-    if (!any(filetype == c("grb", "nc"))) {
-        stop("filetype \"", filetype, "\" not implemented yet")
-    }
-
     # output fname
     fout <- paste0(postpaths[i], "/", 
-                   ifelse(!is.na(prefixs[i]), prefixs[i], ""),
+                   ifelse(!is.na(prefixes[i]), prefixes[i], ""),
                    "_", modes[i],
-                   ifelse(filetype == "grb", paste0("_selcode_", codes[i]), ""),
+                   ifelse(!is.na(codes[i]), paste0("_selcode_", codes[i]), ""),
                    "_", fvarnames[i], 
                    ifelse(!is.na(levs_out[i]), paste0("_sellevel_", levs_out[i]), ""),
                    "_", areas_out[i],
@@ -298,12 +287,11 @@ for (i in 1:nsettings) {
         message("`find` of ", length(files), " files took ", elapsedcmd, " ", attributes(elapsedcmd)$units) 
 
         # separate into dirname and basename
-        dirnames <- dirname(files)
         basenames <- basename(files)
         df <- data.frame(basenames)
 
         if (verbose > 0) {
-            message("\n", "found ", length(files), " ", filetype, " file", 
+            message("\n", "found ", length(files), " file", 
                     ifelse(length(files) > 1, "s", ""), ":")
             if (length(files) > 1) {
                 ht(df, n=30)
@@ -312,6 +300,27 @@ for (i in 1:nsettings) {
             }
         }
 
+        # get format of input files
+        message("\nget input file format ...")
+        cmd <- paste0("cdo showformat ", datapaths[i], "/", basenames[1])
+        message("run `", cmd, "`")
+        input_format <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
+        if (!is.null(input_format$warning)) {
+            stop(input_format$warning)
+        } else {
+            message(" --> \"", input_format$value, "\"")
+        }
+        if (any(input_format$value == c("GRIB", "EXTRA  BIGENDIAN"))) {
+            message("set `convert_to_nc`=T to convert final result to netcdf ...")
+            convert_to_nc <- T
+            filetype <- "grb"
+        } else if (input_format$value == "netCDF") {
+            convert_to_nc <- F
+            filetype <- "nc"
+        } else {
+            stop("this format not defined yet")
+        }
+        
         # identify correct YYYY, MM, etc. based on file names or `cdo showdate`
         if (grepl("<YYYY>", fpatterns[i])) {
             n_yyyy_patterns <- length(gregexpr("<YYYY>", fpatterns[i])[[1]]) 
@@ -393,7 +402,6 @@ for (i in 1:nsettings) {
             ht(files[wrong_file_inds])
             message("remove them ...")
             files <- files[-wrong_file_inds]
-            dirnames <- dirnames[-wrong_file_inds]
             basenames <- basenames[-wrong_file_inds]
             df <- df[-wrong_file_inds,]
             years_in <- years_in[-wrong_file_inds]
@@ -408,13 +416,12 @@ for (i in 1:nsettings) {
                     " outside of wanted years defined by froms[", i, "] = ", 
                     froms[i], " to tos[", i, "] = ", tos[i], " ...")
             files <- files[-outside_years_inds]
-            dirnames <- dirnames[-outside_years_inds]
             basenames <- basenames[-outside_years_inds]
             df <- df[-outside_years_inds,]
             years_in <- years_in[-outside_years_inds]
             if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[-outside_years_inds]
             if (verbose > 0) {
-                message("\n", "found ", length(files), " ", filetype, " file", 
+                message("\n", "found ", length(files), " file", 
                         ifelse(length(files) > 1, "s", ""), ":")
                 if (length(files) > 1) {
                     ht(df)
@@ -437,7 +444,6 @@ for (i in 1:nsettings) {
                 }
                 message("remove ", length(file_season_inds), " files out of these months. files:")
                 files <- files[file_season_inds]
-                dirnames <- dirnames[file_season_inds]
                 basenames <- basenames[file_season_inds]
                 df <- df[file_season_inds,]
                 years_in <- years_in[-outside_years_inds]
@@ -493,7 +499,6 @@ for (i in 1:nsettings) {
             }
             # update:
             files <- files[years_in_ordered_inds]
-            dirnames <- dirnames[years_in_ordered_inds]
             basenames <- basenames[years_in_ordered_inds]
             df <- df[years_in_ordered_inds,]
             years_in <- years_in[years_in_ordered_inds]
@@ -520,7 +525,6 @@ for (i in 1:nsettings) {
                     } # for yi years_unique
                     # update:
                     files <- files[MM_in_ordered_inds]
-                    dirnames <- dirnames[MM_in_ordered_inds]
                     basenames <- basenames[MM_in_ordered_inds]
                     df <- df[MM_in_ordered_inds,]
                     years_in <- years_in[MM_in_ordered_inds]
@@ -536,443 +540,459 @@ for (i in 1:nsettings) {
 
         # convert to nc if grb
         cdoconvert <- "" # default
-        if (filetype == "grb") {
+        if (convert_to_nc) {
             if (any(models[i] == c("echam4", "echam5", "echam6", "mpiom1", "ecmwf", "remo", 
                                    "cosmo002", "cosmo201", "cosmo202", "cosmo203", "cosmo205", "cosmo250"))) {
                 cdoconvert <- paste0(cdoconvert, " -t ", models[i])
             }
             cdoconvert <- paste0(cdoconvert, " -f nc")
         } # if grb
-        
-        # check if requested variable is in first found file
-        message("\ncheck if requested variable ", appendLF=F)
-        if (filetype == "grb") {
-            if (is.na(codes[i])) { # code not provided
-                stop("cannot process setting ", i, "/", nsettings, 
-                     ": provide a code number of the requested variable '", fvarnames[i], 
-                     "'.")
-            } else { # code provided
+       
+
+        ## run special functions instead of the default process or any entry of `cdo_known_cmds`
+        if (F) { # set conditions here
+
+        } else { # no special function; continue with default or any entry of `cdo_known_cmds`
+
+            # check if requested variable is in first found file
+            message("\ncheck if requested variable ", appendLF=F)
+            if (!is.na(codes[i])) { # code not provided
                 cdoselect <- paste0("-select,code=", codes[i])
+                message("\"var", codes[i], "\"", appendLF=F)
+            } else {
+                cdoselect <- paste0("-select,name=", fvarnames[i])
+                message("\"", fvarnames[i], "\"", appendLF=F)
             }
-            message("\"", codes[i], "\"", appendLF=F)
-        } else if (filetype == "nc") {
-            cdoselect <- paste0("-select,name=", fvarnames[i])
-            message("\"", fvarnames[i], "\"", appendLF=F)
-        }
-        message(" is present in first found file ...")
-        tmpfile <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", filetype)
-        cmd <- paste0(cdoprefix, " ", cdoselect, " ", datapaths[i], "/", files[1], " ", tmpfile)
-        message("run `", cmd, "`")
-        check <- system(cmd, intern=T)
-        
-        # if requested variable was not found in first found file
-        if (F) {
-            message("\n*********** for testing set variable to not found ************\n")
-            check <- 1
-        }
-        if (length(check) != 0) { 
+            message(" is present in first found file ...")
+            tmpfile <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", filetype)
+            cmd <- paste0(cdoprefix, " ", cdoselect, " ", datapaths[i], "/", files[1], " ", tmpfile)
+            message("run `", cmd, "`")
+            check <- system(cmd, intern=T)
+            
+            # if requested variable was not found in first found file
+            
+            if (F) { # test
+                message("\n*********** for testing set variable to not found ************\n")
+                check <- 1
+            }
+            
+            if (length(check) != 0) { 
 
-            message("--> requested variable \"", fvarnames[i], "\" was not found in first file\n",
-                    "  \"", datapaths[i], "/", files[1], "\"")
+                message("--> requested variable \"", fvarnames[i], "\" was not found in first file\n",
+                        "  \"", datapaths[i], "/", files[1], "\"")
 
-            # special case: requested variable is one of the wiso delta variables
-            #if (fvarnames[i] %in% known_wiso_d_vars$vars) {
-            if (fvarnames[i] %in% names(cdo_known_cmds)) {
+                # special case: requested variable is one of the wiso delta variables
+                #if (fvarnames[i] %in% known_wiso_d_vars$vars) {
+                if (fvarnames[i] %in% names(cdo_known_cmds)) {
 
-                message("however, requested variable \"", fvarnames[i], "\" is one of the variables defined in `cdo_known_cmds`:")
-                for (vari in 1:length(cdo_known_cmds)) {
-                    message("   ", vari, " \"", names(cdo_known_cmds)[vari], "\": ", appendLF=F)
-                    if (length(cdo_known_cmds[[vari]]$cmd) == 1) {
-                        message("`", cdo_known_cmds[[vari]]$cmd, "`")
-                    } else {
-                        message("\n", appendLF=F)
-                        for (cmdi in 1:length(cdo_known_cmds[[vari]]$cmd)) {
-                            message("      `", cdo_known_cmds[[vari]]$cmd[cmdi], "`")
+                    message("however, requested variable \"", fvarnames[i], "\" is one of the variables defined in `cdo_known_cmds`:")
+                    for (vari in 1:length(cdo_known_cmds)) {
+                        message("   ", vari, " \"", names(cdo_known_cmds)[vari], "\": ", appendLF=F)
+                        if (length(cdo_known_cmds[[vari]]$cmd) == 1) {
+                            message("`", cdo_known_cmds[[vari]]$cmd, "`")
+                        } else {
+                            message("\n", appendLF=F)
+                            for (cmdi in 1:length(cdo_known_cmds[[vari]]$cmd)) {
+                                message("      `", cdo_known_cmds[[vari]]$cmd[cmdi], "`")
+                            }
                         }
                     }
+
+                    # check command if all necessary input files are available
+                    cmdsin <- cdo_known_cmds[[fvarnames[i]]]$cmd
+                    cmdsout <- cmdsin
+                    for (cmdi in 1:length(cmdsin)) {
+                        message("\ncheck user cmd ", cmdi, "/", length(cmdsin), " for \"<\" and \">\": `", cmdsin[cmdi], "` ...")
+                        replace_inds_open <- gregexpr("<", cmdsin[cmdi])[[1]]
+                        replace_inds_close <- gregexpr(">", cmdsin[cmdi])[[1]]
+                        if (length(replace_inds_open) != length(replace_inds_close)) {
+                            stop("you provided a different number of \"<\" and \">\" in this command.")
+                        }
+                        if (length(replace_inds_open) == 1 && replace_inds_open == -1) { # not a single "<" was found in command
+                            # nothing to do, let user commands as they are in the namelist
+                        } else {
+                            for (cmdj in 1:length(replace_inds_open)) {
+                                # check if a variable in the current workspace exists with the same name
+                                pattern <- substr(cmdsin[cmdi], replace_inds_open[cmdj] + 1, replace_inds_close[cmdj] - 1)
+                                if (exists(eval(pattern))) { # variable with the name of the pattern exists
+                                    eval(parse(text="length_of_pattern_var <- length(", pattern, ")"))
+                                    if (length_of_pattern_var == nsettings) { # assume that the entry of setting i should be replaced
+                                        eval(parse(text=paste0("replacement <- ", pattern, "[i]")))
+                                    } else {
+                                        eval(parse(text=paste0("replacement <- ", pattern)))
+                                    }
+                                } else { # no such a variable exists
+                                    # assume an input file is needed
+                                    replacement <- fout
+                                    replacement <- gsub(fvarnames[i], pattern, replacement)
+                                    if (!file.exists(replacement)) {
+                                        stop("\nfound pattern \"<", pattern, ">\" is not a defined variable in the current workspace",
+                                             " --> assume it should be an input file. however, file\n   \"", replacement, "\"\n",
+                                             "was not found.\n")
+                                    }
+                                }
+                                # replace found variable/file with pattern in command
+                                message("   replace \"<", pattern, ">\" with \"", replacement, "\" ...")
+                                cmdsout[cmdi] <- gsub(paste0("<", pattern, ">"), replacement, cmdsout[cmdi])
+
+                            } # for all occurences of "<"
+                            message("--> \"", cmdsout[cmdi], "\"")
+                        } # if "<" and ">" were found in command
+                    } # for cmdi all commands of cdo_known_cmds$variable
+
+                    # run modified cdo commands
+                    tmpfiles <- c()
+                    for (cmdi in 1:length(cmdsout)) {
+                        cmd <- cmdsout[cmdi]
+                        if (length(cmdsout) > 1) {
+                            if (cmdi == 1) { # first
+                                tmpfile <- paste0(postpaths[i], "/cmdout_", cmdi, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
+                                cmd <- paste0(cmd, " ", tmpfile)
+                                tmpfiles <- c(tmpfiles, tmpfile)
+                            } else if (cmdi == length(cmdsout)) { # last
+                                tmpfile <- paste0(postpaths[i], "/cmdout_", cmdi-1, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
+                                cmd <- paste0(cmd, " ", tmpfile, " ", fout)
+                                tmpfiles <- c(tmpfiles, tmpfile)
+                            } else { # in between
+                                tmpfile <- paste0(postpaths[i], "/cmdout_", cmdi-1, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
+                                cmd <- paste0(cmd, " ", tmpfile)
+                                tmpfiles <- c(tmpfiles, tmpfile)
+                                tmpfile <- paste0(postpaths[i], "/cmdout_", cmdi, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
+                                cmd <- paste0(cmd, " ", tmpfile)
+                                tmpfiles <- c(tmpfiles, tmpfile)
+                            }
+                        } else { # only 1 cmd
+                            cmd <- paste0(cmd, " ", fout)
+                        }
+                        message("\nrun ", cmdi, "/", length(cmdsout), ": `", cmd, "`")
+                        system(cmd)
+                    } # run all (possibly modifed) user commands
+
+                    if (clean) { 
+                        for (fi in tmpfiles) {
+                            if (file.exists(fi)) {
+                                system(paste0("rm -v ", fi))
+                            }
+                        }
+                    }
+                   
+                    # stop script here
+                    toc <- Sys.time()
+                    elapsed[[i]] <- toc - tic
+
+                # else requested variable is not defined in `cdo_known_cmds`
+                } else { 
+
+                    message("and no command name \"", fvarnames[i], "\" was defined in `cdo_known_cmds` in namelist.post.r")
+                    stop()
+
+                } # if special case if requested variable is one of the wiso delta variables or not
+                
+            # else if requested variable was found in first found file
+            } else { 
+               
+                message("--> requested variable was found in first file")
+                if (clean) system(paste0("rm -v ", tmpfile))
+            
+                # continue with default case -> cdo cmd and not any of `cdo_known_cmds`
+                message("\nconstruct cdo command chain ...")
+
+                # nth command: cat/mergetime/etc. command
+                if (modes[i] == "timmean") {
+                    nmax <- as.integer(system("ulimit -n", intern=T))
+                    if (length(files) > nmax) {
+                        stop("cannot compute ", modes[i], " of ", length(files), 
+                             " files because `cdo ensmean` maximum files is ", nmax)
+                    }
+                    cmdcat <- "-O ensmean"
+                } else if (modes[i] == "fldmean") {
+                    if (F) { # could not figure out a significant time difference between cat and mergetime
+                        cmdcat <- "cat"
+                    } else if (T) {
+                        cmdcat <- "mergetime"
+                    }
+                } else {
+                    #stop("cat/mergetime not defined for mode '", modes[i], "' not defined.")
+                } # which cat/mergetime depending on mode
+
+                # construct necessary cdo commands
+                # (n-2)-th command: calculation
+                cdocalc <- paste0("-", modes[i]) # e.g. "-fldmean"
+                if (modes[i] == "select") {
+                    cdocalc <- "" # variable selection only
+                } else if (modes[i] == "volint") {
+                    message("only test")
+                    cdocalc <- "-fldsum -vertsum"
+                } # which calculation depending on mode
+                message("`modes[", i, "]` = \"", modes[i], "\" --> `cdocalc` = \"", cdocalc, "\" ...")
+
+                # (n-3)-th command: select level
+                cdosellevel <- "" # default
+                if (!is.na(levs_out[i])) {
+                    cdosellevel <- paste0("-sellevel,", paste0(levs_out[i], collapse=","))
+                }
+                
+                # select area
+                if (areas_out[i] != "global") {
+                    stop("not yettt")
                 }
 
-                # check command if all necessary input files are available
-                cmdsin <- cdo_known_cmds[[fvarnames[i]]]$cmd
-                cmdsout <- cmdsin
-                for (cmdi in 1:length(cmdsin)) {
-                    message("\ncheck user cmd ", cmdi, "/", length(cmdsin), " for \"<\" and \">\": `", cmdsin[cmdi], "` ...")
-                    replace_inds_open <- gregexpr("<", cmdsin[cmdi])[[1]]
-                    replace_inds_close <- gregexpr(">", cmdsin[cmdi])[[1]]
-                    if (length(replace_inds_open) != length(replace_inds_close)) {
-                        stop("you provided a different number of \"<\" and \">\" in this command.")
+                # construct cdo command
+                # cdo version must be >= 1.9.4 to chain commands
+                #   `-select,name=` 
+                # and 
+                #   `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc.
+                if (cdo_version[1] < 1 ||
+                    cdo_version[1] == 1 && cdo_version[2] < 9 || 
+                    cdo_version[1] == 1 && cdo_version[2] > 8 && cdo_version[3] < 4) { 
+                    
+                    # if cdo version < 1.9.4
+                    cdo_chain <- "old"
+                    message("\n", "cdo version ", paste(cdo_version, collapse="."), " < 1.9.4 --> have to run separate")
+                    message("   `-select,name=`\n",
+                            "and possible\n",
+                            "   `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc.\n",
+                            "cdo commands:")
+
+                    # 1st cmd: `-select,name=`
+                    tmpfile <- paste0(postpaths[i], "/tmp_selection_", Sys.getpid(), ".nc")
+                    cmd_select <- paste0(cdoprefix, " ", cdoselect,  
+                                         " <files> ", tmpfile, " || echo error")
+                    # 2nd cmd (if needed):
+                    cmd_calc <- "" # default: nothing
+                    if (cdoconvert != "" || cdosellevel != "" || cdoselmon != "" || modes[i] != "select") {
+                        cmd_calc <- cdoprefix
                     }
-                    if (length(replace_inds_open) == 1 && replace_inds_open == -1) { # not a single "<" was found in command
-                        # nothing to do, let user commands as they are in the namelist
+                    # 2nd cmd (if needed): `-f <type copy>`
+                    if (cdoconvert != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoconvert)
+                    }
+                    # 2nd cmd (if needed): `-fldmean` etc.
+                    if (modes[i] != "select") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdocalc) 
+                    }
+                    # 2nd cmd (if needed): `-selmon`
+                    if (cdoselmon != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoselmon)
+                    }
+                    # 2nd cmd (if needed): `-sellevel`
+                    if (cdosellevel != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdosellevel)
+                    }
+                    # 2nd cmd (if needed: <add further>
+                    # ...
+                    # 2nd cmd (if needed): in out
+                    if (cmd_calc != "") {
+                        # input: result of `-select,name=`
+                        # output: result of `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc. --> wanted `fout`
+                        cmd_calc <- paste0(cmd_calc, " ", tmpfile, " ", fout) 
+                    } # if cmd_calc != ""
+                   
+                    # 2nd cmd alternative: just selection: nothing to do but renaming to wanted `fout`
+                    if (cmd_calc == "") {
+                        # in: result of `-select,name=`
+                        # out: wanted `fout`
+                        cmd_calc <- paste0("cp -v ", tmpfile, " ", fout, " || echo error") 
+                    }
+                    message("\nrun\n",
+                            "   1: `", cmd_select, "`\n",
+                            "   2: `", cmd_calc, "`")
+                    
+                    # replace multiple spaces by single spaces
+                    nchar_with_mulitiple_spaces <- nchar(cmd_select)
+                    cmd_select <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd_select, perl=T)
+                    nchar_with_single_spaces <- nchar(cmd_select)
+                    #message("removed ", nchar_with_mulitiple_spaces-nchar_with_single_spaces, 
+                    #        " multiple spaces from selection command")
+                    
+                    # replace <files> with actual files
+                    #files <- files[1:29355]
+                    cmd_select_tmp <- gsub("<files>", 
+                                           paste(paste0(datapaths[i], "/", files), collapse=" "), 
+                                           cmd_select)
+                    
+                    # check if cmd_select command is longer than cdo_nchar_max_arglist = 2612710
+                    nchar_cmd_select <- nchar(substr(cmd_select_tmp, start=nchar(cdo) + 1, stop=nchar(cmd_select_tmp))) 
+                    message("\n", "cdo selection argument list is ", nchar_cmd_select, " characters long")
+                    if (nchar_cmd_select > cdo_nchar_max_arglist) { # too long
+                        
+                        # find maximum number of files per chunk
+                        message("--> this is longer than `cdo_nchar_max_arglist` = ", cdo_nchar_max_arglist, 
+                                " and would yield the error \"Argument list too long\"")
+                        nchar_needed_per_file <- nchar(paste0(datapaths[i], "/", files[1], " "))
+                        nchar_wout_files <- nchar(gsub("<files>", "", cmd_select))
+                        nchar_avail <- cdo_nchar_max_arglist - nchar_wout_files
+                        nfiles_per_chunk <- floor(nchar_avail/nchar_needed_per_file)
+                        
+                        # if monthly files, do not separate files from within a year
+                        # --> necessary that e.g. `cdo yearsum` sums all files of a year 
+                        if (grepl("<MM>", fpatterns[i])) {
+                            if (years_in[nfiles_per_chunk+1] != years_in[nfiles_per_chunk] + 1) {
+                                one_year_earlier_inds <- which(years_in == years_in[nfiles_per_chunk] - 1)
+                                if (length(one_year_earlier_inds) == 0) {
+                                    stop("this should not happen as all files are of one year and still ",
+                                         "the cdo command is longer than ", cdo_nchar_max_arglist, " characters.")
+                                }
+                                nfiles_per_chunk <- one_year_earlier_inds[length(one_year_earlier_inds)]
+                            } # if next entry is not next year
+                        } # if monthly files
+
+                        cmd_select_chunk_inds <- seq(1, length(files), b=nfiles_per_chunk)
+                        if (max(cmd_select_chunk_inds) < length(files)) {
+                            cmd_select_chunk_inds <- c(cmd_select_chunk_inds, length(files))
+                        } else if (max(cmd_select_chunk_inds) > length(files)) {
+                            stop("this should not happen")
+                        }
+                        nchunks <- length(cmd_select_chunk_inds) - 1
+                        message("--> run cdo selection of ", length(files), 
+                                " files in ", nchunks, " chunk", ifelse(nchunks > 1, "s", ""), 
+                                " of maximum ", nfiles_per_chunk, " files per chunk:")
+                        tmpfile_vec <- fout_vec <- rep(NA, t=nchunks)
+                        cmd_select_list <- cmd_calc_list <- chunk_inds_list <- vector("list", l=nchunks)
+                        for (select_chunki in seq_len(nchunks)) {
+                            inds_chunki <- cmd_select_chunk_inds[select_chunki]:(cmd_select_chunk_inds[select_chunki+1] - 1)
+                            if (select_chunki == nchunks) {
+                                inds_chunki <- cmd_select_chunk_inds[select_chunki]:cmd_select_chunk_inds[select_chunki+1]
+                            }
+                            tmpfile_vec[select_chunki] <- gsub(".nc", paste0("_chunk_", select_chunki, "_of_", nchunks, ".nc"), tmpfile)
+                            fout_vec[select_chunki] <- gsub(".nc", paste0("_chunk_", select_chunki, "_of_", nchunks, ".nc"), fout)
+                            cmd_select_chunki <- gsub("<files>", 
+                                                      paste(paste0(datapaths[i], "/", files[inds_chunki]), collapse=" "), 
+                                                      cmd_select)
+                            cmd_select_chunki <- gsub(tmpfile, tmpfile_vec[select_chunki], cmd_select_chunki)
+                            cmd_select_list[[select_chunki]]$n <- length(inds_chunki)
+                            cmd_select_list[[select_chunki]]$cmd <- cmd_select_chunki
+                            cmd_calc_chunki <- gsub(tmpfile, tmpfile_vec[select_chunki], cmd_calc)
+                            cmd_calc_chunki <- gsub(fout, fout_vec[select_chunki], cmd_calc_chunki)
+                            cmd_calc_list[[select_chunki]]$cmd <- cmd_calc_chunki
+                            chunk_inds_list[[select_chunki]] <- inds_chunki
+                            message("chunk ", select_chunki, "/", nchunks, ": files ", min(inds_chunki), " to ", 
+                                    max(inds_chunki), "\n  --> ", length(inds_chunki), " files from \"", 
+                                    files[min(inds_chunki)], "\" to \"", files[max(inds_chunki)], "\", ",
+                                    "\n  --> nchar(selection cmd) = ", nchar(cmd_select_list[[select_chunki]]$cmd), ") ...")
+                        } # for select_chunki
+                    
+                    } else { # not too long
+                        message("--> this is not longer than `cdo_nchar_max_arglist` = ", cdo_nchar_max_arglist, 
+                                " and does not yield the error \"Argument list too long\"")
+                        cmd_select_list <- cmd_calc_list <- chunk_inds_list <- vector("list", l=1)
+                        cmd_select_list[[1]] <- list(cmd=cmd_select_tmp, n=length(files))
+                        cmd_calc_list[[1]] <- list(cmd=cmd_calc)
+                        chunk_inds_list[[1]] <- 1:length(files)
+                        nchunks <- length(cmd_select_list)
+                        fout_vec <- fout
+                        message("--> run cdo selection of ", length(files), " files in ", 
+                                nchunks, " chunk", ifelse(nchunks > 1, "s", ""), " ...")
+                    }
+
+                } else { 
+                    # else if cdo version >= 1.9.4 
+                    cdo_chain <- "new"
+                    cmd <- paste0(cdoprefix, " ", cdoconvert, 
+                                  #" ", cmdcat, 
+                                  " ", cdocalc, " ", cdoselmon, " ", cdosellevel, " ", cdoselect,  
+                                  " <files> ", fout, " || echo error")
+                    # replace multiple spaces by single spaces
+                    cmd <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd, perl=T)
+                    message("\n", "run `", cmd, "`")
+                    
+                    # check if cmd command is longer than cdo_nchar_max_arglist = 2612710
+                    cmd_tmp <- gsub("<files>", paste(paste0(datapaths[i], "/", files), collapse=" "), cmd)
+                    nchar_cmd <- nchar(substr(cmd_tmp, start=nchar(cdo) + 1, stop=nchar(cmd_tmp))) 
+                    message("\n", "cdo argument list is ", nchar_cmd, " characters long")
+                    
+                    if (nchar_cmd > cdo_nchar_max_arglist) { # too long
+                        message("--> this is longer than `cdo_nchar_max_arglist` = ", 
+                                cdo_nchar_max_arglist, " and would yield the error ",
+                                "\"Argument list too long\"")
+                        stop("check for argument list too long")
                     } else {
-                        for (cmdj in 1:length(replace_inds_open)) {
-                            # check if a variable in the current workspace exists with the same name
-                            pattern <- substr(cmdsin[cmdi], replace_inds_open[cmdj] + 1, replace_inds_close[cmdj] - 1)
-                            if (exists(eval(pattern))) { # variable with the name of the pattern exists
-                                eval(parse(text=paste0("replacement <- ", pattern, "[i]")))
-                            } else { # no such a variable exists
-                                # assume an input file is needed
-                                replacement <- fout
-                                replacement <- gsub(fvarnames[i], pattern, replacement)
-                                if (!file.exists(replacement)) {
-                                    stop("\nfound pattern \"<", pattern, ">\" is not a defined variable in the current workspace",
-                                         " --> assume it should be an input file. however, file\n   \"", replacement, "\"\n",
-                                         "was not found.\n")
+                        cmd_list <- list(list(cmd=cmd_tmp, n=length(files)))
+                        nchunks <- 1
+                        fout_vec <- fout
+                    }
+
+                } # if cdo_version >= 1.9.4 or not
+               
+                # run cdo selection and calculation command either from file (`$ . file` or via base::system(cmd)
+                for (chunki in seq_len(nchunks)) { # for possible chunks if argument is too long
+                    message("\nchunk ", chunki, "/", nchunks, " cdo selection")
+                    if (cdo_run_from_script) {
+                        scriptname <- paste0(postpaths[i], "/tmp_cmd_", Sys.getpid(), "_chunk_", 
+                                             chunki, "_of_", nchunks, ".txt")
+                        if (cdo_chain == "new") {
+                            writeLines(cmd_list[[chunki]]$cmd, con=scriptname)
+                            nfiles_per_chunk <- cmd_list[[chunki]]$n
+                        } else if (cdo_chain == "old") {
+                            writeLines(c(cmd_select_list[[chunki]]$cmd, cmd_calc_list[[chunki]]$cmd), con=scriptname)
+                            nfiles_per_chunk <- cmd_select_list[[chunki]]$n
+                        }
+                        cmd_source <- paste0(". ", scriptname)
+                        message("run `", cmd_source, "`")
+                        if (nfiles_per_chunk > 500) {
+                            message("this may take some time for ", nfiles_per_chunk, " files ...")
+                        }
+                        ticcmd <- Sys.time()
+                        if (file.exists(fout_vec[chunki]) && !cdo_force) {
+                            message("fout_vec[", chunki, "] = ", fout_vec[chunki], 
+                                    " already exists and `cdo_force`=F. skip ...")
+                        } else {
+                            system(cmd_source)
+                        }
+                        toccmd <- Sys.time()
+                        # output file exists?
+                        if (!file.exists(fout_vec[chunki])) {
+                            stop("fout_vec[", chunki, "] = ", fout_vec[chunki], " does not exist but it should")
+                        }
+                        if (clean) {
+                            if (cdo_chain == "old"){
+                                if (nchunks > 1) {
+                                    if (file.exists(tmpfile_vec[chunki])) {
+                                        system(paste0("rm -v ", tmpfile_vec[chunki]))
+                                    }
+                                } else if (nchunks == 1) {
+                                    if (file.exists(tmpfile)) { 
+                                        # tmpfile does not exists if selection step was skipped 
+                                        system(paste0("rm -v ", tmpfile))
+                                    }
                                 }
                             }
-                            # replace found variable/file with pattern in command
-                            message("   replace \"<", pattern, ">\" with \"", replacement, "\" ...")
-                            cmdsout[cmdi] <- gsub(paste0("<", pattern, ">"), replacement, cmdsout[cmdi])
-
-                        } # for all occurences of "<"
-                        message("--> \"", cmdsout[cmdi], "\"")
-                    } # if "<" and ">" were found in command
-                } # for cmdi all commands of cdo_known_cmds$variable
-
-                # run modified cdo commands
-                tmpfiles <- c()
-                for (cmdi in 1:length(cmdsout)) {
-                    cmd <- cmdsout[cmdi]
-                    if (length(cmdsout) > 1) {
-                        if (cmdi == 1) { # first
-                            tmpfile <- paste0(postpaths[i], "/cmdout_", cmdi, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
-                            cmd <- paste0(cmd, " ", tmpfile)
-                            tmpfiles <- c(tmpfiles, tmpfile)
-                        } else if (cmdi == length(cmdsout)) { # last
-                            tmpfile <- paste0(postpaths[i], "/cmdout_", cmdi-1, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
-                            cmd <- paste0(cmd, " ", tmpfile, " ", fout)
-                            tmpfiles <- c(tmpfiles, tmpfile)
-                        } else { # in between
-                            tmpfile <- paste0(postpaths[i], "/cmdout_", cmdi-1, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
-                            cmd <- paste0(cmd, " ", tmpfile)
-                            tmpfiles <- c(tmpfiles, tmpfile)
-                            tmpfile <- paste0(postpaths[i], "/cmdout_", cmdi, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
-                            cmd <- paste0(cmd, " ", tmpfile)
-                            tmpfiles <- c(tmpfiles, tmpfile)
+                            system(paste0("rm -v ", scriptname))
                         }
-                    } else { # only 1 cmd
-                        cmd <- paste0(cmd, " ", fout)
-                    }
-                    message("\nrun ", cmdi, "/", length(cmdsout), ": `", cmd, "`")
-                    system(cmd)
-                } # run all (possibly modifed) user commands
-
-                if (clean) { 
-                    for (fi in tmpfiles) {
-                        if (file.exists(fi)) {
-                            system(paste0("rm -v ", fi))
-                        }
-                    }
-                }
-               
-                # stop script here
-                toc <- Sys.time()
-                elapsed[[i]] <- toc - tic
-                return(message("\nskip rest of script"))
-
-            # else requested variable is not defined in `cdo_known_cmds`
-            } else { 
-
-                message("and no command was defined in `cdo_known_cmds` in namelist.post.r")
-                stop()
-
-            } # if special case if requested variable is one of the wiso delta variables or not
-            
-        # else if requested variable was found in first found file
-        } else { 
-           
-            message("--> requested variable was found in first file")
-            if (clean) system(paste0("rm -v ", tmpfile))
-        
-        } # finished check if requested variable is in first found file
-
-        ## continue with default case; not special wiso delta variables
-        message("\nconstruct cdo command chain ...")
-
-        # nth command: cat/mergetime/etc. command
-        if (modes[i] == "timmean") {
-            nmax <- as.integer(system("ulimit -n", intern=T))
-            if (length(files) > nmax) {
-                stop("cannot compute ", modes[i], " of ", length(files), 
-                     " files because `cdo ensmean` maximum files is ", nmax)
-            }
-            cmdcat <- "-O ensmean"
-        } else if (modes[i] == "fldmean") {
-            if (F) { # could not figure out a significant time difference between cat and mergetime
-                cmdcat <- "cat"
-            } else if (T) {
-                cmdcat <- "mergetime"
-            }
-        } else {
-            #stop("cat/mergetime not defined for mode '", modes[i], "' not defined.")
-        } # which cat/mergetime depending on mode
-
-        # construct necessary cdo commands
-        # (n-2)-th command: calculation
-        cdocalc <- paste0("-", modes[i]) # e.g. "-fldmean"
-        if (modes[i] == "select") {
-            cdocalc <- "" # variable selection only
-        } else if (modes[i] == "volint") {
-            message("only test")
-            cdocalc <- "-fldsum -vertsum"
-        } # which calculation depending on mode
-        message("`modes[", i, "]` = \"", modes[i], "\" --> `cdocalc` = \"", cdocalc, "\" ...")
-
-        # (n-3)-th command: select level
-        cdosellevel <- "" # default
-        if (!is.na(levs_out[i])) {
-            cdosellevel <- paste0("-sellevel,", paste0(levs_out[i], collapse=","))
-        }
-        
-        # select area
-        if (areas_out[i] != "global") {
-            stop("not yettt")
-        }
-
-        # construct cdo command
-        # cdo version must be >= 1.9.4 to chain commands
-        #   `-select,name=` 
-        # and 
-        #   `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc.
-        if (cdo_version[1] < 1 ||
-            cdo_version[1] == 1 && cdo_version[2] < 9 || 
-            cdo_version[1] == 1 && cdo_version[2] > 8 && cdo_version[3] < 4) { 
-            
-            # if cdo version < 1.9.4
-            cdo_chain <- "old"
-            message("\n", "cdo version ", paste(cdo_version, collapse="."), " < 1.9.4 --> have to run separate")
-            message("   `-select,name=`\n",
-                    "and possible\n",
-                    "   `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc.\n",
-                    "cdo commands:")
-
-            # 1st cmd: `-select,name=`
-            tmpfile <- paste0(postpaths[i], "/tmp_selection_", Sys.getpid(), ".nc")
-            cmd_select <- paste0(cdoprefix, " ", cdoselect,  
-                                 " <files> ", tmpfile, " || echo error")
-            # 2nd cmd (if needed):
-            cmd_calc <- "" # default: nothing
-            if (cdoconvert != "" || cdosellevel != "" || cdoselmon != "" || modes[i] != "select") {
-                cmd_calc <- cdoprefix
-            }
-            # 2nd cmd (if needed): `-f <type copy>`
-            if (cdoconvert != "") {
-                cmd_calc <- paste0(cmd_calc, " ", cdoconvert)
-            }
-            # 2nd cmd (if needed): `-fldmean` etc.
-            if (modes[i] != "select") {
-                cmd_calc <- paste0(cmd_calc, " ", cdocalc) 
-            }
-            # 2nd cmd (if needed): `-selmon`
-            if (cdoselmon != "") {
-                cmd_calc <- paste0(cmd_calc, " ", cdoselmon)
-            }
-            # 2nd cmd (if needed): `-sellevel`
-            if (cdosellevel != "") {
-                cmd_calc <- paste0(cmd_calc, " ", cdosellevel)
-            }
-            # 2nd cmd (if needed: <add further>
-            # ...
-            # 2nd cmd (if needed): in out
-            if (cmd_calc != "") {
-                # input: result of `-select,name=`
-                # output: result of `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc. --> wanted `fout`
-                cmd_calc <- paste0(cmd_calc, " ", tmpfile, " ", fout) 
-            } # if cmd_calc != ""
-           
-            # 2nd cmd alternative: just selection: nothing to do but renaming to wanted `fout`
-            if (cmd_calc == "") {
-                # in: result of `-select,name=`
-                # out: wanted `fout`
-                cmd_calc <- paste0("cp -v ", tmpfile, " ", fout, " || echo error") 
-            }
-            message("\nrun\n",
-                    "   1: `", cmd_select, "`\n",
-                    "   2: `", cmd_calc, "`")
-            
-            # replace multiple spaces by single spaces
-            nchar_with_mulitiple_spaces <- nchar(cmd_select)
-            cmd_select <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd_select, perl=T)
-            nchar_with_single_spaces <- nchar(cmd_select)
-            #message("removed ", nchar_with_mulitiple_spaces-nchar_with_single_spaces, 
-            #        " multiple spaces from selection command")
-            
-            # replace <files> with actual files
-            #files <- files[1:29355]
-            cmd_select_tmp <- gsub("<files>", 
-                                   paste(paste0(datapaths[i], "/", files), collapse=" "), 
-                                   cmd_select)
-            
-            # check if cmd_select command is longer than cdo_nchar_max_arglist = 2612710
-            nchar_cmd_select <- nchar(substr(cmd_select_tmp, start=nchar(cdo) + 1, stop=nchar(cmd_select_tmp))) 
-            message("\n", "cdo selection argument list is ", nchar_cmd_select, " characters long")
-            if (nchar_cmd_select > cdo_nchar_max_arglist) { # too long
+                    } else if (!cdo_run_from_script) {
+                        stop("update for cdo_chain old/new")
+                        ticcmd <- Sys.time()
+                        system(cmd, wait=T)
+                        toccmd <- Sys.time()
+                    } # if cdo_run_from_script
+                    
+                    # elapsed
+                    elapsedcmd <- toccmd - ticcmd
+                    message("chunk ", chunki, "/", nchunks, " selection and calculation took ", 
+                            elapsedcmd , " ", attributes(elapsedcmd)$units, " for ", 
+                            nfiles_per_chunk, " file", ifelse(nfiles_per_chunk > 1, "s", ""))
                 
-                # find maximum number of files per chunk
-                message("--> this is longer than `cdo_nchar_max_arglist` = ", cdo_nchar_max_arglist, 
-                        " and would yield the error \"Argument list too long\"")
-                nchar_needed_per_file <- nchar(paste0(datapaths[i], "/", files[1], " "))
-                nchar_wout_files <- nchar(gsub("<files>", "", cmd_select))
-                nchar_avail <- cdo_nchar_max_arglist - nchar_wout_files
-                nfiles_per_chunk <- floor(nchar_avail/nchar_needed_per_file)
-                
-                # if monthly files, do not separate files from within a year
-                # --> necessary that e.g. `cdo yearsum` sums all files of a year 
-                if (grepl("<MM>", fpatterns[i])) {
-                    if (years_in[nfiles_per_chunk+1] != years_in[nfiles_per_chunk] + 1) {
-                        one_year_earlier_inds <- which(years_in == years_in[nfiles_per_chunk] - 1)
-                        if (length(one_year_earlier_inds) == 0) {
-                            stop("this should not happen as all files are of one year and still ",
-                                 "the cdo command is longer than ", cdo_nchar_max_arglist, " characters.")
-                        }
-                        nfiles_per_chunk <- one_year_earlier_inds[length(one_year_earlier_inds)]
-                    } # if next entry is not next year
-                } # if monthly files
+                } # for chunki: possible chunks if argument is too long
+         
+            } # finished check if requested variable is in first found file
 
-                cmd_select_chunk_inds <- seq(1, length(files), b=nfiles_per_chunk)
-                if (max(cmd_select_chunk_inds) < length(files)) {
-                    cmd_select_chunk_inds <- c(cmd_select_chunk_inds, length(files))
-                } else if (max(cmd_select_chunk_inds) > length(files)) {
-                    stop("this should not happen")
-                }
-                nchunks <- length(cmd_select_chunk_inds) - 1
-                message("--> run cdo selection of ", length(files), 
-                        " files in ", nchunks, " chunk", ifelse(nchunks > 1, "s", ""), 
-                        " of maximum ", nfiles_per_chunk, " files per chunk:")
-                tmpfile_vec <- fout_vec <- rep(NA, t=nchunks)
-                cmd_select_list <- cmd_calc_list <- chunk_inds_list <- vector("list", l=nchunks)
-                for (select_chunki in seq_len(nchunks)) {
-                    inds_chunki <- cmd_select_chunk_inds[select_chunki]:(cmd_select_chunk_inds[select_chunki+1] - 1)
-                    if (select_chunki == nchunks) {
-                        inds_chunki <- cmd_select_chunk_inds[select_chunki]:cmd_select_chunk_inds[select_chunki+1]
-                    }
-                    tmpfile_vec[select_chunki] <- gsub(".nc", paste0("_chunk_", select_chunki, "_of_", nchunks, ".nc"), tmpfile)
-                    fout_vec[select_chunki] <- gsub(".nc", paste0("_chunk_", select_chunki, "_of_", nchunks, ".nc"), fout)
-                    cmd_select_chunki <- gsub("<files>", 
-                                              paste(paste0(datapaths[i], "/", files[inds_chunki]), collapse=" "), 
-                                              cmd_select)
-                    cmd_select_chunki <- gsub(tmpfile, tmpfile_vec[select_chunki], cmd_select_chunki)
-                    cmd_select_list[[select_chunki]]$n <- length(inds_chunki)
-                    cmd_select_list[[select_chunki]]$cmd <- cmd_select_chunki
-                    cmd_calc_chunki <- gsub(tmpfile, tmpfile_vec[select_chunki], cmd_calc)
-                    cmd_calc_chunki <- gsub(fout, fout_vec[select_chunki], cmd_calc_chunki)
-                    cmd_calc_list[[select_chunki]]$cmd <- cmd_calc_chunki
-                    chunk_inds_list[[select_chunki]] <- inds_chunki
-                    message("chunk ", select_chunki, "/", nchunks, ": files ", min(inds_chunki), " to ", 
-                            max(inds_chunki), "\n  --> ", length(inds_chunki), " files from \"", 
-                            files[min(inds_chunki)], "\" to \"", files[max(inds_chunki)], "\", ",
-                            "\n  --> nchar(selection cmd) = ", nchar(cmd_select_list[[select_chunki]]$cmd), ") ...")
-                } # for select_chunki
-            
-            } else { # not too long
-                message("--> this is not longer than `cdo_nchar_max_arglist` = ", cdo_nchar_max_arglist, 
-                        " and does not yield the error \"Argument list too long\"")
-                cmd_select_list <- cmd_calc_list <- chunk_inds_list <- vector("list", l=1)
-                cmd_select_list[[1]] <- list(cmd=cmd_select_tmp, n=length(files))
-                cmd_calc_list[[1]] <- list(cmd=cmd_calc)
-                chunk_inds_list[[1]] <- 1:length(files)
-                nchunks <- length(cmd_select_list)
-                fout_vec <- fout
-                message("--> run cdo selection of ", length(files), " files in ", 
-                        nchunks, " chunk", ifelse(nchunks > 1, "s", ""), " ...")
-            }
-
-        } else { 
-            # else if cdo version >= 1.9.4 
-            cdo_chain <- "new"
-            cmd <- paste0(cdoprefix, " ", cdoconvert, 
-                          #" ", cmdcat, 
-                          " ", cdocalc, " ", cdoselmon, " ", cdosellevel, " ", cdoselect,  
-                          " <files> ", fout, " || echo error")
-            # replace multiple spaces by single spaces
-            cmd <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd, perl=T)
-            message("\n", "run `", cmd, "`")
-            
-            # check if cmd command is longer than cdo_nchar_max_arglist = 2612710
-            cmd_tmp <- gsub("<files>", paste(paste0(datapaths[i], "/", files), collapse=" "), cmd)
-            nchar_cmd <- nchar(substr(cmd_tmp, start=nchar(cdo) + 1, stop=nchar(cmd_tmp))) 
-            message("\n", "cdo argument list is ", nchar_cmd, " characters long")
-            
-            if (nchar_cmd > cdo_nchar_max_arglist) { # too long
-                message("--> this is longer than `cdo_nchar_max_arglist` = ", 
-                        cdo_nchar_max_arglist, " and would yield the error ",
-                        "\"Argument list too long\"")
-                stop("check for argument list too long")
-            } else {
-                cmd_list <- list(list(cmd=cmd_tmp, n=length(files)))
-                nchunks <- 1
-                fout_vec <- fout
-            }
-
-        } # if cdo_version >= 1.9.4 or not
+        } # if run special function or default way
        
-        # run cdo selection and calculation command either from file (`$ . file` or via base::system(cmd)
-        for (chunki in seq_len(nchunks)) { # for possible chunks if argument is too long
-            message("\nchunk ", chunki, "/", nchunks, " cdo selection")
-            if (cdo_run_from_script) {
-                scriptname <- paste0(postpaths[i], "/tmp_cmd_", Sys.getpid(), "_chunk_", 
-                                     chunki, "_of_", nchunks, ".txt")
-                if (cdo_chain == "new") {
-                    writeLines(cmd_list[[chunki]]$cmd, con=scriptname)
-                    nfiles_per_chunk <- cmd_list[[chunki]]$n
-                } else if (cdo_chain == "old") {
-                    writeLines(c(cmd_select_list[[chunki]]$cmd, cmd_calc_list[[chunki]]$cmd), con=scriptname)
-                    nfiles_per_chunk <- cmd_select_list[[chunki]]$n
-                }
-                cmd_source <- paste0(". ", scriptname)
-                message("run `", cmd_source, "`")
-                if (nfiles_per_chunk > 500) {
-                    message("this may take some time for ", nfiles_per_chunk, " files ...")
-                }
-                ticcmd <- Sys.time()
-                if (file.exists(fout_vec[chunki]) && !cdo_force) {
-                    message("fout_vec[", chunki, "] = ", fout_vec[chunki], 
-                            " already exists and `cdo_force`=F. skip ...")
-                } else {
-                    system(cmd_source)
-                }
-                toccmd <- Sys.time()
-                # output file exists?
-                if (!file.exists(fout_vec[chunki])) {
-                    stop("fout_vec[", chunki, "] = ", fout_vec[chunki], " does not exist but it should")
-                }
-                if (clean) {
-                    if (cdo_chain == "old"){
-                        if (nchunks > 1) { 
-                            system(paste0("rm -v ", tmpfile_vec[chunki]))
-                        } else if (nchunks == 1) {
-                            system(paste0("rm -v ", tmpfile))
-                        }
-                    }
-                    system(paste0("rm -v ", scriptname))
-                }
-            } else if (!cdo_run_from_script) {
-                stop("update for cdo_chain old/new")
-                ticcmd <- Sys.time()
-                system(cmd, wait=T)
-                toccmd <- Sys.time()
-            } # if cdo_run_from_script
-            
-            # elapsed
-            elapsedcmd <- toccmd - ticcmd
-            message("chunk ", chunki, "/", nchunks, " selection and calculation took ", 
-                    elapsedcmd , " ", attributes(elapsedcmd)$units, " for ", 
-                    nfiles_per_chunk, " file", ifelse(nfiles_per_chunk > 1, "s", ""))
-        
-        } # for chunki: possible chunks if argument is too long
-     
-        # from here, cdo selection and calculation finished for all chunks
+
+        ## from here, cdo selection and calculation or commands from `cdo_known_cmds` or special functions are finished for all chunks
         # -> time dimension values are still the original, `new_date_list` was not applied yet
         # -> time dimension values are probably shifted from monthly to annual by e.g. `cdo yearsum`
-        # -> chunks are not catted yet
+        # -> chunks, if any, are not catted yet
+        #stop("asd")
 
         #todo: compare filename and `froms`/`tos` dates with time dimension values from the actual nc file
         
         # change time values of the time dimension if new origin is set
         if (!is.null(new_date_list)) {
 
-            message("\n`new_date_list[[", i, "]]` is given\n",
-                    " --> check time dimension values of ", nchunks, " chunk", 
+            message("\n`new_date_list[[", i, "]]` is given:")
+            cat(capture.output(str(new_date_list[[i]])), sep="\n")
+            message(" --> check time dimension values of ", nchunks, " chunk", 
                     ifelse(nchunks > 1, "s", ""), " and apply the new origin if necessary ...")
 
             # get time dimension values of result of cdo select and calc
@@ -1016,6 +1036,9 @@ for (i in 1:nsettings) {
 
             } # for chunki nchunks
 
+            message("\n`cdo showdate` of selection and calculation result yields `dates_in_list`:")
+            cat(capture.output(str(dates_in_list)), sep="\n")
+            
             # construct and apply new dates
             ntime_fout <- sum(sapply(sapply(dates_in_list, "[", "dates"), length)) # all time points of final fout
             if (!is.null(new_date_list[[i]]$years)) {
@@ -1413,15 +1436,27 @@ for (i in 1:nsettings) {
         message("\n", "`cdo_set_rel_time`=F --> do not set relative time axis ...")
     }
 
-    # change from code to proper variable name
-    #if (filetype == "grb") {
-    #    stop("update")
-    #    cmd <- paste0("cdo ", cdo_silent, " ", cdo_OpenMP_threads, " chname,var", codes[i], ",", varnames[i], " ", 
-    #                  fout_prep[fi,k], " ", fout_prep[fi,k])
-    #    message("\n", cmd)
-    #    system(cmd, wait=T)
-    #}
-    
+    # run special functions in the end    
+    if (models[i] == "mpiom1" && any(fvarnames[i] == c("amoc", "gmoc"))) { # run mpiom_moc_make_bottom_topo()
+            
+        message("\n`models[", i, "]` = \"", models[i], "\" and `fvarnames[", i, "]` = ",
+                "\"", fvarnames[i], "\" --> run mpiom_moc_make_bottom_topo() ...")
+        
+        cmd <- "mpiom_moc_make_bottom_topo(cdo=cdo, varname=fvarnames[i], fin=fout, fout=fout"
+        if (exists("mpiom_moc_make_bottom_topo_arg_list")) {
+            for (argi in seq_along(mpiom_moc_make_bottom_topo_arg_list[[i]])) {
+                cmd <- paste0(cmd, ", ", 
+                              names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi], 
+                              "=mpiom_moc_make_bottom_topo_arg_list[[", i, "]]$",
+                              names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi])
+            }
+        }
+        cmd <- paste0(cmd, ")")
+        message("run `", cmd, "`")
+        eval(parse(text=cmd))
+   
+    } # if mpiom1 and *moc
+
     toc <- Sys.time()
     elapsed[[i]] <- toc - tic
     message("\n", "setting ", i, "/", nsettings , " took ", elapsed[[i]], " ", 
