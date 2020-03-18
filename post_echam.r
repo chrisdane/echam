@@ -92,13 +92,13 @@ exist_checks <- c("datapaths", "fpatterns", "fvarnames",
                   "models", "froms", "tos", "modes")
 if (!all(sapply(exist_checks, exists))) {
     missing_vars <- !sapply(exist_checks, exists)
-    stop("you have to define the variable", 
+    stop("\nyou have to define the variable", 
          ifelse(length(which(missing_vars)) > 1, "s", ""),
          " \"", paste0(names(missing_vars)[missing_vars], collapse="\", \""), "\"")
 }
 if (any(file.access(datapaths, mode=4) != 0)) { # check read permission
     nonreadable_paths <- which(file.access(datapaths, mode=2) != 0)
-    stop("not existing/no permission to read of datapath", ifelse(length(nonreadable_paths) > 1, "s", ""),
+    stop("\nnot existing/no permission to read of datapath", ifelse(length(nonreadable_paths) > 1, "s", ""),
          " '", paste0(datapaths[nonreadable_paths], collapse="', '"), "'.")
 }
 datapaths <- normalizePath(datapaths)
@@ -1388,7 +1388,8 @@ for (i in 1:nsettings) {
                             } else { # case 2
                                 message("\n--> found timesteps per year are not of length 366\n",
                                         "--> assume that data is not daily\n",
-                                        "--> set day of wrong february 29 timesteps to 28")
+                                        "--> simply set day of wrong february 29 timesteps to 28\n",
+                                        "--> define another case here if this is not correct")
                                 days_out[feb29_nonleap_inds] <- 28
                             } # case 1 or 2
 
