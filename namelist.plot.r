@@ -34,9 +34,8 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 # options across settings
-mode <- "monmean"
-# echam:
-#mode <- "select"
+#mode <- "monmean"
+mode <- "select"
 #mode <- "fldmean" 
 #mode <- "timmean" 
 #mode <- "timsum"
@@ -123,12 +122,12 @@ if (F) { # awi-esm-1-1-lr hist
 } else if (F) { # awi-esm-1-1-lr 1pct 4CO2
     #models <- rep("echam6", t=2)
     models <- rep("fesom", t=2)
-    if (T) {
+    if (F) {
         prefixes <- c("awi-esm-1-1-lr_1percCO2_monthly_mean",
                       "awi-esm-1-1-lr_4CO2_monthly_mean")
     }
     names_short <- c("1pctCO2", "abrupt-4xCO2") 
-    if (T) {
+    if (F) {
         varnames_in <- rep("mlotst", t=2)
         varnames_in <- rep("thetao", t=2)
         #varnames_in <- rep("so", t=2)
@@ -140,7 +139,7 @@ if (F) { # awi-esm-1-1-lr hist
         remove_mean_tos <- remove_mean_froms
         depth_fromsp <- rep(-3500, t=2)
     }
-    if (T) { # transient pi last 100
+    if (F) { # transient pi last 100
         fromsf <- c(1850, 1850)
         tosf <- c(2099, 2099)
     } else if (F) { # ltm last 30
@@ -150,7 +149,7 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- rep(60, t=2)
     n_mas <- rep(36, t=2)
     #n_mas <- rep(1, t=2)
-    if (T) {
+    if (F) {
         names_legend <- c(eval(substitute(expression(paste("1%CO"[2])))),
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2])))))
     } else if (F) {
@@ -163,38 +162,41 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (F) { # Hol-T with versus without orbital acceleration
+} else if (T) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10", "cosmos-aso-wiso_echam5_Hol-T")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_main_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
-    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
+    #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
+    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
     models <- c("echam5", "echam5")
     names_short <- c("Hol-Tx10", "Hol-T")
     names_legend <- names_short
     fromsf <- c("0001", "0004")
     #tosf <- c("7001", "6173")
-    tosf <- c("7001", "6821")
+    #tosf <- c("7001", "6821")
+    tosf <- c("7001", "7000")
     new_origins <- c(-7000, -6996) 
     time_frequencies <- c("monthly", "monthly")
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- c(1, 1)
-    n_mas <- c(120, 1200)
-    #remove_mean_froms <- c(0, -179)
-    #remove_mean_tos <- c(0, -179)
-    #seasonsf <- c("annual", "annual")
-    #seasonsp <- c("Jun", "Jun")
-    #seasonsp <- c("Dec", "Dec")
-    varnames_in <- c("temp2", "temp2")
+    #varnames_in <- c("temp2", "temp2")
     #varnames_in <- c("srad0d", "srad0d")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_tsurf", "lm_wisoaprt_d_sellevel_2_as_tsurf")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptsurf", "lm_wisoaprt_d_sellevel_2_as_ptsurf")
+    varnames_in <- c("lm_temp2_as_time", "lm_temp2_as_time")
+    seasonsf <- c("annual", "annual")
+    #seasonsp <- c("Jun", "Jun")
+    #seasonsp <- c("Dec", "Dec")
+    #n_mas <- c(1, 1)
+    n_mas <- c(1200, 1200)
+    #remove_mean_froms <- c(0, -179)
+    #remove_mean_tos <- c(0, -179)
     #areas <- c("ladoga_remapnn", "ladoga_remapnn")
     #areas <- c("shuchye_remapnn", "shuchye_remapnn")
     #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapnn")
     #areas <- c("taymyr_remapnn", "taymyr_remapnn")
     #areas <- c("emanda_remapnn", "emanda_remapnn")
-    areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
+    #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
 
 } else if (F) { # temp2 vs ptemp of Hol-T
     prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=2)
@@ -216,7 +218,7 @@ if (F) { # awi-esm-1-1-lr hist
 } else if (F) { # awi-esm-1-1-lr deck anomlies vs pi
     models <- rep("echam6", t=3)
     #models <- rep("fesom", t=3)
-    if (T) {
+    if (F) {
         prefixes <- c("hist_minus_piControl_echam6_echammon_awi-esm-1-1-lr",
                       "1percCO2_minus_piControl_echam6_echammon_awi-esm-1-1-lr",
                       "4CO2_minus_piControl_echam6_echammon_awi-esm-1-1-lr")
@@ -226,7 +228,7 @@ if (F) { # awi-esm-1-1-lr hist
                       "awi-esm-1-1-lr_4CO2_minus_piControl_monthly_mean")
     }
     names_short <- c("hist", "1pctCO2", "abrupt-4xCO2") 
-    if (T) {
+    if (F) {
         varnames_in <- rep("temp2", t=3)
     } else if (F) {   
         varnames_in <- rep("tos", t=3)
@@ -239,7 +241,7 @@ if (F) { # awi-esm-1-1-lr hist
         names_legend <- c("historical", 
                           eval(substitute(expression(paste("1%CO"[2])))),
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2])))))
-    } else if (T) {
+    } else if (F) {
         names_legend <- c(paste0("historical ", fromsf[1], "-", tosf[1], " mean minus piControl"),
                           #paste0("historical ", fromsp[2], "-", tosp[2], " mean"),
                           eval(substitute(expression(paste("1%CO"[2], " last 30 years mean minus piControl")))),
@@ -276,7 +278,7 @@ if (F) { # awi-esm-1-1-lr hist
                       "hist_echam6_echammon_awi-esm-1-1-lr",
                       "1percCO2_echam6_echammon_awi-esm-1-1-lr",
                       "4CO2_echam6_echammon_awi-esm-1-1-lr")
-    } else if (T) { # fesom
+    } else if (F) { # fesom
         prefixes <- c("awi-esm-1-1-lr_piControl_monthly_mean",
                       "awi-esm-1-1-lr_hist_monthly_mean",
                       "awi-esm-1-1-lr_1percCO2_monthly_mean",
@@ -307,7 +309,7 @@ if (F) { # awi-esm-1-1-lr hist
     } else if (F) {
         varnames_in <- rep("siarean", t=4)
         areas <- rep("arctic", t=4)
-    } else if (T) {
+    } else if (F) {
         varnames_in <- rep("mlotst", t=4)
         varnames_in <- rep("thetao", t=4)
         #varnames_in <- rep("so", t=4)
@@ -331,7 +333,7 @@ if (F) { # awi-esm-1-1-lr hist
         #tosp <- c(1849, 2014, 2099, 2099)
         fromsp <- c(1849-99, 1850, 1850, 1850)
         tosp <- c(1849, 2014, 2099, 2099)
-    } else if (T) { # tranient pi last 30
+    } else if (F) { # tranient pi last 30
         fromsf <- c(1912, 1850, 1850, 1850)
         tosf <- c(1941, 2014, 2099, 2099)
         new_origins <- c(1912-91, NA, NA, NA)
@@ -349,7 +351,7 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- rep(60, t=4)
     n_mas <- rep(36, t=4)
     #n_mas <- rep(1, t=4)
-    if (T) {
+    if (F) {
         names_legend <- c("piControl", 
                           "historical", 
                           eval(substitute(expression(paste("1%CO"[2])))),
@@ -376,7 +378,7 @@ if (F) { # awi-esm-1-1-lr hist
                       "1percCO2_echam6_echammon_awi-esm-1-1-lr",
                       "4CO2_echam6_echammon_awi-esm-1-1-lr",
                       "MM_01.01_echam_awi-esm-1-1-lr_lgm")
-    } else if (T) {
+    } else if (F) {
         prefixes <- c("hist_echam6_echam_awi-esm-1-1-lr",
                       "1percCO2_echam6_echam_awi-esm-1-1-lr",
                       "4CO2_echam6_echam_awi-esm-1-1-lr",
@@ -395,7 +397,7 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("1%CO"[2])))),
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2])))),
                           "LGM")
-    } else if (T) {
+    } else if (F) {
         names_legend <- c(paste0("historical ", seasonsf[1], " ", fromsf[1], "-", tosf[1]),
                           eval(substitute(expression(paste("1%CO"[2], " ", season, " ", from, "-", to)),
                                           list(season=seasonsf[2], from=fromsf[2], to=tosf[2]))),
@@ -460,7 +462,7 @@ if (F) { # awi-esm-1-1-lr hist
     varnames_in <- rep("aprt", t=6)
     areas <- c("ladoga_remapnn", "shuchye_remapnn", "levinson-lessing_remapnn", "taymyr_remapnn", "emanda_remapnn", "elgygytgyn_remapnn")
 
-} else if (T) { # compare moc time series
+} else if (F) { # compare moc time series
     prefixes <- rep("cosmos-aso-wiso_echam5_Hol-Tx10_fort_75", t=6)
     models <- rep("mpiom1", t=6)
     names_short <- rep("Hol-Tx10", t=6)
@@ -502,7 +504,7 @@ alpha <- 0.2 # transparent: 0,1 (0 fully transparent)
 add_xgrid <- F
 add_ygrid <- F
 add_zeroline <- T
-add_unsmoothed <- F
+add_unsmoothed <- T
 add_smoothed <- T
 # time:
 add_sd <- F
@@ -541,6 +543,6 @@ plot_redfit <- F
 # map plot options
 proj <- "rectangular" #"rectangular"
 add_land <- T
-reorder_lon_from_0360_to_180180 <- F
+reorder_lon_from_0360_to_180180 <- T
 add_grid <- F
 

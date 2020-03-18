@@ -63,7 +63,7 @@ if (F) { # old hist
     
 } else if (F) { # pi
     datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
-    if (T) {
+    if (F) {
         fpatterns <- "piControl_echam6_echammon_<YYYY><MM>.grb"
         fvarnames <- "temp2"
         codes <- 167
@@ -103,19 +103,19 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
-    models <- "echam5"
+    #models <- "echam5"
     models <- "mpiom1"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
-    #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
-    fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc"
+    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
+    #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_fort_75"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_fort_75"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
@@ -129,8 +129,10 @@ if (F) { # old hist
     #fvarnames <- "ptemp"
     #fvarnames <- "ptsurf"
     #fvarnames <- "c25_TMERCI3" # Mass_Transport_in_Atlantic_at_50N [m3 s-1]
-    fvarnames <- "amoc"
-    codes <- 101
+    #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
+    fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
+    #fvarnames <- "amoc"
+    #codes <- 101
     mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(setup="GR30", nlev="L40"), 
                                                      reg_res=c(nlon=360, nlat=180)))
     mpiom_moc_extract_ts_arg_list <- list(list(sellevidx=list(c(from=15, to=31), # 1
@@ -138,17 +140,25 @@ if (F) { # old hist
                                                               c(from=1, to=40), # 3
                                                               c(from=1, to=40), # 4
                                                               c(from=1, to=40), # 5
-                                                              c(from=1, to=40)), # 6
+                                                              c(from=15, to=31), # 6
+                                                              c(from=1, to=40), # 7
+                                                              c(from=15, to=31) # 8
+                                                              ),
                                                sellonlatbox=list(c(lon1=0, lon2=0, lat1=45, lat2=60), # 1
                                                                  c(lon1=0, lon2=0, lat1=30, lat2=60), # 2
                                                                  c(lon1=0, lon2=0, lat1=45, lat2=60), # 3
                                                                  c(lon1=0, lon2=0, lat1=30, lat2=60), # 4
                                                                  c(lon1=0, lon2=0, lat1=26.5, lat2=26.5), # 5
-                                                                 c(lon1=0, lon2=0, lat1=50, lat2=50)))) # 6
-    #modes <- "select"
+                                                                 c(lon1=0, lon2=0, lat1=26.5, lat2=26.5), # 6
+                                                                 c(lon1=0, lon2=0, lat1=50, lat2=50), # 7
+                                                                 c(lon1=0, lon2=0, lat1=50, lat2=50) # 8
+                                                                 )
+                                              ) # setting 1
+                                          )
+    modes <- "select"
     #modes <- "timmean"
     #modes <- "yearmean"
-    modes <- "monmean"
+    #modes <- "monmean"
     #modes <- "ymonmean"
     #modes <- "fldmean"
     #modes <- "yearsum"
@@ -169,14 +179,14 @@ if (F) { # old hist
     } else if (modes[1] != "timmean") {
         # monthly:
         new_date_list <- list(list(years=rep(seq(1, b=10, l=length(froms:tos)), e=12), nc_time_origin=1))
-        if (grepl("_main_mm", prefixes[1])) {
+        if (grepl("_main_mm", fpatterns[1])) {
             # 1 missing Hol-Tx10 *_main_mm_* file: 334812 (Dec 2530 BP; model year 448)
             if (any(new_date_list[[1]]$years == 4471)) {
                 message("remove Dec of 4471")
                 new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
             }
         }
-        if (grepl("_wiso_mm", prefixes[1])) {
+        if (grepl("_wiso_mm", fpatterns[1])) {
             # 2 missing Hol-Tx10 *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
             if (any(new_date_list[[1]]$years == 4471)) {
                 message("remove Nov+Dec of 4471")
@@ -188,7 +198,7 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
     #models <- "echam5"
@@ -361,7 +371,7 @@ if (F) { # old hist
                        "hist_echam6_echam_<YYYY><MM>.nc",
                        "1percCO2_echam6_echam_<YYYY><MM>.nc",
                        "4CO2_echam6_echam_<YYYY><MM>.nc")
-    } else if (T) {
+    } else if (F) {
         fpatterns <- c("piControl_echam6_echammon_<YYYY><MM>.grb",
                        "hist_echam6_echammon_<YYYY><MM>.nc",
                        "1percCO2_echam6_echammon_<YYYY><MM>.nc",

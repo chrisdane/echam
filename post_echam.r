@@ -1347,7 +1347,7 @@ for (i in 1:nsettings) {
                         feb29_nonleap_inds <- which(feb29_inds & !leap_inds)
                         if (length(feb29_nonleap_inds) > 0) {
 
-                            message("new time would yield these ", length(feb29_nonleap_inds), 
+                            message("\nnew time would yield these ", length(feb29_nonleap_inds), 
                                     " february 29 dates in non-leap years:")
                             ht(dates_out[feb29_nonleap_inds])
                             
@@ -1362,8 +1362,8 @@ for (i in 1:nsettings) {
                             }
                             npy_unique <- unique(npy)
                             for (npy_uniquei in seq_along(npy_unique)) {
-                                message("\nyears that occur ", npy_unique[npy_uniquei], " times:")
-                                cat(capture.output(str(years_in_chunki[which(npy == npy_unique[npy_uniquei])])), sep="\n")
+                                message("\nyears with wrong february 29 that occur ", npy_unique[npy_uniquei], " times:")
+                                cat(capture.output(str(feb29_years[which(npy == npy_unique[npy_uniquei])])), sep="\n")
                             }
                             if (length(npy_unique) == 1 && npy_unique == 366) { # case 1
                                 message("\n--> found ", npy_unique, " timesteps per year\n",
@@ -1746,16 +1746,9 @@ for (i in 1:nsettings) {
 
         # change from/to in final fout if new dates were applied
         if (!is.null(new_date_list[[i]]$years)) {
-            stop("update")
-            message("\nupdate new output years YYYY in fout ...")
             cmd <- paste0("mv ", fout, " ")
-            if (!is.null(new_date_list[[i]]$years)) {
-                from_new <- min(new_date_list[[i]]$years)
-                to_new <- max(new_date_list[[i]]$years)
-            } else {
-                from_new <- range(sapply(dates_out_list, "[", "years"))[1]
-                to_new <- range(sapply(dates_out_list, "[", "years"))[2]
-            }
+            from_new <- range(sapply(dates_out_list, "[", "years"))[1]
+            to_new <- range(sapply(dates_out_list, "[", "years"))[2]
             fout <- gsub(paste0(froms[i], "-", tos[i]), 
                          paste0(sprintf(paste0("%0", nchar(froms[i]), "i"), from_new), "-",
                                 sprintf(paste0("%0", nchar(tos[i]), "i"), to_new)),

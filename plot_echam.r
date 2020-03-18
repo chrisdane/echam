@@ -695,6 +695,7 @@ codesf <- codes
 codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
 if (!exists("fromsp")) fromsp <- rep(NA, t=nsettings)
 if (!exists("tosp")) tosp <- rep(NA, t=nsettings)
+froms_plot <- tos_plot <- rep(NA, t=nsettings)
 if (!exists("new_origins")) new_origins <- rep(NA, t=nsettings)
 if (!exists("time_ref")) time_ref <- NA # only one
 if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
@@ -809,7 +810,7 @@ for (i in 1:nsettings) {
     # todo: why not checking for all length-1-dims here?
     if (any(names(dims[[i]]) == "time")) {
         if (length(dims[[i]]$time) == 1) {
-            message("\n", "detected \"time\" dim but its length is 1. drop this dim ...")
+            message("\n", "detected time dim but its length is 1. drop this dim ...")
             dims[[i]]$time <- NULL
         }
     }
@@ -818,7 +819,7 @@ for (i in 1:nsettings) {
     if (any(names(dims[[i]]) == "time")) {
 
         timein_units <- ncin$dim$time$units
-        message("\n", "detected \"time\" dim -> make POSIXlt object from timein_units: \"", timein_units, "\"")
+        message("\n", "detected time dim -> make POSIXlt object from timein_units: \"", timein_units, "\"")
         # convert any unit to seconds for POSIX,e.g. 
         # "days since 1538-1-1 00:00:00"
         # "day as %Y%m%d.%f"
@@ -1033,6 +1034,11 @@ for (i in 1:nsettings) {
     } else { # if none of file dims is "time"
 
     } # if any of file dims is "time"
+    # finfished time dim stuff
+    froms_plot[i] <- fromsf[i] # default
+    tos_plot[i] <- tosf[i]
+    if (!is.na(fromsp[i])) froms_plot[i] <- fromsp[i]
+    if (!is.na(tosp[i])) tos_plot[i] <- tosp[i]
     #stop("asd")
 
     # get depth inds
@@ -1191,10 +1197,11 @@ for (i in 1:nsettings) {
     
     # reorder lons to (-180,...,180) if wanted and necessary
     if (any(names(dims[[i]]) == "lon")) {
+        message("\ndetected lon dimension min/max = ", min(dims[[i]]$lon), "/", max(dims[[i]]$lon), " degree")
         if (reorder_lon_from_0360_to_180180) {
             if (any(dims[[i]]$lon < 180) && any(dims[[i]]$lon >= 180)) {
-                message("\n", "detected lon dimension AND", "\n", "`reorder_lon_from_0360_to_180180` = T AND", "\n",
-                        "any(lon < 180) && any(lon >= 180)", "\n", "--> reorder longitudes from (0,...,360) to (-180,...,180) degree ...")
+                message("`reorder_lon_from_0360_to_180180` = T AND any(lon < 180) && any(lon >= 180)", "\n", 
+                        "--> reorder longitudes from (0,...,360) to (-180,...,180) degree ...")
                 dims[[i]]$lon_orig <- dims[[i]]$lon
                 if (i == 1) library(abind)
                 west_of_180_inds <- which(dims[[i]]$lon < 180)
@@ -1245,6 +1252,8 @@ for (i in 1:nsettings) {
                     } # for vi vars per file with lon dim
                 } # if any vars with lon dim
             } # if (any(lons[[i]] < 180) && any(lons[[i]] >= 180))
+        } else {
+            message("`reorder_lon_from_0360_to_180180` = F --> do not change longitudes from 0,...,359 to -180,...,0,180 degree")
         } # if reorder_lon_from_0360_to_180180
     } # if this file has lon dim
 
@@ -1449,6 +1458,9 @@ for (i in 1:nsettings) {
             message("update")
             data_infos[[i]][[vi]]$label <- "wisoaprt_d180"
 
+        } else if (varname == "lm_temp2_as_time_slope") {
+            message("special label")
+            data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
         } # finished define variable specific things
     
     } # for vi varnames per setting
@@ -2011,12 +2023,12 @@ for (vi in 1:length(varnames_unique)) {
 
         # determine number of rows and columns
         source(paste0(homepath, "/functions/image.plot.nxm.r"))
-        nm <- image.plot.nxm(x=x, y=y, z=z, ip=ip, dry=T)
+        nm <- image.plot.nxm(x=lon_dim, y=lat_dim, z=z, ip=ip, dry=T)
 
         plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                            varname, "_", 
                            paste0(names_short, "_", seasonsp, 
-                                  "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
+                                  "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
                            ".", p$plot_type)
         message("plot ", plotname, " ...")
         dir.create(dirname(plotname), recursive=T, showWarnings=F)
@@ -2048,7 +2060,78 @@ for (vi in 1:length(varnames_unique)) {
                 grDevices::embedFonts(plotname, outfile=plotname)
             }
         }
-    
+   
+        # anomaly lon,lat plot of 2 settings 
+        if (nsettings == 2) {
+
+            message("\n`nsettings` = 2 ", appendLF=F)
+
+            if (areas[1] == areas[2]) {
+
+                message("AND areas[1] = \"", areas[1], "\" = areas[2] = \"", areas[2], "\" ", appendLF=F)
+
+                if (length(lon_dim[[1]]) == length(lon_dim[[2]]) &&
+                    length(lat_dim[[1]]) == length(lat_dim[[2]])) {
+                
+                    message("AND both settings have same number of lons and lats\n",
+                            "--> plot (lon,lat) anomalies 2 minus 1: ", names_short[2], " minus ", names_short[1], " ...")
+                    
+                    # colorbar values
+                    zanom <- list(z[[2]] - z[[1]])
+                    names(zanom) <- paste0(names_legend[2], " minus ", names_legend[1])
+                    source(paste0(homepath, "/functions/image.plot.pre.r"))
+                    ip <- image.plot.pre(range(zanom, na.rm=T), verbose=F)
+
+                    # determine number of rows and columns
+                    source(paste0(homepath, "/functions/image.plot.nxm.r"))
+                    nm <- image.plot.nxm(x=list(lon_dim[[1]]), y=list(lat_dim[[1]]), z=zanom, ip=ip, dry=T)
+
+                    plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                                       varname, "_", 
+                                       paste0(rev(names_short), "_", rev(seasonsp), 
+                                              "_", rev(froms_plot), "_to_", rev(tos_plot), "_", rev(areas), 
+                                              collapse="_minus_"), 
+                                       ".", p$plot_type)
+                    message("plot ", plotname, " ...")
+                    dir.create(dirname(plotname), recursive=T, showWarnings=F)
+                    if (p$plot_type == "png") {
+                        png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
+                            res=p$dpi, family=p$family_png)
+                    } else if (p$plot_type == "pdf") {
+                        pdf(plotname, width=nm$ncol*p$inch, height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
+                            family=p$family_pdf)
+                    }
+
+                    # map plot
+                    data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]][[varname]]
+                    add_land <- "world"
+                    if (mode == "area") { # fesom
+                        add_land <- F
+                    }
+                    image.plot.nxm(x=list(lon_dim[[1]]), y=list(lat_dim[[1]]), z=zanom, ip=ip, verbose=T,
+                                   xlab="Longitude [°]", ylab="Latitude [°]", 
+                                   zlab=data_info$label,
+                                   add_land=add_land)
+                    
+                    message("\n", "save plot ", plotname, " ...")
+                    dev.off()
+                    if (p$plot_type == "pdf") {
+                        if("extrafont" %in% (.packages())){
+                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        } else {
+                            grDevices::embedFonts(plotname, outfile=plotname)
+                        }
+                    }
+
+                } else { # if lon_dim and lat_dim of both settings are of same length
+                    message("\nbut lon and lat dims of both settings are of different length --> cannot plot anomaly")
+                }
+            } else { # both areas are not equal
+                message("\nbut areas[1] = \"", areas[1], "\" != areas[2] = \"", areas[2], "\" --> cannot plot anomaly")
+            }
+        } # if nsettings == 2
+        # finished anomaly plot of 2 dims (lon,lat)
+
     } # if (ndims_unique == 2 && all(vardims_unique %in% c("lon", "lat"))) {
     # finished plot `datas` as lon vs lat
 
@@ -2112,7 +2195,7 @@ for (vi in 1:length(varnames_unique)) {
         plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                            varname, "_",  
                            paste0(names_short, "_", areas, "_", seasonsp, "_", 
-                                  fromsp, "_to_", tosp, 
+                                  froms_plot, "_to_", tos_plot, 
                                   collapse="_vs_"), 
                            ".", p$plot_type)
         message("plot ", plotname, " ...")
@@ -2190,7 +2273,7 @@ for (vi in 1:length(varnames_unique)) {
         plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                            varname, "_", 
                            paste0(names_short, "_", areas, "_", seasonsp, "_", 
-                                  fromsp, "_to_", tosp, "_", 
+                                  froms_plot, "_to_", tos_plot, "_", 
                                   depth_fromsp, "-", depth_tosp, "m",
                                   collapse="_vs_"), 
                            ".", p$plot_type)
@@ -2476,7 +2559,7 @@ for (vi in 1:length(varnames_unique)) {
         plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                            varname, "_",
                            paste0(names_short, "_", seasonsp, 
-                                  "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
+                                  "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
                            data_right$suffix, ts_highlight_seasons$suffix,
                            ".", p$plot_type)
         if (nchar(plotname) > nchar_max_foutname) {
@@ -2865,7 +2948,7 @@ for (vi in 1:length(varnames_unique)) {
             plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                varname, "_",
                                paste0(names_short, "_", seasonsp, 
-                                      "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
+                                      "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
                                "_subplots", data_right$suffix, ts_highlight_seasons$suffix,
                                ".", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
@@ -3137,7 +3220,7 @@ if (exists("datasmon")) {
             plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                varname, "_",
                                paste0(names_short, "_", seasonsp, 
-                                      "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
+                                      "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
                                "_months",
                                data_right_mon$suffix,
                                ".", p$plot_type)
@@ -3408,7 +3491,7 @@ if (exists("datasan")) {
                 message("\n`add_data_right_yaxis_ts_an`=T ...")
                 data_right_an <- list(data=vector("list", l=nsettings))
                 names(data_right_an$data) <- names_short
-                if (varname == "temp2") {
+                if (F && varname == "temp2") {
                     for (i in 1:nsettings) {
                         inpath <- paste0(workpath, "/post/", models[i], "/", mode, "/wisoaprt_d") 
                         fname <- paste0(prefixes[i], "_", mode, 
@@ -3492,7 +3575,7 @@ if (exists("datasan")) {
             plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                varname, "_",
                                paste0(names_short, "_", seasonsp, 
-                                      "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
+                                      "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
                                "_annual",
                                data_right_an$suffix,
                                ".", p$plot_type)
@@ -3819,7 +3902,7 @@ if (exists("datasltm")) {
             plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                varname, "_", 
                                paste0(names_short, "_", seasonsp, 
-                                      "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
+                                      "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
                                ".", p$plot_type)
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             message("plot ", plotname, " ...")
@@ -3921,7 +4004,7 @@ if (plot_scatter_setting1_vs_setting2) {
                 plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                    varname, "_", 
                                    paste0(names_short[i], "_", seasonsp[i], 
-                                          "_", fromsp[i], "_to_", tosp[i], "_", 
+                                          "_", froms_plot[i], "_to_", tos_plot[i], "_", 
                                           areas[i], collapse="_vs_"), 
                                    scatter_suffix,
                                    ".", p$plot_type)
@@ -4091,7 +4174,7 @@ if (plot_scatter_var1_vs_var2) {
             plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                varname, "_", 
                                paste0(names_short, "_", seasonsp, 
-                                      "_", fromsp, "_to_", tosp, "_", areas, collapse="_vs_"), 
+                                      "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
                                ".", p$plot_type)
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             if (p$plot_type == "png") {
@@ -4444,7 +4527,7 @@ if (plot_scatter_var1_vs_var2) {
                         plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
                                            varname, "_", 
                                            paste0(names_short[i], "_", seasonsp[i], 
-                                                  "_", fromsp[i], "_to_", tosp[i], "_", 
+                                                  "_", froms_plot[i], "_to_", tos_plot[i], "_", 
                                                   areas[i], collapse="_vs_"), 
                                            scatter_suffix,
                                            ".", p$plot_type)
