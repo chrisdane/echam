@@ -34,7 +34,7 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 verbose <- 1 # 0,1
-clean <- T # remove tmp files
+clean <- F # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
 cdo_force <- F # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv
+} else if (F) { # Hol-Tx10 on paleosrv
     datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
     models <- "echam5"
@@ -188,14 +188,18 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (F) { # Hol-T on stan
-    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
-    models <- "echam5"
-    ftypes <- "l" # "f" for files (default) or "l" for links
+} else if (T) { # Hol-T on stan
+    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
+    #models <- "echam5"
+    models <- "mpiom1"
     #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
-    fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
+    #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc" # daily
+    fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc" # daily
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_fort_75_monmean"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
@@ -208,8 +212,36 @@ if (F) { # old hist
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "aprt_times_tsurf"
     #fvarnames <- "ptemp"
-    fvarnames <- "ptsurf"
+    #fvarnames <- "ptsurf"
+    fvarnames <- "amoc"
+    codes <- 101
+    mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(setup="GR30", nlev="L40"), 
+                                                     reg_res=c(nlon=360, nlat=180)))
+    mpiom_moc_extract_ts_arg_list <- list(list(sellevidx=list(c(from=15, to=31), # 1
+                                                              c(from=15, to=31), # 2
+                                                              c(from=1, to=40), # 3
+                                                              c(from=1, to=40), # 4
+                                                              c(from=1, to=40), # 5
+                                                              c(from=15, to=31), # 6
+                                                              c(from=1, to=40), # 7
+                                                              c(from=15, to=31) # 8
+                                                              ),
+                                               sellonlatbox=list(c(lon1=0, lon2=0, lat1=45, lat2=60), # 1
+                                                                 c(lon1=0, lon2=0, lat1=30, lat2=60), # 2
+                                                                 c(lon1=0, lon2=0, lat1=45, lat2=60), # 3
+                                                                 c(lon1=0, lon2=0, lat1=30, lat2=60), # 4
+                                                                 c(lon1=0, lon2=0, lat1=26.5, lat2=26.5), # 5
+                                                                 c(lon1=0, lon2=0, lat1=26.5, lat2=26.5), # 6
+                                                                 c(lon1=0, lon2=0, lat1=50, lat2=50), # 7
+                                                                 c(lon1=0, lon2=0, lat1=50, lat2=50) # 8
+                                                                 )
+                                              ) # setting 1
+                                          )
     modes <- "select"
+    #modes <- "timmean"
+    #modes <- "yearmean"
+    #modes <- "monmean"
+    #modes <- "ymonmean"
     #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
@@ -220,7 +252,8 @@ if (F) { # old hist
     #tos <- "0011"
     #tos <- "0129"
     #tos <- "5903" # end of chunk 2
-    tos <- "6821"
+    #tos <- "6821"
+    tos <- "7000" # end of chunk 3
     new_date_list <- list(list(use="filename", 
                                year_origin=1,
                                nc_time_origin=1))

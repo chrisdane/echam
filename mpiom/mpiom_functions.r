@@ -19,7 +19,7 @@ mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, verbose=T) {
         outpath <- dirname(ext_files[1])
         if (verbose) {
             message("`outpath` not given, use dirname(ext_files[1]=\"", 
-                    ext_files[fi], "\") = \"", outpath, "\"")
+                    ext_files[1], "\") = \"", outpath, "\"")
         }
     } else {
         if (length(outpath) != 1) {
@@ -172,6 +172,47 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
     } # for fi fort_tar_files
 
 } # mpiom_extract_fort_tar_data
+
+
+mpiom_fort.75_temporal_mean <- function(cdo="cdo", fort.75_files, outpath, 
+                                        cdo_temporal_mean="monmean", verbose=T) {
+
+    if (missing(fort.75_files) || !is.character(fort.75_files)) {
+        stop("provide `fort.75_files=\"/path/to/fort.75\"` or\n",
+             "`fort_tar_files=c(\"/path/to/fort.75_fort_YYYY0101_YYYY1231.nc\", \"/path/to/fort.75_fort_ZZZZ0101_ZZZZ1231.nc\")`")
+    }
+    
+    if (missing(outpath)) {
+        outpath <- dirname(fort.75_files[1])
+        if (verbose) {
+            message("`outpath` not given, use dirname(fort.75_files[1]=\"", 
+                    fort.75_files[1], "\") = \"", outpath, "\"")
+        }
+    } else {
+        if (length(outpath) != 1) {
+            stop("`outpath` needs to be of length 1 and not ", length(outpath))
+        }
+    }
+    if (file.access(outpath, mode=0)) { # existance?
+        dir.create(outpath, recursive=T)
+    } else {
+        if (file.access(outpath, mode=2)) { # write permission?
+            stop("no write permission in `outpath` = \"", outpath, "\"")
+        }
+    }
+
+    for (fi in seq_along(fort.75_files)) {
+    
+        # fort.75_fort_00040101_00041231.nc
+        fout <- paste0(outpath, "/", 
+                       gsub(".nc", paste0("_", cdo_temporal_mean, ".nc"), basename(fort.75_files[fi])))
+        cmd <- paste0(cdo, " -", cdo_temporal_mean, " ", fort.75_files[fi], " ", fout)
+        if (verbose) message("run `", cmd, "` ...")
+        system(cmd)
+
+    } # for fi fort.75_files
+
+} # mpiom_fort.75_temporal_mean
 
 
 mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout, 
