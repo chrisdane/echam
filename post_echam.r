@@ -3,7 +3,8 @@
 rm(list=ls()); graphics.off()
 
 # necessary libraries
-library(stringr)
+requirements <- scan("requirements.txt")
+for (r in requirements) library(r, character.only=T)
 
 # load functions and user input
 pwd <- getwd()
@@ -294,23 +295,10 @@ for (i in 1:nsettings) {
         message("\nget input file format ...")
         cmd <- paste0("cdo showformat ", datapaths[i], "/", basenames[1])
         message("run `", cmd, "`")
-        input_format <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
-        if (!is.null(input_format$warning)) {
-            stop(input_format$warning)
-        } else {
-            message(" --> \"", input_format$value, "\"")
-        }
-        if (any(input_format$value == c("GRIB", "EXTRA  BIGENDIAN"))) {
-            message("set `convert_to_nc`=T to convert final result to netcdf ...")
-            convert_to_nc <- T
-            filetype <- "grb"
-        } else if (input_format$value == "netCDF") {
-            convert_to_nc <- F
-            filetype <- "nc"
-        } else {
-            stop("this format not defined yet")
-        }
-        
+        convert_to_nc <- cdo_get_filetype(paste0(datpaths[i], "/", basenames[1]))
+        filetype <- convert_to_nc$file_type
+        convert_to_nc <- convert_to_nc$convert_to_nc
+
         # identify correct YYYY, MM, etc. based on file names or `cdo showdate`
         if (grepl("<YYYY>", fpatterns[i])) {
             n_yyyy_patterns <- length(gregexpr("<YYYY>", fpatterns[i])[[1]]) 
@@ -1205,19 +1193,26 @@ for (i in 1:nsettings) {
                                 # input and wanted years
                                 years_filenames_chunki <- years_filenames[dates_in_list[[chunki]]$file_inds]
                                 message("min/max of ", length(years_filenames_chunki) , 
-                                        " years_filenames_chunki = ", min(years_filenames_chunki), "/", max(years_filenames_chunki))
+                                        " years_filenames_chunki = ", min(years_filenames_chunki), "/", 
+                                        max(years_filenames_chunki))
                                 #years_in_chunki <- unique(dates_in_list[[chunki]]$years)
                                 years_in_chunki <- dates_in_list[[chunki]]$years
                                 message("min/max of ", length(years_in_chunki) , 
                                         " years_in_chunki = ", min(years_in_chunki), "/", max(years_in_chunki))
+
+                                # possible mismatch of cdo years and filename years
+                                #   e.g. annual files with monthly data:
+                                #   --> years_filename_chunki = nyears
+                                #   --> years_in_chunki = nyears*12
 
                                 # if input years are of different length than wanted filename years
                                 if (length(years_filenames_chunki) != length(years_in_chunki)) {
 
                                     message("\nlength(years_filenames_chunki) = ", length(years_filenames_chunki), 
                                             " != length(years_in_chunki) = ", length(years_in_chunki), "\n",
-                                            " --> ", length(years_filenames_chunki) - length(years_in_chunki), " years difference\n",
-                                            " --> try to get some debugging information ...")
+                                            " --> ", length(years_filenames_chunki) - length(years_in_chunki), 
+                                            " years difference\n",
+                                            " --> try to get some debugging information ...\n")
                                     npy <- rep(NA, t=length(years_in_chunki))
                                     for (yi in seq_along(years_in_chunki)) {
                                         year_inds <- which(dates_in_list[[chunki]]$years == years_in_chunki[yi])
@@ -1255,6 +1250,12 @@ for (i in 1:nsettings) {
                                             tmp[shift_year_inds] <- tmp[shift_year_inds] + 1
                                             message(" to ", tmp[min(shift_year_inds)], " to ", tmp[max(shift_year_inds)])
                                         }
+                                        # update with fixed years
+                                        dates_in_list[[chunki]]$years <- as.integer(tmp)
+                                        dates_in_list[[chunki]]$dates <- paste0(dates_in_list[[chunki]]$years, "-",
+                                                                                dates_in_list[[chunki]]$months, "-",
+                                                                                dates_in_list[[chunki]]$days)
+                                        #years_in_chunki <- unique(dates_in_list[[chunki]]$years)
 
                                     } else if (datapaths[i] == "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" &&
                                                fpatterns[i] == "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc") { # monthly moc data
@@ -1279,19 +1280,28 @@ for (i in 1:nsettings) {
                                             tmp[shift_year_inds] <- tmp[shift_year_inds] + 1
                                             message(" to ", tmp[min(shift_year_inds)], " to ", tmp[max(shift_year_inds)])
                                         }
+                                        # update with fixed years
+                                        dates_in_list[[chunki]]$years <- as.integer(tmp)
+                                        dates_in_list[[chunki]]$dates <- paste0(dates_in_list[[chunki]]$years, "-",
+                                                                                dates_in_list[[chunki]]$months, "-",
+                                                                                dates_in_list[[chunki]]$days)
+                                        #years_in_chunki <- unique(dates_in_list[[chunki]]$years)
                                     
                                     } else {
-                                        stop("\nhave to fix manually")
-                                    }
-                               
-                                    # update with fixed years
-                                    dates_in_list[[chunki]]$years <- as.integer(tmp)
-                                    dates_in_list[[chunki]]$dates <- paste0(dates_in_list[[chunki]]$years, "-",
-                                                                            dates_in_list[[chunki]]$months, "-",
-                                                                            dates_in_list[[chunki]]$days)
+
+                                        if (length(npy_unique) == 1 && 
+                                            npy_unique*length(years_filenames_chunki) == length(years_in_chunki)) {
+                                            message("\nall input years occur ", npy_unique, " times\n",
+                                                    "--> repeat every filename year ", npy_unique, " times for new years ...")
+                                            years_filenames_chunki <- rep(years_filenames_chunki, e=npy_unique)
+
+                                        } else {
+                                            stop("\nhave to fix manually")
+                                        }
                                     
+                                    } # special cases or if length(npy_unique) == 1
+                               
                                     # updated cdo input years
-                                    years_in_chunki <- unique(dates_in_list[[chunki]]$years)
                                     if (length(years_filenames_chunki) != length(years_in_chunki)) {
                                         stop("still broken!")
                                     }

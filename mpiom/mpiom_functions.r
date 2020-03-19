@@ -1,10 +1,89 @@
 # r
 
-mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, verbose=T) {
+
+mpiom_remap2lonlat <- function(files, cdo_select="", outpath, 
+                               mpiom_model_grid="mpiom_GR30_model_grid_standard.nc", 
+                               reg_res=c(nlon=120, nlat=101),
+                               remap_method="remapcon2", 
+                               cdo="cdo", verbose=T) {
+    
+    if (missing(files) || !is.character(files)) {
+        stop("provide `files=\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\"` or\n",
+             "`files=c(\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\", \"/path/to/expd_mpiom_ZZZZ10101_ZZZZ1231.nc\")`")
+    }
+    
+    if (missing(outpath)) {
+        outpath <- dirname(files[1])
+        if (verbose) {
+            message("`outpath` not given, use dirname(files[1]=\"", 
+                    files[1], "\") = \"", outpath, "\"")
+        }
+    } else {
+        if (length(outpath) != 1) {
+            stop("`outpath` needs to be of length 1 and not ", length(outpath))
+        }
+    }
+    if (file.access(outpath, mode=0)) { # existance?
+        dir.create(outpath, recursive=T)
+    } else {
+        if (file.access(outpath, mode=2)) { # write permission?
+            stop("no write permission in `outpath` = \"", outpath, "\"")
+        }
+    }
+
+    for (fi in seq_along(files)) {
+        
+        if (verbose) message("\nfile ", fi, "/", length(files), ": ", files[fi])
+        
+        # get format of input files
+        convert2nc <- cdo_get_filetype(files[fi])$convert_to_nc
+
+        fout <- paste0(outpath, "/", tools::file_path_sans_ext(basename(files[fi])))
+
+        cmd <- paste0(cdo, " -P 8")
+        if (convert2nc) cmd <- paste0(cmd, " -t mpiom1 -f nc copy")
+        cmd <- paste0(cmd ," -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
+                      " -setgrid,", mpiom_model_grid)
+        
+        # variable selection before remapping
+        if (cdo_select != "") {
+            if (!grepl("select", cdo_select)) {
+                stop("provided `cdo_select` = \"", cdo_select, "\" does not contain \"select\"")
+            }
+            if (convert2nc) {
+                if (!grepl("code", cdo_select)) {
+                    stop("input file needs to get converted to nc but provided `cdo_select` = \"", 
+                         cdo_select, "\" does not contain \"code\"")
+                }
+            } else {
+                if (!grepl("name", cdo_select)) {
+                    stop("provided `cdo_select` = \"", cdo_select, "\" does not contain \"name\"")
+                }
+            }
+            cmd <- paste0(cmd, " -", cdo_select)
+            tmp <- stringr::str_replace_all(cdo_select, "[[:punct:]]", "_")
+            tmp <- stringr::str_replace_all(tmp, "=", "_")
+            fout <- paste0(fout, "_", tmp)
+        } # if variable selection before remapping
+
+        # update fout
+        fout <- paste0(fout, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"], ".nc")
+        
+        cmd <- paste0(cmd, " ", files[fi], " ", fout)
+        if (verbose) message("run `", cmd, "` ...")
+        #cdo -P 4 -t mpiom1 -f nc copy -remapcon2,r360x180 -setgrid,../mpiom_GR30_model_grid_standard.nc -select,code=183 Hol-Tx10_mpiom_32900101_32901231.grb zmld_curvilinear_setgrid_remapcon2_r360x180.nc 
+        system(cmd)
+        
+    } # for fi files
+
+} # mpiom_remap2lonlat
+
+
+mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, cdo="cdo", verbose=T) {
 
     if (missing(ext_files) || !is.character(ext_files)) {
-        stop("provide `fort_tar_files=\"/path/to/TIMESER.YYYY0101_YYYY1231.ext\"` or\n",
-             "`fort_tar_files=c(\"/path/to/TIMESER.YYYY0101_YYYY1231.ext\", \"/path/to/TIMESER.ZZZZ0101_ZZZZ1231.ext\")`")
+        stop("provide `ext_files=\"/path/to/TIMESER.YYYY0101_YYYY1231.ext\"` or\n",
+             "`ext_files=c(\"/path/to/TIMESER.YYYY0101_YYYY1231.ext\", \"/path/to/TIMESER.ZZZZ0101_ZZZZ1231.ext\")`")
     }
     
     if (missing(partab_ext)) { # check if partable exists
@@ -41,7 +120,7 @@ mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, verbose=T) {
         fout <- paste0(outpath, "/", basename(ext_files[fi]), ".nc")
         
         # apply partable and convert .ext to nc
-        cmd <- paste0("cdo -f nc -setpartab,", partab_ext, " ", ext_files[fi], " ", fout)
+        cmd <- paste0(cdo, " -f nc -setpartab,", partab_ext, " ", ext_files[fi], " ", fout)
         if (verbose) message("   run `", cmd, "` ...")
         system(cmd)
             
@@ -52,7 +131,7 @@ mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, verbose=T) {
 mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath, 
                                         keep_ext=T, partab_ext,
                                         keep_fort.75=T, keep_fort.90=T, 
-                                        verbose=T) {
+                                        cdo="cdo", verbose=T) {
 
     if (missing(fort_tar_files) || !is.character(fort_tar_files)) {
         stop("provide `fort_tar_files=\"/path/to/fort_YYYY0101_YYYY1231.tar\"` or\n",
@@ -111,7 +190,7 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
                     }
                     partab_ext <- normalizePath(partab_ext)
                 }
-                cmd <- paste0("cdo -f nc -setpartab,", partab_ext, " ", 
+                cmd <- paste0(cdo, " -f nc -setpartab,", partab_ext, " ", 
                               outpath, "/", timeser_ext_file, " ", 
                               outpath, "/", timeser_ext_file, ".nc")
                 if (verbose) message("      run `", cmd, "` ...")
@@ -135,7 +214,7 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
                 system(cmd)
 
                 # convert to nc
-                cmd <- paste0("cdo -f nc copy ", outpath, "/fort.75 ",
+                cmd <- paste0(cdo, " -f nc copy ", outpath, "/fort.75 ",
                               outpath, "/fort.75_", tools::file_path_sans_ext(basename(fort_tar_files[fi])), ".nc")
                 if (verbose) message("      run `", cmd, "` ...")
                 system(cmd)
@@ -156,7 +235,7 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
                 system(cmd)
 
                 # convert to nc
-                cmd <- paste0("cdo -f nc copy ", outpath, "/fort.90 ",
+                cmd <- paste0(cdo, " -f nc copy ", outpath, "/fort.90 ",
                               outpath, "/fort.90_", tools::file_path_sans_ext(basename(fort_tar_files[fi])), ".nc")
                 if (verbose) message("      run `", cmd, "` ...")
                 system(cmd)
@@ -174,8 +253,9 @@ mpiom_extract_fort_tar_data <- function(fort_tar_files, outpath,
 } # mpiom_extract_fort_tar_data
 
 
-mpiom_fort.75_temporal_mean <- function(cdo="cdo", fort.75_files, outpath, 
-                                        cdo_temporal_mean="monmean", verbose=T) {
+mpiom_fort.75_temporal_mean <- function(fort.75_files, outpath, 
+                                        cdo_temporal_mean="monmean", 
+                                        cdo="cdo", verbose=T) {
 
     if (missing(fort.75_files) || !is.character(fort.75_files)) {
         stop("provide `fort.75_files=\"/path/to/fort.75\"` or\n",
@@ -215,9 +295,10 @@ mpiom_fort.75_temporal_mean <- function(cdo="cdo", fort.75_files, outpath,
 } # mpiom_fort.75_temporal_mean
 
 
-mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout, 
-                                       mpiom_model_res=c(setup="GR30", nlev="L40"), reg_res=c(nlon=360, nlat=180), 
-                                       verbose=T) {
+mpiom_moc_make_bottom_topo <- function(varname="amoc", fin, fout, 
+                                       mpiom_model_res=c(setup="GR30", nlev="L40"), 
+                                       reg_res=c(nlon=360, nlat=180), 
+                                       cdo="cdo", verbose=T) {
    
     # adapted from https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_make_amoc.sh
 
@@ -253,7 +334,7 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
     }
 
     # get format of input files
-    cmd <- paste0("cdo showformat ", fin)
+    cmd <- paste0(cdo, " showformat ", fin)
     if (verbose) message("\nrun `", cmd, "`")
     input_format <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
     if (!is.null(input_format$warning)) {
@@ -462,11 +543,10 @@ mpiom_moc_make_bottom_topo <- function(cdo="cdo", varname="amoc", fin, fout,
 } # mpiom_moc_make_bottom_topo
 
 
-mpiom_moc_extract_ts <- function(cdo="cdo", fin, outpath,
-                                 sellevidx=list(c(from=15, to=31)), 
-                                 sellevel, 
+mpiom_moc_extract_ts <- function(fin, outpath,
+                                 sellevidx=list(c(from=15, to=31)), sellevel, 
                                  sellonlatbox=list(c(lon1=0, lon2=0, lat1=45, lat2=60)),
-                                 verbose=T) {
+                                 cdo="cdo", verbose=T) {
    
     # adapted from https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_make_amoc.sh
 

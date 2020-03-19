@@ -3,14 +3,32 @@
 source("../helper_functions.r")
 source("mpiom_functions.r")
 
+# remap mpiom to regular grid
+if (T) {
+    if (F) { # Hol-Tx10 on paleosrv
+
+    } else if (F) { # Hol-T on stan
+        files <- list.files("/ace/user/pgierz/cosmos-aso-wiso/Hol-T/outdata_finished/mpiom",
+                            pattern=glob2rx("Hol-T_mpiom_*.grb"), full.names=T)
+        outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom_of_paul"
+    } else if (T) { # Hol-T2 on stan
+        files <- list.files("/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T2/outdata/mpiom", 
+                            pattern=glob2rx("Hol-T2_mpiom_*.grb"), full.names=T)
+        outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T2/outdata/mpiom"
+    }
+    mpiom_remap2lonlat(files=files, cdo_select="select,code=183", outpath=outpath) 
+}
+
 # extract mpiom tar files
 if (F) {
     if (F) { # Hol-Tx10 on paleosrv
-        fort_tar_files <- list.files("/scratch/simulation_database/incoming/Hol-Tx10/output", pattern=glob2rx("*.tar"), full.names=T)  
+        fort_tar_files <- list.files("/scratch/simulation_database/incoming/Hol-Tx10/output", 
+                                     pattern=glob2rx("*.tar"), full.names=T)  
         outpath <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
     } else if (F) { # Hol-T on stan
-        fort_tar_files <- list.files("/ace/user/pgierz/cosmos-aso-wiso/Hol-T/outdata_finished/mpiom", pattern=glob2rx("*.tar"), full.names=T)  
-        outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" 
+        fort_tar_files <- list.files("/ace/user/pgierz/cosmos-aso-wiso/Hol-T/outdata_finished/mpiom", 
+                                     pattern=glob2rx("*.tar"), full.names=T)  
+        outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom_of_paul" 
     } else if (T) { # Hol-T2 on stan
         #fort_tar_files <- list.files("/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T2/outdata/mpiom", pattern=glob2rx("*.tar"), full.names=T)  
         fort_tar_files <- c(#"/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T2/outdata/mpiom/fort_37390101_37391231.tar"
@@ -29,7 +47,7 @@ if (F) {
 }
 
 # temporal mean of daily fort.75 files
-if (T) {
+if (F) {
     if (F) { # Hol-Tx10 on paleosrv
 
     } else if (T) { # Hol-T on stan
@@ -43,7 +61,8 @@ if (T) {
 # ext to nc with partab
 if (F) {
     if (T) {
-        ext_files <- list.files("/scratch/simulation_database/incoming/E280_280ppm/output", pattern=glob2rx("*.ext"), full.names=T)
+        ext_files <- list.files("/scratch/simulation_database/incoming/E280_280ppm/output", 
+                                pattern=glob2rx("*.ext"), full.names=T)
         outpath <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/E280_280ppm/outdata/mpiom"
     } else if (F) {
     }

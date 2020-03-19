@@ -22,6 +22,36 @@ tryCatch.W.E <- function(expr) {
 
 } # tryCatch.W.E
 
+# get file format
+cdo_get_filetype <- function(fin, cdo="cdo", verbose=T) {
+
+    cmd <- paste0(cdo, " showformat ", fin)
+    if (verbose) message("\nrun `", cmd, "`")
+    input_format <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
+    if (!is.null(input_format$warning)) {
+        stop(input_format$warning)
+    } else {
+        if (verbose) message(" --> \"", input_format$value, "\"", appendLF=F)
+    }
+    if (any(input_format$value == c("GRIB", "EXTRA  BIGENDIAN"))) {
+        if (verbose) message(" --> convert to netcdf ...")
+        convert_to_nc <- T
+        file_type <- "grb"
+    } else if (input_format$value == "netCDF") {
+        if (verbose) message(" --> no need to convert to netcdf ...")
+        convert_to_nc <- F
+        file_type <- "nc"
+    } else {
+        if (verbose) message(" --> not defined. set `convert_to_nc` to F and continue ...")
+        convert_to_nc <- F
+        file_type <- input_format$value
+    }
+
+    return(list(convert_to_nc=convert_to_nc, file_type=file_type))
+
+} # cdo_get_filetype
+
+
 # leap year
 is.leap <- function(years) {
     return(((years %% 4 == 0) & (years %% 100 != 0)) | (years %% 400 == 0))

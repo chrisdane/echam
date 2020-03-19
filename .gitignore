@@ -3,6 +3,7 @@
 
 # except
 !README.md
+!requirements.txt
 !post_echam.r
 !plot_echam.r
 !helper_functions.r
