@@ -734,9 +734,10 @@ if (!is.na(remove_setting)
     && any(!is.na(remove_mean_froms))) {
     stop("both `remove_setting` and `remove_mean_froms` have non-NA values. choose 1")
 }
+if (!exists("types")) types <- rep("l", t=nsettings) # default: lines plots and not points
 if (!exists("ltys")) ltys <- rep(1, t=nsettings)
+if (!exists("pchs")) pchs <- rep(1, t=nsettings)
 if (!exists("lwds")) lwds <- rep(1, t=nsettings)
-if (!exists("pchs")) pchs <- rep(NA, t=nsettings)
 if (!exists("scatterpchs")) scatterpchs <- rep(16, t=nsettings)
 if (!exists("scatterpchs_vstime")) scatterpchs_vstime <- 1:nsettings
 if (!exists("scattercexs")) scattercexs <- rep(1, t=nsettings)
@@ -899,44 +900,32 @@ for (i in 1:nsettings) {
 
         # find temporal subset based on given fromsp and tosp
         if (!is.na(fromsp[i]) || !is.na(tosp[i])) {
+            fromind <- 1 # default
+            toind <- length(timein_lt)
             message("\n", appendLF=F)
             if (!is.na(fromsp[i])) {
                 message("fromsp is given --> fromsp[", i, "] = ", fromsp[i])
-                if (fromsp[i] < 0) {
-                    # as.POSIXlt("-0001-01-01") --> negative year gives error 
-                    # "not in a standard unambiguous format"
-                    # --> but shifting works
-                    nyears_to_new_origin <- fromsp[i] - (timein_lt$year[1] + 1900) + 1
-                    fromsplt <- seq.POSIXt(timein_lt[1], l=nyears_to_new_origin, b="year")[nyears_to_new_origin]
-                } else {
-                    fromsplt <- as.POSIXlt(paste0(fromsp[i], "-01-01 00:00:00"), tz="UTC")
+                fromind <- which(timein_lt$year + 1900 == fromsp[i])[1]
+                if (length(fromind) == 0) {
+                    stop("could not find this year in input time")
                 }
-            } else {
-                fromsplt <- timein_lt[1]
-                if (i == 1) fromsp <- rep(NA, t=nsettings)
-                fromsp[i] <- fromsplt$year + 1900
             }
             if (!is.na(tosp[i])) {
                 message("tosp is given --> tosp[", i, "] = ", tosp[i])
-                if (tosp[i] < 0) {
-                    # as.POSIXlt("-0001-01-01") --> negative year gives error 
-                    # "not in a standard unambiguous format"
-                    # --> but shifting works
-                    nyears_to_new_end <- abs(tosp - (timein_lt$year[length(timein_lt)] + 1900)) + 1
-                    tosplt <- seq.POSIXt(timein_lt[length(timein_lt)], l=nyears_to_new_end, b="-1 year")[nyears_to_new_end]
-                } else {
-                    tosplt <- as.POSIXlt(paste0(tosp[i], "-12-31 23:59:59"), tz="UTC")
+                toind <- which(timein_lt$year + 1900 == tosp[i])
+                toind <- toind[length(toind)]
+                if (length(toind) == 0) {
+                    stop("could not find this year in input time")
                 }
-            } else {
-                tosplt <- timein_lt[length(timein_lt)]
-                if (i == 1) tosp <- rep(NA, t=nsettings)
-                tosp[i] <- tosplt$year + 1900
             }
-            message(" --> find indices for temporal subset between ", 
-                    fromsplt, " and ", tosplt, " ...")
-            
+            message("--> found temporal subset between inds ", fromind, " to ", 
+                    toind, " (", timein_lt[fromind], " to ", timein_lt[toind], ")")
+            if (fromind > toind) {
+                stop("--> `fromind` = ", fromind, " > `toind` = ", toind, " --> that does not make sense")
+            }
+
             # take temporal subset
-            time_inds <- which(timein_lt >= fromsplt & timein_lt <= tosplt)
+            time_inds <- fromind:toind
             if (length(time_inds) == 0) {
                 stop("temporal subset is of length 0")
             } else {
@@ -2761,9 +2750,9 @@ for (vi in 1:length(varnames_unique)) {
 
             } else { # default 
                 for (i in 1:nsettings) {
-                    lines(time_dim[[i]], z[[i]], 
-                          col=ifelse(add_smoothed, cols_rgb[i], cols[i]), 
-                          lty=ltys[i], lwd=lwds[i], pch=pchs[i])
+                    points(time_dim[[i]], z[[i]], t=types[i],
+                           col=ifelse(add_smoothed, cols_rgb[i], cols[i]), 
+                           lty=ltys[i], lwd=lwds[i], pch=pchs[i])
                 }
             }
         }
@@ -2807,6 +2796,13 @@ for (vi in 1:length(varnames_unique)) {
             le$lty <- ltys
             le$lwd <- lwds
             le$pch <- pchs
+            for (i in seq_len(nsettings)) {
+                if (types[i] == "p") {
+                    le$lty[i] <- NA
+                } else if (types[i] == "l") {
+                    le$pch[i] <- NA
+                }
+            }
             le$cex <- 1
             le$cex <- 0.85
             # add stuf to legend here
@@ -2903,8 +2899,15 @@ for (vi in 1:length(varnames_unique)) {
                 le$text <- sapply(data_right$data, "[[", "text")
                 le$col <- sapply(data_right$data, "[[", "col")
                 le$lty <- sapply(data_right$data, "[[", "lty")
-                le$lwds <- sapply(data_right$data, "[[", "lwd")
-                le$pchs <- sapply(data_right$data, "[[", "pch")
+                le$lwd <- sapply(data_right$data, "[[", "lwd")
+                le$pch <- sapply(data_right$data, "[[", "pch")
+                for (i in seq_len(nsettings)) {
+                    if (types[i] == "p") {
+                        le$lty[i] <- NA
+                    } else if (types[i] == "l") {
+                        le$pch[i] <- NA
+                    }
+                }
                 le$cex <- 1
                 le$cex <- 0.85
                 # add stuf to legend here
@@ -3326,8 +3329,15 @@ if (exists("datasmon")) {
                 le$text <- names_legend
                 le$col <- cols
                 le$lty <- ltys
-                le$lwds <- lwds
-                le$pchs <- pchs
+                le$lwd <- lwds
+                le$pch <- pchs
+                for (i in seq_len(nsettings)) {
+                    if (types[i] == "p") {
+                        le$lty[i] <- NA
+                    } else if (types[i] == "l") {
+                        le$pch[i] <- NA
+                    }
+                }
                 le$cex <- 1
                 le$cex <- 0.85
                 # add stuf to legend here
@@ -3390,8 +3400,15 @@ if (exists("datasmon")) {
                     le$text <- names_legend
                     le$col <- cols
                     le$lty <- ltys
-                    le$lwds <- lwds
-                    le$pchs <- pchs
+                    le$lwd <- lwds
+                    le$pch <- pchs
+                    for (i in seq_len(nsettings)) {
+                        if (types[i] == "p") {
+                            le$lty[i] <- NA
+                        } else if (types[i] == "l") {
+                            le$pch[i] <- NA
+                        }
+                    }
                     le$cex <- 1
                     le$cex <- 0.85
                     # add stuf to legend here
@@ -3681,8 +3698,15 @@ if (exists("datasan")) {
                 le$text <- names_legend
                 le$col <- cols
                 le$lty <- ltys
-                le$lwds <- lwds
-                le$pchs <- pchs
+                le$lwd <- lwds
+                le$pch <- pchs
+                for (i in seq_len(nsettings)) {
+                    if (types[i] == "p") {
+                        le$lty[i] <- NA
+                    } else if (types[i] == "l") {
+                        le$pch[i] <- NA
+                    }
+                }
                 le$cex <- 1
                 le$cex <- 0.85
                 # add stuf to legend here
@@ -3763,8 +3787,15 @@ if (exists("datasan")) {
                     le$text <- names_legend
                     le$col <- cols
                     le$lty <- ltys
-                    le$lwds <- lwds
-                    le$pchs <- pchs
+                    le$lwd <- lwds
+                    le$pch <- pchs
+                    for (i in seq_len(nsettings)) {
+                        if (types[i] == "p") {
+                            le$lty[i] <- NA
+                        } else if (types[i] == "l") {
+                            le$pch[i] <- NA
+                        }
+                    }
                     le$cex <- 1
                     le$cex <- 0.85
                     # add stuf to legend here
@@ -4095,9 +4126,9 @@ if (plot_scatter_setting1_vs_setting2) {
                     le$text <- names(season_cols) #names_legend[i]
                     le$col <- season_cols #"black"
                     le$lty <- NA
-                    le$lwds <- NA
+                    le$lwd <- NA
                     #le$pchs <- scatterpchs_vstime[i]
-                    le$pchs <- scatterpchs_vstime
+                    le$pch <- scatterpchs_vstime
                     le$cex <- 1
                     le$cex <- 0.85
                     if (T) {

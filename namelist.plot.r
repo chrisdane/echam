@@ -34,9 +34,9 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 # options across settings
-#mode <- "monmean"
-mode <- "select"
+#mode <- "select"
 #mode <- "fldmean" 
+mode <- "monmean"
 #mode <- "timmean" 
 #mode <- "timsum"
 #mode <- "zonmean"
@@ -167,7 +167,8 @@ if (F) { # awi-esm-1-1-lr hist
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_main_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
-    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext", "cosmos-aso-wiso_echam5_Hol-T_timeser_ext")
+    #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext", "cosmos-aso-wiso_echam5_Hol-T_timeser_ext")
+    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_fort_75", "cosmos-aso-wiso_echam5_Hol-T_fort_75")
     #models <- c("echam5", "echam5")
     models <- c("mpiom1", "mpiom1")
     names_short <- c("Hol-Tx10", "Hol-T")
@@ -179,28 +180,45 @@ if (F) { # awi-esm-1-1-lr hist
     new_origins <- c(-7000, -6996) 
     time_frequencies <- c("monthly", "monthly")
     time_ref <- 1950 # any string, e.g. "BP", or number
+    #fromsp <- c(-20, -20) # with respect to `new_origin` (if defined) or `fromsf`
+    #tosp <- c(0, 0)
+    #types <- c("o", "o")
     #varnames_in <- c("temp2", "temp2")
     #varnames_in <- c("srad0d", "srad0d")
+    #varnames_in <- c("albedo", "albedo")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_tsurf", "lm_wisoaprt_d_sellevel_2_as_tsurf")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptsurf", "lm_wisoaprt_d_sellevel_2_as_ptsurf")
     #varnames_in <- c("lm_temp2_as_time", "lm_temp2_as_time")
     #varnames_in <- c("c144_ICEARE_SO", "c144_ICEARE_SO")
-    varnames_in <- c("c145_ICEVOL_SO", "c145_ICEVOL_SO")
-    #seasonsf <- c("annual", "annual")
-    #seasonsp <- c("Jun", "Jun")
-    #seasonsp <- c("Dec", "Dec")
-    #n_mas <- c(1, 1)
-    n_mas <- c(1200, 1200)
-    #remove_mean_froms <- c(0, -179)
-    #remove_mean_tos <- c(0, -179)
+    #varnames_in <- c("c145_ICEVOL_SO", "c145_ICEVOL_SO")
+    varnames_in <- rep("amoc", t=2)
+    codes <- rep(101, t=2)
+    #areas <- rep("moc45to60N", t=2)
+    #levs <- rep("-285to-2180m", t=2)
+    #areas <- rep("moc30to60N", t=2)
+    #levs <- rep("-285to-2180m", t=2)
+    areas <- rep("moc26.5N", t=2)
+    #areas <- rep("moc50N", t=2)
+    levs <- rep("-0to-5420m", t=2)
     #areas <- c("ladoga_remapnn", "ladoga_remapnn")
     #areas <- c("shuchye_remapnn", "shuchye_remapnn")
     #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapnn")
     #areas <- c("taymyr_remapnn", "taymyr_remapnn")
     #areas <- c("emanda_remapnn", "emanda_remapnn")
     #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
+    #areas <- c("moc45to60N", "moc30to60N", "moc50N", "moc45to60N", "moc30to60N", "moc26.5N")
+    #levs <- c("-285to-2180m", "-285to-2180m", "-0to-5420m", "-0to-5420m", "-0to-5420m", "-0to-5420m")
+    #seasonsf <- c("annual", "annual")
+    #seasonsp <- c("Jun", "Jun")
+    #seasonsp <- c("Dec", "Dec")
+    #n_mas <- c(1, 1)
+    #n_mas <- c(120, 120)
+    #n_mas <- c(120, 1200)
+    n_mas <- c(1200, 12000)
+    #remove_mean_froms <- c(0, -179)
+    #remove_mean_tos <- c(0, -179)
 
 } else if (F) { # temp2 vs ptemp of Hol-T
     prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=2)
@@ -508,7 +526,7 @@ alpha <- 0.2 # transparent: 0,1 (0 fully transparent)
 add_xgrid <- F
 add_ygrid <- F
 add_zeroline <- T
-add_unsmoothed <- T
+add_unsmoothed <- F
 add_smoothed <- T
 # time:
 add_sd <- F
