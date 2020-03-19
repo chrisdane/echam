@@ -1146,7 +1146,7 @@ for (i in 1:nsettings) {
                         if (chunki == 1) {
                             dates_in_list[[chunki]]$time_inds <- seq_along(cdo_dates)
                         } else {
-                            dates_in_list[[chunki]]$time_inds <- seq(max(dates_in_list[[chunki-1]]$timeinds) + 1, l=length(cdo_dates))
+                            dates_in_list[[chunki]]$time_inds <- seq(max(dates_in_list[[chunki-1]]$time_inds) + 1, l=length(cdo_dates))
                         }
                         dates_in_list[[chunki]]$dates <- cdo_dates # "YYYY-MM-DD"
                         dates_in_list[[chunki]]$years <- as.integer(substr(cdo_dates, 1, 4)) # YYYY
