@@ -103,24 +103,26 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
-    datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
-    datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
-    #models <- "echam5"
-    models <- "mpiom1"
-    #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
+} else if (T) { # Hol-Tx10 on paleosrv
+    #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
+    datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
+    #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
+    models <- "echam5"
+    #models <- "mpiom1"
+    fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
-    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
+    #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc"
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_fort_75"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
     #fvarnames <- "srad0d"
     #fvarnames <- "aprt"
+    fvarnames <- "albedo"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
     #levs_out <- 2
@@ -130,7 +132,7 @@ if (F) { # old hist
     #fvarnames <- "ptsurf"
     #fvarnames <- "c25_TMERCI3" # Mass_Transport_in_Atlantic_at_50N [m3 s-1]
     #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
-    fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
+    #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
     #fvarnames <- "amoc"
     #codes <- 101
     mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(setup="GR30", nlev="L40"), 
@@ -155,21 +157,21 @@ if (F) { # old hist
                                                                  )
                                               ) # setting 1
                                           )
-    modes <- "select"
+    #modes <- "select"
     #modes <- "timmean"
     #modes <- "yearmean"
     #modes <- "monmean"
     #modes <- "ymonmean"
-    #modes <- "fldmean"
+    modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
-    #froms <- "0001" # beginning counting from 1
-    froms <- "2901" # beginning
+    froms <- "0001" # Hol-Tx10 links: beginning counting from 1
+    #froms <- "2901" # Hol-Tx10 raw: beginning
     #froms <- "3572"
     #tos <- "2910"
-    tos <- "3601" # end
-    #tos <- "7001" # end counting from 1 
+    #tos <- "3601" # Hol-Tx10 raw: end
+    tos <- "7001" # Hol-Tx10 links: end counting from 1 
     if (modes[1] == "timmean") {
         if (froms[1] == "2901" && tos[1] == "3601") {
             new_date_list <- list(list(years=mean(c(1, 7001)), nc_time_origin=1))
@@ -177,20 +179,25 @@ if (F) { # old hist
             stop("asd")
         }
     } else if (modes[1] != "timmean") {
-        # monthly:
-        new_date_list <- list(list(years=rep(seq(1, b=10, l=length(froms:tos)), e=12), nc_time_origin=1))
-        if (grepl("_main_mm", fpatterns[1])) {
-            # 1 missing Hol-Tx10 *_main_mm_* file: 334812 (Dec 2530 BP; model year 448)
-            if (any(new_date_list[[1]]$years == 4471)) {
-                message("remove Dec of 4471")
-                new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
+        if (T) {
+            new_date_list <- list(list(use="filename", year_origin=1, nc_time_origin=1))
+        } else if (F) {
+            # monthly:
+            new_date_list <- list(list(years=rep(seq(1, b=10, l=ceiling(length(froms[1]:tos[1])/10)), e=12), 
+                                       nc_time_origin=1))
+            if (grepl("_main_mm", fpatterns[1])) {
+                # 1 missing Hol-Tx10 *_main_mm_* file: 334812 (Dec 2530 BP; model year 448)
+                if (any(new_date_list[[1]]$years == 4471)) {
+                    message("remove Dec of 4471")
+                    new_date_list[[1]]$years <- new_date_list[[1]]$years[-(447*12+12)]
+                }
             }
-        }
-        if (grepl("_wiso_mm", fpatterns[1])) {
-            # 2 missing Hol-Tx10 *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
-            if (any(new_date_list[[1]]$years == 4471)) {
-                message("remove Nov+Dec of 4471")
-                new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
+            if (grepl("_wiso_mm", fpatterns[1])) {
+                # 2 missing Hol-Tx10 *_wiso_mm_* files: 334811 and 334812 (Nov+Dec 2530 BP; model year 448)
+                if (any(new_date_list[[1]]$years == 4471)) {
+                    message("remove Nov+Dec of 4471")
+                    new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
+                }
             }
         }
     } # new time depending on output frequency
@@ -198,7 +205,7 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
     #models <- "echam5"
@@ -268,9 +275,7 @@ if (F) { # old hist
     #tos <- "5903" # end of chunk 2
     #tos <- "6821"
     tos <- "7000" # end of chunk 3
-    new_date_list <- list(list(use="filename", 
-                               year_origin=1,
-                               nc_time_origin=1))
+    new_date_list <- list(list(use="filename", year_origin=1, nc_time_origin=1))
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"

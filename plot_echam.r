@@ -1461,6 +1461,23 @@ for (i in 1:nsettings) {
         } else if (varname == "lm_temp2_as_time_slope") {
             message("special label")
             data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
+        
+        } else if (varname == "c144_ICEARE_SO") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 6+6 # 1x10^6: m2 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIA Southern Ocean [km"^2, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+
+        } else if (varname == "c145_ICEVOL_SO") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 9+3 # 1x10^9: m3 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIV Southern Ocean [km"^3, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+
         } # finished define variable specific things
     
     } # for vi varnames per setting
@@ -1757,6 +1774,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))
                         if (yi < 14 ||
                             yi >= (length(years_unique) - 14)) {
                             message(years_unique[yi], " ", appendLF=F)
+                            if (yi == 13) message("... ", appendLF=F)
                         }
                         if (yi == length(years_unique)) message()
                         time_inds <- which(years == years_unique[yi])

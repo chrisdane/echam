@@ -290,16 +290,6 @@ for (i in 1:nsettings) {
         basenames <- basename(files)
         df <- data.frame(basenames)
 
-        if (verbose > 0) {
-            message("\n", "found ", length(files), " file", 
-                    ifelse(length(files) > 1, "s", ""), ":")
-            if (length(files) > 1) {
-                ht(df, n=30)
-            } else {
-                print(df)
-            }
-        }
-
         # get format of input files
         message("\nget input file format ...")
         cmd <- paste0("cdo showformat ", datapaths[i], "/", basenames[1])
@@ -343,6 +333,7 @@ for (i in 1:nsettings) {
             
         }
         if (grepl("<MM>", fpatterns[i])) {
+            n_mm_patterns <- length(gregexpr("<MM>", fpatterns[i])[[1]]) 
             patterninds <- regexpr("<MM>", fpatterns[i])
             patterninds <- c(patterninds - 2,
                              patterninds - 2 + attributes(patterninds)$match.length - 3) 
@@ -350,6 +341,15 @@ for (i in 1:nsettings) {
             MM_in <- as.integer(df$MM)
         }
         
+        if (verbose > 0) {
+            message("\n", "found ", length(files), " \"", filetype, "\" file", 
+                    ifelse(length(files) > 1, "s", ""), ":")
+            if (length(files) > 1) {
+                ht(df, n=30)
+            } else {
+                print(df)
+            }
+        }
         if (verbose > 0) {
             message("\nderived years based on file names:")
             ht(years_filenames, n=30)
@@ -359,27 +359,7 @@ for (i in 1:nsettings) {
             }
         }
 
-        # wanted years
-        from <- as.POSIXlt(paste0(froms[i], "-01-01"), tz="UTC")
-        to <- as.POSIXlt(paste0(tos[i], "-12-31"), tz="UTC")
-        years_wanted <- (unclass(from)$year+1900):(unclass(to)$year+1900)
-
-        # check if some wanted years are out of found years, which were found based on the file names
-        if (any(years_wanted %in% years_filenames == F)) {
-            if (fvarnames[i] %in% names(cdo_known_cmds)) {
-                # try to apply command later
-            } else {
-                stop("wanted year", 
-                     ifelse(length(which(!(years_wanted %in% years_filenames))) > 1, "s", ""),
-                     " ", paste0(years_wanted[!(years_wanted %in% years_filenames)], collapse=","),
-                     " ", ifelse(length(which(!(years_wanted %in% years_filenames))) > 1, "are", "is"),
-                     " not included in found year", 
-                     ifelse(length(years_filenames) > 1, "s", ""), " ", 
-                     paste0(range(years_filenames), collapse="-"), ".")
-            }
-        }
-
-        # update files:
+        # update files which were mistakenly included in by given fpattern:
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
         # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
@@ -408,7 +388,34 @@ for (i in 1:nsettings) {
             if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[-wrong_file_inds]
         } # if any found files differ from wanted `fpatterns[i]`
 
-        # remove found years (which were found based on the file names) out of wanted years
+        ## remove found years (which were found based on the file names) out of wanted years
+        # wanted years
+        #from <- as.POSIXlt(paste0(froms[i], "-01-01"), tz="UTC")
+        #to <- as.POSIXlt(paste0(tos[i], "-12-31"), tz="UTC")
+        #years_wanted <- (unclass(from)$year+1900):(unclass(to)$year+1900)
+
+        # check if some wanted years are out of found years, which were found based on the file names
+        #if (any(years_wanted %in% years_filenames == F)) {
+        message("\n`froms[", i, "]` = ", froms[i], " and `tos[", i, "]` = ", tos[i])
+        if (as.integer(froms[i]) < min(years_filenames) || 
+            as.integer(tos[i]) > max(years_filenames)) {
+            if (fvarnames[i] %in% names(cdo_known_cmds)) {
+                # try to apply command later
+            } else {
+                stop("--> these are out of found years from filenames: ", 
+                     min(years_filenames), " to ", max(years_filenames))
+            }
+        } else {
+            #from_ind <- which.min(abs(years_filenames - as.integer(froms[i])))[1]
+            #to_ind <- which.min(abs(years_filenames - as.integer(tos[i])))
+            #to_ind <- to_ind[length(to_ind)]
+            from_ind <- which(years_filenames == as.integer(froms[i]))[1]
+            to_ind <- which(years_filenames == as.integer(tos[i]))
+            to_ind <- to_ind[length(to_ind)]
+            years_wanted <- years_filenames[from_ind:to_ind]
+            message("--> found filename years from inds ", from_ind, " to ", to_ind, ": ",
+                    min(years_wanted), " to ", max(years_wanted))
+        }
         outside_years_inds <- which(years_filenames %in% years_wanted == F)
         if (length(outside_years_inds) > 0) {
             message("\n", "remove ", length(outside_years_inds), " file",
@@ -973,15 +980,17 @@ for (i in 1:nsettings) {
                         ticcmd <- toccmd <- NULL # default
                         if (cdo_chain == "separate" && !is.null(new_date_list[[i]])) {
                             if (file.exists(selfile_vec[chunki]) && !cdo_force) {
-                                message("`selfile_vec[", chunki, "]` = \"", selfile_vec[chunki], 
-                                        "\" already exists and `cdo_force`=F. skip ...")
+                                message("`selfile_vec[", chunki, "]` =\n",
+                                        "   \"", selfile_vec[chunki], "\\n",
+                                        "already exists and `cdo_force`=F. skip ...")
                             } else {
                                 ticcmd <- toccmd <- 0
                             }
                         } else {
                             if (file.exists(fout_vec[chunki]) && !cdo_force) {
-                                message("`fout_vec[", chunki, "]` = \"", fout_vec[chunki], 
-                                        "\" already exists and `cdo_force`=F. skip ...")
+                                message("`fout_vec[", chunki, "]` =\n",
+                                        "   \"", fout_vec[chunki], "\"\n",
+                                        "already exists and `cdo_force`=F. skip ...")
                             } else {
                                 ticcmd <- toccmd <- 0
                             }
@@ -1068,7 +1077,7 @@ for (i in 1:nsettings) {
                         system(cmd)
                         cdo_dates <- scan(cdo_showdate_file, what="char", quiet=T)
                         if (length(cdo_dates) == 0) stop("sth went wrong")
-                        message("`\ncdo showdate` yields ", length(cdo_dates), " dates:")
+                        message("\n`cdo showdate` yields ", length(cdo_dates), " dates:")
                         ht(cdo_dates, n=25)
 
                         if (cdo_ntime != length(cdo_dates)) {
@@ -1167,7 +1176,7 @@ for (i in 1:nsettings) {
                     }
 
                     # construct new dates
-                    message("\n--> construct new time dimension values of ", nchunks, " chunk", 
+                    message("\nconstruct new time dimension values of ", nchunks, " chunk", 
                             ifelse(nchunks > 1, "s", ""), " ...")
                     dates_out_list <- vector("list", l=nchunks)
                     for (chunki in seq_len(nchunks)) {
@@ -1192,12 +1201,13 @@ for (i in 1:nsettings) {
                                 #}
                                 
                                 # input and wanted years
-                                years_in_chunki <- unique(dates_in_list[[chunki]]$years)
                                 years_filenames_chunki <- years_filenames[dates_in_list[[chunki]]$file_inds]
-                                message("min/max of ", length(years_in_chunki) , 
-                                        " years_in_chunki = ", min(years_in_chunki), "/", max(years_in_chunki))
                                 message("min/max of ", length(years_filenames_chunki) , 
                                         " years_filenames_chunki = ", min(years_filenames_chunki), "/", max(years_filenames_chunki))
+                                #years_in_chunki <- unique(dates_in_list[[chunki]]$years)
+                                years_in_chunki <- dates_in_list[[chunki]]$years
+                                message("min/max of ", length(years_in_chunki) , 
+                                        " years_in_chunki = ", min(years_in_chunki), "/", max(years_in_chunki))
 
                                 # if input years are of different length than wanted filename years
                                 if (length(years_filenames_chunki) != length(years_in_chunki)) {
@@ -1213,7 +1223,7 @@ for (i in 1:nsettings) {
                                     }
                                     npy_unique <- unique(npy)
                                     for (npy_uniquei in seq_along(npy_unique)) {
-                                        message("\nyears that occur ", npy_unique[npy_uniquei], " times:")
+                                        message("years that occur ", npy_unique[npy_uniquei], " times:")
                                         cat(capture.output(str(years_in_chunki[which(npy == npy_unique[npy_uniquei])])), sep="\n")
                                     }
 
@@ -1355,14 +1365,14 @@ for (i in 1:nsettings) {
                             # case 2/2: temporal output interval is not daily: simply set the day to something else then 29
                             feb29_years <- years_out[feb29_nonleap_inds]
                             npy <- rep(NA, t=length(feb29_years))
-                            message("decide how to proceed ...")
+                            message("--> decide how to proceed ...")
                             for (yi in seq_along(feb29_years)) {
                                 year_inds <- which(years_out == feb29_years[yi])
                                 npy[yi] <- length(year_inds)
                             }
                             npy_unique <- unique(npy)
                             for (npy_uniquei in seq_along(npy_unique)) {
-                                message("\nyears with wrong february 29 that occur ", npy_unique[npy_uniquei], " times:")
+                                message("years with wrong february 29 that occur ", npy_unique[npy_uniquei], " times:")
                                 cat(capture.output(str(feb29_years[which(npy == npy_unique[npy_uniquei])])), sep="\n")
                             }
                             if (length(npy_unique) == 1 && npy_unique == 366) { # case 1
@@ -1427,7 +1437,7 @@ for (i in 1:nsettings) {
                             if (F) { # old
                                 dates_out_ncap <- as.POSIXlt(dates_out, tz="UTC") # old
                             } else if (T) { # new
-                                message("run `make_posixlt_origin_function(years_out)` ...")
+                                message("\nrun `make_posixlt_origin_function(years_out)` ...")
                                 dates_out_ncap <- make_posixlt_origin_function(years_out)
                                 dates_out_ncap$mon <- months_out - 1 # posix months start counting from zero
                                 dates_out_ncap$mday <- days_out
@@ -1666,8 +1676,9 @@ for (i in 1:nsettings) {
                             nfiles_per_chunk <- cmd_select_list[[chunki]]$n
                             cmd_source <- paste0(". ", scriptname)
                             if (file.exists(fout_vec[chunki]) && !cdo_force) {
-                                message("fout_vec[", chunki, "] = ", fout_vec[chunki], 
-                                        " already exists and `cdo_force`=F. skip ...")
+                                message("fout_vec[", chunki, "] =\n",
+                                        "   \"", fout_vec[chunki], "\"\n",
+                                        "already exists and `cdo_force`=F. skip ...")
                                 ticcmd <- toccmd <- NULL
                             } else {
                                 message("\nrun `", cmd_source, "`")
