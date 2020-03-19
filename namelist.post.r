@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv
+} else if (F) { # Hol-Tx10 on paleosrv
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
@@ -205,19 +205,19 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (F) { # Hol-T on stan
-    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
-    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
-    #models <- "echam5"
-    models <- "mpiom1"
-    #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
+} else if (T) { # Hol-T on stan
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
+    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
+    models <- "echam5"
+    #models <- "mpiom1"
+    fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
-    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
+    #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc" # daily
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc" # daily
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_timeser_ext"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_timeser_ext"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_fort_75_monmean"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
@@ -225,6 +225,7 @@ if (F) { # old hist
     #fvarnames <- "srad0d"
     #fvarnames <- "trad0"
     #fvarnames <- "aprt"
+    fvarnames <- "albedo"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
     #levs_out <- 2
@@ -233,7 +234,7 @@ if (F) { # old hist
     #fvarnames <- "ptemp"
     #fvarnames <- "ptsurf"
     #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
-    fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
+    #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
     #fvarnames <- "amoc"
     #codes <- 101
     mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(setup="GR30", nlev="L40"), 
@@ -258,23 +259,23 @@ if (F) { # old hist
                                                                  )
                                               ) # setting 1
                                           )
-    modes <- "select"
+    #modes <- "select"
     #modes <- "timmean"
     #modes <- "yearmean"
     #modes <- "monmean"
     #modes <- "ymonmean"
-    #modes <- "fldmean"
+    modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
-    froms <- "0004" # beginning of chunk 1
+    froms <- "0004" # Hol-T links: beginning of chunk 1
     #froms <- "0100"
     #tos <- "0013" 
     #tos <- "0011"
     #tos <- "0129"
     #tos <- "5903" # end of chunk 2
     #tos <- "6821"
-    tos <- "7000" # end of chunk 3
+    tos <- "7000" # Hol-T links: end of chunk 3
     new_date_list <- list(list(use="filename", year_origin=1, nc_time_origin=1))
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
