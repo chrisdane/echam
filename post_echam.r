@@ -3,7 +3,7 @@
 rm(list=ls()); graphics.off()
 
 # necessary libraries
-requirements <- scan("requirements.txt")
+requirements <- scan("requirements.txt", what="char")
 for (r in requirements) library(r, character.only=T)
 
 # load functions and user input
@@ -291,14 +291,6 @@ for (i in 1:nsettings) {
         basenames <- basename(files)
         df <- data.frame(basenames)
 
-        # get format of input files
-        message("\nget input file format ...")
-        cmd <- paste0("cdo showformat ", datapaths[i], "/", basenames[1])
-        message("run `", cmd, "`")
-        convert_to_nc <- cdo_get_filetype(paste0(datpaths[i], "/", basenames[1]))
-        filetype <- convert_to_nc$file_type
-        convert_to_nc <- convert_to_nc$convert_to_nc
-
         # identify correct YYYY, MM, etc. based on file names or `cdo showdate`
         if (grepl("<YYYY>", fpatterns[i])) {
             n_yyyy_patterns <- length(gregexpr("<YYYY>", fpatterns[i])[[1]]) 
@@ -328,9 +320,10 @@ for (i in 1:nsettings) {
             df$MM <- substr(basenames, patterninds[1], patterninds[2]) 
             MM_in <- as.integer(df$MM)
         }
-        
+       
+        # show found files
         if (verbose > 0) {
-            message("\n", "found ", length(files), " \"", filetype, "\" file", 
+            message("\n", "found ", length(files), " file", 
                     ifelse(length(files) > 1, "s", ""), ":")
             if (length(files) > 1) {
                 ht(df, n=30)
@@ -530,6 +523,13 @@ for (i in 1:nsettings) {
                 #} # if MM_in are not monotonically increasing/decreasing
             } # if <MM> is given in fpatterns or not
         } # F
+
+        # get format of input files
+        message("\nget input file format ...")
+        cmd <- paste0("cdo showformat ", datapaths[i], "/", basenames[1])
+        convert_to_nc <- cdo_get_filetype(paste0(datapaths[i], "/", basenames[1]))
+        filetype <- convert_to_nc$file_type
+        convert_to_nc <- convert_to_nc$convert_to_nc
 
         # construct cdo command (chained cdo commands will be executed from right to left)
         # prefix

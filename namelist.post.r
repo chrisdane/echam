@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
@@ -130,13 +130,31 @@ if (F) { # old hist
     #fvarnames <- "aprt_times_tsurf"
     #fvarnames <- "ptemp"
     #fvarnames <- "ptsurf"
-    #fvarnames <- "c25_TMERCI3" # Mass_Transport_in_Atlantic_at_50N [m3 s-1]
+    #fvarnames <- "c1_PSIGULF" # Maximum_of_Barotropic_Streamfunction_in_Subtropical_Atlantic [m3 s-1]
+    #fvarnames <- "c6_PSISPG" # Maximum_of_Barotropic_Streamfunction_in_Subpolar_Atlantic [m3 s-1]
     #fvarnames <- "c64_ICEARE_ARC" # Seaice_Area_Arctic_Ocean [m2]
-    fvarnames <- "c65_ICEVOL_ARC" # Seaice_Volume_Arctic_Ocean [m3]
+    #fvarnames <- "c65_ICEVOL_ARC" # Seaice_Volume_Arctic_Ocean [m3]
+    #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
     #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
     #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
     #fvarnames <- "c204_ICEARE_GLO" # Seaice_Area_Global [m2]
     #fvarnames <- "c205_ICEVOL_GLO" # Seaice_Volume_Global [m3]
+    #fvarnames <- "c128_SST_ATL" # Sea_Surface_Temperature_Atlantic_Ocean [deg C]
+    #fvarnames <- "c129_SSS_ATL" # Sea_Surface_Salinity_Atlantic_Ocean [psu]
+    #fvarnames <- "c130_T200_ATL" # Potential_Temperature_200m_Atlantic_Ocean [deg C]
+    #fvarnames <- "c131_S200_ATL" # Salinity_200m_Atlantic_Ocean [psu]
+    #fvarnames <- "c132_T700_ATL" # Potential_Temperature_700m_Atlantic_Ocean [deg C]
+    #fvarnames <- "c133_S700_ATL" # Salinity_700m_Atlantic_Ocean [psu]
+    #fvarnames <- "c134_T2200_ATL" # Potential_Temperature_2200m_Atlantic_Ocean [deg C]
+    #fvarnames <- "c135_S2200_ATL" # Salinity_2200m_Atlantic_Ocean [psu]
+    #fvarnames <- "c208_SST_GLO" # Sea_Surface_Temperature_Global [deg C]
+    #fvarnames <- "c209_SSS_GLO" # Sea_Surface_Salinity_Global [psu]
+    #fvarnames <- "c210_T200_GLO" # Potential_Temperature_200m_Global [deg C]
+    #fvarnames <- "c211_S200_GLO" # Salinity_200m_Global [psu]
+    #fvarnames <- "c212_T700_GLO" # Potential_Temperature_700m_Global [deg C]
+    #fvarnames <- "c213_S700_GLO" # Salinity_700m_Global [psu]
+    fvarnames <- "c214_T2200_GLO" # Potential_Temperature_2200m_Global [deg C]
+    #fvarnames <- "c215_S2200_GLO" # Salinity_2200m_Global [psu]
     #fvarnames <- "amoc"
     #codes <- 101
     mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(setup="GR30", nlev="L40"), 
@@ -209,7 +227,7 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
     #models <- "echam5"

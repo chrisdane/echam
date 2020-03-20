@@ -1083,12 +1083,6 @@ for (i in 1:nsettings) {
         }
         vars[[vi]] <- ncvar_get(ncin, vars_per_file[vi], collapse_degen=squeeze_data) 
 
-        # special
-        if (names_short[i] == "Hol-Tx10" && mode == "zonmean" && vars_per_file[vi] == "srad0d" && seasonsf[i] == "annual") {
-            message("\nspecial: set ", dims[[i]]$timelt[448], " to NA ...\n")
-            vars[[vi]][,448] <- NA
-        }
-
         # get infos of variable
         names(var_infos)[vi] <- names(vars)[vi]
         var_infos[[vi]] <- ncatt_get(ncin, vars_per_file[vi])
@@ -1130,6 +1124,64 @@ for (i in 1:nsettings) {
 
     # update dimensions per setting
     dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
+
+    # special missing files                    raw         links               calendar
+    # cosmos-aso-wiso_echam5_Hol-Tx10_main_mm: 334812      447 (x10->4471)     Dec 2530 BP
+    # cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm: 334811      447 (x10->4471)     Nov 2530 BP
+    #                                          334812      447 (x10->4471)     Dec 2530 BP
+    # cosmos-aso-wiso_echam5_Hol-T_wiso_mm:    254906      5550                Jun 1450 BP
+    if (any(dims_per_setting == "time")) {
+        vars_with_timedim_inds <- lapply(dims_per_setting, function(x) grep("time", x) != -1)
+        vars_with_timedim_inds <- which(sapply(vars_with_timedim_inds, any))
+        for (vi in seq_along(vars_with_timedim_inds)) {
+            if (grepl("Hol-Tx10", prefixes[i])) {
+                if (grepl("main_mm", prefixes[i])) {
+                    if (any(dims[[i]]$timelt$year + 1900 == -2530)) {
+                        nainds <- which(dims[[i]]$timelt$year + 1900 == -2530)
+                        message("\nspecial: set ", length(nainds), " time points from ", min(nainds), 
+                                ":", max(nainds), " of incomplete year from ", 
+                                dims[[i]]$timelt[min(nainds)], " to ", dims[[i]]$timelt[max(nainds)], 
+                                " to NA...")
+                        if (length(dim(datas[[i]][[vi]])) == 2) {
+                            datas[[i]][[vi]][,nainds] <- NA
+                        } else {
+                            message("no dont do it")
+                        }
+                    }
+                } else if (grepl("wiso_mm", prefixes[i])) {
+                    if (any(dims[[i]]$timelt$year + 1900 == -2530)) {
+                        nainds <- which(dims[[i]]$timelt$year + 1900 == -2530)
+                        message("\nspecial: set ", length(nainds), " time points from ", min(nainds), 
+                                ":", max(nainds), " of incomplete year from ", 
+                                dims[[i]]$timelt[min(nainds)], " to ", dims[[i]]$timelt[max(nainds)], 
+                                " to NA...")
+                        if (length(dim(datas[[i]][[vi]])) == 1) {
+                            message("no dont do it")
+                            #datas[[i]][[vi]][nainds] <- NA
+                        } else {
+                            message("no dont do it")
+                        }
+                    }
+                }
+            } else if (grepl("Hol-T", prefixes[i])) {
+                if (grepl("wiso_mm", prefixes[i])) {
+                    if (any(dims[[i]]$timelt$year + 1900 == -1450)) {
+                        nainds <- which(dims[[i]]$timelt$year + 1900 == -1450)
+                        message("\nspecial: set ", length(nainds), " time points from ", min(nainds), 
+                                ":", max(nainds), " of incomplete year from ", 
+                                dims[[i]]$timelt[min(nainds)], " to ", dims[[i]]$timelt[max(nainds)], 
+                                " to NA...")
+                        if (length(dim(datas[[i]][[vi]])) == 1) {
+                            message("no dont do it")
+                            #datas[[i]][[vi]][nainds] <- NA
+                        } else {
+                            message("no dont do it")
+                        }
+                    }
+                }
+            }
+        }
+    } # special: set values to NA if files are missing
 
     # cut temporal subset from data
     if (!is.null(dims[[i]]$time_inds)) {
