@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv
+} else if (F) { # Hol-Tx10 on paleosrv
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
@@ -227,7 +227,7 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (F) { # Hol-T on stan
+} else if (T) { # Hol-T on stan
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
     #models <- "echam5"
@@ -256,7 +256,7 @@ if (F) { # old hist
     #fvarnames <- "ptemp"
     #fvarnames <- "ptsurf"
     #fvarnames <- "c1_PSIGULF" # Maximum_of_Barotropic_Streamfunction_in_Subtropical_Atlantic [m3 s-1]
-    fvarnames <- "c6_PSISPG" # Maximum_of_Barotropic_Streamfunction_in_Subpolar_Atlantic [m3 s-1]
+    #fvarnames <- "c6_PSISPG" # Maximum_of_Barotropic_Streamfunction_in_Subpolar_Atlantic [m3 s-1]
     #fvarnames <- "c64_ICEARE_ARC" # Seaice_Area_Arctic_Ocean [m2]
     #fvarnames <- "c65_ICEVOL_ARC" # Seaice_Volume_Arctic_Ocean [m3]
     #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
@@ -278,7 +278,7 @@ if (F) { # old hist
     #fvarnames <- "c211_S200_GLO" # Salinity_200m_Global [psu]
     #fvarnames <- "c212_T700_GLO" # Potential_Temperature_700m_Global [deg C]
     #fvarnames <- "c213_S700_GLO" # Salinity_700m_Global [psu]
-    #fvaranmes <- "c214_T2200_GLO" # Potential_Temperature_2200m_Global [deg C]
+    fvarnames <- "c214_T2200_GLO" # Potential_Temperature_2200m_Global [deg C]
     #fvarnames <- "c215_S2200_GLO" # Salinity_2200m_Global [psu]
     #fvarnames <- "amoc"
     #codes <- 101
