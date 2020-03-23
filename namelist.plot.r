@@ -508,14 +508,22 @@ if (F) { # awi-esm-1-1-lr hist
     prefixes <- c(rep("cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext", t=4), 
                   rep("cosmos-aso-wiso_echam5_Hol-T_timeser_ext", t=4))
     models <- rep("mpiom1", t=8)
-    names_short <- c(rep("Hol-Tx10", t=4), rep("Hol-T", t=4))
-    names_legend <- names_short
+    names_short <- c(rep("HolTx10", t=4), rep("HolT", t=4))
     fromsf <- c(rep("0001", t=4), rep("0004", t=4))
     tosf <- c(rep("7001", t=4), rep("7000", t=4))
     new_origins <- c(rep(-7000, t=4), rep(-6996, t=4)) 
     time_frequencies <- rep("monthly", t=8)
     time_ref <- 1950 # any string, e.g. "BP", or number
-    varnames_in <- rep(c("c208_SST_GLO", "c210_T200_GLO", "c212_T700_GLO", "c214_T2200_GLO"), t=2)
+    #varnames_in <- rep(c("c208_SST_GLO", "c210_T200_GLO", "c212_T700_GLO", "c214_T2200_GLO"), t=2)
+    #varnames_in <- rep(c("c128_SST_ATL", "c130_T200_ATL", "c132_T700_ATL", "c134_T2200_ATL"), t=2)
+    #varnames_out_samedims <- "thetao"
+    #varnames_in <- rep(c("c209_SSS_GLO", "c211_S200_GLO", "c213_S700_GLO", "c215_S2200_GLO"), t=2)
+    varnames_in <- rep(c("c129_SSS_ATL", "c131_S200_ATL", "c133_S700_ATL", "c135_S2200_ATL"), t=2)
+    varnames_out_samedims <- "so"
+    names_legend <- paste0(names_short, " ", varnames_in)
+    names_legend_samedims <- paste0(names_short, rep(paste0(" ", c("surf", "200m", "700m", "2200m")), t=2))
+    cols <- c(1:4, 1:4)
+    ltys <- c(rep(2, t=4), rep(1, t=4))
     n_mas <- c(rep(120, t=4), rep(1200, t=4))
 
 } # which settings
@@ -525,7 +533,7 @@ if (F) { # awi-esm-1-1-lr hist
 squeeze_data <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
 nchar_max_foutname <- 255
 
-# general plot options
+## general plot options
 add_title <- T
 add_legend <- T
 p <- setDefaultPlotOptions(plot_type="png", 
@@ -536,7 +544,7 @@ p <- setDefaultPlotOptions(plot_type="png",
                            #family_pdf="CM Roman")
 alpha <- 0.2 # transparent: 0,1 (0 fully transparent)
 
-# time series plot options
+## time series plot options
 # woa13 seasons: "JFM" "AMJ" "JAS" "OND"
 # other seasons: "Jan-Dec" "DJF" "MAM" "JJA" "SON" "JJ"
 # months: "Feb" "Jul" "Jan"  "Jul"
@@ -545,7 +553,6 @@ add_ygrid <- F
 add_zeroline <- T
 add_unsmoothed <- F
 add_smoothed <- T
-# time:
 add_sd <- F
 add_linear_trend <- F
 add_nonlinear_trend <- F
@@ -571,15 +578,28 @@ add_cor_data_left_and_right_ts <- T
 add_data_right_yaxis_ts_mon <- F
 add_data_right_yaxis_ts_an <- T
 add_legend_right_yaxis <- F
-plot_scatter_var1_vs_var2 <- T
-plot_scatter_setting1_vs_setting2 <- T
+plot_scatter_s1_vs_s2 <- T
+scatter_s1_vs_s1_varname <- "temp2"
+plot_scatter_v1_vs_v2 <- T
+if (F) { # TOA imbalance gregory et al. 2004 stuff 
+    varnamex <- "temp2"
+    varnamey <- "toa_imbalance"
+} else if (T) { # temp2 vs precipitation weighted temp2
+    varnamex <- "temp2"
+    varnamey <- "ptemp"
+} else if (F) {
+    varnamex <- "temp2"
+    varnamey <- "wisoaprt_d"
+}
 add_1to1_line_scatter <- T
-# time vs depth:
+
+## time vs depth:
 add_ts_to_time_vs_depth <- T
 
+## special
 plot_redfit <- F
 
-# map plot options
+## map plot options
 proj <- "rectangular" #"rectangular"
 add_land <- T
 reorder_lon_from_0360_to_180180 <- T
