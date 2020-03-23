@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
@@ -111,12 +111,14 @@ if (F) { # old hist
     models <- "mpiom1"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
-    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
+    #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc"
+    fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext"
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_fort_75"
+    #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_timeser_ext"
+    #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_fort_75"
+    prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_grb_code_183_remapcon2_r120x101"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
@@ -153,8 +155,11 @@ if (F) { # old hist
     #fvarnames <- "c211_S200_GLO" # Salinity_200m_Global [psu]
     #fvarnames <- "c212_T700_GLO" # Potential_Temperature_700m_Global [deg C]
     #fvarnames <- "c213_S700_GLO" # Salinity_700m_Global [psu]
-    fvarnames <- "c214_T2200_GLO" # Potential_Temperature_2200m_Global [deg C]
+    #fvarnames <- "c214_T2200_GLO" # Potential_Temperature_2200m_Global [deg C]
     #fvarnames <- "c215_S2200_GLO" # Salinity_2200m_Global [psu]
+    fvarnames <- "zmld"
+    areas_out_list <- list(list(name="weddel",
+                                sellonlatbox=c(lon1=300,lon2=18,lat1=-81,lat2=-57.6)))
     #fvarnames <- "amoc"
     #codes <- 101
     mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(setup="GR30", nlev="L40"), 
@@ -179,20 +184,20 @@ if (F) { # old hist
                                                                  )
                                               ) # setting 1
                                           )
-    modes <- "select"
+    #modes <- "select"
     #modes <- "timmean"
     #modes <- "yearmean"
     #modes <- "monmean"
     #modes <- "ymonmean"
-    #modes <- "fldmean"
+    modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
     #froms <- "0001" # Hol-Tx10 links: beginning counting from 1
     froms <- "2901" # Hol-Tx10 raw: beginning
     #froms <- "3572"
-    #tos <- "2910"
-    tos <- "3601" # Hol-Tx10 raw: end
+    tos <- "2910"
+    #tos <- "3601" # Hol-Tx10 raw: end
     #tos <- "7001" # Hol-Tx10 links: end counting from 1 
     if (modes[1] == "timmean") {
         if (froms[1] == "2901" && tos[1] == "3601") {
@@ -227,7 +232,7 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
     #models <- "echam5"
@@ -239,8 +244,8 @@ if (F) { # old hist
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc" # daily
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_timeser_ext"
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_fort_75_monmean"
+    prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext"
+    #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"

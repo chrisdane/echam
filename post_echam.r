@@ -107,7 +107,24 @@ nsettings <- length(datapaths)
 #if (!exists("ftypes")) ftypes <- rep("f", t=nsettings)
 if (!exists("prefixes")) prefixes <- rep(NA, t=nsettings)
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
-if (!exists("areas_out")) areas_out <- rep("global", t=nsettings)
+if (!exists("areas_out")) {
+    if (exists("areas_out_list")) {
+        if (is.list(areas_out_list)) {
+            areas_out <- rep(NA, t=length(areas_out_list))
+            for (i in seq_along(areas_out_list)) {
+                if (!is.null(areas_out_list[[i]]$name)) {
+                    areas_out[i] <- areas_out_list[[i]]$name
+                } else {
+                    stop("`areas_out_list[[", i, "]]´ is empty")
+                }
+            }
+        } else {
+            stop("`areas_out_list` is given but not a list. dont know how to interpret")
+        }
+    } else {
+        areas_out <- rep("global", t=nsettings)
+    }
+}
 # check if postpaths can be created/have writing rights
 if (!exists("postpaths")) {
     postpaths <- paste(workpath, "post", models, modes, fvarnames, sep="/")
@@ -172,15 +189,13 @@ if (!exists("new_date_list")) {
             }
         } else if (!is.null(new_date_list[[i]]$years)) {
             # user did provide final years to use 
+            message("`new_date_list[[", i, "]]$years` (", length(new_date_list[[i]]$years), " entries) = ")
+            ht(new_date_list[[i]]$years)
             if (!is.null(new_date_list[[i]]$use)) {
-                message("`new_date_list[[", i, "]]$years` = ")
-                ht(new_date_list[[i]]$years)
                 message(" but also `new_date_list[[", i, "]]$use` = ", new_date_list[[i]]$use, 
                         " is given. the latter will be ignored.")
             }
             if (!is.null(new_date_list[[i]]$year_origin)) {
-                message("`new_date_list[[", i, "]]$years` = ")
-                ht(new_date_list[[i]]$years)
                 message(" but also `new_date_list[[", i, "]]$year_origin` = ", new_date_list[[i]]$year_origin, 
                         " is given. the latter will be ignored.")
             }
@@ -344,7 +359,7 @@ for (i in 1:nsettings) {
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
         # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
-        message("\ncheck if some found files do not match `fpatterns[", 
+        message("\ncheck if some found files do not match\n   `fpatterns[", 
                 i, "]` = \"", fpatterns[i], "\" ...")
         filesp <- rep(fpatterns[i], t=length(df$YYY))
         for (yyyy_patterni in seq_len(n_yyyy_patterns)) { 
@@ -379,7 +394,7 @@ for (i in 1:nsettings) {
 
         # check if some wanted years are out of found years, which were found based on the file names
         #if (any(years_wanted %in% years_filenames == F)) {
-        message("\n`froms[", i, "]` = ", froms[i], " and `tos[", i, "]` = ", tos[i])
+        message("\ngiven `froms[", i, "]` = ", froms[i], " and `tos[", i, "]` = ", tos[i])
         if (as.integer(froms[i]) < min(years_filenames) || 
             as.integer(tos[i]) > max(years_filenames)) {
             if (fvarnames[i] %in% names(cdo_known_cmds)) {
@@ -730,9 +745,26 @@ for (i in 1:nsettings) {
                 }
                 
                 # select area
+                cdoselarea <- ""
                 if (areas_out[i] != "global") {
-                    stop("not yettt")
-                }
+                    if (exists("areas_out_list")) {
+                        if (!is.null(areas_out_list[[i]]$sellonlatbox)) {
+                            cdoselarea <- paste0("-sellonlatbox,", 
+                                                 areas_out_list[[i]]$sellonlatbox["lon1"], ",",
+                                                 areas_out_list[[i]]$sellonlatbox["lon2"], ",", 
+                                                 areas_out_list[[i]]$sellonlatbox["lat1"], ",",
+                                                 areas_out_list[[i]]$sellonlatbox["lat2"])
+                        } else if (!is.null(areas_out_list[[i]]$selindexbox)) {
+                            cdoselarea <- paste0("-selindexbox,", 
+                                                 areas_out_list[[i]]$selindexbox["idx1"], ",",
+                                                 areas_out_list[[i]]$selindexbox["idx2"], ",", 
+                                                 areas_out_list[[i]]$selindexbox["idy1"], ",",
+                                                 areas_out_list[[i]]$selindexbox["idy2"])
+                        } else {
+                            stop("not yet")
+                        }
+                    }
+                } # if areas_out != "global" 
 
                 ## construct cdo command
                 # cdo version must be >= 1.9.4 to chain commands
@@ -767,27 +799,38 @@ for (i in 1:nsettings) {
                                          " <files> ", selfile, " || echo error")
                     # 2nd cmd (if needed):
                     cmd_calc <- "" # default: nothing
-                    if (cdoconvert != "" || cdosellevel != "" || cdoselmon != "" || modes[i] != "select") {
+                    if (cdoconvert != "" || cdoselarea != "" || cdosellevel != "" || cdoselmon != "" || modes[i] != "select") {
                         cmd_calc <- cdoprefix
                     }
-                    # 2nd cmd (if needed): `-f <type copy>`
+                    
+                    # `-f <type copy>`
                     if (cdoconvert != "") {
                         cmd_calc <- paste0(cmd_calc, " ", cdoconvert)
                     }
-                    # 2nd cmd (if needed): `-fldmean` etc.
+                    
+                    # `-fldmean` etc.
                     if (modes[i] != "select") {
                         cmd_calc <- paste0(cmd_calc, " ", cdocalc) 
                     }
-                    # 2nd cmd (if needed): `-selmon`
+                    
+                    # `-selmon`
                     if (cdoselmon != "") {
                         cmd_calc <- paste0(cmd_calc, " ", cdoselmon)
                     }
-                    # 2nd cmd (if needed): `-sellevel`
+                    
+                    # `-sellevel`
                     if (cdosellevel != "") {
                         cmd_calc <- paste0(cmd_calc, " ", cdosellevel)
                     }
+                    
+                    # `-sellonlatbox`
+                    if (cdoselarea != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoselarea)
+                    }
+                    
                     # 2nd cmd (if needed: <add further>
                     # ...
+                    
                     # 2nd cmd (if needed): in out
                     if (cmd_calc != "") {
                         # input: result of `-select,name=`
@@ -904,7 +947,10 @@ for (i in 1:nsettings) {
                     cdo_chain <- "alltogether"
                     cmd <- paste0(cdoprefix, " ", cdoconvert, 
                                   #" ", cmdcat, 
-                                  " ", cdocalc, " ", cdoselmon, " ", cdosellevel, " ", cdoselect,  
+                                  " ", cdocalc, " ", 
+                                  cdoselmon, " ", 
+                                  cdosellevel, " ", cdoselarea, " ", 
+                                  cdoselect,  
                                   " <files> ", fout, " || echo error")
                     # replace multiple spaces by single spaces
                     cmd <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd, perl=T)
@@ -971,7 +1017,7 @@ for (i in 1:nsettings) {
                         if (cdo_chain == "separate" && !is.null(new_date_list[[i]])) {
                             if (file.exists(selfile_vec[chunki]) && !cdo_force) {
                                 message("`selfile_vec[", chunki, "]` =\n",
-                                        "   \"", selfile_vec[chunki], "\\n",
+                                        "   \"", selfile_vec[chunki], "\n",
                                         "already exists and `cdo_force`=F. skip ...")
                             } else {
                                 ticcmd <- toccmd <- 0
@@ -1040,6 +1086,10 @@ for (i in 1:nsettings) {
                     cat(capture.output(str(new_date_list[[i]])), sep="\n")
                     message("\n--> check time dimension values of ", nchunks, " chunk", 
                             ifelse(nchunks > 1, "s", ""), " and apply the new origin if necessary ...")
+                    if (!is.null(new_date_list[[i]]$years)) {
+                        message("new_date_list[[i]]$years:")
+                        ht(new_date_list[[i]]$years, n=20)
+                    }
 
                     # get time dimension values of result of cdo select and calc
                     # -> necessary to get months/days/etc. also if new_date_list[[i]]$years are given or 
