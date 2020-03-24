@@ -1269,6 +1269,7 @@ for (i in 1:nsettings) {
                                         npy[yi] <- length(year_inds)
                                     }
                                     npy_unique <- unique(npy)
+                                    message("\nunique occurences per year:")
                                     for (npy_uniquei in seq_along(npy_unique)) {
                                         message("years that occur ", npy_unique[npy_uniquei], " times:")
                                         cat(capture.output(str(years_in_chunki[which(npy == npy_unique[npy_uniquei])])), sep="\n")
