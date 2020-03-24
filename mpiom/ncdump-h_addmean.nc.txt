@@ -1,0 +1,83 @@
+netcdf addmean_3d_mpiom_29010101_29011231 {
+dimensions:
+	lon = 122 ;
+	lat = 101 ;
+	depth = 40 ;
+	time = UNLIMITED ; // (12 currently)
+variables:
+	double time(time) ;
+		time:units = "day as %Y%m%d.%f" ;
+		time:long_name = "time" ;
+		time:missing_value = -9.e+33 ;
+	float scal_lon(lat, lon) ;
+		scal_lon:units = "degree E" ;
+		scal_lon:long_name = "2-d longitude of scalar grid cells" ;
+		scal_lon:missing_value = -9.e+33f ;
+		scal_lon:code = 1 ;
+	float scal_lat(lat, lon) ;
+		scal_lat:units = "degree N" ;
+		scal_lat:long_name = "2-d latitude of scalar grid cells" ;
+		scal_lat:missing_value = -9.e+33f ;
+		scal_lat:code = 2 ;
+	float scal_wdep(lat, lon) ;
+		scal_wdep:units = "meter" ;
+		scal_wdep:long_name = "2-d water depth at scalar grid points" ;
+		scal_wdep:missing_value = -9.e+33f ;
+		scal_wdep:code = 3 ;
+	float size_x(lat, lon) ;
+		size_x:units = "meter" ;
+		size_x:long_name = "size of grid cells in x-direction" ;
+		size_x:missing_value = -9.e+33f ;
+		size_x:code = 4 ;
+	float size_y(lat, lon) ;
+		size_y:units = "meter" ;
+		size_y:long_name = "size of grid cells in y-direction" ;
+		size_y:missing_value = -9.e+33f ;
+		size_y:code = 5 ;
+	float size_z(depth, lat, lon) ;
+		size_z:units = "meter" ;
+		size_z:long_name = "size of grid cells in z-direction" ;
+		size_z:missing_value = -9.e+33f ;
+		size_z:code = 6 ;
+	float depth(depth) ;
+		depth:units = "meter" ;
+		depth:long_name = "1-d layer depths of ocean tracer" ;
+		depth:missing_value = -9.e+33f ;
+	float h2o18_t(time, depth, lat, lon) ;
+		h2o18_t:units = "kmol/m**3" ;
+		h2o18_t:long_name = "h2o18 concentration" ;
+		h2o18_t:missing_value = -9.e+33f ;
+		h2o18_t:code = 12 ;
+	float hDo16_t(time, depth, lat, lon) ;
+		hDo16_t:units = "kmol/m**3" ;
+		hDo16_t:long_name = "hDo16 concentration" ;
+		hDo16_t:missing_value = -9.e+33f ;
+		hDo16_t:code = 14 ;
+	float h2o16_t(time, depth, lat, lon) ;
+		h2o16_t:units = "kmol/m**3" ;
+		h2o16_t:long_name = "h2o16 concentration" ;
+		h2o16_t:missing_value = -9.e+33f ;
+		h2o16_t:code = 13 ;
+	float h2o18_ice(time, depth, lat, lon) ;
+		h2o18_ice:units = "kmol/m**3" ;
+		h2o18_ice:long_name = "h2o18_ice concentration" ;
+		h2o18_ice:missing_value = -9.e+33f ;
+		h2o18_ice:code = 15 ;
+	float hDo16_ice(time, depth, lat, lon) ;
+		hDo16_ice:units = "kmol/m**3" ;
+		hDo16_ice:long_name = "hDo16_ice concentration" ;
+		hDo16_ice:missing_value = -9.e+33f ;
+		hDo16_ice:code = 16 ;
+	float h2o16_ice(time, depth, lat, lon) ;
+		h2o16_ice:units = "kmol/m**3" ;
+		h2o16_ice:long_name = "h2o16_ice concentration" ;
+		h2o16_ice:missing_value = -9.e+33f ;
+		h2o16_ice:code = 17 ;
+
+// global attributes:
+		:title = "Yearly mean output for marine add modules" ;
+		:history = "Yearly mean output for marine add modules" ;
+		:conventions = "COARDS" ;
+		:source = "Marine add model output " ;
+		:date = 2100, 12, 31, 7673750, 7673750 ;
+}
