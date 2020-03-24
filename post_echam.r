@@ -1342,7 +1342,8 @@ for (i in 1:nsettings) {
                                         if (length(npy_unique) == 1 && 
                                             npy_unique*length(years_filenames_chunki) == length(years_in_chunki)) {
                                             message("\nall input years occur ", npy_unique, " times\n",
-                                                    "--> repeat every filename year ", npy_unique, " times for new years ...")
+                                                    "--> repeat every filename year ", npy_unique, " times for new years\n",
+                                                    "--> change here if this is not correct!")
                                             years_filenames_chunki <- rep(years_filenames_chunki, e=npy_unique)
 
                                         } else {

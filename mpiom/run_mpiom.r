@@ -4,14 +4,16 @@ source("../helper_functions.r")
 source("mpiom_functions.r")
 
 # remap mpiom to regular grid
-if (F) {
-    if (T) { # Hol-Tx10 on paleosrv
+if (T) {
+    if (F) { # Hol-Tx10 on paleosrv
         files <- list.files("/scratch/simulation_database/incoming/Hol-Tx10/output",
                             pattern=glob2rx("Hol-Tx10_mpiom_*.grb"), full.names=T)
         outpath <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
-    } else if (F) { # Hol-T on stan
+    } else if (T) { # Hol-T on stan
         files <- list.files("/ace/user/pgierz/cosmos-aso-wiso/Hol-T/outdata_finished/mpiom",
                             pattern=glob2rx("Hol-T_mpiom_*.grb"), full.names=T)
+        # from 4407 to 6699 
+        files <- files[3608:length(files)]
         outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom_of_paul"
     } else if (F) { # Hol-T2 on stan
         files <- list.files("/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T2/outdata/mpiom", 
@@ -22,7 +24,7 @@ if (F) {
 }
 
 # extract mpiom tar files
-if (T) {
+if (F) {
     if (T) { # Hol-Tx10 on paleosrv
         fort_tar_files <- list.files("/scratch/simulation_database/incoming/Hol-Tx10/output", 
                                      pattern=glob2rx("*.tar"), full.names=T)  
