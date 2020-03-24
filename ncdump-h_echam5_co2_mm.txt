@@ -1,0 +1,39 @@
+netcdf Hol-Tx10_echam5_co2_mm_290101.grb {
+dimensions:
+	lon = 96 ;
+	lat = 48 ;
+	time = UNLIMITED ; // (1 currently)
+variables:
+	double lon(lon) ;
+		lon:standard_name = "longitude" ;
+		lon:long_name = "longitude" ;
+		lon:units = "degrees_east" ;
+		lon:axis = "X" ;
+	double lat(lat) ;
+		lat:standard_name = "latitude" ;
+		lat:long_name = "latitude" ;
+		lat:units = "degrees_north" ;
+		lat:axis = "Y" ;
+	double time(time) ;
+		time:standard_name = "time" ;
+		time:units = "minutes since 2901-1-16 09:00:00" ;
+		time:calendar = "proleptic_gregorian" ;
+		time:axis = "T" ;
+	float var5(time, lat, lon) ;
+		var5:table = 191 ;
+		var5:grid_type = "gaussian" ;
+	float var6(time, lat, lon) ;
+		var6:table = 191 ;
+		var6:grid_type = "gaussian" ;
+	float var8(time, lat, lon) ;
+		var8:table = 191 ;
+		var8:grid_type = "gaussian" ;
+
+// global attributes:
+		:CDI = "Climate Data Interface version ?? (http://mpimet.mpg.de/cdi)" ;
+		:Conventions = "CF-1.4" ;
+		:history = "Tue Mar 24 17:26:15 2020: cdo -t echam5 -f nc copy Hol-Tx10_echam5_co2_mm_290101.grb /home/csys/cdanek/Hol-Tx10_echam5_co2_mm_290101.grb.nc" ;
+		:source = "ECHAM5.4" ;
+		:institution = "Max-Planck-Institute for Meteorology" ;
+		:CDO = "Climate Data Operators version 1.7.0 (http://mpimet.mpg.de/cdo)" ;
+}

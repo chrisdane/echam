@@ -2,6 +2,8 @@
 *
 
 # except
+!wiso/
+!mpiom/
 !README.md
 !requirements.txt
 !post_echam.r
@@ -9,5 +11,6 @@
 !helper_functions.r
 !namelist.post.r
 !namelist.plot.r
-!wiso/
-!mpiom/
+!ncdump-h_echam5_main_mm.txt
+!ncdump-h_echam5_co2_mm.txt
+
