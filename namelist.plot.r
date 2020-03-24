@@ -65,7 +65,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv and Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv and Hol-T on stan
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
@@ -75,12 +75,13 @@ if (F) { # awi-esm-1-1-lr hist
     models <- "echam5"
     names_short <- "Hol-Tx10"
     #names_short <- "Hol-T"
-    names_legend <- names_short
+    #names_legend <- names_short
     #names_legend <- "Ladoga"
+    names_legend <- "Ladoga (cosmos-aso-wiso)"
     #names_legend <- "Shuchye"
     #names_legend <- "Levinson-Lessing"
     #names_legend <- "Taymyr"
-    names_legend <- "Emanda"
+    #names_legend <- "Emanda"
     #names_legend <- "Elgygytgyn"
     fromsf <- "0001" # Hol-Tx10
     #fromsf <- "0004" # Hol-T; beginning of chunk 1
@@ -94,28 +95,30 @@ if (F) { # awi-esm-1-1-lr hist
     #new_origins <- -6996 # Hol-T; model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
     time_frequencies <- "monthly"
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- 120
+    #n_mas <- 120
     #n_mas <- 1200
     #remove_mean_froms <- -827
     #remove_mean_tos <- -827
-    #seasonsp <- "Jun"
+    #seasonsp <- "May"
+    seasonsp <- "Jun"
+    #seasonsp <- "JJA"
     #seasonsp <- "Dec"
-    varnames_in <- "temp2"
+    #varnames_in <- "temp2"
     #varnames_in <- "tsurf"
     #varnames_in <- "aprt"
-    #varnames_in <- "wisoaprt_d"
+    varnames_in <- "wisoaprt_d"
+    levs <- 2
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
     #areas <- "sibiria"
-    #areas <- "ladoga_remapnn"
+    areas <- "ladoga_remapnn"
     #areas <- "shuchye_remapnn"
     #areas <- "levinson-lessing_remapnn"
     #areas <- "taymyr_remapnn"
-    areas <- "emanda_remapnn"
+    #areas <- "emanda_remapnn"
     #areas <- "elgygytgyn_remapnn"
-    #levs <- 2
 
 # =====================================
 # 2 settings
@@ -504,7 +507,7 @@ if (F) { # awi-esm-1-1-lr hist
 
 # ==================================================
 # 8 settings
-} else if (T) { # hol-tx10 vs hol-t
+} else if (F) { # hol-tx10 vs hol-t
     prefixes <- c(rep("cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext", t=4), 
                   rep("cosmos-aso-wiso_echam5_Hol-T_timeser_ext", t=4))
     models <- rep("mpiom1", t=8)

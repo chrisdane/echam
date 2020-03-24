@@ -625,7 +625,6 @@ if (F) { # compare koehler et al. 2017 vs paul
 } # compare koehler et al. 2017 vs paul
 
 if (F) { # compare berger and laskar orb
-
     message("plot berger vs laskar ...")
     xlim <- range(unclass(my_orb_laskar$time)$year + 1900)
     xlim <- range(xlim, unclass(my_orb_berger$time)$year + 1900)
@@ -674,8 +673,24 @@ if (F) { # compare berger and laskar orb
         mtext(side=4, "Difference Berger minus Laskar", line=4.5, cex=0.9, col="blue")
     }
     dev.off()
-
 } # comapre berger and laskar orb
+
+# pangaea
+if (T) {
+    message("\ndisable `library(pangaear)` if you do not want to load dataseats from https://pangaea.de ...")
+    library(pangaear)
+    pdoi <- "10.1594/PANGAEA.899329" # kostrova et al. 2019: https://doi.pangaea.de/10.1594/PANGAEA.899329
+    dat_kostrova_etal_2019 <- pg_data(doi=pdoi)
+    years <- dat_kostrova_etal_2019[[1]]$data$"Cal age [ka BP]" # 0.203  0.793  1.373  1.939 ... 9.662 10.062 10.428 10.750
+    years <- -1*rev(years*1000) # -10750 -10428 -10062  -9662 ... -1939  -1373   -793   -203
+    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+    kostrova_etal_2019 <- list(time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
+                               d18o=dat_kostrova_etal_2019[[1]]$data$"Diatoms δ18O [‰ SMOW] (Contamination corrected)",
+                               text="Ladoga (Kostrova et al. 2019)", col="red",
+                               lty=NA, pch=4, lwd=NA, cex=1.5)
+} else {
+    message("\nenable `library(pangaear)` if you want to load dataseats from https://pangaea.de ...")
+}
 
 # clean
 for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin")) {
@@ -1507,7 +1522,7 @@ for (i in 1:nsettings) {
     
         } else if (varname == "wisoaprt_d") {
             message("update")
-            data_infos[[i]][[vi]]$label <- "wisoaprt_d180"
+            data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O (‰)"))
 
         } else if (varname == "lm_temp2_as_time_slope") {
             message("special label")
@@ -2634,24 +2649,28 @@ for (plot_groupi in seq_len(nplot_groups)) {
             vinds <- vinds_samevars[[ploti]]
             # take varinfo of first found occurence of current variable
             data_info <- data_infos[[dinds_samevars[[ploti]][[1]]]][[vinds_samevars[[ploti]][[1]]]]
+            names_legend_p <- names_legend[sapply(dinds, "[")]
             if (exists("datasma")) zma <- zma_samevars[[ploti]]
             if (exists("datasmon")) {
                 zmon <- zmon_samevars[[ploti]]
                 dmon <- dmon_samevars[[ploti]]
                 dmoninds <- dmoninds_samevars[[ploti]]
                 vmoninds <- vmoninds_samevars[[ploti]]
+                names_legend_pmon <- names_legend[sapply(dmoninds , "[")]
             }
             if (exists("datasan")) {
                 zan <- zan_samevars[[ploti]]
                 dan <- dan_samevars[[ploti]]
                 daninds <- daninds_samevars[[ploti]]
                 vaninds <- vaninds_samevars[[ploti]]
+                names_legend_pan <- names_legend[sapply(daninds , "[")]
             }
             if (exists("datasltm")) {
                 zltm <- zltm_samevars[[ploti]]
                 dltm <- dltm_samevars[[ploti]]
                 dltminds <- dltminds_samevars[[ploti]]
                 vltminds <- vltminds_samevars[[ploti]]
+                names_legend_pltm <- names_legend[sapply(dltminds , "[")]
             }
             
         # plot all vars with same dims together (datas, datasma, datasmon, datasan, datasltm)
@@ -2662,24 +2681,28 @@ for (plot_groupi in seq_len(nplot_groups)) {
             dinds <- dinds_samedims[[ploti]]
             vinds <- vinds_samedims[[ploti]]
             data_info <- data_infos[[dinds_samedims[[ploti]][[1]]]][[vinds_samedims[[ploti]][[1]]]]
+            names_legend_p <- names_legend_samedims[sapply(dinds, "[")]
             if (exists("datasma")) zma <- zma_samedims[[ploti]]
             if (exists("datasmon")) {
                 zmon <- zmon_samedims[[ploti]]
                 dmon <- dmon_samedims[[ploti]]
                 dmoninds <- dmoninds_samedims[[ploti]]
                 vmoninds <- vmoninds_samedims[[ploti]]
+                names_legend_pmon <- names_legend_samedims[sapply(dmoninds , "[")]
             }
             if (exists("datasan")) {
                 zan <- zan_samedims[[ploti]]
                 dan <- dan_samedims[[ploti]]
                 daninds <- daninds_samedims[[ploti]]
                 vaninds <- vaninds_samedims[[ploti]]
+                names_legend_pan <- names_legend_samedims[sapply(daninds , "[")]
             }
             if (exists("datasltm")) {
                 zltm <- zltm_samedims[[ploti]]
                 dltm <- dltm_samedims[[ploti]]
                 dltminds <- dltminds_samedims[[ploti]]
                 vltminds <- vltminds_samedims[[ploti]]
+                names_legend_pltm <- names_legend_samedims[sapply(dltminds , "[")]
             }
 
         } # which plot_group "samevars" "samedims"
@@ -2687,7 +2710,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
         # temporary plot specs
         varnames_in_p <- gsub("_", "", varnames_in[sapply(dinds, "[")])
         names_short_p <- names_short[sapply(dinds, "[")]
-        names_legend_p <- names_legend_samedims[sapply(dinds, "[")]
         areas_p <- areas[sapply(dinds, "[")]
         seasonsp_p <- seasonsp[sapply(dinds, "[")]
         froms_plot_p <- froms_plot[sapply(dinds, "[")]
@@ -2701,7 +2723,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (exists("datasmon")) {
             varnames_in_pmon <- gsub("_", "", varnames_in[sapply(dmoninds, "[")])
             names_short_pmon <- names_short[sapply(dmoninds , "[")]
-            names_legend_pmon <- names_legend_samedims[sapply(dmoninds , "[")]
             areas_pmon <- areas[sapply(dmoninds , "[")]
             seasonsp_pmon <- seasonsp[sapply(dmoninds , "[")]
             froms_plot_pmon <- froms_plot[sapply(dmoninds , "[")]
@@ -2716,7 +2737,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (exists("datasan")) {
             varnames_in_pan <- gsub("_", "", varnames_in[sapply(daninds, "[")])
             names_short_pan <- names_short[sapply(daninds , "[")]
-            names_legend_pan <- names_legend_samedims[sapply(daninds , "[")]
             areas_pan <- areas[sapply(daninds , "[")]
             seasonsp_pan <- seasonsp[sapply(daninds , "[")]
             froms_plot_pan <- froms_plot[sapply(daninds , "[")]
@@ -2731,7 +2751,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (exists("datasltm")) {
             varnames_in_pltm <- gsub("_", "", varnames_in[sapply(dltminds, "[")])
             names_short_pltm <- names_short[sapply(dltminds , "[")]
-            names_legend_pltm <- names_legend_samedims[sapply(dltminds , "[")]
             areas_pltm <- areas[sapply(dltminds , "[")]
             seasonsp_pltm <- seasonsp[sapply(dltminds , "[")]
             froms_plot_pltm <- froms_plot[sapply(dltminds , "[")]
@@ -2818,12 +2837,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         length(d$lat[[1]]) == length(d$lat[[2]])) {
                     
                         message("AND both settings have same number of lons and lats\n",
-                                "--> plot anomalies 2 minus 1: ", names_legend[2], " minus ", names_legend[1], 
+                                "--> plot anomalies 2 minus 1: ", names_legend_p[2], " minus ", names_legend_p[1], 
                                 " as lon vs lat ...")
                         
                         # colorbar values
                         zanom <- list(z[[2]] - z[[1]])
-                        names(zanom) <- paste0(names_legend[2], " minus ", names_legend[1])
+                        names(zanom) <- paste0(names_legend_p[2], " minus ", names_legend_p[1])
                         source(paste0(homepath, "/functions/image.plot.pre.r"))
                         ip <- image.plot.pre(range(zanom, na.rm=T), verbose=F)
 
@@ -3302,6 +3321,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim <- range(ylim, nsidc_siarean_annual$siarean, na.rm=T)
             } # if add nsidc
 
+            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
+                message("\nadd kostrova et al. 2019 d18o data ...")
+                message("ylim before: ", ylim[1], ", ", ylim[2])
+                ylim <- range(ylim, kostrova_etal_2019$d18o)
+                message("ylim after: ", ylim[1], ", ", ylim[2])
+            }
+
             message("\n", "ylim=", appendLF=F)
             dput(ylim)
             yat <- pretty(ylim, n=8)
@@ -3432,6 +3458,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 lines(nsidc_siarean_annual$time, nsidc_siarean_annual$siarean,
                       col=nsidc_siarean_annual$col, lty=nsidc_siarean_annual$lty,
                       lwd=nsidc_siarean_annual$lwd)
+            }
+            
+            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
+                message("\n", "add kostroval et al. 2019 to plot ...")
+                points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
+                       col=kostrova_etal_2019$col, pch=kostrova_etal_2019$pch,
+                       cex=kostrova_etal_2019$cex)
             }
             # finished adding obs
 
@@ -3574,6 +3607,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch <- c(le$pch, hadcrut4_sat_anom_annual$pch)
                     }
                 }
+                if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
+                    message("\n", "add kostrova et al. 2019 to datas legend ...")
+                    le$pos <- "left"
+                    le$text <- c(le$text, kostrova_etal_2019$text)
+                    le$col <- c(le$col, kostrova_etal_2019$col)
+                    le$lty <- c(le$lty, kostrova_etal_2019$lty)
+                    le$lwd <- c(le$lwd, kostrova_etal_2019$lwd)
+                    le$pch <- c(le$pch, kostrova_etal_2019$pch)
+                }
+                
                 # reorder reading direction from R's default top->bottom to left->right
                 le <- reorder_legend(le)
                 if (length(le$pos) == 1) {
@@ -5367,16 +5410,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         } # scatter plot for each setting colored by time
                     
                     } else {
-                        message(" but (`dim_names_varx` = \"", paste(dim_names_varx, collapse="\", \""), 
+                        message("but (`dim_names_varx` = \"", paste(dim_names_varx, collapse="\", \""), 
                                 "\" && `dim_names_vary` = \"",
                                 paste(dim_names_vary, collapse="\", \""), "\") != (\"time\" && \"time\")")
                     }
 
                 } else {
-                    message(" but (`ndims_varx` = ", ndims_varx, " && `ndims_vary` = ", ndims_vary, ") != (1 && 1)")
+                    message("but (`ndims_varx` = ", ndims_varx, " && `ndims_vary` = ", ndims_vary, ") != (1 && 1)")
                 }
             } else {
-                message(" but `", varnamex, "_datas` and/or `", varnamey, "_datas` do not exist")
+                message("but `", varnamex, "_datas` and/or `", varnamey, "_datas` do not exist")
             }
 
         } # if plot_scatter_v1_vs_v2 of `datas`
