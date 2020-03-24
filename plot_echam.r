@@ -676,7 +676,7 @@ if (F) { # compare berger and laskar orb
 } # comapre berger and laskar orb
 
 # pangaea
-if (T) {
+if (F) {
     message("\ndisable `library(pangaear)` if you do not want to load dataseats from https://pangaea.de ...")
     library(pangaear)
     pdoi <- "10.1594/PANGAEA.899329" # kostrova et al. 2019: https://doi.pangaea.de/10.1594/PANGAEA.899329
@@ -685,8 +685,8 @@ if (T) {
     years <- -1*rev(years*1000) # -10750 -10428 -10062  -9662 ... -1939  -1373   -793   -203
     timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
     kostrova_etal_2019 <- list(time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                               d18o=dat_kostrova_etal_2019[[1]]$data$"Diatoms δ18O [‰ SMOW] (Contamination corrected)",
-                               text="Ladoga (Kostrova et al. 2019)", col="red",
+                               d18o=rev(dat_kostrova_etal_2019[[1]]$data$"Diatoms δ18O [‰ SMOW] (Contamination corrected)"),
+                               text="Kostrova et al. 2019", col="black",
                                lty=NA, pch=4, lwd=NA, cex=1.5)
 } else {
     message("\nenable `library(pangaear)` if you want to load dataseats from https://pangaea.de ...")
@@ -790,7 +790,11 @@ if (!exists("plotpath")) { # default from post_echam.r
 base <- 10
 power <- 0 # default: 0 --> 10^0 = 1e0 = 1 --> nothing happens
 cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha)
-
+if (F) {
+    message("\nuse transparent cols ...")
+    cols_save <- cols
+    cols <- cols_rgb
+}
 
 # allocate
 datas <- vector("list", l=nsettings)
@@ -1528,6 +1532,70 @@ for (i in 1:nsettings) {
             message("special label")
             data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
         
+        } else if (varname == "c204_ICEARE_GLO") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 6+6 # 1x10^6: m2 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIA global [km"^2, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+
+        } else if (varname == "c205_ICEVOL_GLO") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 9+4 # 1x10^9: m3 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIV global [km"^3, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+   
+        } else if (varname == "c64_ICEARE_ARC") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 6+6 # 1x10^6: m2 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIA Arctic [km"^2, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+
+        } else if (varname == "c65_ICEVOL_ARC") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 9+4 # 1x10^9: m3 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIV Arctic [km"^3, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+       
+        } else if (varname == "c44_ICEARE_GIN") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 6+5 # 1x10^6: m2 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIA GIN [km"^2, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+
+        } else if (varname == "c45_ICEVOL_GIN") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 9+2 # 1x10^9: m3 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIV GIN [km"^3, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+        
+        } else if (varname == "c84_ICEARE_LAB") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 6+5 # 1x10^6: m2 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIA LSea [km"^2, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+
+        } else if (varname == "c85_ICEVOL_LAB") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 9+2 # 1x10^9: m3 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIV LSea [km"^3, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+  
         } else if (varname == "c144_ICEARE_SO") {
             data_infos[[i]][[vi]]$offset$operator <- "/"
             data_infos[[i]][[vi]]$offset$power <- 6+6 # 1x10^6: m2 --> km2
@@ -3278,6 +3346,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } 
             # if add_data_right_yaxis_ts finished prepare right axis data
 
+            if (scale_ts) {
+                message("\n`scale_ts` = T --> scale ts before plot ...")
+                for (i in seq_along(z)) {
+                    z[[i]] <- scale(z[[i]])
+                    if (exists("zma")) zma[[i]] <- scale(zma[[i]])
+                }
+            }
+
             # ylims of model data
             if (add_unsmoothed) {
                 message("\n", mode, " versus time min / mean / max ", varname, " z:")
@@ -3324,6 +3400,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
                 message("\nadd kostrova et al. 2019 d18o data ...")
                 message("ylim before: ", ylim[1], ", ", ylim[2])
+                if (scale_ts) kostrova_etal_2019$d18o <- scale(kostrova_etal_2019$d18o)
                 ylim <- range(ylim, kostrova_etal_2019$d18o)
                 message("ylim after: ", ylim[1], ", ", ylim[2])
             }
@@ -4720,32 +4797,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     dim_names_set1_vs_set2 <- sapply(lapply(scatter_set1_vs_set2, attributes), "[", "dims")
                     
                     if (all(dim_names_set1_vs_set2 == "time")) {
-                        message(" and `dim_names_set1_vs_set2` == \"time\" ...")
+                        message("and `dim_names_set1_vs_set2` == \"time\" ...")
 
-                        eval(parse(text=paste0("var_infos <- ", varname, "_infos")))
-                    
-                        if (all(names(scatter_set1_vs_set2) == c("Hol-Tx10", "Hol-T"))) {
-                            # only plot same time points of accelerated and non-accelerated runs
-                            inds1 <- which(dims[[1]]$time %in% dims[[2]]$time)
-                            inds2 <- which(dims[[2]]$time %in% dims[[1]]$time)
-                            if (length(inds1) != length(inds2)) {
-                                stop("sth wrong")
-                            }
-                            scatter_set1_vs_set2[[1]] <- scatter_set1_vs_set2[[1]][inds1]
-                            scatter_set1_vs_set2[[2]] <- scatter_set1_vs_set2[[2]][inds2]
-                        } # if "Hol-Tx10", "Hol-T"
+                        message("\find same temporal indices ...")
+                        inds1 <- which(dims[[1]]$time %in% dims[[2]]$time)
+                        inds2 <- which(dims[[2]]$time %in% dims[[1]]$time)
+                        if (length(inds1) != length(inds2)) {
+                            stop("sth wrong")
+                        }
+                        scatter_set1_vs_set2[[1]] <- scatter_set1_vs_set2[[1]][inds1]
+                        scatter_set1_vs_set2[[2]] <- scatter_set1_vs_set2[[2]][inds2]
 
                         if (all(sapply(dims, "[[", "time_frequency") == "monthly")) {
                            
-                            message("special: plot_scatter_s1_vs_s2 highlighted by seasons")
-
                             # color data by time or seasons
                             if (F) { # by time
                                 message("color by time ...")
                                 timecols <- colorRampPalette(c("blue", "red"))(length(scatter_set1_vs_set2[[1]]))
                                 scatter_suffix <- "_bytime"
                             } else if (T) { # by season
-                                message("color by season ...")
+                                message("special: plot_scatter_s1_vs_s2 highlighted by seasons")
                                 scatterpchs_vstime <- 1:4
                                 season_cols <- c(DJF="blue", MAM="darkgreen", JJA="red", SON="brown")
                                 timecols <- rep(NA, t=length(scatter_set1_vs_set2[[1]]))
@@ -4815,6 +4886,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             }
 
                             # add variable label
+                            eval(parse(text=paste0("var_infos <- ", varname, "_infos")))
                             mtext(side=1, var_infos[[1]]$label, line=3.4, cex=0.9)
                             mtext(side=2, var_infos[[2]]$label, line=3.4, cex=0.9)
 

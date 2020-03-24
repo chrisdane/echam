@@ -36,7 +36,7 @@ message(paste0("   workpath = ", workpath))
 verbose <- 1 # 0,1
 clean <- F # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
-cdo_force <- F # redo cdo command although outout file already exists 
+cdo_force <- T # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
 cdo_set_rel_time <- T # conversion from absolute to relative time
 cdo_run_from_script <- T # create temporary file and run long cdo command from there
@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
@@ -111,14 +111,14 @@ if (F) { # old hist
     models <- "mpiom1"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
-    #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
+    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc"
-    fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"
+    #fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
-    #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_timeser_ext"
+    prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_timeser_ext"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_fort_75"
-    prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_grb_code_183_remapcon2_r120x101"
+    #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_grb_code_183_remapcon2_r120x101"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "srad0"
@@ -134,21 +134,6 @@ if (F) { # old hist
     #fvarnames <- "ptsurf"
     #fvarnames <- "c1_PSIGULF" # Maximum_of_Barotropic_Streamfunction_in_Subtropical_Atlantic [m3 s-1]
     #fvarnames <- "c6_PSISPG" # Maximum_of_Barotropic_Streamfunction_in_Subpolar_Atlantic [m3 s-1]
-    #fvarnames <- "c64_ICEARE_ARC" # Seaice_Area_Arctic_Ocean [m2]
-    #fvarnames <- "c65_ICEVOL_ARC" # Seaice_Volume_Arctic_Ocean [m3]
-    #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
-    #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
-    #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
-    #fvarnames <- "c204_ICEARE_GLO" # Seaice_Area_Global [m2]
-    #fvarnames <- "c205_ICEVOL_GLO" # Seaice_Volume_Global [m3]
-    #fvarnames <- "c128_SST_ATL" # Sea_Surface_Temperature_Atlantic_Ocean [deg C]
-    #fvarnames <- "c129_SSS_ATL" # Sea_Surface_Salinity_Atlantic_Ocean [psu]
-    #fvarnames <- "c130_T200_ATL" # Potential_Temperature_200m_Atlantic_Ocean [deg C]
-    #fvarnames <- "c131_S200_ATL" # Salinity_200m_Atlantic_Ocean [psu]
-    #fvarnames <- "c132_T700_ATL" # Potential_Temperature_700m_Atlantic_Ocean [deg C]
-    #fvarnames <- "c133_S700_ATL" # Salinity_700m_Atlantic_Ocean [psu]
-    #fvarnames <- "c134_T2200_ATL" # Potential_Temperature_2200m_Atlantic_Ocean [deg C]
-    #fvarnames <- "c135_S2200_ATL" # Salinity_2200m_Atlantic_Ocean [psu]
     #fvarnames <- "c208_SST_GLO" # Sea_Surface_Temperature_Global [deg C]
     #fvarnames <- "c209_SSS_GLO" # Sea_Surface_Salinity_Global [psu]
     #fvarnames <- "c210_T200_GLO" # Potential_Temperature_200m_Global [deg C]
@@ -157,9 +142,53 @@ if (F) { # old hist
     #fvarnames <- "c213_S700_GLO" # Salinity_700m_Global [psu]
     #fvarnames <- "c214_T2200_GLO" # Potential_Temperature_2200m_Global [deg C]
     #fvarnames <- "c215_S2200_GLO" # Salinity_2200m_Global [psu]
-    fvarnames <- "zmld"
-    areas_out_list <- list(list(name="weddel",
-                                sellonlatbox=c(lon1=300,lon2=18,lat1=-81,lat2=-57.6)))
+    #fvarnames <- "c204_ICEARE_GLO" # Seaice_Area_Global [m2]
+    #fvarnames <- "c205_ICEVOL_GLO" # Seaice_Volume_Global [m3]
+    #fvarnames <- "c64_ICEARE_ARC" # Seaice_Area_Arctic_Ocean [m2]
+    #fvarnames <- "c65_ICEVOL_ARC" # Seaice_Volume_Arctic_Ocean [m3]
+    #fvarnames <- "c128_SST_ATL" # Sea_Surface_Temperature_Atlantic_Ocean [deg C]
+    #fvarnames <- "c129_SSS_ATL" # Sea_Surface_Salinity_Atlantic_Ocean [psu]
+    #fvarnames <- "c130_T200_ATL" # Potential_Temperature_200m_Atlantic_Ocean [deg C]
+    #fvarnames <- "c131_S200_ATL" # Salinity_200m_Atlantic_Ocean [psu]
+    #fvarnames <- "c132_T700_ATL" # Potential_Temperature_700m_Atlantic_Ocean [deg C]
+    #fvarnames <- "c133_S700_ATL" # Salinity_700m_Atlantic_Ocean [psu]
+    #fvarnames <- "c134_T2200_ATL" # Potential_Temperature_2200m_Atlantic_Ocean [deg C]
+    #fvarnames <- "c135_S2200_ATL" # Salinity_2200m_Atlantic_Ocean [psu]
+    #fvarnames <- "c44_ICEARE_GIN" # Seaice_Area_GIN_Sea [m2]
+    #fvarnames <- "c45_ICEVOL_GIN" # Seaice_Volume_GIN_Sea [m3] 
+    #fvarnames <- "c46_HFL_GIN" # Downward_Heatflux_into_GIN_Sea [W]
+    #fvarnames <- "c47_WFL_GIN" # Downward_Waterflux_into_GIN_Sea [m3 s-1]
+    #fvarnames <- "cSST_GIN"
+    #fvarnames <- "c50_T200_GIN"
+    #fvarnames <- "c52_T700_GIN"
+    #fvarnames <- "c54_T2200_GIN"
+    #fvarnames <- "c49_SSS_GIN"
+    #fvarnames <- "c51_S200_GIN"
+    #fvarnames <- "c53_S700_GIN"
+    #fvarnames <- "c55_S2200_GIN"
+    #fvarnames <- "c86_HFL_LAB" # Downward_Heatflux_into_Labrador_Sea [W]
+    #fvarnames <- "c87_WFL_LAB" # Downward_Waterflux_into_Labrador_Sea [m3 s-1]
+    #fvarnames <- "c88_SST_LAB" # Sea_Surface_Temperature_Labrador_Sea [deg C]
+    #fvarnames <- "c90_T200_LAB" # Potential_Temperature_200m_Labrador_Sea [deg C]
+    #fvarnames <- "c92_T700_LAB" # Potential_Temperature_700m_Labrador_Sea [deg C]
+    #fvarnames <- "c94_T2200_LAB" # Potential_Temperature_2200m_Labrador_Sea [deg C]
+    #fvarnames <- "c89_SSS_LAB" # Sea_Surface_Salinity_Labrador_Sea [psu]
+    #fvarnames <- "c91_S200_LAB" # Salinity_200m_Labrador_Sea [psu]
+    #fvarnames <- "c93_S700_LAB" # Salinity_700m_Labrador_Sea [psu]
+    fvarnames <- "c95_S2200_LAB" # Salinity_2200m_Labrador_Sea [psu]
+    #fvarnames <- "c84_ICEARE_LAB" # Seaice_Area_Labrador_Sea [m2]
+    #fvarnames <- "c85_ICEVOL_LAB" # Seaice_Volume_Labrador_Sea [m3]
+    #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
+    #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
+    #fvarnames <- "zmld"
+    #areas_out_list <- list(list(name="NA45to90N",
+    #                            sellonlatbox=c(lon1=250,lon2=45,lat1=45,lat2=90)))
+    #areas_out_list <- list(list(name="weddelmld",
+    #                            sellonlatbox=c(lon1=300,lon2=18,lat1=-81,lat2=-57.6)))
+    #areas_out_list <- list(list(name="GINmld",
+    #                            sellonlatbox=c(lon1=343,lon2=14,lat1=57.6,lat2=79)))
+    #areas_out_list <- list(list(name="LSeaSouthmld",
+    #                            sellonlatbox=c(lon1=306,lon2=335,lat1=43,lat2=62)))
     #fvarnames <- "amoc"
     #codes <- 101
     mpiom_moc_make_bottom_topo_arg_list <- list(list(mpiom_model_res=c(setup="GR30", nlev="L40"), 
@@ -184,20 +213,20 @@ if (F) { # old hist
                                                                  )
                                               ) # setting 1
                                           )
-    #modes <- "select"
+    modes <- "select"
     #modes <- "timmean"
     #modes <- "yearmean"
     #modes <- "monmean"
     #modes <- "ymonmean"
-    modes <- "fldmean"
+    #modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
     #froms <- "0001" # Hol-Tx10 links: beginning counting from 1
     froms <- "2901" # Hol-Tx10 raw: beginning
     #froms <- "3572"
-    tos <- "2910"
-    #tos <- "3601" # Hol-Tx10 raw: end
+    #tos <- "2910"
+    tos <- "3601" # Hol-Tx10 raw: end
     #tos <- "7001" # Hol-Tx10 links: end counting from 1 
     if (modes[1] == "timmean") {
         if (froms[1] == "2901" && tos[1] == "3601") {
@@ -226,13 +255,27 @@ if (F) { # old hist
                     new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
                 }
             }
+            if (grepl("_remapcon2_", fpatterns[1])) {
+                # 11 missing mpiom *.grb * files: 3028, 3065, 3153, 3162, 3165, 3316, 3331, 3334, 3348, 3368, 3498
+                if (any(new_date_list[[1]]$years == 4471)) {
+                    missy <- c(3028, 3065, 3153, 3162, 3165, 3316, 3331, 3334, 3348, 3368, 3498)
+                    message("remove missing years ", paste(missy, collapse=", "))
+                    rminds <- c()
+                    for (y in missy) {
+                        tmp <- which(new_date_list[[1]]$years == (length(2901:y)-1)*10+1)
+                        #message((length(2901:y)-1)*10+1, ": ", paste(tmp, collapse=","))
+                        rminds <- c(rminds, tmp)
+                    }
+                    new_date_list[[1]]$years <- new_date_list[[1]]$years[-rminds]
+                }
+            }
         }
     } # new time depending on output frequency
     wiso_smow_files <- "~/scripts/r/echam/wiso/SMOW.FAC.T31.nc"
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
     #models <- "echam5"

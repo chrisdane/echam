@@ -1084,12 +1084,12 @@ for (i in 1:nsettings) {
 
                     message("\n`new_date_list[[", i, "]]` is not NULL:")
                     cat(capture.output(str(new_date_list[[i]])), sep="\n")
-                    message("\n--> check time dimension values of ", nchunks, " chunk", 
-                            ifelse(nchunks > 1, "s", ""), " and apply the new origin if necessary ...")
                     if (!is.null(new_date_list[[i]]$years)) {
                         message("new_date_list[[i]]$years:")
                         ht(new_date_list[[i]]$years, n=20)
                     }
+                    message("\n--> check time dimension values of ", nchunks, " chunk", 
+                            ifelse(nchunks > 1, "s", ""), " and apply the new origin if necessary ...")
 
                     # get time dimension values of result of cdo select and calc
                     # -> necessary to get months/days/etc. also if new_date_list[[i]]$years are given or 
@@ -1434,6 +1434,7 @@ for (i in 1:nsettings) {
                                 npy[yi] <- length(year_inds)
                             }
                             npy_unique <- unique(npy)
+                            message("\nunique occurences:")
                             for (npy_uniquei in seq_along(npy_unique)) {
                                 message("years with wrong february 29 that occur ", npy_unique[npy_uniquei], " times:")
                                 cat(capture.output(str(feb29_years[which(npy == npy_unique[npy_uniquei])])), sep="\n")
