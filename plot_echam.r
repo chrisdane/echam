@@ -1564,11 +1564,39 @@ for (i in 1:nsettings) {
                                                                             " " %*% " ", 10^power, "]")),
                                                            list(power=data_infos[[i]][[vi]]$offset$power)))
        
+        } else if (any(varname == c("c46_HFL_GIN", "c86_HFL_LAB"))) {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 13
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("Heat flux into ocean [W " %*% " ", 
+                                                                            10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+        
+        } else if (any(varname == c("c47_WFL_GIN", "c87_WFL_LAB"))) {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 3
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("Freshwater flux into ocean [m"^3, 
+                                                                            " s"^paste(-1), " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+
+        } else if (any(varname == c("c208_SST_GLO", "c210_T200_GLO", "c212_T700_GLO", "c214_T2200_GLO",
+                                    "c128_SST_ATL", "c130_T200_ATL", "c132_T700_ATL", "c134_T2200_ATL",
+                                    "cSST_GIN", "c50_T200_GIN", "c52_T700_GIN", "c54_T2200_GIN",
+                                    "c88_SST_LAB", "c90_T200_LAB", "c92_T700_LAB", "c94_T2200_LAB"))) {
+            data_infos[[i]][[vi]]$label <- "Potential temperature [°C]"
+
+        } else if (any(varname == c("c209_SSS_GLO", "c211_S200_GLO", "c213_S700_GLO", "c215_S2200_GLO",
+                                    "c129_SSS_ATL", "c131_S200_ATL", "c133_S700_ATL", "c135_S2200_ATL",
+                                    "c49_SSS_GIN", "c51_S200_GIN", "c53_S700_GIN", "c55_S2200_GIN",
+                                    "c89_SSS_LAB", "c91_S200_LAB", "c93_S700_LAB", "c95_S2200_LAB"))) {
+            data_infos[[i]][[vi]]$label <- "Salinity [psu]"
+        
         } else if (varname == "c44_ICEARE_GIN") {
             data_infos[[i]][[vi]]$offset$operator <- "/"
             data_infos[[i]][[vi]]$offset$power <- 6+5 # 1x10^6: m2 --> km2
             data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
-            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIA GIN [km"^2, 
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIA GIN Sea [km"^2, 
                                                                             " " %*% " ", 10^power, "]")),
                                                            list(power=data_infos[[i]][[vi]]$offset$power)))
 
@@ -1576,7 +1604,7 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$offset$operator <- "/"
             data_infos[[i]][[vi]]$offset$power <- 9+2 # 1x10^9: m3 --> km2
             data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
-            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIV GIN [km"^3, 
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIV GIN Sea [km"^3, 
                                                                             " " %*% " ", 10^power, "]")),
                                                            list(power=data_infos[[i]][[vi]]$offset$power)))
         
@@ -1611,9 +1639,6 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIV Southern Ocean [km"^3, 
                                                                             " " %*% " ", 10^power, "]")),
                                                            list(power=data_infos[[i]][[vi]]$offset$power)))
-
-        } else if (any(varname == c("c209_SSS_GLO", "c211_S200_GLO", "c213_S700_GLO", "c215_S2200_GLO"))) {
-            data_infos[[i]][[vi]]$label <- "Salinity [psu]"
 
         } # finished define variable specific things
     
@@ -3405,6 +3430,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("ylim after: ", ylim[1], ", ", ylim[2])
             }
 
+            # increase ylim for legend if many settings
+            if (length(z) > 6) {
+                message("\ninrease ylim for ts legend ...")
+                ylim[2] <- ylim[2] + 0*diff(ylim)
+            }
+            
             message("\n", "ylim=", appendLF=F)
             dput(ylim)
             yat <- pretty(ylim, n=8)
@@ -3653,12 +3684,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("\n", "add default stuff to ts legend ...")
                 le <- list()
                 le$pos <- "topleft" 
+                #le$pos <- "left"
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
                 #le$ncol <- nsettings/2
-                le$ncol <- 1
-                #le$ncol <- 2 
+                #le$ncol <- 1
+                le$ncol <- ceiling(length(z)/4) 
                 le$text <- names_legend_p
                 le$col <- cols_p
                 le$lty <- ltys_p
@@ -3673,6 +3705,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 le$cex <- 1
                 le$cex <- 0.85
+                #le$cex <- 0.5
                 # add stuf to legend here
                 if (F && varname == "temp2") {
                     message("\n", "add non hadcrut4 to ", mode, " datas legend ...")
@@ -3695,7 +3728,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 
                 # reorder reading direction from R's default top->bottom to left->right
-                le <- reorder_legend(le)
+                if (F) {
+                    message("\nreorder legend from top->bottom to left->right")
+                    le <- reorder_legend(le)
+                }
                 if (length(le$pos) == 1) {
                     legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                            pch=le$pch, col=le$col, ncol=le$ncol,

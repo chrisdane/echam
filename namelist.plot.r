@@ -204,8 +204,12 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("c204_ICEARE_GLO", "c204_ICEARE_GLO")
     #varnames_in <- c("c64_ICEARE_ARC", "c64_ICEARE_ARC")
     #varnames_in <- c("c65_ICEVOL_ARC", "c65_ICEVOL_ARC")
+    #varnames_in <- c("c46_HFL_GIN", "c46_HFL_GIN")
+    #varnames_in <- c("c47_WFL_GIN", "c47_WFL_GIN")
     #varnames_in <- c("c44_ICEARE_GIN", "c44_ICEARE_GIN")
-    varnames_in <- c("c45_ICEVOL_GIN", "c45_ICEVOL_GIN")
+    #varnames_in <- c("c45_ICEVOL_GIN", "c45_ICEVOL_GIN")
+    #varnames_in <- c("c86_HFL_LAB", "c86_HFL_LAB")
+    varnames_in <- c("c87_WFL_LAB", "c87_WFL_LAB")
     #varnames_in <- c("c84_ICEARE_LAB", "c84_ICEARE_LAB")
     #varnames_in <- c("c85_ICEVOL_LAB", "c85_ICEVOL_LAB")
     #varnames_in <- c("c145_ICEVOL_SO", "c145_ICEVOL_SO")
@@ -233,17 +237,17 @@ if (F) { # awi-esm-1-1-lr hist
     #levs <- c("-285to-2180m", "-285to-2180m", "-0to-5420m", "-0to-5420m", "-0to-5420m", "-0to-5420m")
     #seasonsf <- c("annual", "annual")
     #seasonsp <- c("Mar", "Mar")
-    seasonsp <- c("Apr", "Apr")
+    #seasonsp <- c("Apr", "Apr")
     #seasonsp <- c("Jun", "Jun")
     #seasonsp <- c("JJA", "JJA")
     #seasonsp <- c("Sep", "Sep")
     #seasonsp <- c("Dec", "Dec")
     #n_mas <- c(1, 1)
     #n_mas <- c(3, 300)
-    n_mas <- c(10, 100)
+    #n_mas <- c(10, 100)
     #n_mas <- c(120, 120)
     #n_mas <- c(120, 1200)
-    #n_mas <- c(1200, 12000)
+    n_mas <- c(1200, 12000)
     #remove_mean_froms <- c(0, -179)
     #remove_mean_tos <- c(0, -179)
 
@@ -531,10 +535,10 @@ if (F) { # awi-esm-1-1-lr hist
 # ==================================================
 # 8 settings
 } else if (F) { # hol-tx10 vs hol-t
-    prefixes <- c(rep("cosmos-aso-wiso_echam5_Hol-Tx10_timeser_ext", t=4), 
-                  rep("cosmos-aso-wiso_echam5_Hol-T_timeser_ext", t=4))
+    prefixes <- c(rep("cosmos-aso-wiso_mpiom1_Hol-Tx10_timeser_ext", t=4), 
+                  rep("cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext", t=4))
     models <- rep("mpiom1", t=8)
-    names_short <- c(rep("HolTx10", t=4), rep("HolT", t=4))
+    names_short <- c(rep("Hol-Tx10", t=4), rep("Hol-T", t=4))
     fromsf <- c(rep("0001", t=4), rep("0004", t=4))
     tosf <- c(rep("7001", t=4), rep("7000", t=4))
     new_origins <- c(rep(-7000, t=4), rep(-6996, t=4)) 
@@ -542,9 +546,13 @@ if (F) { # awi-esm-1-1-lr hist
     time_ref <- 1950 # any string, e.g. "BP", or number
     #varnames_in <- rep(c("c208_SST_GLO", "c210_T200_GLO", "c212_T700_GLO", "c214_T2200_GLO"), t=2)
     #varnames_in <- rep(c("c128_SST_ATL", "c130_T200_ATL", "c132_T700_ATL", "c134_T2200_ATL"), t=2)
+    #varnames_in <- rep(c("cSST_GIN", "c50_T200_GIN", "c52_T700_GIN", "c54_T2200_GIN"), t=2)
+    #varnames_in <- rep(c("c88_SST_LAB", "c90_T200_LAB", "c92_T700_LAB", "c94_T2200_LAB"), t=2)
     #varnames_out_samedims <- "thetao"
     #varnames_in <- rep(c("c209_SSS_GLO", "c211_S200_GLO", "c213_S700_GLO", "c215_S2200_GLO"), t=2)
-    varnames_in <- rep(c("c129_SSS_ATL", "c131_S200_ATL", "c133_S700_ATL", "c135_S2200_ATL"), t=2)
+    #varnames_in <- rep(c("c129_SSS_ATL", "c131_S200_ATL", "c133_S700_ATL", "c135_S2200_ATL"), t=2)
+    #varnames_in <- rep(c("c49_SSS_GIN", "c51_S200_GIN", "c53_S700_GIN", "c55_S2200_GIN"), t=2)
+    varnames_in <- rep(c("c89_SSS_LAB", "c91_S200_LAB", "c93_S700_LAB", "c95_S2200_LAB"), t=2)
     varnames_out_samedims <- "so"
     names_legend <- paste0(names_short, " ", varnames_in)
     names_legend_samedims <- paste0(names_short, rep(paste0(" ", c("surf", "200m", "700m", "2200m")), t=2))
