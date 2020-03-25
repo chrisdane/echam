@@ -30,3 +30,17 @@ tar -xf fort_32900101_32901231.tar -C /target_dir
 cdo -f nc copy -setpartab,zeitser-wiso.partab TIMESER.32900101_32901231.ext TIMESER.32900101_32901231.ext.nc
 ```
 
+get sea ice values above a threshold:
+```bash
+ncap2 -s SICOMO=float(SICOMO>>0.0) in out
+```
+
+difference between sea ice area and extent
+https://nsidc.org/arcticseaicenews/faq/#area_extent
+"Extent would be a measure of the edges of the slice of cheese and all of the space inside it. Area would be the measure of where there is cheese only, not including the holes."
+```
+--> area   = sum_i (A_cell_i * SIC_cell_i ) for cell i [optional: for which SIC_cell_i > 15 %]
+--> extent = sum_i (A_cell_i)               for cell i [optional: for which SIC_cell_i > 15 %]
+```
+
+

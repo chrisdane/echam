@@ -277,24 +277,26 @@ if (F) { # old hist
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
 } else if (T) { # Hol-T on stan
-    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
-    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
-    models <- "echam5"
-    #models <- "mpiom1"
-    fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
+    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
+    #models <- "echam5"
+    models <- "mpiom1"
+    #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc" # daily
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc" # daily
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
+    fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_183_remapcon2_r120x101"
+    prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_15_remapcon2_r120x101"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
-    fvarnames <- "wind10"
+    #fvarnames <- "wind10"
     #fvarnames <- "srad0"
     #fvarnames <- "srad0d"
     #fvarnames <- "trad0"
@@ -356,10 +358,11 @@ if (F) { # old hist
     #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
     #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
     #fvarnames <- "zmld"
+    fvarnames <- "SICOMO"
     #areas_out_list <- list(list(name="NA45to90N",
     #                            sellonlatbox=c(lon1=250,lon2=45,lat1=45,lat2=90)))
-    #areas_out_list <- list(list(name="weddelmld",
-    #                            sellonlatbox=c(lon1=300,lon2=18,lat1=-81,lat2=-57.6)))
+    areas_out_list <- list(list(name="weddelmld",
+                                sellonlatbox=c(lon1=300,lon2=18,lat1=-81,lat2=-57.6)))
     #areas_out_list <- list(list(name="GINmld",
     #                            sellonlatbox=c(lon1=343,lon2=14,lat1=57.6,lat2=79)))
     #areas_out_list <- list(list(name="LSeaSouthmld",
