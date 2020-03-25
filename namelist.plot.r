@@ -165,7 +165,7 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (T) { # Hol-T with vs without orbital acceleration
+} else if (F) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10", "cosmos-aso-wiso_echam5_Hol-T")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_main_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
@@ -534,31 +534,32 @@ if (F) { # awi-esm-1-1-lr hist
 
 # ==================================================
 # 8 settings
-} else if (F) { # hol-tx10 vs hol-t
+} else if (T) { # hol-tx10 vs hol-t
     prefixes <- c(rep("cosmos-aso-wiso_mpiom1_Hol-Tx10_timeser_ext", t=4), 
                   rep("cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext", t=4))
     models <- rep("mpiom1", t=8)
     names_short <- c(rep("Hol-Tx10", t=4), rep("Hol-T", t=4))
+    names_legend <- names_short
     fromsf <- c(rep("0001", t=4), rep("0004", t=4))
     tosf <- c(rep("7001", t=4), rep("7000", t=4))
     new_origins <- c(rep(-7000, t=4), rep(-6996, t=4)) 
     time_frequencies <- rep("monthly", t=8)
     time_ref <- 1950 # any string, e.g. "BP", or number
+    n_mas <- c(rep(120, t=4), rep(1200, t=4))
+    cols <- c(rep(1, t=4), rep(2, t=4))
     #varnames_in <- rep(c("c208_SST_GLO", "c210_T200_GLO", "c212_T700_GLO", "c214_T2200_GLO"), t=2)
     #varnames_in <- rep(c("c128_SST_ATL", "c130_T200_ATL", "c132_T700_ATL", "c134_T2200_ATL"), t=2)
     #varnames_in <- rep(c("cSST_GIN", "c50_T200_GIN", "c52_T700_GIN", "c54_T2200_GIN"), t=2)
     #varnames_in <- rep(c("c88_SST_LAB", "c90_T200_LAB", "c92_T700_LAB", "c94_T2200_LAB"), t=2)
     #varnames_out_samedims <- "thetao"
-    #varnames_in <- rep(c("c209_SSS_GLO", "c211_S200_GLO", "c213_S700_GLO", "c215_S2200_GLO"), t=2)
+    varnames_in <- rep(c("c209_SSS_GLO", "c211_S200_GLO", "c213_S700_GLO", "c215_S2200_GLO"), t=2)
     #varnames_in <- rep(c("c129_SSS_ATL", "c131_S200_ATL", "c133_S700_ATL", "c135_S2200_ATL"), t=2)
     #varnames_in <- rep(c("c49_SSS_GIN", "c51_S200_GIN", "c53_S700_GIN", "c55_S2200_GIN"), t=2)
-    varnames_in <- rep(c("c89_SSS_LAB", "c91_S200_LAB", "c93_S700_LAB", "c95_S2200_LAB"), t=2)
+    #varnames_in <- rep(c("c89_SSS_LAB", "c91_S200_LAB", "c93_S700_LAB", "c95_S2200_LAB"), t=2)
     varnames_out_samedims <- "so"
-    names_legend <- paste0(names_short, " ", varnames_in)
     names_legend_samedims <- paste0(names_short, rep(paste0(" ", c("surf", "200m", "700m", "2200m")), t=2))
-    cols <- c(1:4, 1:4)
-    ltys <- c(rep(2, t=4), rep(1, t=4))
-    n_mas <- c(rep(120, t=4), rep(1200, t=4))
+    cols_samedims <- c(1:4, 1:4)
+    ltys_samedims <- c(rep(2, t=4), rep(1, t=4))
 
 } # which settings
 # ==================================================

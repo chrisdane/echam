@@ -780,6 +780,11 @@ if (!exists("cols")) {
         cols <- cols_vec[cols]
     }
 }
+if (exists("cols_samedims")) {
+    if (class(cols_samedims) == "integer") { # user provided color numbers
+        cols_samedims <- cols_vec[cols_samedims]
+    }
+}
 if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
 if (!exists("postpaths")) { # default from post_echam.r
     postpaths <- rep(paste0(workpath, "/post"), t=nsettings)
@@ -2743,6 +2748,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # take varinfo of first found occurence of current variable
             data_info <- data_infos[[dinds_samevars[[ploti]][[1]]]][[vinds_samevars[[ploti]][[1]]]]
             names_legend_p <- names_legend[sapply(dinds, "[")]
+            cols_p <- cols[sapply(dinds, "[")]
+            ltys_p <- ltys[sapply(dinds, "[")]
             if (exists("datasma")) zma <- zma_samevars[[ploti]]
             if (exists("datasmon")) {
                 zmon <- zmon_samevars[[ploti]]
@@ -2775,6 +2782,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             vinds <- vinds_samedims[[ploti]]
             data_info <- data_infos[[dinds_samedims[[ploti]][[1]]]][[vinds_samedims[[ploti]][[1]]]]
             names_legend_p <- names_legend_samedims[sapply(dinds, "[")]
+            cols_p <- cols_samedims[sapply(dinds, "[")]
+            ltys_p <- ltys_samedims[sapply(dinds, "[")]
             if (exists("datasma")) zma <- zma_samedims[[ploti]]
             if (exists("datasmon")) {
                 zmon <- zmon_samedims[[ploti]]
@@ -2808,9 +2817,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         froms_plot_p <- froms_plot[sapply(dinds, "[")]
         tos_plot_p <- tos_plot[sapply(dinds, "[")]
         types_p <- types[sapply(dinds, "[")]
-        cols_p <- cols[sapply(dinds, "[")]
-        cols_rgb_p <- cols_rgb[sapply(dinds, "[")]
-        ltys_p <- ltys[sapply(dinds, "[")]
+        cols_rgb_p <- rgb(t(col2rgb(cols_p)/255), alpha=alpha)
         lwds_p <- lwds[sapply(dinds, "[")]
         pchs_p <- pchs[sapply(dinds, "[")]
         if (exists("datasmon")) {
@@ -3683,8 +3690,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\n", "add default stuff to ts legend ...")
                 le <- list()
-                le$pos <- "topleft" 
-                #le$pos <- "left"
+                #le$pos <- "topleft" 
+                le$pos <- "left"
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
@@ -3705,7 +3712,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 le$cex <- 1
                 le$cex <- 0.85
-                #le$cex <- 0.5
+                le$cex <- 0.5
                 # add stuf to legend here
                 if (F && varname == "temp2") {
                     message("\n", "add non hadcrut4 to ", mode, " datas legend ...")
