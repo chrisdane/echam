@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv
+} else if (F) { # Hol-Tx10 on paleosrv
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
@@ -276,24 +276,25 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (F) { # Hol-T on stan
-    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
-    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
-    #models <- "echam5"
-    models <- "mpiom1"
-    #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
+} else if (T) { # Hol-T on stan
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
+    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
+    models <- "echam5"
+    #models <- "mpiom1"
+    fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
-    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
+    #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc" # daily
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc" # daily
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
-    prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext"
+    #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_183_remapcon2_r120x101"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
+    fvarnames <- "wind10"
     #fvarnames <- "srad0"
     #fvarnames <- "srad0d"
     #fvarnames <- "trad0"
@@ -349,7 +350,7 @@ if (F) { # old hist
     #fvarnames <- "c89_SSS_LAB" # Sea_Surface_Salinity_Labrador_Sea [psu]
     #fvarnames <- "c91_S200_LAB" # Salinity_200m_Labrador_Sea [psu]
     #fvarnames <- "c93_S700_LAB" # Salinity_700m_Labrador_Sea [psu]
-    fvarnames <- "c95_S2200_LAB" # Salinity_2200m_Labrador_Sea [psu]
+    #fvarnames <- "c95_S2200_LAB" # Salinity_2200m_Labrador_Sea [psu]
     #fvarnames <- "c84_ICEARE_LAB" # Seaice_Area_Labrador_Sea [m2]
     #fvarnames <- "c85_ICEVOL_LAB" # Seaice_Volume_Labrador_Sea [m3]
     #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]

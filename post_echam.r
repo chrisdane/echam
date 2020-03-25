@@ -1595,7 +1595,7 @@ for (i in 1:nsettings) {
                             
                             # check if nco ncap2 argument is too long
                             nchar_cmd_ncap2 <- nchar(cmd_ncap2_tmp)
-                            message(" --> nco ncap2 argument list is ", nchar_cmd_ncap2, " characters long")
+                            message("--> nco ncap2 argument with all input files is ", nchar_cmd_ncap2, " characters long")
                             if (nchar_cmd_ncap2 > nco_nchar_max_arglist) {
                                 
                                 # run nco ncap2 command in chunks from file 
