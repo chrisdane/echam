@@ -590,14 +590,17 @@ for (i in 1:nsettings) {
             
             if (length(check) != 0) { 
 
-                message("--> requested variable \"", fvarnames[i], "\" was not found in first file\n",
-                        "  \"", datapaths[i], "/", files[1], "\"")
+                message("--> requested variable \"", fvarnames[i], "\" was not found in first file:\n",
+                        "   \"", datapaths[i], "/", files[1], "\"")
 
                 # special case: requested variable is one of the wiso delta variables
                 #if (fvarnames[i] %in% known_wiso_d_vars$vars) {
                 if (fvarnames[i] %in% names(cdo_known_cmds)) {
 
-                    message("however, requested variable \"", fvarnames[i], "\" is one of the variables defined in `cdo_known_cmds`:")
+                    nchunks <- 1 # for rest of script
+                    fout_vec <- fout
+
+                    message("\nhowever, requested variable \"", fvarnames[i], "\" is one of the variables defined in `cdo_known_cmds`:")
                     for (vari in 1:length(cdo_known_cmds)) {
                         message("   ", vari, " \"", names(cdo_known_cmds)[vari], "\": ", appendLF=F)
                         if (length(cdo_known_cmds[[vari]]$cmd) == 1) {
@@ -627,7 +630,7 @@ for (i in 1:nsettings) {
                                 # check if a variable in the current workspace exists with the same name
                                 pattern <- substr(cmdsin[cmdi], replace_inds_open[cmdj] + 1, replace_inds_close[cmdj] - 1)
                                 if (exists(eval(pattern))) { # variable with the name of the pattern exists
-                                    eval(parse(text="length_of_pattern_var <- length(", pattern, ")"))
+                                    eval(parse(text=paste0("length_of_pattern_var <- length(", pattern, ")")))
                                     if (length_of_pattern_var == nsettings) { # assume that the entry of setting i should be replaced
                                         eval(parse(text=paste0("replacement <- ", pattern, "[i]")))
                                     } else {
@@ -658,18 +661,18 @@ for (i in 1:nsettings) {
                         cmd <- cmdsout[cmdi]
                         if (length(cmdsout) > 1) {
                             if (cmdi == 1) { # first
-                                cmdout_file <- paste0(postpaths[i], "/cmdout_", cmdi, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
+                                cmdout_file <- paste0(postpaths[i], "/tmp_cmdout_", cmdi, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
                                 cmd <- paste0(cmd, " ", cmdout_file)
                                 cmdout_files <- c(cmdout_files, cmdout_file)
                             } else if (cmdi == length(cmdsout)) { # last
-                                cmdout_file <- paste0(postpaths[i], "/cmdout_", cmdi-1, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
+                                cmdout_file <- paste0(postpaths[i], "/tmp_cmdout_", cmdi-1, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
                                 cmd <- paste0(cmd, " ", cmdout_file, " ", fout)
                                 cmdout_files <- c(cmdout_files, cmdout_file)
                             } else { # in between
-                                cmdout_file <- paste0(postpaths[i], "/cmdout_", cmdi-1, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
+                                cmdout_file <- paste0(postpaths[i], "/tmp_cmdout_", cmdi-1, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
                                 cmd <- paste0(cmd, " ", cmdout_file)
                                 cmdout_files <- c(cmdout_files, cmdout_file)
-                                cmdout_file <- paste0(postpaths[i], "/cmdout_", cmdi, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
+                                cmdout_file <- paste0(postpaths[i], "/tmp_cmdout_", cmdi, "_of_", length(cmdsout), "_tmp_", Sys.getpid())
                                 cmd <- paste0(cmd, " ", cmdout_file)
                                 cmdout_files <- c(cmdout_files, cmdout_file)
                             }
