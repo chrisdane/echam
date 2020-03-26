@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv
+} else if (F) { # Hol-Tx10 on paleosrv
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
@@ -277,24 +277,24 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (F) { # Hol-T on stan
-    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
-    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
-    #models <- "echam5"
-    models <- "mpiom1"
+} else if (T) { # Hol-T on stan
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
+    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
+    models <- "echam5"
+    #models <- "mpiom1"
     #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
+    fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc" # daily
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc" # daily
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"
-    fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
+    #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_183_remapcon2_r120x101"
-    prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_15_remapcon2_r120x101"
+    #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_15_remapcon2_r120x101"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "wind10"
@@ -308,6 +308,7 @@ if (F) { # old hist
     #levs_out <- 2
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "aprt_times_tsurf"
+    fvarnames <- "temp2aprt"
     #fvarnames <- "ptemp"
     #fvarnames <- "ptsurf"
     #fvarnames <- "c1_PSIGULF" # Maximum_of_Barotropic_Streamfunction_in_Subtropical_Atlantic [m3 s-1]
@@ -359,11 +360,11 @@ if (F) { # old hist
     #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
     #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
     #fvarnames <- "zmld"
-    fvarnames <- "SICOMO"
+    #fvarnames <- "SICOMO"
     #areas_out_list <- list(list(name="NA45to90N",
     #                            sellonlatbox=c(lon1=250,lon2=45,lat1=45,lat2=90)))
-    areas_out_list <- list(list(name="weddelmld",
-                                sellonlatbox=c(lon1=300,lon2=18,lat1=-81,lat2=-57.6)))
+    #areas_out_list <- list(list(name="weddelmld",
+    #                            sellonlatbox=c(lon1=300,lon2=18,lat1=-81,lat2=-57.6)))
     #areas_out_list <- list(list(name="GINmld",
     #                            sellonlatbox=c(lon1=343,lon2=14,lat1=57.6,lat2=79)))
     #areas_out_list <- list(list(name="LSeaSouthmld",
@@ -561,10 +562,12 @@ cdo_known_cmds <- list("toa_imbalace="=list(cmd="<cdo> -setname,toa_imbalance -a
                        "wisorunoff_d"=list(cmd="<cdo> -setname,wisorunoff_d -setcode,17 -mulc,1000. -subc,1. -div -div <wisorunoff> <runoff> <wiso_smow_files>"),
                        "aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -mul <aprt> <temp2>",
                                                      "<nco_ncatted> -O -a code,aprt_times_temp2,d,,", # delete old `code` attribute
+                                                     "<nco_ncatted> -O -a table,aprt_times_temp2,d,,", # delete old `table` attribute
                                                      "<nco_ncatted> -O -a long_name,aprt_times_temp2,o,c,\"aprt times temp2\"",
                                                      "<nco_ncatted> -O -a units,aprt_times_temp2,o,c,\"mm/month degC\"")),
                        "aprt_times_tsurf"=list(cmd=c("<cdo> -setname,aprt_times_tsurf -mul <aprt> <tsurf>",
                                                      "<nco_ncatted> -O -a code,aprt_times_tsurf,d,,", # delete old `code` attribute
+                                                     "<nco_ncatted> -O -a table,aprt_times_tsurf,d,,", # delete old `table` attribute
                                                      "<nco_ncatted> -O -a long_name,aprt_times_tsurf,o,c,\"aprt times tsurf\"",
                                                      "<nco_ncatted> -O -a units,aprt_times_tsurf,o,c,\"mm/month degC\"")),
                        "temp2aprt"=list(cmd=c("<cdo> -setname,temp2aprt -div -yearsum <aprt_times_temp2> -yearsum <aprt>",
