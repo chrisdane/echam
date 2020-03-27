@@ -103,7 +103,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (F) { # Hol-Tx10 on paleosrv
+} else if (T) { # Hol-Tx10 on paleosrv
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
@@ -131,7 +131,8 @@ if (F) { # old hist
     #levs_out <- 2
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "aprt_times_tsurf"
-    fvarnames <- "temp2aprt"
+    #fvarnames <- "temp2aprt"
+    fvarnames <- "tsurfaprt"
     #fvarnames <- "ptemp"
     #fvarnames <- "ptsurf"
     #fvarnames <- "c1_PSIGULF" # Maximum_of_Barotropic_Streamfunction_in_Subtropical_Atlantic [m3 s-1]
@@ -277,7 +278,7 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (T) { # Hol-T on stan
+} else if (F) { # Hol-T on stan
     datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
     models <- "echam5"
@@ -574,6 +575,11 @@ cdo_known_cmds <- list("toa_imbalace="=list(cmd="<cdo> -setname,toa_imbalance -a
                                               "<nco_ncatted> -O -a code,temp2aprt,d,,", # delete old `code` attribute
                                               "<nco_ncatted> -O -a table,temp2aprt,d,,", # delete old `table` attribute
                                               "<nco_ncatted> -O -a long_name,temp2aprt,o,c,\"temp2 weighted by aprt\"",
-                                              "<nco_ncatted> -O -a units,temp2aprt,o,c,\"degC\""))
+                                              "<nco_ncatted> -O -a units,temp2aprt,o,c,\"degC\"")),
+                       "tsurfaprt"=list(cmd=c("<cdo> -setname,tsurfaprt -div -yearsum <aprt_times_tsurf> -yearsum <aprt>",
+                                              "<nco_ncatted> -O -a code,tsurfaprt,d,,", # delete old `code` attribute
+                                              "<nco_ncatted> -O -a table,tsurfaprt,d,,", # delete old `table` attribute
+                                              "<nco_ncatted> -O -a long_name,tsurfaprt,o,c,\"tsurf weighted by aprt\"",
+                                              "<nco_ncatted> -O -a units,tsurfaprt,o,c,\"degC\""))
                       ) # cdo_known_cmds
 

@@ -845,15 +845,27 @@ for (i in 1:nsettings) {
             dims[[i]]$time <- NULL
         }
     }
+
     
     # time dim as posix object
     if (any(names(dims[[i]]) == "time")) {
 
         timein_units <- ncin$dim$time$units
-        message("\n", "detected time dim -> make POSIXlt object from timein_units: \"", timein_units, "\"")
-        # convert any unit to seconds for POSIX,e.g. 
-        # "days since 1538-1-1 00:00:00"
-        # "day as %Y%m%d.%f"
+        message("\n", "detected time dim; dims[[", i, "]]$time:")
+        ht(dims[[i]]$time)
+        
+        if (prefixes[i] == "Hol-T_stschuett_echam5_wiso") {
+            message("\nspecial: rev steffens time ...")
+            dims[[i]]$time <- rev(dims[[i]]$time)
+            ht(dims[[i]]$time)
+        }
+        
+        # convert any unit to seconds for POSIX
+        message("\n--> POSIXlt object from timein_units: \"", timein_units, "\" ...")
+
+        # 2 different types so far:
+        #   "days since 1538-1-1 00:00:00"
+        #   "day as %Y%m%d.%f"
         if (regexpr(" since ", timein_units) == -1 &&
             regexpr(" as ", timein_units) == -1) {
             stop("cannot handle timein_units=", timein_units)
@@ -888,10 +900,18 @@ for (i in 1:nsettings) {
                                                substr(dims[[i]]$time, 5, 6), "-",
                                                substr(dims[[i]]$time, 7, 8), " ",
                                                hours, ":", mins, ":", secs), tz="UTC")
+            } else if (timein_format == "%Y.%f") { # e.g. 7000
+                # only years given -> take mid-year for months & days
+                months <- rep(6, t=length(dims[[i]]$time))
+                days <- rep(15, t=length(dims[[i]]$time))
+                timein_lt <- as.POSIXlt(paste0(substr(dims[[i]]$time, 1, 4), "-", 
+                                               months, "-", days), tz="UTC")
             } else {
-                stop("timein_format=", timein_format, " not defined")
+                stop("timein_format = \"", timein_format, "\" not defined")
             }
         } # which timein_units "days since", "day as", etc.
+        message("timein_lt:")
+        ht(timein_lt)
         message("range(timein_lt) = ", appendLF=F)
         print(range(timein_lt))
 
@@ -914,11 +934,11 @@ for (i in 1:nsettings) {
         if (!is.na(new_origins[i])) {
             # from year in  = min(timein_lt$year) + 1900
             message("\n", "new_origins is given --> new_origins[", i, "] = ", new_origins[i])
-            message("shift range(timein_lt) = ", appendLF=F)
+            message("--> shift range(timein_lt) = ", appendLF=F)
             print(range(timein_lt))
             #shift_by <- -(timein_lt$year[1] + 1900 - new_origins[i]) 
             shift_by <- new_origins[i] - (timein_lt$year[1] + 1900) #- 1
-            message("by shift_by = ", 
+            message("by `shift_by` = ", 
                     new_origins[i], " - ", timein_lt$year[1] + 1900, #" - 1 ", 
                     " = ", shift_by, " years") 
             timein_lt$year <- timein_lt$year + shift_by
@@ -3278,7 +3298,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                         depthsf[i], 
                                         ".nc") # todo: levs 
                         ncin <- nc_open(paste0(inpath, "/", fname))
-                        data_right$data[[i]] <- list(x=time_dim[[i]],
+                        data_right$data[[i]] <- list(x=d$time[[i]],
                                                      y=ncvar_get(ncin, "siareas"),
                                                      text=names_legend[i], col=cols[i], 
                                                      lty=3, lwd=1, pch=NA)
@@ -3287,7 +3307,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                                 " " %*% " ", 10^6, "]"))))
                     data_right$suffix <- "_with_siareas"
                 } # siarean
-                if (varname == "temp2") {
+                if (any(varname == c("temp2", "temp2aprt", "tsurf", "tsurfaprt", "ptemp"))) {
                     data_right <- list(data=vector("list", l=length(z)))
                     names(data_right$data) <- names_short
                     for (i in seq_along(data_right$data)) {
@@ -3299,7 +3319,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                         ".nc") # todo: levs 
                         ncin <- nc_open(paste0(inpath, "/", fname))
                         message("read ", inpath, "/", fname, " ...")
-                        data_right$data[[i]] <- list(x=time_dim[[i]],
+                        data_right$data[[i]] <- list(x=d$time[[i]],
                                                      y=ncvar_get(ncin, "wisoaprt_d"),
                                                      text="wisoaprt_d_sellevel_2", 
                                                      #col=cols[i], 
@@ -3690,8 +3710,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\n", "add default stuff to ts legend ...")
                 le <- list()
-                #le$pos <- "topleft" 
-                le$pos <- "left"
+                le$pos <- "topleft" 
+                #le$pos <- "left"
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
@@ -3712,7 +3732,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 le$cex <- 1
                 le$cex <- 0.85
-                le$cex <- 0.5
+                #le$cex <- 0.5
                 # add stuf to legend here
                 if (F && varname == "temp2") {
                     message("\n", "add non hadcrut4 to ", mode, " datas legend ...")
@@ -3849,13 +3869,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 } # if add_legend
 
-                if (add_cor_data_left_and_right_ts) {
+                if (add_cor_data_left_and_right_ts && length(z) == 1) {
 
                     cor <- cor.test(z[[i]], data_right$data[[i]]$y)
                     # plusminus: %+-%
-                    subtitle <- substitute(paste("cor(", x, ",", y, ") = ", rfrom-rto),
-                                           list(x=names(datas[[i]])[1], y=data_right$data[[i]]$text,
-                                                rfrom=round(cor$conf.int[1], 3), rto=round(cor$conf.int[2], 3)))
+                    subtitle <- substitute(paste("cor(", x, ",", y, ") = ", r, " " %+-% "", uncert, "; p ", p),
+                                           list(x=varname, y=data_right$data[[i]]$text,
+                                                r=round(cor$estimate, 2), 
+                                                uncert=round(cor$estimate - cor$conf.int[1], 3),
+                                                p=ifelse(cor$p.value < 1e-3, 
+                                                         paste0("< 1e-3"), round(cor$p.value, 3))))
                     mtext(subtitle, cex=0.7)
 
                 } # if add_cor_data_left_and_right_ts
