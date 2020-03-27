@@ -283,11 +283,14 @@ mpiom_fort.75_temporal_mean <- function(fort.75_files, outpath,
 
     for (fi in seq_along(fort.75_files)) {
     
+        if (verbose) message("\n", fi, "/", length(fort.75_files), ": ", fort.75_files[fi])
+        
         # fort.75_fort_00040101_00041231.nc
         fout <- paste0(outpath, "/", 
                        gsub(".nc", paste0("_", cdo_temporal_mean, ".nc"), basename(fort.75_files[fi])))
         cmd <- paste0(cdo, " -", cdo_temporal_mean, " ", fort.75_files[fi], " ", fout)
         if (verbose) message("run `", cmd, "` ...")
+        stop("check: why dout does not have cdo_temporal_mean in it?")
         system(cmd)
 
     } # for fi fort.75_files

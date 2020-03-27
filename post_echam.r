@@ -354,7 +354,7 @@ for (i in 1:nsettings) {
                 ht(MM_in, n=30)
             }
         }
-
+        
         # update files which were mistakenly included in by given fpattern:
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
@@ -790,69 +790,91 @@ for (i in 1:nsettings) {
                     message("   `-select,name=`\n",
                             "and possible\n",
                             "   `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc.\n",
-                            "cdo commands:")
+                            "cdo commands (exception: if only conversion is wanted, no other calculation) ...")
 
-                    # 1st cmd: `-select,name=`
+                    # 2nd cmd: calculation (if needed)
+                    cmd_calc <- "" # default: no calculation is needed
+
+                    # check for `-f <type copy>`
+                    cdoconvert_only <- F # default
+                    if (cdoconvert != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoconvert)
+                        cdoconvert_only <- T
+                    }
+                    
+                    # check for `-fldmean` etc.
+                    if (modes[i] != "select") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdocalc) 
+                        cdoconvert_only <- F
+                    }
+                    
+                    # check for `-selmon`
+                    if (cdoselmon != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoselmon)
+                        cdoconvert_only <- F
+                    }
+                    
+                    # check for `-sellevel`
+                    if (cdosellevel != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdosellevel)
+                        cdoconvert_only <- F
+                    }
+                    
+                    # check for `-sellonlatbox`
+                    if (cdoselarea != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoselarea)
+                        cdoconvert_only <- F
+                    }
+                    
+                    # check for further calculation commands if wanted
+                    # ...
+                    
+                    # selection command
                     selfile <- paste0(postpaths[i], "/tmp_select_", 
                                       Sys.getpid(), 
                                       #34949,
                                       #5245,
                                       ".nc")
-                    cmd_select <- paste0(cdoprefix, " ", cdoselect,  
-                                         " <files> ", selfile, " || echo error")
-                    # 2nd cmd (if needed):
-                    cmd_calc <- "" # default: nothing
-                    if (cdoconvert != "" || cdoselarea != "" || cdosellevel != "" || cdoselmon != "" || modes[i] != "select") {
-                        cmd_calc <- cdoprefix
+
+                    # exception: conversion and selection can be run together, also if old cdo version is used
+                    if (cmd_calc != "" && cdoconvert_only) {
+                        if (F) { # separate selection and conversion commands:
+                            # `cdo [-t <model>] -f nc` --> `cdo [-t <model>] -f nc copy`
+                            cmd_calc <- paste0(cmd_calc, " copy")
+                        } else if (T) { # combined selection and conversion commands
+                            cmd_select <- paste0(cdoprefix, " ", cmd_calc, " ", cdoselect,  
+                                                 " <files> ", selfile, " || echo error")
+                            cmd_calc <- ""
+                        }
+                    } else {
+                        cmd_select <- paste0(cdoprefix, " ", cdoselect,  
+                                             " <files> ", selfile, " || echo error")
                     }
-                    
-                    # `-f <type copy>`
-                    if (cdoconvert != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoconvert)
-                    }
-                    
-                    # `-fldmean` etc.
-                    if (modes[i] != "select") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdocalc) 
-                    }
-                    
-                    # `-selmon`
-                    if (cdoselmon != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoselmon)
-                    }
-                    
-                    # `-sellevel`
-                    if (cdosellevel != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdosellevel)
-                    }
-                    
-                    # `-sellonlatbox`
-                    if (cdoselarea != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoselarea)
-                    }
-                    
-                    # 2nd cmd (if needed: <add further>
-                    # ...
-                    
-                    # 2nd cmd (if needed): in out
-                    if (cmd_calc != "") {
+
+                    # after cdo calc commands: in out
+                    if (cmd_calc != "") { # if some calculation steps other than conversion are needed
                         # input: result of `-select,name=`
                         # output: result of `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc. --> wanted `fout`
                         cmd_calc <- paste0(cmd_calc, " ", selfile, " ", fout) 
-                    } # if cmd_calc != ""
-                   
-                    # 2nd cmd alternative: just selection: nothing to do but renaming to wanted `fout`
-                    if (cmd_calc == "") {
-                        # in: result of `-select,name=`
+                        # put prefix in front
+                        cmd_calc <- paste0(cdoprefix, " ", cmd_calc)
+                    
+                    } else if (cmd_calc == "") { # just selection (and conversion) is needed: nothing to do but renaming to wanted `fout`
+                        # in: result of `[-t <model>] -select,name=`
                         # out: wanted `fout`
-                        cmd_calc <- paste0("cp -v ", selfile, " ", fout, " || echo error") 
+                        if (F) { # keep tmp file
+                            cmd_calc <- paste0("cp -v ", selfile, " ", fout, " || echo error") 
+                        } else if (T) { # overwrite tmp file
+                            cmd_calc <- paste0("mv -v ", selfile, " ", fout, " || echo error") 
+                        }
                     }
+                    
                     message("\nrun\n",
                             "   1: `", cmd_select, "`\n",
                             ifelse(!is.null(new_date_list[[i]]), 
                                    paste0("   2: `new_date_list[[", i, "]]` is not NULL --> set new time values with ncap2\n"), ""),
                             "   ", ifelse(!is.null(new_date_list[[i]]), "3", "2"), ": `", cmd_calc, "`")
-                    
+
                     # replace multiple spaces by single spaces
                     nchar_with_mulitiple_spaces <- nchar(cmd_select)
                     cmd_select <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd_select, perl=T)
@@ -1047,7 +1069,9 @@ for (i in 1:nsettings) {
                             }
                         } else {
                             if (!file.exists(fout_vec[chunki])) {
-                                stop("fout_vec[", chunki, "] = ", fout_vec[chunki], " does not exist but it should")
+                                stop("`fout_vec[", chunki, "]` = \n",
+                                     "   \"", fout_vec[chunki], "\"\n",
+                                     "does not exist but it should")
                             }
                         }
 
@@ -1245,13 +1269,14 @@ for (i in 1:nsettings) {
                                 
                                 # input and wanted years
                                 years_filenames_chunki <- years_filenames[dates_in_list[[chunki]]$file_inds]
-                                message("min/max of ", length(years_filenames_chunki) , 
-                                        " years_filenames_chunki = ", min(years_filenames_chunki), "/", 
-                                        max(years_filenames_chunki))
+                                message("years_filenames_chunki[1/n] = ", years_filenames_chunki[1], "/", 
+                                        years_filenames_chunki[length(years_filenames_chunki)], 
+                                        " (n = ", length(years_filenames_chunki), ")")
                                 #years_in_chunki <- unique(dates_in_list[[chunki]]$years)
                                 years_in_chunki <- dates_in_list[[chunki]]$years
-                                message("min/max of ", length(years_in_chunki) , 
-                                        " years_in_chunki = ", min(years_in_chunki), "/", max(years_in_chunki))
+                                message("years_in_chunki[1/n] = ", years_in_chunki[1], "/", 
+                                        years_in_chunki[length(years_in_chunki)], " (n = ",
+                                        length(years_in_chunki), ")") 
 
                                 # possible mismatch of cdo years and filename years
                                 #   e.g. annual files with monthly data:

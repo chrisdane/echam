@@ -4,7 +4,7 @@ source("../helper_functions.r")
 source("mpiom_functions.r")
 
 # remap mpiom to regular grid
-if (T) {
+if (F) {
     if (T) { # Hol-Tx10 on paleosrv
         files <- list.files("/scratch/simulation_database/incoming/Hol-Tx10/output",
                             pattern=glob2rx("Hol-Tx10_mpiom_*.grb"), full.names=T)
@@ -55,14 +55,20 @@ if (F) {
 }
 
 # temporal mean of daily fort.75 files
-if (F) {
+if (T) {
     if (F) { # Hol-Tx10 on paleosrv
 
-    } else if (T) { # Hol-T on stan
+    } else if (F) { # Hol-T on stan
         fort.75_files <- list.files("/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom", 
                                     pattern=glob2rx("fort.75_fort_*.nc"), full.names=T)
-        mpiom_fort.75_temporal_mean(fort.75_files=fort.75_files, cdo_temporal_mean="monmean") 
+        outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
+    } else if (T) { # Hol-7 on stan
+        fort.75_files <- list.files("/ace/user/pgierz/cosmos-aso-wiso/Hol-7/outdata/mpiom", 
+                                    pattern=glob2rx("fort.75*"), full.names=T)
+        outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom" 
     }
+    mpiom_fort.75_temporal_mean(fort.75_files=fort.75_files, outpath=outpath,
+                                cdo_temporal_mean="monmean") 
 }
 
 

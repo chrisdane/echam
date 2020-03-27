@@ -33,7 +33,7 @@ cdo_get_filetype <- function(fin, cdo="cdo", verbose=T) {
     } else {
         if (verbose) message(" --> \"", input_format$value, "\"", appendLF=F)
     }
-    if (any(input_format$value == c("GRIB", "EXTRA  BIGENDIAN"))) {
+    if (any(input_format$value == c("GRIB", "EXTRA  BIGENDIAN", "EXTRA  LITTLEENDIAN"))) {
         if (verbose) message(" --> convert to netcdf ...")
         convert_to_nc <- T
         file_type <- "grb"
