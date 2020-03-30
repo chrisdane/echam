@@ -857,7 +857,7 @@ for (i in 1:nsettings) {
         if (prefixes[i] == "Hol-T_stschuett_echam5_wiso") {
             message("\nspecial: rev steffens time ...")
             dims[[i]]$time <- rev(dims[[i]]$time)
-            ht(dims[[i]]$time)
+            ht(dims[[i]]$time, n=20)
         }
         
         # convert any unit to seconds for POSIX
@@ -911,7 +911,7 @@ for (i in 1:nsettings) {
             }
         } # which timein_units "days since", "day as", etc.
         message("timein_lt:")
-        ht(timein_lt)
+        ht(timein_lt, n=20)
         message("range(timein_lt) = ", appendLF=F)
         print(range(timein_lt))
 
@@ -942,6 +942,8 @@ for (i in 1:nsettings) {
                     new_origins[i], " - ", timein_lt$year[1] + 1900, #" - 1 ", 
                     " = ", shift_by, " years") 
             timein_lt$year <- timein_lt$year + shift_by
+            message("new timein_lt:")
+            ht(timein_lt, n=20)
             message("--> new range(timein_lt) = ", appendLF=F)
             print(range(timein_lt))
 
@@ -2151,9 +2153,9 @@ if (any(ntime_per_setting > 1)) {
         neg_inds <- which(tlablt < 0)
         tlablt[neg_inds] <- abs(tlablt[neg_inds])
         if (!is.na(time_ref)) {
-            tunit <- paste0("Year before ", time_ref)
+            tunit <- paste0("year before ", time_ref)
         } else {
-            tunit <- "Year before `time_ref`"
+            tunit <- "year before `time_ref`"
         }
     }
 
@@ -3325,6 +3327,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                      #col=cols[i], 
                                                      cols="#E41A1C",
                                                      lty=1, lwd=1, pch=NA)
+                        message("(used dims of main data!)")
                     }
                     data_right$label <- eval(substitute(expression(paste(delta, ""^18, "O [\u2030]")))) 
                     data_right$suffix <- "_with_wisoaprt_d_sellevel_2"
@@ -3715,9 +3718,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
-                #le$ncol <- nsettings/2
+                #le$ncol <- length(z)/2
                 #le$ncol <- 1
-                le$ncol <- ceiling(length(z)/4) 
+                le$ncol <- length(z)
+                #le$ncol <- ceiling(length(z)/4) 
                 le$text <- names_legend_p
                 le$col <- cols_p
                 le$lty <- ltys_p
@@ -4094,6 +4098,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     data_right_mon <- list(suffix="") # default
                 } else {
                     message("update zmon data_right")
+                    data_right_mon <- list(data=list())
                     if (varname == "temp2") {
                         data_right_mon <- list(data=vector("list", l=length(zmon)))
                         names(data_right_mon$data) <- names_short

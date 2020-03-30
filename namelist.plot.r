@@ -34,8 +34,8 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 # options across settings
-#mode <- "select"
-mode <- "fldmean" 
+mode <- "select"
+#mode <- "fldmean" 
 #mode <- "monmean"
 #mode <- "timmean" 
 #mode <- "yearsum"
@@ -66,20 +66,21 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
-    #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
+    prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
     models <- "echam5"
     #names_short <- "Hol-Tx10"
-    names_short <- "Hol-T"
-    #names_short <- "Hol-T_st"
+    #names_short <- "Hol-T"
+    names_short <- "Hol-T_st"
     #names_legend <- names_short
-    names_legend <- "60-90N"
+    names_legend <- "global"
+    #names_legend <- "60-90N"
     #names_legend <- "Ladoga"
     #names_legend <- "Ladoga (cosmos-aso-wiso)"
     #names_legend <- "Shuchye"
@@ -113,18 +114,18 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- "JJA"
     #seasonsp <- "Dec"
     #varnames_in <- "temp2"
-    #varnames_in <- "tsurf"
+    varnames_in <- "tsurf"
     #varnames_in <- "aprt"
     #varnames_in <- "wisoaprt_d"
-    #varnames_in <- "temp2aprt"
-    varnames_in <- "tsurfaprt"
     #levs <- 2
+    #varnames_in <- "temp2aprt"
+    #varnames_in <- "tsurfaprt"
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
     #areas <- "sibiria"
-    areas <- "60-90N"
+    #areas <- "60-90N"
     #areas <- "ladoga_remapnn"
     #areas <- "shuchye_remapnn"
     #areas <- "levinson-lessing_remapnn"
@@ -183,7 +184,7 @@ if (F) { # awi-esm-1-1-lr hist
     prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
     #prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-Tx10_timeser_ext", "cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext")
-    #prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-Tx10_fort_75", "cosmos-aso-wiso_mpiom1_Hol-T_fort_75")
+    #prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-Tx10_fort_75_monmean", "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean")
     #prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-Tx10_grb_code_183_remapcon2_r120x101",
     #              "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_183_remapcon2_r120x101")
     models <- c("echam5", "echam5")
@@ -314,6 +315,27 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " last 30 years mean minus piControl")))))
     }
 
+} else if (T) { # Hol-7 vs Hol-T with vs without orbital acceleration
+    prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-7_fort_75_monmean",
+                  "cosmos-aso-wiso_mpiom1_Hol-Tx10_fort_75_monmean", 
+                  "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean")
+    models <- c("mpiom1", "mpiom1", "mpiom1")
+    names_short <- c("Hol-7", "Hol-Tx10", "Hol-T")
+    names_legend <- c("7k ctrl", "7k transient x10", "7k transient")
+    fromsf <- c("0800", "0001", "0004")
+    tosf <- c("2900", "7001", "7000")
+    new_origins <- c(-9101, -7000, -6996)
+    time_frequencies <- c("monthly", "monthly", "monthly")
+    time_ref <- 1950 # any string, e.g. "BP", or number
+    varnames_in <- rep("amoc", t=3)
+    codes <- rep(101, t=3)
+    areas <- rep("moc26.5N", t=3)
+    levs <- rep("-0to-5420m", t=3)
+    #n_mas <- c(120, 120, 1200)
+    #n_mas <- c(1200, 1200, 12000)
+    fromsp <- c(-7010, -7000, -6996)
+    tosp <- c(-7001, -6980, -6980)
+    
 # =====================================
 # 4 settings
 } else if (F) { # awi-esm-1-1-lr deck
