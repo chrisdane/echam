@@ -74,6 +74,19 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath,
         #cdo -P 4 -t mpiom1 -f nc copy -remapcon2,r360x180 -setgrid,../mpiom_GR30_model_grid_standard.nc -select,code=183 Hol-Tx10_mpiom_32900101_32901231.grb zmld_curvilinear_setgrid_remapcon2_r360x180.nc 
         system(cmd)
         
+        # fix negative values due to interpolation
+        if (cdo_select != "") {
+            if (any(cdo_select == c("select,code=183", "select,code=15"))) {
+                if (cdo_select == "select,code=183") {
+                    cmd <- paste0("ncap2 -O -s \"where(zmld<0) zmld=0\" ", fout, " ", fout)
+                } else if (cdo_select == "select,code=15") {
+                    cmd <- paste0("ncap2 -O -s \"where(SICOMO<0) SICOMO=0\" ", fout, " ", fout)
+                }
+                if (verbose) message("run `", cmd, "` ...")
+                system(cmd)
+            }
+        }
+
     } # for fi files
 
 } # mpiom_remap2lonlat

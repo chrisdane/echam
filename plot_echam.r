@@ -851,7 +851,7 @@ for (i in 1:nsettings) {
     if (any(names(dims[[i]]) == "time")) {
 
         timein_units <- ncin$dim$time$units
-        message("\n", "detected time dim; dims[[", i, "]]$time:")
+        message("\n", "detected time dim of length ", length(dims[[i]]$time), "; dims[[", i, "]]$time:")
         ht(dims[[i]]$time)
         
         if (prefixes[i] == "Hol-T_stschuett_echam5_wiso") {

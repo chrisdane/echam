@@ -296,11 +296,16 @@ for (i in 1:nsettings) {
         ticcmd <- Sys.time()
         files <- system(cmd, intern=T)
         toccmd <- Sys.time()
-        if (length(files) == 0) stop("no files found (are `datapaths` and `fpattern` correct?",
-                                     #" are input files maybe links? if yes,n set `ftypes[", i, "]`=\"l\")"
-                                     )
+        if (length(files) == 0) stop("no files found (are `datapaths` and `fpattern` correct?")
         elapsedcmd <- toccmd - ticcmd
         message("`find` of ", length(files), " files took ", elapsedcmd, " ", attributes(elapsedcmd)$units) 
+
+        if (datapaths[i] == "/ace/user/stschuet/Hol-T_echam5_wiso_links") {
+            if (any(files == "Hol-T_echam5_wiso_link_555006")) {
+                message("\nspecial: remove Hol-T_echam5_wiso_link_555006 from steffens links ...")
+                files <- files[-which(files == "Hol-T_echam5_wiso_link_555006")]
+            }
+        }
 
         # separate into dirname and basename
         basenames <- basename(files)
@@ -539,6 +544,8 @@ for (i in 1:nsettings) {
             } # if <MM> is given in fpatterns or not
         } # F
 
+        # todo: if links, check for broken links
+
         # get format of input files
         message("\nget input file format ...")
         cmd <- paste0("cdo showformat ", datapaths[i], "/", basenames[1])
@@ -776,7 +783,7 @@ for (i in 1:nsettings) {
                 #   `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc.
 
                 # separate cdo selection and calculation commands if 
-                if (!is.null(new_date_list[[i]]) || # set new time values before calculation
+                if (!is.null(new_date_list[[i]]) || # set new time values to result of selection (before calculation)
                     (is.null(new_date_list[[i]]) && # or if no new time values are needed but cdo version < 1.9.4
                      (cdo_version[1] < 1 ||
                       cdo_version[1] == 1 && cdo_version[2] < 9 || 
@@ -786,89 +793,79 @@ for (i in 1:nsettings) {
                     message("\n", ifelse(!is.null(new_date_list[[i]]), 
                                          paste0("`new_date_list[[", i, "]]` is not NULL"),
                                          paste0("cdo version ", paste(cdo_version, collapse="."), " < 1.9.4")),
-                            " --> have to run separate")
-                    message("   `-select,name=`\n",
-                            "and possible\n",
-                            "   `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc.\n",
-                            "cdo commands (exception: if only conversion is wanted, no other calculation) ...")
+                            " --> have to run separate cdo selection\n",
+                            ifelse(!is.null(new_date_list[[i]]),
+                                   "   `[[-t <model>] -f <type> [copy]] -sellevel,<lev> -select,name=<varname>`\n",
+                                   "   `[[-t <model>] -f <type> [copy]] -selmon,<mon> -sellevel,<lev> -select,name=<varname>`\n"),
+                            "and calculation\n",
+                            ifelse(!is.null(new_date_list[[i]]),
+                                   "   `-fldmean`, `-selmon`, etc.\n",
+                                   "   `-fldmean`, etc.\n"),
+                            "commands ...")
 
-                    # 2nd cmd: calculation (if needed)
-                    cmd_calc <- "" # default: no calculation is needed
+                    ## 1st cmd: selection
+                    cmd_select <- cdoselect # always needed: `-select,name=<varname>`
 
-                    # check for `-f <type copy>`
-                    cdoconvert_only <- F # default
+                    # only allowed chaining here: `-f <type copy>`
                     if (cdoconvert != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoconvert)
-                        cdoconvert_only <- T
+                        cmd_select <- paste0(cdo_convert, " ", cmd_select)
                     }
                     
-                    # check for `-fldmean` etc.
-                    if (modes[i] != "select") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdocalc) 
-                        cdoconvert_only <- F
-                    }
-                    
-                    # check for `-selmon`
-                    if (cdoselmon != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoselmon)
-                        cdoconvert_only <- F
-                    }
-                    
-                    # check for `-sellevel`
-                    if (cdosellevel != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdosellevel)
-                        cdoconvert_only <- F
-                    }
-                    
-                    # check for `-sellonlatbox`
-                    if (cdoselarea != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoselarea)
-                        cdoconvert_only <- F
-                    }
-                    
-                    # check for further calculation commands if wanted
+                    # check for further selection commands if wanted
                     # ...
-                    
-                    # selection command
+
+                    # end of selection: put prefix and in/out
                     selfile <- paste0(postpaths[i], "/tmp_select_", 
                                       Sys.getpid(), 
                                       #34949,
                                       #5245,
                                       ".nc")
+                    cmd_select <- paste0(cdoprefix, " ", cmd_select, " <files> ", selfile)
+                    if (F) cmd_select <- paste0(cmd_select, " || echo error")
+                    # todo: add `copy` if only convert
+                   
 
-                    # exception: conversion and selection can be run together, also if old cdo version is used
-                    if (cmd_calc != "" && cdoconvert_only) {
-                        if (F) { # separate selection and conversion commands:
-                            # `cdo [-t <model>] -f nc` --> `cdo [-t <model>] -f nc copy`
-                            cmd_calc <- paste0(cmd_calc, " copy")
-                        } else if (T) { # combined selection and conversion commands
-                            cmd_select <- paste0(cdoprefix, " ", cmd_calc, " ", cdoselect,  
-                                                 " <files> ", selfile, " || echo error")
-                            cmd_calc <- ""
-                        }
-                    } else {
-                        cmd_select <- paste0(cdoprefix, " ", cdoselect,  
-                                             " <files> ", selfile, " || echo error")
-                    }
-
-                    # after cdo calc commands: in out
-                    if (cmd_calc != "") { # if some calculation steps other than conversion are needed
-                        # input: result of `-select,name=`
-                        # output: result of `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc. --> wanted `fout`
-                        cmd_calc <- paste0(cmd_calc, " ", selfile, " ", fout) 
-                        # put prefix in front
-                        cmd_calc <- paste0(cdoprefix, " ", cmd_calc)
+                    ## 2nd cmd: calculation (if needed)
+                    cmd_calc <- "" # default: no calculation is needed
                     
-                    } else if (cmd_calc == "") { # just selection (and conversion) is needed: nothing to do but renaming to wanted `fout`
+                    # check for `-fldmean` etc.
+                    if (modes[i] != "select") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdocalc) 
+                    }
+                    
+                    # check for `-sellonlatbox`
+                    if (cdoselarea != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoselarea)
+                    }
+                    
+                    # check for `-sellevel`
+                    if (cdosellevel != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdosellevel)
+                    }
+                    
+                    # check for `-selmon`
+                    if (cdoselmon != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoselmon)
+                    }
+                    
+                    # check for further calculation commands if wanted
+                    # ...
+                    
+                    # end of calculation: put prefix and in/out
+                    if (cmd_calc != "") {
+                        cmd_calc <- paste0(cdoprefix, " ", cmd_calc, " ", selfile, " ", fout)
+                    } else if (cmd_calc == "") { 
+                        # just selection (and conversion) is needed: nothing to do but renaming to wanted `fout`
                         # in: result of `[-t <model>] -select,name=`
                         # out: wanted `fout`
-                        if (F) { # keep tmp file
-                            cmd_calc <- paste0("cp -v ", selfile, " ", fout, " || echo error") 
-                        } else if (T) { # overwrite tmp file
-                            cmd_calc <- paste0("mv -v ", selfile, " ", fout, " || echo error") 
+                        if (clean) {
+                            cmd_calc <- paste0("mv -v ", selfile, " ", fout) 
+                        } else if (T) {
+                            cmd_calc <- paste0("cp -v ", selfile, " ", fout) 
                         }
                     }
-                    
+                    if (F) cmd_calc <- paste0(cmd_calc, " || echo error")
+
                     message("\nrun\n",
                             "   1: `", cmd_select, "`\n",
                             ifelse(!is.null(new_date_list[[i]]), 
@@ -976,7 +973,11 @@ for (i in 1:nsettings) {
                                   cdoselmon, " ", 
                                   cdosellevel, " ", cdoselarea, " ", 
                                   cdoselect,  
-                                  " <files> ", fout, " || echo error")
+                                  " <files> ", fout)
+                    if (F) {
+                        cmd <- paste0(cmd, " || echo error")
+                    }
+
                     # replace multiple spaces by single spaces
                     cmd <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd, perl=T)
                     message("\n", "run `", cmd, "`")
@@ -1036,7 +1037,8 @@ for (i in 1:nsettings) {
                         cmd_source <- paste0(". ", scriptname)
                         message("run `", cmd_source, "`")
                         message("this may take some time for ", nfiles_per_chunk, " files ...")
-                        
+                        #stop("asd")
+
                         # run command if cdo selection (and possible calculation) result does not exist already
                         ticcmd <- toccmd <- NULL # default
                         if (cdo_chain == "separate" && !is.null(new_date_list[[i]])) {
@@ -1290,7 +1292,7 @@ for (i in 1:nsettings) {
                                             " != length(years_in_chunki) = ", length(years_in_chunki), "\n",
                                             " --> ", length(years_filenames_chunki) - length(years_in_chunki), 
                                             " years difference\n",
-                                            " --> try to get some debugging information ...\n")
+                                            " --> try to get some debugging information ...")
                                     npy <- rep(NA, t=length(years_in_chunki))
                                     for (yi in seq_along(years_in_chunki)) {
                                         year_inds <- which(dates_in_list[[chunki]]$years == years_in_chunki[yi])

@@ -34,8 +34,8 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 # options across settings
-mode <- "select"
-#mode <- "fldmean" 
+#mode <- "select"
+mode <- "fldmean" 
 #mode <- "monmean"
 #mode <- "timmean" 
 #mode <- "yearsum"
@@ -181,33 +181,41 @@ if (F) { # awi-esm-1-1-lr hist
 } else if (F) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10", "cosmos-aso-wiso_echam5_Hol-T")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_main_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
-    prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
+    #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_wiso_mm")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_echam5_Hol-T_main_mm")
     #prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-Tx10_timeser_ext", "cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext")
     #prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-Tx10_fort_75_monmean", "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean")
     #prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-Tx10_grb_code_183_remapcon2_r120x101",
     #              "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_183_remapcon2_r120x101")
+    #prefixes <- c("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", "Hol-T_stschuett_echam5_wiso") # me vs st annual
+    prefixes <- c("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", "Hol-T_echam5_wiso") # me vs me_w_st
     models <- c("echam5", "echam5")
     #models <- c("mpiom1", "mpiom1")
-    names_short <- c("Hol-Tx10", "Hol-T")
+    #names_short <- c("Hol-Tx10", "Hol-T")
+    #names_short <- c("ch", "st")
+    names_short <- c("ch", "ch_w_st")
     names_legend <- names_short
     #names_legend <- c("cosmos x10", "cosmos")
-    fromsf <- c("0001", "0004")
+    #fromsf <- c("0001", "0004")
+    fromsf <- c("0004", "0004")
     #tosf <- c("7001", "6173")
     #tosf <- c("7001", "6821")
-    tosf <- c("7001", "7000")
-    new_origins <- c(-7000, -6996)
-    #time_frequencies <- c("monthly", "monthly")
-    time_frequencies <- c("annual", "annual")
+    tosf <- c("7000", "7000")
+    #tosf <- c("7001", "7000")
+    #new_origins <- c(-7000, -6996)
+    new_origins <- c(-6996, -6996)
+    time_frequencies <- c("monthly", "monthly")
+    #time_frequencies <- c("annual", "annual")
     time_ref <- 1950 # any string, e.g. "BP", or number
     #fromsp <- c(-20, -20) # with respect to `new_origin` (if defined) or `fromsf`
     #tosp <- c(0, 0)
     #types <- c("o", "o")
-    varnames_in <- c("temp2", "temp2")
+    #varnames_in <- c("temp2", "temp2")
+    #varnames_in <- c("tsurf", "tsurf")
     #varnames_in <- c("srad0d", "srad0d")
     #varnames_in <- c("albedo", "albedo")
-    ##varnames_in <- c("wisoaprt_d", "wisoaprt_d")
-    #levs <- c(2, 2)
+    varnames_in <- c("wisoaprt_d", "wisoaprt_d")
+    levs <- c(2, 2)
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_tsurf", "lm_wisoaprt_d_sellevel_2_as_tsurf")
@@ -241,7 +249,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("LSeaSouthmld", "LSeaSouthmld")
     #areas <- c("GINmld", "GINmld")
     #areas <- c("weddelmld", "weddelmld")
-    areas <- c("ladoga_remapnn", "ladoga_remapnn")
+    #areas <- c("ladoga_remapnn", "ladoga_remapnn")
     #areas <- c("shuchye_remapnn", "shuchye_remapnn")
     #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapnn")
     #areas <- c("taymyr_remapnn", "taymyr_remapnn")
@@ -249,7 +257,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
     #areas <- c("moc45to60N", "moc30to60N", "moc50N", "moc45to60N", "moc30to60N", "moc26.5N")
     #levs <- c("-285to-2180m", "-285to-2180m", "-0to-5420m", "-0to-5420m", "-0to-5420m", "-0to-5420m")
-    seasonsf <- c("annual", "annual")
+    #seasonsf <- c("annual", "annual")
     #seasonsp <- c("Mar", "Mar")
     #seasonsp <- c("Apr", "Apr")
     #seasonsp <- c("Jun", "Jun")
@@ -261,24 +269,10 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- c(10, 100)
     #n_mas <- c(120, 120)
     #n_mas <- c(120, 1200)
+    n_mas <- c(1200, 1200)
     #n_mas <- c(1200, 12000)
     #remove_mean_froms <- c(0, -179)
     #remove_mean_tos <- c(0, -179)
-
-} else if (F) { # temp2 vs ptemp of Hol-T
-    prefixes <- rep("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", t=2)
-    models <- rep("echam5", t=2)
-    names_short <- rep("Hol-T", t=2)
-    names_legend <- c("temp2", "ptemp2")
-    fromsf <- rep("0004", t=2) # beginning of chunk 1
-    #fromsf <- "0100"
-    #tosf <- "0129"
-    #tosf <- "5903" # end of chunk 2
-    tosf <- rep("6173", t=2) # end of chunk 3
-    new_origins <- rep(-6996, t=2) # model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
-    time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- rep(120, t=2)
-    varnames_in <- c("temp2", "ptemp")
 
 # =====================================
 # 3 settings
@@ -316,25 +310,39 @@ if (F) { # awi-esm-1-1-lr hist
     }
 
 } else if (T) { # Hol-7 vs Hol-T with vs without orbital acceleration
-    prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-7_fort_75_monmean",
-                  "cosmos-aso-wiso_mpiom1_Hol-Tx10_fort_75_monmean", 
-                  "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean")
-    models <- c("mpiom1", "mpiom1", "mpiom1")
-    names_short <- c("Hol-7", "Hol-Tx10", "Hol-T")
-    names_legend <- c("7k ctrl", "7k transient x10", "7k transient")
-    fromsf <- c("0800", "0001", "0004")
-    tosf <- c("2900", "7001", "7000")
-    new_origins <- c(-9101, -7000, -6996)
-    time_frequencies <- c("monthly", "monthly", "monthly")
+    #prefixes <- c("cosmos-aso-wiso_mpiom1_Hol-7_fort_75_monmean",
+    #              "cosmos-aso-wiso_mpiom1_Hol-Tx10_fort_75_monmean", 
+    #              "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean")
+    prefixes <- c("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", 
+                  "Hol-T_stschuett_echam5_wiso",
+                  "Hol-T_echam5_wiso")
+    models <- rep("echam5", t=3)
+    #models <- rep("mpiom1", t=3)
+    #names_short <- c("Hol-7", "Hol-Tx10", "Hol-T")
+    names_short <- c("ch", "st", "me_w_st")
+    names_legend <- names_short
+    #names_legend <- c("7k ctrl", "7k transient x10", "7k transient")
+    #fromsf <- c("0800", "0001", "0004")
+    fromsf <- c("0004", "0004", "0004")
+    #tosf <- c("2900", "7001", "7000")
+    tosf <- c("7000", "7000", "7000")
+    seasonsf <- rep("annual", t=3)
+    #new_origins <- c(-9101, -7000, -6996)
+    new_origins <- c(-6996, -6996, -6996)
+    #time_frequencies <- rep("monthly", t=3)
+    time_frequencies <- rep("annual", t=3)
     time_ref <- 1950 # any string, e.g. "BP", or number
-    varnames_in <- rep("amoc", t=3)
-    codes <- rep(101, t=3)
-    areas <- rep("moc26.5N", t=3)
-    levs <- rep("-0to-5420m", t=3)
+    varnames_in <- rep("wisoaprt_d", t=3)
+    #varnames_in <- rep("amoc", t=3)
+    #codes <- rep(101, t=3)
+    #areas <- rep("moc26.5N", t=3)
+    #levs <- rep("-0to-5420m", t=3)
+    levs <- rep(2, t=3)
+    n_mas <- rep(120, t=3)
     #n_mas <- c(120, 120, 1200)
     #n_mas <- c(1200, 1200, 12000)
-    fromsp <- c(-7010, -7000, -6996)
-    tosp <- c(-7001, -6980, -6980)
+    #fromsp <- c(-7010, -7000, -6996)
+    #tosp <- c(-7001, -6980, -6980)
     
 # =====================================
 # 4 settings
@@ -643,7 +651,7 @@ if (F) {
 }
 add_first_data_point <- F
 ts_plot_each_setting_in_subplot <- F
-add_data_right_yaxis_ts <- T
+add_data_right_yaxis_ts <- F
 add_cor_data_left_and_right_ts <- T
 add_data_right_yaxis_ts_mon <- T
 add_data_right_yaxis_ts_an <- T

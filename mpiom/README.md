@@ -32,7 +32,9 @@ cdo -f nc copy -setpartab,zeitser-wiso.partab TIMESER.32900101_32901231.ext TIME
 
 get sea ice values above a threshold:
 ```bash
-ncap2 -s SICOMO=float(SICOMO>>0.0) in out
+ncap2 -O -s "where(SICOMO<0) SICOMO=0" in out
+ncap2 -O -s "where(SICOMO<=0.15) SICOMO=0" in out
+ncap2 -O -s SICOMO=float(SICOMO>>0.15) in out
 ```
 
 difference between sea ice area and extent
