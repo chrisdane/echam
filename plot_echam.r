@@ -703,6 +703,9 @@ message("\n", "finished reading special data sets ...")
 
 # check user input and defaults
 nsettings <- length(prefixes)
+if (!exists("modes")) {
+    stop("must provide `modes`")
+}
 if (!exists("codes")) codes <- rep("", t=nsettings)
 if (!exists("levs")) levs <- rep("", t=nsettings)
 if (!exists("depths")) depths <- rep("", t=nsettings)
@@ -812,9 +815,9 @@ for (i in 1:nsettings) {
 
     message("\n", "*********************************************")
     message("setting ", i, "/", nsettings, ": ", names_short[i], " ...")
-    inpath <- paste0(postpaths[i], "/", models[i], "/", mode, "/", varnames_in[i])
+    inpath <- paste0(postpaths[i], "/", models[i], "/", modes[i], "/", varnames_in[i])
     
-    fname <- paste0(prefixes[i], "_", mode, 
+    fname <- paste0(prefixes[i], "_", modes[i], 
                     codesf[i], "_", varnames_in[i], 
                     levsf[i], depthsf[i], "_",
                     areas[i], "_", 
@@ -1558,7 +1561,15 @@ for (i in 1:nsettings) {
         } else if (varname == "lm_temp2_as_time_slope") {
             message("special label")
             data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
-        
+       
+        } else if (varname == "SICOMO") {
+            data_infos[[i]][[vi]]$offset$operator <- "/"
+            data_infos[[i]][[vi]]$offset$power <- 6+6 # 1x10^6: m2 --> km2
+            data_infos[[i]][[vi]]$offset$value <- 10^data_infos[[i]][[vi]]$offset$power
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIA [km"^2, 
+                                                                            " " %*% " ", 10^power, "]")),
+                                                           list(power=data_infos[[i]][[vi]]$offset$power)))
+
         } else if (varname == "c204_ICEARE_GLO") {
             data_infos[[i]][[vi]]$offset$operator <- "/"
             data_infos[[i]][[vi]]$offset$power <- 6+6 # 1x10^6: m2 --> km2
@@ -2740,7 +2751,7 @@ if (all(check_vec)) { # if z_samevars == z_samedims
     } # if varnames_out_samedims is missing or not
 
     if (!exists("names_legend_samedims")) {
-        stop("implement")
+        stop("provide `names_legend_samedims`")
     }
 
 } # if z_samevars == z_samedims
@@ -2763,6 +2774,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         # plot same vars together (datas, datasma, datasmon, datasan, datasltm)
         if (plot_groups[plot_groupi] == "samevars") { 
             varname <- varnames_unique[ploti]
+            zname <- names(z_samevars)[ploti]
             z <- z_samevars[[ploti]]
             d <- d_samevars[[ploti]]
             dinds <- dinds_samevars[[ploti]]
@@ -2798,6 +2810,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         # plot all vars with same dims together (datas, datasma, datasmon, datasan, datasltm)
         } else if (plot_groups[plot_groupi] == "samedims") { 
             varname <- varnames_out_samedims[ploti]
+            zname <- names(z_samedims)[ploti]
             z <- z_samedims[[ploti]]
             d <- d_samedims[[ploti]]
             dinds <- dinds_samedims[[ploti]]
@@ -2832,6 +2845,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         } # which plot_group "samevars" "samedims"
         
         # temporary plot specs
+        mode_p <- paste(unique(modes[sapply(dinds, "[")]), collapse="_vs_")
         varnames_in_p <- gsub("_", "", varnames_in[sapply(dinds, "[")])
         names_short_p <- names_short[sapply(dinds, "[")]
         areas_p <- areas[sapply(dinds, "[")]
@@ -2888,18 +2902,35 @@ for (plot_groupi in seq_len(nplot_groups)) {
         # plot `datas`
         message("\n", "****************** plot datas z_* ***************************")
 
-        zname <- names(z)[ploti]
-        ndims <- length(dim(z[[1]]))
-        dim_names <- attributes(z[[1]])$dims
-        message("\n", "z_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname, 
-                "\" has ", ndims, " dim", ifelse(ndims > 1, "s", ""), ": \"", 
-                paste(dim_names, collapse="\", \""), "\". check if this case is defined ...")
-
+        #ndims <- length(dim(z[[1]]))
+        ndims <- sapply(lapply(z, dim), length)
+        ndims <- unique(ndims)
+        if (plot_groups[plot_groupi] == "samevars") {
+            if (length(ndims) != 1) {
+                stop("plotting different dimensions in one plot not implemended")
+            }
+        }
+        #dim_names <- attributes(z[[1]])$dims
+        dim_names <- sapply(lapply(z, attributes), "[[", "dims")
+        dim_names <- matrix(dim_names, ncol=length(z))
+        dim_names <- apply(dim_names, 1, unique)
+        if (is.list(dim_names)) {
+            stop("plotting different dimensions on one plot not implemented:\n",
+                 dim_names)
+        }
+        message("\n", "plot_groupi ", plot_groupi, " \"", plot_groups[plot_groupi], 
+                "\"\n",
+                "   ploti ", ploti, "\n",
+                "      mode_p = \"", mode_p, "\"\n      z_", plot_groups[plot_groupi], "[[", 
+                ploti, "/", nplots, "]]: \"", zname, "\" has ", ndims, " dim", 
+                ifelse(ndims > 1, "s", ""), ": \"", paste(dim_names, collapse="\", \""), 
+                "\"\n      --> check if this case is defined ...")
+        
         ### 2 dims
         ## plot `datas` as lon vs lat
         if (ndims == 2 && all(dim_names == c("lon", "lat"))) {
 
-            message("\n", zname, " ", mode, " plot lon vs lat ...")
+            message("\n", zname, " ", mode_p, " plot lon vs lat ...")
 
             # colorbar values
             source(paste0(homepath, "/functions/image.plot.pre.r"))
@@ -2909,7 +2940,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             source(paste0(homepath, "/functions/image.plot.nxm.r"))
             nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, dry=T)
 
-            plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+            plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                varname, "_", 
                                paste0(names_short_p, "_", seasonsp_p, 
                                       "_", froms_plot_p, "_to_", tos_plot_p, "_", 
@@ -2928,7 +2959,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # map plot
             add_land <- "world"
-            if (mode == "area") { # fesom
+            if (mode_p == "area") { # fesom
                 add_land <- F
             }
             image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, verbose=T,
@@ -2972,7 +3003,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         source(paste0(homepath, "/functions/image.plot.nxm.r"))
                         nm <- image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, dry=T)
 
-                        plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                        plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_", 
                                            paste0(rev(names_short_p), "_", rev(seasonsp_p), 
                                                   "_", rev(froms_plot_p), "_to_", rev(tos_plot_p), "_", 
@@ -2992,7 +3023,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         # map plot
                         data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]][[varname]]
                         add_land <- "world"
-                        if (mode == "area") { # fesom
+                        if (mode_p == "area") { # fesom
                             add_land <- F
                         }
                         image.plot.nxm(x=list(lon_dim[[1]]), y=list(lat_dim[[1]]), z=zanom, ip=ip, verbose=T,
@@ -3027,7 +3058,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         ## plot `datas` as time vs lat
         if (ndims == 2 && all(dim_names == c("time", "lat"))) {
         
-            message("\n", zname, " ", mode, " plot time vs lat ...")
+            message("\n", zname, " ", mode_p, " plot time vs lat ...")
 
             if (add_smoothed) {
                 message("\n", "`add_smoothed` = T --> replace z with zma ...")
@@ -3079,7 +3110,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                  palname="RdBu", 
                                  center_include=T, pos_cols=pos_cols, neg_cols=neg_cols)
 
-            plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+            plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                varname, "_",  
                                paste0(names_short_p, "_", areas_p, "_", seasonsp_p, "_", 
                                       froms_plot_p, "_to_", tos_plot_p, 
@@ -3162,7 +3193,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             source(paste0(homepath, "/functions/image.plot.nxm.r"))
             nm <- image.plot.nxm(x=d$time, y=d$depth, z=z, ip=ip, dry=T)
 
-            plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+            plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                varname, "_", 
                                paste0(names_short_p, "_", areas_p, "_", seasonsp_p, "_", 
                                       froms_plot_p, "_to_", tos_plot_p, "_", 
@@ -3210,7 +3241,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 add_unsmoothed <- T # default
             }
 
-            message("\n", varname, " ", mode, " plot vs time ...")
+            message("\n", varname, " ", mode_p, " plot vs time ...")
 
             # prepare right axis data if necessary
             if (add_data_right_yaxis_ts) {
@@ -3293,8 +3324,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     data_right <- list(data=vector("list", l=length(z)))
                     names(data_right$data) <- names_short
                     for (i in seq_along(data_right$data)) {
-                        inpath <- paste0(workpath, "/post/", models[i], "/", mode, "/siareas") 
-                        fname <- paste0(prefixes[i], "_", mode, 
+                        inpath <- paste0(workpath, "/post/", models[i], "/", mode_p, "/siareas") 
+                        fname <- paste0(prefixes[i], "_", mode_p, 
                                         codesf[i], "_siareas_antarctic",
                                         "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
                                         depthsf[i], 
@@ -3313,8 +3344,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     data_right <- list(data=vector("list", l=length(z)))
                     names(data_right$data) <- names_short
                     for (i in seq_along(data_right$data)) {
-                        inpath <- paste0(workpath, "/post/", models[i], "/", mode, "/wisoaprt_d") 
-                        fname <- paste0(prefixes[i], "_", mode, 
+                        inpath <- paste0(workpath, "/post/", models[i], "/", mode_p, "/wisoaprt_d") 
+                        fname <- paste0(prefixes[i], "_", mode_p, 
                                         codesf[i], "_wisoaprt_d_sellevel_2_", areas[i],
                                         "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
                                         depthsf[i], 
@@ -3411,7 +3442,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # ylims of model data
             if (add_unsmoothed) {
-                message("\n", mode, " versus time min / mean / max ", varname, " z:")
+                message("\n", mode_p, " versus time min / mean / max ", varname, " z:")
                 for (i in seq_along(z)) {
                     message(names_short_p[i], ": ", min(z[[i]], na.rm=T), " / ",
                             mean(z[[i]], na.rm=T), " / ", max(z[[i]], na.rm=T))
@@ -3419,7 +3450,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim <- range(z, na.rm=T)
             }
             if (exists("zma")) {
-                message("\n", mode, " versus time min / mean / max ", varname, " zma:")
+                message("\n", mode_p, " versus time min / mean / max ", varname, " zma:")
                 for (i in seq_along(z)) {
                     message(names_short_p[i], ": ", min(zma[[i]], na.rm=T), " / ",
                             mean(zma[[i]], na.rm=T), " / ", max(zma[[i]], na.rm=T))
@@ -3472,7 +3503,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             ylab <- format(yat, trim=T)
 
             # plotname
-            plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+            plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                varname, "_",
                                paste0(names_short_p, "_", seasonsp_p, "_",
                                       froms_plot_p, "_to_", tos_plot_p, "_", 
@@ -3481,13 +3512,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                ".", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
                 if (plot_groups[plot_groupi] == "samevars") {
-                    plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                    plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, "_", areas_p, collapse="_vs_"), 
                                        data_right$suffix, ts_highlight_seasons$suffix,
                                        ".", p$plot_type)
                 } else if (plot_groups[plot_groupi] == "samedims") {
-                    plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                    plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, "_", varnames_in_p, collapse="_vs_"), 
                                        data_right$suffix, ts_highlight_seasons$suffix,
@@ -3543,7 +3574,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # add title
             if (add_title) {
                 title <- paste0(paste(unique(areas_p), collapse=","), 
-                                " ", mode, " ", varname, " ", 
+                                " ", mode_p, " ", varname, " ", 
                                 paste(unique(seasonsp_p), collapse=","), " ", 
                                 paste(unique(froms_plot_p), collapse=","), " to ", 
                                 paste(unique(tos_plot_p), collapse=","))
@@ -3650,7 +3681,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } # for i seq_along(z)
                     
                     if (add_legend && i == length(z)) {
-                        message("\n", "add default stuff to ", mode, " legend ...")
+                        message("\n", "add default stuff to ", mode_p, " legend ...")
                         le <- list()
                         le$pos <- "bottom" 
                         le$ncol <- length(ts_highlight_seasons$seasons)
@@ -3739,7 +3770,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #le$cex <- 0.5
                 # add stuf to legend here
                 if (F && varname == "temp2") {
-                    message("\n", "add non hadcrut4 to ", mode, " datas legend ...")
+                    message("\n", "add non hadcrut4 to ", mode_p, " datas legend ...")
                     if (varname == "temp2") {
                         le$text <- c(le$text, hadcrut4_sat_anom_annual$text)
                         le$col <- c(le$col, hadcrut4_sat_anom_annual$col)
@@ -3837,7 +3868,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 if (add_legend_right_yaxis) {
-                    message("\n", "add default stuff to ", mode, " right_data legend ...")
+                    message("\n", "add default stuff to ", mode_p, " right_data legend ...")
                     le <- list()
                     le$pos <- "topright" 
                     le$ncol <- 1
@@ -3857,7 +3888,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le$cex <- 0.85
                     # add stuf to legend here
                     if (F) {
-                        message("\n", "add non default stuff to ", mode, " legend ...")
+                        message("\n", "add non default stuff to ", mode_p, " legend ...")
                     }
                     # reorder reading direction from R's default top->bottom to left->right
                     le <- reorder_legend(le)
@@ -3914,7 +3945,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 
                 # plotname
-                plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                    varname, "_",
                                    paste0(names_short_p, "_", seasonsp_p, 
                                           "_", froms_plot_p, "_to_", tos_plot_p, "_", 
@@ -3922,7 +3953,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    "_subplots", data_right$suffix, ts_highlight_seasons$suffix,
                                    ".", p$plot_type)
                 if (nchar(plotname) > nchar_max_foutname) {
-                    plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                    plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, "_", areas_p, collapse="_vs_"), 
                                        "_subplots", data_right$suffix, ts_highlight_seasons$suffix,
@@ -4079,10 +4110,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
             ## plot `datasmon` as time 
             if (ndims_mon == 1 && dim_names_mon == "month") {
 
-                message("\n", varname, " ", mode, " plot vs months ...")
+                message("\n", varname, " ", mode_p, " plot vs months ...")
                 
                 # ylims for fldmean versus months plot
-                message("\n", mode, " versus months min / mean / max ", varname, " zmon:")
+                message("\n", mode_p, " versus months min / mean / max ", varname, " zmon:")
                 for (i in seq_along(zmon)) {
                     message(names_short_pmon[i], ": ", min(zmon[[i]], na.rm=T), " / ",
                             mean(zmon[[i]], na.rm=T), " / ", max(zmon[[i]], na.rm=T))
@@ -4103,8 +4134,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         data_right_mon <- list(data=vector("list", l=length(zmon)))
                         names(data_right_mon$data) <- names_short
                         for (i in seq_along(data_right_mon$data)) {
-                            inpath <- paste0(workpath, "/post/", models[i], "/", mode, "/wisoaprt_d") 
-                            fname <- paste0(prefixes[i], "_", mode, 
+                            inpath <- paste0(workpath, "/post/", models[i], "/", mode_p, "/wisoaprt_d") 
+                            fname <- paste0(prefixes[i], "_", mode_p, 
                                             codesf[i], "_wisoaprt_d_sellevel_2_", areas[i],
                                             "_ymonmean_", fromsf[i], "-", tosf[i], 
                                             depthsf[i], 
@@ -4156,7 +4187,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if add_data_right_yaxis_ts_mon finished prepare right axis data
 
                 # plotname
-                plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                    varname, "_",
                                    paste0(names_short_pmon, "_", seasonsp_pmon, "_",
                                           froms_plot_pmon, "_to_", tos_plot_pmon, "_", 
@@ -4166,14 +4197,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    ".", p$plot_type)
                 if (nchar(plotname) > nchar_max_foutname) {
                     if (plot_groups[plot_groupi] == "samevars") {
-                        plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                        plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_",
                                            paste0(names_short_pmon, "_", areas_pmon, collapse="_vs_"), 
                                            "_months",
                                            data_right$suffix, 
                                            ".", p$plot_type)
                     } else if (plot_groups[plot_groupi] == "samedims") {
-                        plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                        plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_",
                                            paste0(names_short_pmon, "_", varnames_in_pmon, collapse="_vs_"), 
                                            "_months",
@@ -4209,7 +4240,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # add title
                 if (add_title) {
                     title <- paste0(paste(unique(areas_pmon), collapse=","), 
-                                    " ", mode, " ", varname, " ", 
+                                    " ", mode_p, " ", varname, " ", 
                                     paste(unique(seasonsp_pmon), collapse=","), " ", 
                                     paste(unique(froms_plot_pmon), collapse=","), " to ", 
                                     paste(unique(tos_plot_pmon), collapse=","))
@@ -4242,7 +4273,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # add legend if wanted
                 if (add_legend) {
-                    message("\n", "add default stuff to ", mode, " mon legend ...")
+                    message("\n", "add default stuff to ", mode_p, " mon legend ...")
                     le <- list()
                     le$pos <- "topleft" 
                     #le$pos <- "top"
@@ -4268,7 +4299,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le$cex <- 0.85
                     # add stuf to legend here
                     if (F) {
-                        message("\n", "add non default stuff to ", mode, " mon legend ...")
+                        message("\n", "add non default stuff to ", mode_p, " mon legend ...")
 
                     }
                     # reorder reading direction from R's default top->bottom to left->right
@@ -4319,7 +4350,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
 
                     if (add_legend_right_yaxis) {
-                        message("\n", "add default stuff to ", mode, " right_data mon legend ...")
+                        message("\n", "add default stuff to ", mode_p, " right_data mon legend ...")
                         le <- list()
                         le$pos <- "top" 
                         le$ncol <- 1
@@ -4339,7 +4370,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$cex <- 0.85
                         # add stuf to legend here
                         if (T && varname == "temp2") {
-                            message("\n", "add non default stuff to ", mode, " legend ...")
+                            message("\n", "add non default stuff to ", mode_p, " legend ...")
                             if (varname == "temp2") {
                                 le$text <- c(le$text, hadcrut4_sat_anom_annual$text)
                                 le$col <- c(le$col, hadcrut4_sat_anom_annual$col)
@@ -4397,10 +4428,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
             ## plot `datasan` as time 
             if (ndims_an == 1 && dim_names_an == "year") {
 
-                message("\n", varname, " ", mode, " plot vs years ...")
+                message("\n", varname, " ", mode_p, " plot vs years ...")
                 
                 # ylims for fldmean versus years plot
-                message("\n", mode, " versus years min / mean / max ", varname, " zan:")
+                message("\n", mode_p, " versus years min / mean / max ", varname, " zan:")
                 for (i in seq_along(zan)) {
                     message(names_short_pan[i], ": ", min(zan[[i]], na.rm=T), " / ",
                             mean(zan[[i]], na.rm=T), " / ", max(zan[[i]], na.rm=T))
@@ -4421,8 +4452,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     names(data_right_an$data) <- names_short_p
                     if (F && varname == "temp2") {
                         for (i in seq_along(data_right_an$data)) {
-                            inpath <- paste0(workpath, "/post/", models[i], "/", mode, "/wisoaprt_d") 
-                            fname <- paste0(prefixes[i], "_", mode, 
+                            inpath <- paste0(workpath, "/post/", models[i], "/", mode_p, "/wisoaprt_d") 
+                            fname <- paste0(prefixes[i], "_", mode_p, 
                                             codesf[i], "_wisoaprt_d_sellevel_2_", areas[i],
                                             "_annual_", fromsf[i], "-", tosf[i], 
                                             depthsf[i], 
@@ -4500,7 +4531,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if add_data_right_yaxis_ts_an finished prepare right axis data
 
                 # plotname
-                plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                    varname, "_",
                                    paste0(names_short_pan, "_", seasonsp_pan, "_", 
                                           froms_plot_pan, "_to_", tos_plot_pan, "_", 
@@ -4510,14 +4541,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    ".", p$plot_type)
                 if (nchar(plotname) > nchar_max_foutname) {
                     if (plot_groups[plot_groupi] == "samevars") {
-                        plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                        plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_",
                                            paste0(names_short_pan, "_", areas_pan, collapse="_vs_"), 
                                            "_annual",
                                            data_right_an$suffix,
                                            ".", p$plot_type)
                     } else if (plot_groups[plot_groupi] == "samedims") {
-                        plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                        plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_",
                                            paste0(names_short_pan, "_", varnames_in_pan, collapse="_vs_"), 
                                            "_annual",
@@ -4553,7 +4584,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # add title
                 if (add_title) {
                     title <- paste0(paste(unique(areas_pan), collapse=","), 
-                                    " ", mode, " ", varname, " ", 
+                                    " ", mode_p, " ", varname, " ", 
                                     paste(unique(seasonsp_pan), collapse=","), " ", 
                                     paste(unique(froms_plot_pan), collapse=","), " to ", 
                                     paste(unique(tos_plot_pan), collapse=","))
@@ -4586,7 +4617,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # add legend if wanted
                 if (add_legend) {
-                    message("\n", "add default stuff to ", mode, " an legend ...")
+                    message("\n", "add default stuff to ", mode_p, " an legend ...")
                     le <- list()
                     le$pos <- "topleft" 
                     #le$pos <- "top"
@@ -4612,7 +4643,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le$cex <- 0.85
                     # add stuf to legend here
                     if (F) {
-                        message("\n", "add non default stuff to ", mode, " an legend ...")
+                        message("\n", "add non default stuff to ", mode_p, " an legend ...")
 
                     }
                     # reorder reading direction from R's default top->bottom to left->right
@@ -4681,7 +4712,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
 
                     if (add_legend_right_yaxis) {
-                        message("\n", "add default stuff to ", mode, " right_data an legend ...")
+                        message("\n", "add default stuff to ", mode_p, " right_data an legend ...")
                         le <- list()
                         le$pos <- "top" 
                         le$ncol <- 1
@@ -4701,7 +4732,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$cex <- 0.85
                         # add stuf to legend here
                         if (T && varname == "temp2") {
-                            message("\n", "add non default stuff to ", mode, " legend ...")
+                            message("\n", "add non default stuff to ", mode_p, " legend ...")
                             if (varname == "temp2") {
                                 le$text <- c(le$text, hadcrut4_sat_anom_annual$text)
                                 le$col <- c(le$col, hadcrut4_sat_anom_annual$col)
@@ -4777,7 +4808,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             ## plot `datasltm` as lat vs depth (e.g. moc)
             if (ndims_ltm == 2 && all(dim_names_ltm == c("lat", "depth"))) {
 
-                message("\n", varname, " ", mode, " ltm plot lat vs depth ...")
+                message("\n", varname, " ", mode_p, " ltm plot lat vs depth ...")
                
                 # add moc topo 
                 if (any(varname == c("MOCw"))) { # add further moc variables here
@@ -4804,7 +4835,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 source(paste0(homepath, "/functions/image.plot.nxm.r"))
                 nm <- image.plot.nxm(dltm$lat, dltm$depth, z=zltm, ip=ip, dry=T)
 
-                plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                    varname, "_", 
                                    paste0(names_short_pltm, "_", seasonsp_pltm, "_",
                                           froms_plot_pltm, "_to_", tos_plot_pltm, "_", 
@@ -4915,7 +4946,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             yat <- pretty(ylim, n=10)
                             ylab <- format(yat, trim=T)
 
-                            plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                            plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                                varname, "_", 
                                                paste0(names_short[i], "_", seasonsp[i], 
                                                       "_", froms_plot[i], "_to_", tos_plot[i], "_", 
@@ -4949,7 +4980,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             if (add_title) {
                                 title <- paste0(names_short[i], " ", 
                                                 paste(unique(areas[i]), collapse=","), 
-                                                " ", mode, " ", varname, " ", 
+                                                " ", mode_p, " ", varname, " ", 
                                                 paste(unique(seasonsp[i]), collapse=","), " ", 
                                                 paste(unique(fromsp[i]), collapse=","), " to ", 
                                                 paste(unique(tosp[i]), collapse=","))
@@ -5084,7 +5115,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         yat <- pretty(ylim, n=10)
                         ylab <- format(yat, trim=T)
 
-                        plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                        plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_", 
                                            paste0(names_short, "_", seasonsp, 
                                                   "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
@@ -5118,7 +5149,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         # add title
                         if (add_title) {
                             title <- paste0(paste(unique(areas), collapse=","), 
-                                            " ", mode, " ", varname, " ", 
+                                            " ", mode_p, " ", varname, " ", 
                                             paste(unique(seasonsp), collapse=","), " ", 
                                             paste(unique(fromsp), collapse=","), " to ", 
                                             paste(unique(tosp), collapse=","))
@@ -5439,7 +5470,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     yat <- pretty(ylim, n=10)
                                     ylab <- format(yat, trim=T)
 
-                                    plotname <- paste0(plotpath, "/", mode, "/", varname, "/",
+                                    plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                                        varname, "_", 
                                                        paste0(names_short_p[i], "_", seasonsp_p[i], "_",
                                                               froms_plot_p[i], "_to_", tos_plot_p[i], "_", 
@@ -5473,7 +5504,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     if (add_title) {
                                         title <- paste0(names_short_p[i], " ", 
                                                         paste(unique(areas_p[i]), collapse=","), 
-                                                        " ", mode, " ", varname, " ", 
+                                                        " ", mode_p, " ", varname, " ", 
                                                         paste(unique(seasonsp_p[i]), collapse=","), " ", 
                                                         paste(unique(froms_plot_p[i]), collapse=","), " to ", 
                                                         paste(unique(tos_plot_p[i]), collapse=","))

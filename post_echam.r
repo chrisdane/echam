@@ -149,16 +149,37 @@ if (any(file.access(postpaths, mode=0) != 0)) { # check existance
         }
     }
 }
-if (!exists("season_inds")) {
-    season_inds <- vector("list", l=nsettings)
-    for (i in 1:nsettings) season_inds[[i]] <- 1:12
-}
-season_names <- rep(NA, t=nsettings)
-for (i in 1:nsettings) {
-    if (length(season_inds[[i]]) == 12 && season_inds[[i]] == 1:12) { # default case: annual
-        season_names[i] <- "Jan-Dec"
-    } else { # all other: first letters of months
-        season_names[i] <- paste(substr(month.abb[season_inds[[i]]], 1, 1), collapse="")
+if (exists("season_names")) {
+    if (exists("season_inds")) {
+        # check is user provided season_names and season_inds fit to each other
+        stop("todo")
+    } else if (!exists("season_inds")) {
+        # find season_inds based on given season_names 
+        season_inds <- vector("list", l=nsettings)
+        for (i in seq_len(nsettings)) {
+            if (season_names[i] == "annual") {
+                season_inds[[i]] <- 1 # just placeholder
+            } else {
+                message("todo")
+                season_inds[[i]] <- 1:12
+            }
+        }
+    }
+} else if (!exists("season_names")) {
+    if (exists("season_inds")) {
+        # find season_names based on given season_inds
+    } else if (!exists("season_inds")) {
+        # no season_names or season_inds given. use default: annual
+        season_inds <- vector("list", l=nsettings)
+        for (i in 1:nsettings) season_inds[[i]] <- 1:12
+    }
+    season_names <- rep(NA, t=nsettings)
+    for (i in 1:nsettings) {
+        if (length(season_inds[[i]]) == 12 && season_inds[[i]] == 1:12) { # default case: annual
+            season_names[i] <- "Jan-Dec"
+        } else { # all other: first letters of months
+            season_names[i] <- paste(substr(month.abb[season_inds[[i]]], 1, 1), collapse="")
+        }
     }
 }
 if (!exists("levs_out")) levs_out <- rep(NA, t=nsettings)
@@ -443,7 +464,7 @@ for (i in 1:nsettings) {
 
         # remove found months (which were found based on the file names) out of wanted season
         cdoselmon <- "" # default
-        if (season_names[i] != "Jan-Dec") {
+        if (season_names[i] != "Jan-Dec" && season_names[i] != "annual") {
             message("\n", "season_inds = ", paste(season_inds[[i]], collapse=","), 
                     " -> season = ", season_names[i])
             if (grepl("<MM>", fpatterns[i])) { # <MM> is in fpatterns
@@ -648,9 +669,10 @@ for (i in 1:nsettings) {
                                     replacement <- fout
                                     replacement <- gsub(fvarnames[i], pattern, replacement)
                                     if (!file.exists(replacement)) {
-                                        stop("\nfound pattern \"<", pattern, ">\" is not a defined variable in the current workspace",
-                                             " --> assume it should be an input file. however, file\n   \"", replacement, "\"\n",
-                                             "was not found.\n")
+                                        stop("\nfound pattern \"<", pattern, 
+                                             ">\" is not a defined variable in the current workspace\n",
+                                             "--> assume it should be an input file. however, file\n   \"", replacement, "\"\n",
+                                             "does not exist\n")
                                     }
                                 }
                                 # replace found variable/file with pattern in command
