@@ -3026,7 +3026,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         if (mode_p == "area") { # fesom
                             add_land <- F
                         }
-                        image.plot.nxm(x=list(lon_dim[[1]]), y=list(lat_dim[[1]]), z=zanom, ip=ip, verbose=T,
+                        image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, verbose=T,
                                        xlab="Longitude [°]", ylab="Latitude [°]", 
                                        zlab=data_info$label, 
                                        znames=paste0(names_short_p[2], " minus ", names_short_p[1]),

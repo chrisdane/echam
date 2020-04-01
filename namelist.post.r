@@ -34,7 +34,7 @@ message(paste0("   homepath = ", homepath))
 message(paste0("   workpath = ", workpath))
 
 verbose <- 1 # 0,1
-clean <- F # remove tmp files
+clean <- T # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
 cdo_force <- T # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
@@ -109,13 +109,13 @@ if (F) { # old hist
     # hol-tx10 on paleosrv:
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
-    #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
+    datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
     # hol-t on stan:
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
     #datapaths <- "/ace/user/stschuet/Hol-T_echam5_wiso_links"
     # hol-7 on stan:
-    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom"
+    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom"
     #models <- "echam5"
     models <- "mpiom1"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
@@ -132,7 +132,7 @@ if (F) { # old hist
     #fpatterns <- "Hol-7_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"
     #fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc" # sicomo
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
-    fpatterns <- "Hol-7_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
+    #fpatterns <- "Hol-7_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
@@ -144,12 +144,12 @@ if (F) { # old hist
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_fort_75"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_fort_75_monmean"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-7_fort_75_monmean"
-    #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_grb_code_183_remapcon2_r120x101" # zmld
+    prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_grb_code_183_remapcon2_r120x101" # zmld
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_183_remapcon2_r120x101"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-7_grb_code_183_remapcon2_r120x101"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_grb_code_15_remapcon2_r120x101" # sicomo
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_15_remapcon2_r120x101"
-    prefixes <- "cosmos-aso-wiso_mpiom1_Hol-7_grb_code_15_remapcon2_r120x101"
+    #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-7_grb_code_15_remapcon2_r120x101"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "wind10"
@@ -215,12 +215,12 @@ if (F) { # old hist
     #fvarnames <- "c85_ICEVOL_LAB" # Seaice_Volume_Labrador_Sea [m3]
     #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
     #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
-    #fvarnames <- "zmld"
-    fvarnames <- "SICOMO"
+    fvarnames <- "zmld"
+    #fvarnames <- "SICOMO"
     #areas_out_list <- list(list(name="NA45to90N",
     #                            sellonlatbox=c(lon1=250,lon2=45,lat1=45,lat2=90)))
-    #areas_out_list <- list(list(name="weddelmld",
-    #                            sellonlatbox=c(lon1=291,lon2=18,lat1=-81,lat2=-45)))
+    areas_out_list <- list(list(name="weddelmld",
+                                sellonlatbox=c(lon1=291,lon2=18,lat1=-81,lat2=-45)))
     #areas_out_list <- list(list(name="GINmld",
     #                            sellonlatbox=c(lon1=343,lon2=14,lat1=57.6,lat2=79)))
     #areas_out_list <- list(list(name="LSeaSouthmld",
@@ -249,12 +249,12 @@ if (F) { # old hist
                                                                  )
                                               ) # setting 1
                                           )
-    modes <- "select"
+    #modes <- "select"
     #modes <- "timmean"
     #modes <- "yearmean"
     #modes <- "monmean"
     #modes <- "ymonmean"
-    #modes <- "fldmean"
+    modes <- "fldmean"
     #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
@@ -262,16 +262,16 @@ if (F) { # old hist
     #froms <- "0004" # Hol-T links: beginning of chunk 1
     #froms <- "0100"
     #froms <- "0800" # Hol-7 raw: beginning
-    froms <- "2791" # Hol-7 raw: beginning of most files
-    #froms <- "2901" # Hol-Tx10 raw: beginning
+    #froms <- "2791" # Hol-7 raw: beginning of most files
+    froms <- "2901" # Hol-Tx10 raw: beginning
     #froms <- "3572"
     #tos <- "0011"
     #tos <- "0013" 
     #tos <- "0129"
     #tos <- "0809"
-    tos <- "2900" # Hol-7 raw: end
+    #tos <- "2900" # Hol-7 raw: end
     #tos <- "2910"
-    #tos <- "3601" # Hol-Tx10 raw: end
+    tos <- "3601" # Hol-Tx10 raw: end
     #tos <- "5903" # Hol-T links: end of chunk 2
     #tos <- "6821"
     #tos <- "7000" # Hol-T links: end of chunk 3
@@ -285,9 +285,9 @@ if (F) { # old hist
                 stop("asd")
             }
         } else if (modes[1] != "timmean") {
-            if (T) { # for links with correct years in filenames: 
+            if (F) { # for links with correct years in filenames: 
                 new_date_list <- list(list(use="filename", year_origin=1, nc_time_origin=1))
-            } else if (F) { # for files with wrong years in filenames:
+            } else if (T) { # for files with wrong years in filenames:
                 # monthly data:
                 new_date_list <- list(list(years=rep(seq(1, b=10, l=length(froms[1]:tos[1])), e=12), 
                                            nc_time_origin=1))
