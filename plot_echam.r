@@ -3344,15 +3344,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     data_right <- list(data=vector("list", l=length(z)))
                     names(data_right$data) <- names_short
                     for (i in seq_along(data_right$data)) {
-                        inpath <- paste0(workpath, "/post/", models[i], "/", mode_p, "/wisoaprt_d") 
-                        fname <- paste0(prefixes[i], "_", mode_p, 
-                                        codesf[i], "_wisoaprt_d_sellevel_2_", areas[i],
+                        inpath <- paste0(workpath, "/post/", models[i], "/yearsum/wisoaprt_d_post") 
+                        fname <- paste0(prefixes[i], "_yearsum", 
+                                        codesf[i], "_wisoaprt_d_post_sellevel_2_", areas[i],
                                         "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
                                         depthsf[i], 
                                         ".nc") # todo: levs 
                         ncin <- nc_open(paste0(inpath, "/", fname))
                         message("read ", inpath, "/", fname, " ...")
-                        data_right$data[[i]] <- list(x=d$time[[i]],
+                        data_right$data[[i]] <- list(x=d$time[[i]], # use dims of z!
                                                      y=ncvar_get(ncin, "wisoaprt_d"),
                                                      text="wisoaprt_d_sellevel_2", 
                                                      #col=cols[i], 
