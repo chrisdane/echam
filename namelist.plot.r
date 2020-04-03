@@ -221,7 +221,9 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("srad0d", "srad0d")
     #varnames_in <- c("albedo", "albedo")
     #varnames_in <- c("wisoaprt_d", "wisoaprt_d")
+    #varnames_in <- c("wisoaprt_d_post", "wisoaprt_d_post")
     #levs <- c(2, 2)
+    #varnames_in <- c("aprt", "aprt")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_tsurf", "lm_wisoaprt_d_sellevel_2_as_tsurf")
@@ -246,6 +248,7 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("amoc", t=2)
     #codes <- rep(101, t=2)
     modes <- rep("select", t=2)
+    #modes <- rep("yearsum", t=2)
     #areas <- rep("moc45to60N", t=2)
     #levs <- rep("-285to-2180m", t=2)
     #areas <- rep("moc30to60N", t=2)
@@ -273,10 +276,14 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- c("Sep", "Sep")
     #seasonsp <- c("Dec", "Dec")
     #n_mas <- c(1, 1)
-    #n_mas <- c(300, 3)
-    #n_mas <- c(100, 10)
+    #n_mas <- c(5*3, 3)
+    #n_mas <- c(5*10, 10)
+    #n_mas <- c(5*30, 30)
+    #n_mas <- c(5*60, 60)
+    #n_mas <- c(5*100, 100)
     #n_mas <- c(120, 120)
-    n_mas <- c(5*120, 120)
+    #n_mas <- c(5*120, 120)
+    n_mas <- c(5*360, 360)
     #n_mas <- c(1200, 1200)
     #n_mas <- c(5*1200, 1200)
     #remove_mean_froms <- c(-179, 0)
@@ -722,7 +729,9 @@ add_data_right_yaxis_ts_an <- T
 add_legend_right_yaxis <- F
 plot_scatter_s1_vs_s2 <- T
 #scatter_s1_vs_s1_varname <- "temp2"
-scatter_s1_vs_s1_varname <- "wisoaprt_d"
+scatter_s1_vs_s1_varname <- "tsurf"
+#scatter_s1_vs_s1_varname <- "aprt"
+#scatter_s1_vs_s1_varname <- "wisoaprt_d"
 plot_scatter_v1_vs_v2 <- F
 varnamex <- varnamey <- "abc"
 if (F) { # TOA imbalance gregory et al. 2004 stuff 

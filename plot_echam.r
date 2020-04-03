@@ -676,24 +676,60 @@ if (F) { # compare berger and laskar orb
 } # comapre berger and laskar orb
 
 # pangaea
-if (F) {
-    message("\ndisable `library(pangaear)` if you do not want to load dataseats from https://pangaea.de ...")
+if (T) {
+    message("\ndisable here if you do not want to load dataseats from https://pangaea.de ...\n")
     library(pangaear)
-    pdoi <- "10.1594/PANGAEA.899329" # kostrova et al. 2019: https://doi.pangaea.de/10.1594/PANGAEA.899329
-    dat_kostrova_etal_2019 <- pg_data(doi=pdoi)
-    years <- dat_kostrova_etal_2019[[1]]$data$"Cal age [ka BP]" # 0.203  0.793  1.373  1.939 ... 9.662 10.062 10.428 10.750
-    years <- -1*rev(years*1000) # -10750 -10428 -10062  -9662 ... -1939  -1373   -793   -203
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
-    kostrova_etal_2019 <- list(time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                               d18o=rev(dat_kostrova_etal_2019[[1]]$data$"Diatoms δ18O [‰ SMOW] (Contamination corrected)"),
-                               text="Kostrova et al. 2019", col="black",
-                               lty=NA, pch=4, lwd=NA, cex=1.5)
+    if (T) { # ladoga; kostrova et al. 2019: https://doi.pangaea.de/10.1594/PANGAEA.899329
+        pdoi <- "10.1594/PANGAEA.899329" 
+        dat_kostrova_etal_2019 <- pg_data(doi=pdoi)
+        years <- dat_kostrova_etal_2019[[1]]$data$"Cal age [ka BP]" # 0.203  0.793  1.373  1.939 ... 9.662 10.062 10.428 10.750
+        years <- -1*rev(years*1000) # -10750 -10428 -10062  -9662 ... -1939  -1373   -793   -203
+        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        kostrova_etal_2019 <- list(time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
+                                   d18o=rev(dat_kostrova_etal_2019[[1]]$data$"Diatoms δ18O [‰ SMOW] (Contamination corrected)"),
+                                   text="Kostrova et al. 2019", 
+                                   type="o", col="#377EB8",
+                                   lty=1, lwd=1, pch=1, cex=1)
+    }
+    if (T) { # elgygytgyn; swann et al. 2010: https://doi.pangaea.de/10.1594/PANGAEA.856095
+        pdoi <- "10.1016/j.quascirev.2009.11.024"
+    }
 } else {
-    message("\nenable `library(pangaear)` if you want to load dataseats from https://pangaea.de ...")
+    message("\nenable here if you want to load dataseats from https://pangaea.de ...\n")
 }
 
+# NOAA monthly station data
+if (T) {
+    message("\ndisable here if you do not want to load NOAA station datasets ...\n")
+    ghcdn_csv <- list.files("/isibhv/projects/paleo_work/cdanek/data/NOAA/station_data/GHCDN/monthly",
+                            pattern=glob2rx("*.csv"), full.names=T)
+    if (length(ghcdn_csv) > 0) {
+        message("load noaa ghcdn monthly station data ...")
+        noaa_ghcdn_mon <- vector("list", l=length(ghcdn_csv))
+        for (i in seq_along(ghcdn_csv)) {
+            d <- read.csv(ghcdn_csv[i], stringsAsFactors=F)
+            tmp <- list(time=as.POSIXlt(paste0(d$DATE, "-15"), tz="UTC"),
+                        Tavg=d$TAVG, Tmin=d$TMIN, Tmax=d$TMAX, precip=d$PRCP)
+            tmp$timen <- as.numeric(tmp$time)
+            noaa_ghcdn_mon[[i]]$coords <- c(lon=d$LONGITUDE[1], lat=d$LATITUDE[1])
+            noaa_ghcdn_mon[[i]]$ts <- tmp
+            noaa_ghcdn_mon[[i]]$text <- paste0("NOAA ", d$STATION)
+            noaa_ghcdn_mon[[i]]$type <- "o"
+            noaa_ghcdn_mon[[i]]$col <- "black"
+            noaa_ghcdn_mon[[i]]$lty <- 1
+            noaa_ghcdn_mon[[i]]$lwd <- 1
+            noaa_ghcdn_mon[[i]]$pch <- 1
+            noaa_ghcdn_mon[[i]]$cex <- 1
+            names(noaa_ghcdn_mon)[i] <- tools::file_path_sans_ext(basename(ghcdn_csv[i]))
+        }
+    } # if ghcdn files present
+} else {
+    message("\nenable here if you want to load NOAA station datasets ...\n")
+} # if NOAA station data
+
 # clean
-for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin")) {
+for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin",
+              "pdoi", "tmp", "d", "ghcdn_csv", "noaa_ghcdn_mon")) {
     if (exists(obj)) rm(obj)
 }
 
@@ -765,7 +801,7 @@ if (nsettings == 1) {
 } else if (nsettings == 2) {
     cols_vec <- c("black", "#E41A1C") # black, red
 } else if (nsettings >= 3) {
-    # my default: (black, red, blue) instead of R default (black, blue, red)
+    # my default: (black, red, blue) instead of R default (black, red, blue)
     cols_vec <- c("black", "#E41A1C", "#377EB8")
     if (nsettings > 3) {
         if (F) {
@@ -1554,9 +1590,11 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$offset$operator <- "-"
             data_infos[[i]][[vi]]$offset$value <- 1000
     
-        } else if (varname == "wisoaprt_d") {
-            message("update")
-            data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O (‰)"))
+        } else if (any(varname == c("wisoaprt_d", "wisoaprt_d_post"))) {
+            data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (‰)"))
+            if (scale_ts) {
+                data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (Index)"))
+            }
 
         } else if (varname == "lm_temp2_as_time_slope") {
             message("special label")
@@ -3491,6 +3529,17 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("ylim after: ", ylim[1], ", ", ylim[2])
             }
 
+            if (T && exists("noaa_ghcdn_mon")) {
+                message("\nadd noadd ghcdn monthly data ...")
+                message("ylim before: ", ylim[1], ", ", ylim[2])
+                if (all(areas == "ladoga_remapnn")) {
+                    if (varname == "tsurf") {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$Tavg, na.rm=T)
+                    }
+                }
+                message("ylim after: ", ylim[1], ", ", ylim[2])
+            } # if exists("noaa_ghcdn_mon")
+
             # increase ylim for legend if many settings
             if (length(z) > 6) {
                 message("\ninrease ylim for ts legend ...")
@@ -3596,48 +3645,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 abline(h=0, col="gray", lwd=0.5)
             }
 
-            ## add obs, etc.
-            if (F && varname == "temp2") {
-                message("\n", "add hadcrut4_sat_anom, gistempv4_sat_anom to plot ...")
-                polygon(c(as.POSIXct(hadcrut4_sat_anom_annual$time), 
-                          rev(as.POSIXct(hadcrut4_sat_anom_annual$time))),
-                        c(hadcrut4_sat_anom_annual$hadcrut4_sat_anom_lower_uncert,
-                          rev(hadcrut4_sat_anom_annual$hadcrut4_sat_anom_upper_uncert)),
-                        col=hadcrut4_sat_anom_annual$col_rgb, border=NA)
-                lines(hadcrut4_sat_anom_annual$time, hadcrut4_sat_anom_annual$hadcrut4_sat_anom,
-                      col=hadcrut4_sat_anom_annual$col, lty=hadcrut4_sat_anom_annual$lty,
-                      lwd=hadcrut4_sat_anom_annual$lwd)
-                #lines(gistempv4_sat_anom_annual$time, gistempv4_sat_anom_annual$gistempv4_sat_anom,
-                #      col=cols[2], lwd=2, lty=2)
-            }
-            if (F && varname == "moc_max_26.25deg") {
-                message("\n", "add moc_rapid$moc_annual to plot ...")
-                # exclude NA values
-                nainds <- which(!is.na(moc_rapid$moc) & !is.na(moc_rapid$moc_error)) 
-                #polygon(c(as.POSIXct(moc_rapid$time[nainds]), rev(as.POSIXct(moc_rapid$time[nainds]))),
-                #        c(moc_rapid$moc[nainds] - moc_rapid$moc_error[nainds], 
-                #          rev(moc_rapid$moc[nainds] + moc_rapid$moc_error[nainds])),
-                #        col=moc_rapid$col_rgb, border=NA)
-                lines(moc_rapid$time, moc_rapid$moc_annual,
-                      col=moc_rapid$col, lty=moc_rapid$lty,
-                      lwd=moc_rapid$lwd)
-            }
-            if (T && varname == "siarean") {
-                message("\n", "add nsidc annual to plot ...")
-                lines(nsidc_siarean_annual$time, nsidc_siarean_annual$siarean,
-                      col=nsidc_siarean_annual$col, lty=nsidc_siarean_annual$lty,
-                      lwd=nsidc_siarean_annual$lwd)
-            }
-            
-            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
-                message("\n", "add kostroval et al. 2019 to plot ...")
-                points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
-                       col=kostrova_etal_2019$col, pch=kostrova_etal_2019$pch,
-                       cex=kostrova_etal_2019$cex)
-            }
-            # finished adding obs
-
-            # add data
+            # add model data
             # unsmoothed before smoothed data
             #if (!is.null(data[[i]])) {
             if (add_unsmoothed) {
@@ -3740,6 +3748,66 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("add_linear_trend not yet here")
             }
             
+            ## add obs, etc.
+            if (F && varname == "temp2") {
+                message("\n", "add hadcrut4_sat_anom, gistempv4_sat_anom to plot ...")
+                polygon(c(as.POSIXct(hadcrut4_sat_anom_annual$time), 
+                          rev(as.POSIXct(hadcrut4_sat_anom_annual$time))),
+                        c(hadcrut4_sat_anom_annual$hadcrut4_sat_anom_lower_uncert,
+                          rev(hadcrut4_sat_anom_annual$hadcrut4_sat_anom_upper_uncert)),
+                        col=hadcrut4_sat_anom_annual$col_rgb, border=NA)
+                lines(hadcrut4_sat_anom_annual$time, hadcrut4_sat_anom_annual$hadcrut4_sat_anom,
+                      col=hadcrut4_sat_anom_annual$col, lty=hadcrut4_sat_anom_annual$lty,
+                      lwd=hadcrut4_sat_anom_annual$lwd)
+                #lines(gistempv4_sat_anom_annual$time, gistempv4_sat_anom_annual$gistempv4_sat_anom,
+                #      col=cols[2], lwd=2, lty=2)
+            }
+            if (F && varname == "moc_max_26.25deg") {
+                message("\n", "add moc_rapid$moc_annual to plot ...")
+                # exclude NA values
+                nainds <- which(!is.na(moc_rapid$moc) & !is.na(moc_rapid$moc_error)) 
+                #polygon(c(as.POSIXct(moc_rapid$time[nainds]), rev(as.POSIXct(moc_rapid$time[nainds]))),
+                #        c(moc_rapid$moc[nainds] - moc_rapid$moc_error[nainds], 
+                #          rev(moc_rapid$moc[nainds] + moc_rapid$moc_error[nainds])),
+                #        col=moc_rapid$col_rgb, border=NA)
+                lines(moc_rapid$time, moc_rapid$moc_annual,
+                      col=moc_rapid$col, lty=moc_rapid$lty,
+                      lwd=moc_rapid$lwd)
+            }
+            if (T && varname == "siarean") {
+                message("\n", "add nsidc annual to plot ...")
+                lines(nsidc_siarean_annual$time, nsidc_siarean_annual$siarean,
+                      col=nsidc_siarean_annual$col, lty=nsidc_siarean_annual$lty,
+                      lwd=nsidc_siarean_annual$lwd)
+            }
+            
+            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
+                message("\n", "add kostroval et al. 2019 to plot ...")
+                points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
+                       t=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
+                       lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd, 
+                       pch=kostrova_etal_2019$pch, cex=kostrova_etal_2019$cex)
+            }
+            
+            if (T && exists("noaa_ghcdn_mon")) {
+                message("\nadd noadd ghcdn monthly data to plot ...")
+                message("ylim before: ", ylim[1], ", ", ylim[2])
+                if (all(areas == "ladoga_remapnn")) {
+                    if (varname == "tsurf") {
+                        points(noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$time, 
+                               noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$Tavg,
+                               t=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$type, 
+                               col=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$col,
+                               lty=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$lty, 
+                               lwd=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$lwd,
+                               pch=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$pch, 
+                               cex=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$cex)
+                    }
+                }
+                message("ylim after: ", ylim[1], ", ", ylim[2])
+            } # if exists("noaa_ghcdn_mon")
+            # finished adding obs
+
             # add legend if wanted
             if (add_legend) {
                 message("\n", "add default stuff to ts legend ...")
@@ -3750,8 +3818,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
                 #le$ncol <- length(z)/2
-                #le$ncol <- 1
-                le$ncol <- length(z)
+                le$ncol <- 1
+                #le$ncol <- length(z)
                 #le$ncol <- ceiling(length(z)/4) 
                 le$text <- names_legend_p
                 le$col <- cols_p
@@ -3781,7 +3849,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
                     message("\n", "add kostrova et al. 2019 to datas legend ...")
-                    le$pos <- "left"
+                    le$pos <- "bottom"
                     le$text <- c(le$text, kostrova_etal_2019$text)
                     le$col <- c(le$col, kostrova_etal_2019$col)
                     le$lty <- c(le$lty, kostrova_etal_2019$lty)
