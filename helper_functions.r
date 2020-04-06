@@ -26,7 +26,7 @@ tryCatch.W.E <- function(expr) {
 cdo_get_filetype <- function(fin, cdo="cdo", verbose=T) {
 
     cmd <- paste0(cdo, " showformat ", fin)
-    if (verbose) message("\nrun `", cmd, "`")
+    if (verbose) message("run `", cmd, "`")
     input_format <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
     if (!is.null(input_format$warning)) {
         stop(input_format$warning)

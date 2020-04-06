@@ -105,7 +105,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
+} else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     # hol-tx10 on paleosrv:
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
@@ -329,18 +329,25 @@ if (F) { # old hist
     cdo_codetables <- "~/scripts/r/echam/wiso/CODES.WISO"
     cdo_partablesn <- "~/scripts/r/echam/wiso/CODES.WISO.txt"
 
-} else if (F) { # echam5-wiso; T106L31; ERA-Interim nudging; stan
-    datapaths <- "/ace/user/mwerner/echam5-wiso/T106L31/EXP007_MB/MONMEAN"
+} else if (F) { # recT106erai: echam5-wiso, T106L31, ERA-Interim nudging, on stan
+    #datapaths <- "/ace/user/mwerner/echam5-wiso/T106L31/EXP007_MB/MONMEAN" # mb
+    datapaths <- "/ace/user/mwerner/echam5-wiso/T106L31/EXP020/MONMEAN" # mw
     models <- "echam5"
-    fpatterns <- "EXP007_T106_MB_195801.201312.combined.monmean.wiso.nc"
-    prefixes <- "recT106erai_echam5"
+    #fpatterns <- "EXP007_T106_MB_195801.201312.combined.monmean.wiso.nc"
+    fpatterns <- "EXP020_T106_MW_201301.201908.monmean.wiso_d.nc"
+    #prefixes <- "echam5_recT106era5_wiso_MB"
+    prefixes <- "echam5_recT106erai_wiso_MW"
     fvarnames <- "temp2"
+    #fvarnames <- "tsurf"
     modes <- "select"
     #modes <- "fldmean"
-    froms <- 1958
-    tos <- 2013
+    #froms <- 1958 # mb start
+    #tos <- 1958
+    #tos <- 2012 # mb end
+    froms <- 2013 # mw start
+    tos <- 2019 # mw end
 
-} else if (F) { # echam6-wiso; T127L95; ERA-5 nudging; ollie
+} else if (F) { # recT127era5: echam6-wiso; T127L95; ERA-5 nudging; ollie
     datapaths <- "/work/ollie/mwerner/echam6-wiso/T127L95/NUDGING_ERA5_T127L95/MONMEAN"
     models <- "echam6"
     fpatterns <- "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
@@ -390,6 +397,21 @@ if (F) { # old hist
     tos <- c(2099, 2099)
     modes <- c("fldmean", "fldmean")
     prefixes <- c("dynveg", "dynveg")
+
+} else if (F) { # recT106erai: echam5-wiso, T106L31, ERA-Interim nudging, MB and MW parts on stan
+    datapaths <- c("/ace/user/mwerner/echam5-wiso/T106L31/EXP007_MB/MONMEAN", # mb
+                   "/ace/user/mwerner/echam5-wiso/T106L31/EXP020/MONMEAN") # mw
+    models <- c("echam5", "echam5")
+    fpatterns <- c("EXP007_T106_MB_195801.201312.combined.monmean.wiso.nc", # mb
+                   "EXP020_T106_MW_201301.201908.monmean.wiso_d.nc") # mw
+    prefixes <- c("echam5_recT106erai_wiso_MB", # mb
+                  "echam5_recT106erai_wiso_MW") # mw
+    #fvarnames <- c("temp2", "temp2")
+    #fvarnames <- c("tsurf", "tsurf")
+    fvarnames <- c("aprt", "aprt")
+    modes <- c("select", "select")
+    froms <- c(1958, 2013) 
+    tos <- c(2012, 2019)
 
 # ======================================================
 # 3 settings

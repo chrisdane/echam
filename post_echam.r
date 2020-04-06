@@ -330,38 +330,8 @@ for (i in 1:nsettings) {
 
         # separate into dirname and basename
         basenames <- basename(files)
-        df <- data.frame(basenames)
+        df <- data.frame(basenames, stringsAsFactors=F)
 
-        # identify correct YYYY, MM, etc. based on file names or `cdo showdate`
-        if (grepl("<YYYY>", fpatterns[i])) {
-            n_yyyy_patterns <- length(gregexpr("<YYYY>", fpatterns[i])[[1]]) 
-            patterninds <- regexpr("<YYYY>", fpatterns[i])
-            patterninds <- c(patterninds, 
-                             patterninds + attributes(patterninds)$match.length - 3) 
-            df$YYYY <- substr(basenames, patterninds[1], patterninds[2]) 
-            years_filenames <- as.integer(df$YYYY)
-        } else {
-            message("\n<YYYY> not included in `fpatterns[", i, "]` = \"", fpatterns[i], "\"\n",
-                    " --> derive input years by `cdo showdate` ...")
-            n_yyyy_patterns <- 0
-            for (fi in seq_along(files)) {
-                cmd <- paste0(cdo, " showdate ", datapaths[i], "/", files[fi])
-                message(cmd)
-                dates <- system(cmd, intern=T)
-                cmd_select <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd_select, perl=T)
-                stop("asd")
-            }
-            
-        }
-        if (grepl("<MM>", fpatterns[i])) {
-            n_mm_patterns <- length(gregexpr("<MM>", fpatterns[i])[[1]]) 
-            patterninds <- regexpr("<MM>", fpatterns[i])
-            patterninds <- c(patterninds - 2,
-                             patterninds - 2 + attributes(patterninds)$match.length - 3) 
-            df$MM <- substr(basenames, patterninds[1], patterninds[2]) 
-            MM_in <- as.integer(df$MM)
-        }
-       
         # show found files
         if (verbose > 0) {
             message("\n", "found ", length(files), " file", 
@@ -372,8 +342,49 @@ for (i in 1:nsettings) {
                 print(df)
             }
         }
+        
+        # identify correct YYYY, MM, etc. based on file names or `cdo showdate`
+        if (grepl("<YYYY>", fpatterns[i])) {
+            n_yyyy_patterns <- length(gregexpr("<YYYY>", fpatterns[i])[[1]]) 
+            patterninds <- regexpr("<YYYY>", fpatterns[i])
+            patterninds <- c(patterninds, 
+                             patterninds + attributes(patterninds)$match.length - 3) 
+            df$YYYY <- substr(basenames, patterninds[1], patterninds[2]) 
+            years_filenames <- as.integer(df$YYYY)
+        } else {
+            message("\npattern \"<YYYY>\" not included in `fpatterns[", i, "]` = \"", fpatterns[i], "\"\n",
+                    " --> derive input years by `cdo showdate` ...")
+            n_yyyy_patterns <- 0
+            years_filenames <- vector("list", l=length(files))
+            for (fi in seq_along(files)) {
+                cmd <- paste0(cdo, " showdate ", datapaths[i], "/", files[fi])
+                message("run `", cmd, "`")
+                dates <- system(cmd, intern=T)
+                dates <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", dates, perl=T) # remove double and leading blanks
+                dates <- strsplit(dates, " ")[[1]]
+                if (verbose) {
+                    message("\ncdo dates:")
+                    ht(dates, n=20)
+                }
+                years_filenames[[fi]] <- substr(dates, 1, 4)
+            }
+            years_filenames <- as.numeric(unlist(years_filenames))
+
+        } # if "<YYYY>" is in `fpatterns` or not
+        if (grepl("<MM>", fpatterns[i])) {
+            n_mm_patterns <- length(gregexpr("<MM>", fpatterns[i])[[1]]) 
+            patterninds <- regexpr("<MM>", fpatterns[i])
+            patterninds <- c(patterninds - 2,
+                             patterninds - 2 + attributes(patterninds)$match.length - 3) 
+            df$MM <- substr(basenames, patterninds[1], patterninds[2]) 
+            MM_in <- as.integer(df$MM)
+        }
+       
         if (verbose > 0) {
-            message("\nderived years based on file names:")
+            message("\nderived years based on ",
+                    ifelse(length(files) == length(years_filenames),
+                           "file names",
+                           "`cdo showdate`"), ":")
             ht(years_filenames, n=30)
             if (grepl("<MM>", fpatterns[i])) {
                 message("\nderived months based on file names:")
@@ -385,32 +396,34 @@ for (i in 1:nsettings) {
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
         # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
-        message("\ncheck if any of the ", length(files), " files do not match `fpatterns[", i, "]` =\n",
-                "   \"", fpatterns[i], "\" ...")
-        filesp <- rep(fpatterns[i], t=length(df$YYY))
-        for (yyyy_patterni in seq_len(n_yyyy_patterns)) { 
-            filesp <- stringr::str_replace(string=filesp, 
-                                           pattern="<YYYY>", 
-                                           replacement=df$YYYY)
-        }
-        if (grepl("<MM>", fpatterns[i])) {
-            for (mm_patterni in seq_len(n_mm_patterns)) { 
+        if (length(files) > 1) {
+            message("\ncheck if any of the ", length(files), " files do not match `fpatterns[", i, "]` =\n",
+                    "   \"", fpatterns[i], "\" ...")
+            filesp <- rep(fpatterns[i], t=length(files))
+            for (yyyy_patterni in seq_len(n_yyyy_patterns)) { 
                 filesp <- stringr::str_replace(string=filesp, 
-                                               pattern="<MM>", 
-                                               replacement=df$MM)
+                                               pattern="<YYYY>", 
+                                               replacement=df$YYYY)
             }
-        }
-        if (any(!(files %in% filesp))) {
-            wrong_file_inds <- which(!files %in% filesp)
-            message("\nthese ", length(wrong_file_inds), " files differ from wanted `fpatterns[", i, "]` = ", fpatterns[i], ":")
-            ht(files[wrong_file_inds])
-            message("remove them ...")
-            files <- files[-wrong_file_inds]
-            basenames <- basenames[-wrong_file_inds]
-            df <- df[-wrong_file_inds,]
-            years_filenames <- years_filenames[-wrong_file_inds]
-            if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[-wrong_file_inds]
-        } # if any found files differ from wanted `fpatterns[i]`
+            if (grepl("<MM>", fpatterns[i])) {
+                for (mm_patterni in seq_len(n_mm_patterns)) { 
+                    filesp <- stringr::str_replace(string=filesp, 
+                                                   pattern="<MM>", 
+                                                   replacement=df$MM)
+                }
+            }
+            if (any(!(files %in% filesp))) {
+                wrong_file_inds <- which(!files %in% filesp)
+                message("\nthese ", length(wrong_file_inds), " files differ from wanted `fpatterns[", i, "]` = ", fpatterns[i], ":")
+                ht(files[wrong_file_inds])
+                message("remove them ...")
+                files <- files[-wrong_file_inds]
+                basenames <- basenames[-wrong_file_inds]
+                df <- df[-wrong_file_inds,]
+                years_filenames <- years_filenames[-wrong_file_inds]
+                if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[-wrong_file_inds]
+            } # if any found files differ from wanted `fpatterns[i]`
+        } # if length(files) > 1
 
         ## remove found years (which were found based on the file names) out of wanted years
         # wanted years
@@ -441,26 +454,54 @@ for (i in 1:nsettings) {
                     min(years_wanted), " to ", max(years_wanted))
         }
         outside_years_inds <- which(years_filenames %in% years_wanted == F)
+        cdoselyear <- "" # default: none
+        
         if (length(outside_years_inds) > 0) {
-            message("\n", "remove ", length(outside_years_inds), " file",
-                    ifelse(length(outside_years_inds) > 1, "s", ""),
-                    " outside of wanted years defined by froms[", i, "] = ", 
-                    froms[i], " to tos[", i, "] = ", tos[i], " ...")
-            files <- files[-outside_years_inds]
-            basenames <- basenames[-outside_years_inds]
-            df <- df[-outside_years_inds,]
-            years_filenames <- years_filenames[-outside_years_inds]
-            if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[-outside_years_inds]
-            if (verbose > 0) {
-                message("\n", "found ", length(files), " file", 
-                        ifelse(length(files) > 1, "s", ""), ":")
-                if (length(files) > 1) {
-                    ht(df)
+            message("--> some input years are not needed. throw out ...")
+
+            # remove _files_ of years outside of wanted range if one year per file
+            if (length(files) == length(years_filenames)) { 
+                message("\n   case a) length(files) = ", length(files), " == length(years_filenames) = ", 
+                        length(years_filenames), "\n",
+                        "      --> assume that data of one year is saved in one file\n",
+                        "      --> remove ", length(outside_years_inds), " file",
+                        ifelse(length(outside_years_inds) > 1, "s", ""),
+                        " outside of wanted years defined by froms[", i, "] = ", 
+                        froms[i], " to tos[", i, "] = ", tos[i], " ...")
+                files <- files[-outside_years_inds]
+                basenames <- basenames[-outside_years_inds]
+                df <- df[-outside_years_inds,]
+                years_filenames <- years_filenames[-outside_years_inds]
+                if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[-outside_years_inds]
+                if (verbose > 0) {
+                    message("\n", "      --> remaining ", length(files), " file", 
+                            ifelse(length(files) > 1, "s", ""), ":")
+                    if (length(files) > 1) {
+                        ht(df)
+                    } else {
+                        print(df)
+                    }
+                } 
+        
+            # else remove _timepoints_ of years outside of wanted range if more than one year per file
+            } else if (length(files) != length(years_filenames)) {
+                if (length(files) == 1) {
+                    message("\n   case b) length(files) = ", length(files), " != length(years_filenames) = ", 
+                            length(years_filenames), "\n",
+                            "      --> assume that data of more than one year is saved in one file\n",
+                            "      --> remove ", length(outside_years_inds), " timestep",
+                            ifelse(length(outside_years_inds) > 1, "s", ""),
+                            " outside of wanted years defined by froms[", i, "] = ", 
+                            froms[i], " to tos[", i, "] = ", tos[i], " ...")
+                    cdoselyear <- paste0("-selyear,", froms[i], "/", tos[i])
                 } else {
-                    print(df)
+                    stop("not implemented yet")
                 }
-            } 
-        }
+                message("      --> `cdoselyear` = \"", cdoselyear, "\"")
+            
+            } # if (length(files) == length(years_filenames)) or not
+        
+        } # length(outside_years_inds) > 0
 
         # remove found months (which were found based on the file names) out of wanted season
         cdoselmon <- "" # default
@@ -734,14 +775,15 @@ for (i in 1:nsettings) {
                 
             # else if requested variable was found in first found file
             } else { 
-               
+                
+                # continue with default case -> cdo cmd and not any of `cdo_known_cmds`
                 message("--> requested variable was found in first file")
                 if (clean) system(paste0("rm -v ", varcheck_file))
             
-                # continue with default case -> cdo cmd and not any of `cdo_known_cmds`
+                # construct necessary cdo commands
                 message("\nconstruct cdo command chain ...")
 
-                # nth command: cat/mergetime/etc. command
+                ## cat/mergetime/etc.
                 if (modes[i] == "timmean") {
                     nmax <- as.integer(system("ulimit -n", intern=T))
                     if (length(files) > nmax) {
@@ -759,9 +801,8 @@ for (i in 1:nsettings) {
                     #stop("cat/mergetime not defined for mode '", modes[i], "' not defined.")
                 } # which cat/mergetime depending on mode
 
-                # construct necessary cdo commands
-                # (n-2)-th command: calculation
-                cdocalc <- paste0("-", modes[i]) # e.g. "-fldmean"
+                ## calculation
+                cdocalc <- paste0("-", modes[i]) # default; e.g. "-fldmean"
                 if (modes[i] == "select") {
                     cdocalc <- "" # variable selection only
                 } else if (modes[i] == "volint") {
@@ -770,14 +811,14 @@ for (i in 1:nsettings) {
                 } # which calculation depending on mode
                 message("\n`modes[", i, "]` = \"", modes[i], "\" --> `cdocalc` = \"", cdocalc, "\" ...")
 
-                # (n-3)-th command: select level
-                cdosellevel <- "" # default
+                ## sellevel
+                cdosellevel <- "" # default: none
                 if (!is.na(levs_out[i])) {
                     cdosellevel <- paste0("-sellevel,", paste0(levs_out[i], collapse=","))
                 }
                 
-                # select area
-                cdoselarea <- ""
+                ## sellonlatbox
+                cdoselarea <- "" # default: none
                 if (areas_out[i] != "global") {
                     if (exists("areas_out_list")) {
                         if (!is.null(areas_out_list[[i]]$sellonlatbox)) {
@@ -797,6 +838,11 @@ for (i in 1:nsettings) {
                         }
                     }
                 } # if areas_out != "global" 
+
+                # cdoselyear defined earlier
+
+                # add further cdo chain commands here
+                # ...
 
                 ## construct cdo command
                 # cdo version must be >= 1.9.4 to chain commands
@@ -868,6 +914,11 @@ for (i in 1:nsettings) {
                     # check for `-selmon`
                     if (cdoselmon != "") {
                         cmd_calc <- paste0(cmd_calc, " ", cdoselmon)
+                    }
+
+                    # check for `-selyear`
+                    if (cdoselyear != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoselyear)
                     }
                     
                     # check for further calculation commands if wanted
@@ -992,9 +1043,9 @@ for (i in 1:nsettings) {
                     cmd <- paste0(cdoprefix, " ", cdoconvert, 
                                   #" ", cmdcat, 
                                   " ", cdocalc, " ", 
-                                  cdoselmon, " ", 
                                   cdosellevel, " ", cdoselarea, " ", 
-                                  cdoselect,  
+                                  cdoselect, " ", 
+                                  cdoselmon, " ", cdoselyear, " ",  
                                   " <files> ", fout)
                     if (F) {
                         cmd <- paste0(cmd, " || echo error")
