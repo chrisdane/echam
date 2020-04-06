@@ -700,10 +700,16 @@ if (T) {
 
 # NOAA monthly station data
 if (T) {
-    message("\ndisable here if you do not want to load NOAA station datasets ...\n")
-    ghcdn_csv <- list.files("/isibhv/projects/paleo_work/cdanek/data/NOAA/station_data/GHCDN/monthly",
-                            pattern=glob2rx("*.csv"), full.names=T)
-    if (length(ghcdn_csv) > 0) {
+    ghcdn_csv <- ""
+    if (machine_tag == "ollie") {
+        ghcdn_csv <- list.files("/work/ollie/cdanek/data/NOAA/station_data/GHCDN/monthly",
+                                pattern=glob2rx("*.csv"), full.names=T)
+    } else if (machine_tag == "paleosrv") {
+        ghcdn_csv <- list.files("/isibhv/projects/paleo_work/cdanek/data/NOAA/station_data/GHCDN/monthly",
+                                pattern=glob2rx("*.csv"), full.names=T)
+    }
+    if (file.exists(ghcdn_csv[1])) {
+        message("\ndisable here if you do not want to load NOAA station datasets ...\n")
         message("load noaa ghcdn monthly station data ...")
         noaa_ghcdn_mon <- vector("list", l=length(ghcdn_csv))
         for (i in seq_along(ghcdn_csv)) {
@@ -3530,11 +3536,50 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
 
             if (T && exists("noaa_ghcdn_mon")) {
-                message("\nadd noadd ghcdn monthly data ...")
+                message("\nadd noadd ghcdn monthly data\n", 
+                        "check https://github.com/chrisdane/PLOT/blob/master/lakes/lake_coords_closest_GHCDN_stations.txt ...")
                 message("ylim before: ", ylim[1], ", ", ylim[2])
-                if (all(areas == "ladoga_remapnn")) {
-                    if (varname == "tsurf") {
+                if (all(grepl("ladoga", areas))) {
+                    if (any(varname == c("temp2", "tsurf"))) {
                         ylim <- range(ylim, noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$Tavg, na.rm=T)
+                    } else if (varname == "aprt") {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$precip, na.rm=T)
+                    }
+                } else if (all(grepl("shuchye", areas))) {
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$Tavg, na.rm=T)
+                    } else if (varname == "aprt") {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$precip, na.rm=T)
+                    }
+                } else if (all(grepl("levinson-lessing", areas)) || all(grepl("taymyr", areas))) {
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$Tavg, na.rm=T)
+                    } else if (varname == "aprt") {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$precip, na.rm=T)
+                    }
+                } else if (all(grepl("emanda", areas))) {
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$Tavg, na.rm=T)
+                    } else if (varname == "aprt") {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$precip, na.rm=T)
+                    }
+                } else if (all(grepl("elgygytgyn", areas))) {
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$Tavg, na.rm=T)
+                    } else if (varname == "aprt") {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$precip, na.rm=T)
+                    }
+                } else if (all(grepl("two-yurts", areas))) {
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$Tavg, na.rm=T)
+                    } else if (varname == "aprt") {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$precip, na.rm=T)
+                    }
+                } else if (all(grepl("kotokel", areas))) {
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$Tavg, na.rm=T)
+                    } else if (varname == "aprt") {
+                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$precip, na.rm=T)
                     }
                 }
                 message("ylim after: ", ylim[1], ", ", ylim[2])
@@ -3792,17 +3837,104 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (T && exists("noaa_ghcdn_mon")) {
                 message("\nadd noadd ghcdn monthly data to plot ...")
                 message("ylim before: ", ylim[1], ", ", ylim[2])
-                if (all(areas == "ladoga_remapnn")) {
-                    if (varname == "tsurf") {
-                        points(noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$time, 
-                               noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$Tavg,
-                               t=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$type, 
-                               col=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$col,
-                               lty=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$lty, 
-                               lwd=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$lwd,
-                               pch=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$pch, 
-                               cex=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$cex)
+                if (all(grepl("ladoga", areas))) {
+                    noaax <- noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$time
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        noaay <- noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$Tavg
+                    } else if (varname == "aprt") {
+                        noaay <- noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$precip
                     }
+                    points(noaax, noaay,
+                           t=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$type, 
+                           col=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$col,
+                           lty=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$lty, 
+                           lwd=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$lwd,
+                           pch=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$pch, 
+                           cex=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$cex)
+                } else if (all(grepl("shuchye", areas))) {
+                    noaax <- noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$time
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        noaay <- noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$Tavg
+                    } else if (varname == "aprt") {
+                        noaay <- noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$precip
+                    }
+                    points(noaax, noaay,
+                           t=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$type, 
+                           col=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$col,
+                           lty=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$lty, 
+                           lwd=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$lwd,
+                           pch=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$pch, 
+                           cex=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$cex)
+                } else if (all(grepl("levinson-lessing", areas)) || all(grepl("taymyr", areas))) {
+                    noaax <- noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$time
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        noaay <- noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$Tavg
+                    } else if (varname == "aprt") {
+                        noaay <- noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$precip
+                    }
+                    points(noaax, noaay,
+                           t=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$type, 
+                           col=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$col,
+                           lty=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$lty, 
+                           lwd=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$lwd,
+                           pch=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$pch, 
+                           cex=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$cex)
+                } else if (all(grepl("emanda", areas))) {
+                    noaax <- noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$time
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        noaay <- noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$Tavg
+                    } else if (varname == "aprt") {
+                        noaay <- noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$precip
+                    }
+                    points(noaax, noaay,
+                           t=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$type, 
+                           col=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$col,
+                           lty=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$lty, 
+                           lwd=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$lwd,
+                           pch=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$pch, 
+                           cex=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$cex)
+                } else if (all(grepl("elgygytgyn", areas))) {
+                    noaax <- noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$time
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        noaay <- noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$Tavg
+                    } else if (varname == "aprt") {
+                        noaay <- noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$precip
+                    }
+                    points(noaax, noaay,
+                           t=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$type, 
+                           col=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$col,
+                           lty=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$lty, 
+                           lwd=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$lwd,
+                           pch=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$pch, 
+                           cex=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$cex)
+                } else if (all(grepl("two-yurts", areas))) {
+                    noaax <- noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$time
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        noaay <- noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$Tavg
+                    } else if (varname == "aprt") {
+                        noaay <- noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$precip
+                    }
+                    points(noaax, noaay,
+                           t=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$type, 
+                           col=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$col,
+                           lty=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$lty, 
+                           lwd=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$lwd,
+                           pch=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$pch, 
+                           cex=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$cex)
+                } else if (all(grepl("kotokel", areas))) {
+                    noaax <- noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$time
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        noaay <- noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$Tavg
+                    } else if (varname == "aprt") {
+                        noaay <- noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$precip
+                    }
+                    points(noaax, noaay,
+                           t=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$type, 
+                           col=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$col,
+                           lty=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$lty, 
+                           lwd=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$lwd,
+                           pch=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$pch, 
+                           cex=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$cex)
                 }
                 message("ylim after: ", ylim[1], ", ", ylim[2])
             } # if exists("noaa_ghcdn_mon")
