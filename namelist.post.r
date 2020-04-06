@@ -347,16 +347,18 @@ if (F) { # old hist
     froms <- 2013 # mw start
     tos <- 2019 # mw end
 
-} else if (F) { # recT127era5: echam6-wiso; T127L95; ERA-5 nudging; ollie
+} else if (T) { # recT127era5: echam6-wiso; T127L95; ERA-5 nudging; ollie
     datapaths <- "/work/ollie/mwerner/echam6-wiso/T127L95/NUDGING_ERA5_T127L95/MONMEAN"
     models <- "echam6"
     fpatterns <- "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
-    prefixes <- "recT127era5_echam6"
-    fvarnames <- "temp2"
-    #modes <- "select"
-    modes <- "fldmean"
+    prefixes <- "echam6_recT127era5_wiso"
+    #fvarnames <- "temp2"
+    #fvarnames <- "tsurf"
+    fvarnames <- "aprt"
+    modes <- "select"
+    #modes <- "fldmean"
     froms <- 1979
-    tos <- 2018
+    tos <- 2019
 
 } else if (F) { # E280_280ppm
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/E280_280ppm/outdata/mpiom"
