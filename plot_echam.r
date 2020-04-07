@@ -675,9 +675,30 @@ if (F) { # compare berger and laskar orb
     dev.off()
 } # comapre berger and laskar orb
 
-# pangaea
+# hanno meyer et al. PLOT excel sheet
 if (T) {
-    message("\ndisable here if you do not want to load dataseats from https://pangaea.de ...\n")
+    f <- ""
+    if (machine_tag == "paleosrv") {
+        f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
+        source("/isibhv/projects/paleo_work/cdanek/data/meyer_etal/read_meyer_etal_function.r")
+    }
+    if (file.exists(f)) {
+        message("\nread hanno meyer et al. PLOT excel sheet. disable here if you do not want that")
+        tmp <- read_meyer_etal_function(xlsx_file=f, verbose=F)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Ladoga", verbose=T)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake", verbose=T)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Two Jurts Lake", verbose=T)
+        meyer_etal <- list(data=tmp,
+                           type="o", col="#377EB8",
+                           lty=1, lwd=1, pch=1, cex=1)
+    }
+} else {
+    message("\nenable here to read hanno meyer et al. PLOT excel sheet")
+}
+
+# pangaea
+if (F) {
+    message("\ndisable here if you do not want to load dataseats from https://pangaea.de ...")
     library(pangaear)
     if (T) { # ladoga; kostrova et al. 2019: https://doi.pangaea.de/10.1594/PANGAEA.899329
         pdoi <- "10.1594/PANGAEA.899329" 
@@ -691,7 +712,7 @@ if (T) {
                                    type="o", col="#377EB8",
                                    lty=1, lwd=1, pch=1, cex=1)
     }
-    if (T) { # elgygytgyn; swann et al. 2010: https://doi.pangaea.de/10.1594/PANGAEA.856095
+    if (F) { # elgygytgyn; swann et al. 2010: https://doi.pangaea.de/10.1594/PANGAEA.856095
         pdoi <- "10.1016/j.quascirev.2009.11.024"
     }
 } else {
@@ -709,25 +730,72 @@ if (T) {
                                 pattern=glob2rx("*.csv"), full.names=T)
     }
     if (file.exists(ghcdn_csv[1])) {
-        message("\ndisable here if you do not want to load NOAA station datasets ...\n")
+        message("\ndisable here if you do not want to load NOAA station datasets ...")
         message("load noaa ghcdn monthly station data ...")
-        noaa_ghcdn_mon <- vector("list", l=length(ghcdn_csv))
+        noaa_ghcdn <- vector("list", l=length(ghcdn_csv))
         for (i in seq_along(ghcdn_csv)) {
             d <- read.csv(ghcdn_csv[i], stringsAsFactors=F)
             tmp <- list(time=as.POSIXlt(paste0(d$DATE, "-15"), tz="UTC"),
                         Tavg=d$TAVG, Tmin=d$TMIN, Tmax=d$TMAX, precip=d$PRCP)
             tmp$timen <- as.numeric(tmp$time)
-            noaa_ghcdn_mon[[i]]$coords <- c(lon=d$LONGITUDE[1], lat=d$LATITUDE[1])
-            noaa_ghcdn_mon[[i]]$ts <- tmp
-            noaa_ghcdn_mon[[i]]$text <- paste0("NOAA ", d$STATION)
-            noaa_ghcdn_mon[[i]]$type <- "o"
-            noaa_ghcdn_mon[[i]]$col <- "black"
-            noaa_ghcdn_mon[[i]]$lty <- 1
-            noaa_ghcdn_mon[[i]]$lwd <- 1
-            noaa_ghcdn_mon[[i]]$pch <- 1
-            noaa_ghcdn_mon[[i]]$cex <- 1
-            names(noaa_ghcdn_mon)[i] <- tools::file_path_sans_ext(basename(ghcdn_csv[i]))
-        }
+            # annual means
+            tmp$years <- unique(tmp$time$year+1900)
+            Tavg_an <- Tmin_an <- Tmax_an <- precip_an <- rep(NA, t=length(tmp$years))
+            for (yi in seq_along(tmp$years)) {
+                yinds <- which(tmp$time$year+1900 == tmp$years[yi])
+                Tavg_an[yi] <- mean(tmp$Tavg[yinds], na.rm=T)
+                Tmin_an[yi] <- mean(tmp$Tmin[yinds], na.rm=T)
+                Tmax_an[yi] <- mean(tmp$Tmax[yinds], na.rm=T)
+                precip_an[yi] <- mean(tmp$precip[yinds], na.rm=T)
+            }
+            tmp$Tavg_an <- Tavg_an
+            tmp$Tmin_an <- Tmin_an
+            tmp$Tmax_an <- Tmax_an
+            tmp$precip_an <- precip_an
+            # monthly climatologies
+            tmp$months <- 1:12 #sort(unique(tmp$time$mon+1))
+            Tavg_mon <- Tmin_mon <- Tmax_mon <- precip_mon <- rep(NA, t=length(tmp$months))
+            for (mi in seq_along(tmp$months)) {
+                minds <- which(tmp$time$mon+1 == tmp$months[mi])
+                if (length(minds) > 0) {
+                    Tavg_mon[mi] <- mean(tmp$Tavg[minds], na.rm=T)
+                    Tmin_mon[mi] <- mean(tmp$Tmin[minds], na.rm=T)
+                    Tmax_mon[mi] <- mean(tmp$Tmax[minds], na.rm=T)
+                    precip_mon[mi] <- mean(tmp$precip[minds], na.rm=T)
+                }
+            }
+            tmp$Tavg_mon <- Tavg_mon
+            tmp$Tmin_mon <- Tmin_mon
+            tmp$Tmax_mon <- Tmax_mon
+            tmp$precip_mon <- precip_mon
+            noaa_ghcdn[[i]]$coords <- c(lon=d$LONGITUDE[1], lat=d$LATITUDE[1])
+            noaa_ghcdn[[i]]$ts <- tmp
+            noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1])
+            noaa_ghcdn[[i]]$type <- "o"
+            noaa_ghcdn[[i]]$col <- "#377EB8"
+            noaa_ghcdn[[i]]$lty <- 1
+            noaa_ghcdn[[i]]$lwd <- 1
+            noaa_ghcdn[[i]]$pch <- 1
+            noaa_ghcdn[[i]]$cex <- 1
+            names(noaa_ghcdn)[i] <- tools::file_path_sans_ext(basename(ghcdn_csv[i]))
+            if (T) { # add distance to closest lake to legend 
+                if (names(noaa_ghcdn)[i] == "RSM00021802_SASKYLAH_RS") {
+                    noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(taymyr)=488 km; dist(levinson)=566 km")
+                } else if (names(noaa_ghcdn)[i] == "RSM00022802_SORTAVALA_RS") {
+                    noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(ladoga)=82 km")
+                } else if (names(noaa_ghcdn)[i] == "RSM00023226_VORKUTA_RS") {
+                    noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(shuchye)=107 km")
+                } else if (names(noaa_ghcdn)[i] == "RSM00024671_TOMPO_RS") {
+                    noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(emanda)=147 km")
+                } else if (names(noaa_ghcdn)[i] == "RSM00025248_ILIRNEJ_RS") {
+                    noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(elgygytgyn)=136 km")
+                } else if (names(noaa_ghcdn)[i] == "RSM00030731_GORJACINSK_RS") {
+                    noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(kotokel)=24 km")
+                } else if (names(noaa_ghcdn)[i] == "RSM00032389_KLJUCHI_RS") {
+                    noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(two-yurts)=72 km")
+                }
+            } # special legend labels
+        } # for i ghdcn csv files
     } # if ghcdn files present
 } else {
     message("\nenable here if you want to load NOAA station datasets ...\n")
@@ -735,7 +803,9 @@ if (T) {
 
 # clean
 for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin",
-              "pdoi", "tmp", "d", "ghcdn_csv", "noaa_ghcdn_mon")) {
+              "pdoi", "tmp", "d", "ghcdn_csv", 
+              "Tavg_an", "Tmin_an", "Tmax_an", "precip_an", 
+              "Tavg_mon", "Tmin_mon", "Tmax_mon", "precip_an")) {
     if (exists(obj)) rm(obj)
 }
 
@@ -2943,9 +3013,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
             pchs_pltm <- pchs[sapply(dltminds , "[")]
         }
        
-        # plot `datas`
-        message("\n", "****************** plot datas z_* ***************************")
-
         #ndims <- length(dim(z[[1]]))
         ndims <- sapply(lapply(z, dim), length)
         ndims <- unique(ndims)
@@ -2970,6 +3037,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ifelse(ndims > 1, "s", ""), ": \"", paste(dim_names, collapse="\", \""), 
                 "\"\n      --> check if this case is defined ...")
         
+        # plot `datas`
+        message("\n", "****************** plot datas z_* ***************************")
+
         ### 2 dims
         ## plot `datas` as lon vs lat
         if (ndims == 2 && all(dim_names == c("lon", "lat"))) {
@@ -3527,7 +3597,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim <- range(ylim, nsidc_siarean_annual$siarean, na.rm=T)
             } # if add nsidc
 
-            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
+            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019") &&
+                all(grepl("ladoga", areas))) {
                 message("\nadd kostrova et al. 2019 d18o data ...")
                 message("ylim before: ", ylim[1], ", ", ylim[2])
                 if (scale_ts) kostrova_etal_2019$d18o <- scale(kostrova_etal_2019$d18o)
@@ -3535,55 +3606,70 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("ylim after: ", ylim[1], ", ", ylim[2])
             }
 
-            if (T && exists("noaa_ghcdn_mon")) {
-                message("\nadd noadd ghcdn monthly data\n", 
-                        "check https://github.com/chrisdane/PLOT/blob/master/lakes/lake_coords_closest_GHCDN_stations.txt ...")
-                message("ylim before: ", ylim[1], ", ", ylim[2])
+            if (any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("meyer_etal")) {
+                add_meyer_etal_xlsx <- T
+                message("\nadd meyer et al. xlsx d18o data ...")
                 if (all(grepl("ladoga", areas))) {
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$Tavg, na.rm=T)
-                    } else if (varname == "aprt") {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$precip, na.rm=T)
-                    }
+                    meyer_etal_tmp <- meyer_etal$data[["Lake Ladoga"]]
                 } else if (all(grepl("shuchye", areas))) {
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$Tavg, na.rm=T)
-                    } else if (varname == "aprt") {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$precip, na.rm=T)
-                    }
-                } else if (all(grepl("levinson-lessing", areas)) || all(grepl("taymyr", areas))) {
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$Tavg, na.rm=T)
-                    } else if (varname == "aprt") {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$precip, na.rm=T)
-                    }
+                    meyer_etal_tmp <- meyer_etal$data[["Lake Bolshoye Shchuchye unpubl."]]
                 } else if (all(grepl("emanda", areas))) {
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$Tavg, na.rm=T)
-                    } else if (varname == "aprt") {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$precip, na.rm=T)
-                    }
+                    meyer_etal_tmp <- meyer_etal$data[["Lake Emanda unpubl."]]
                 } else if (all(grepl("elgygytgyn", areas))) {
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$Tavg, na.rm=T)
-                    } else if (varname == "aprt") {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$precip, na.rm=T)
-                    }
+                    meyer_etal_tmp <- meyer_etal$data[["El'gygytgyn Lake"]]
                 } else if (all(grepl("two-yurts", areas))) {
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$Tavg, na.rm=T)
-                    } else if (varname == "aprt") {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$precip, na.rm=T)
-                    }
+                    meyer_etal_tmp <- meyer_etal$data[["Two Jurts Lake"]]
                 } else if (all(grepl("kotokel", areas))) {
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$Tavg, na.rm=T)
-                    } else if (varname == "aprt") {
-                        ylim <- range(ylim, noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$precip, na.rm=T)
-                    }
+                    meyer_etal_tmp <- meyer_etal$data[["Lake Kotokel"]]
+                } else {
+                    message("no meyer et al. xlsx data available for some of the areas\n",
+                            paste(areas, collapse=", "))
+                    add_meyer_etal_xlsx <- F
                 }
-                message("ylim after: ", ylim[1], ", ", ylim[2])
-            } # if exists("noaa_ghcdn_mon")
+                if (add_meyer_etal_xlsx) {
+                    if (scale_ts) meyer_etal$data$d18o_corr_perm <- scale(meyer_etal$data$d18o_corr_perm)
+                    message("ylim before: ", ylim[1], ", ", ylim[2])
+                    ylim <- range(ylim, meyer_etal$data$d18o_corr_perm, na.rm=T)
+                    message("ylim after: ", ylim[1], ", ", ylim[2])
+                }
+            } else {  
+                add_meyer_etal_xlsx <- F
+            } # if add meyer et al xlsx
+
+            if (T && exists("noaa_ghcdn")) {
+                if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                    message("\nadd noadd ghcdn monthly data\n", 
+                            "check https://github.com/chrisdane/PLOT/blob/master/lakes/lake_coords_closest_GHCDN_stations.txt ...")
+                    message("ylim before: ", ylim[1], ", ", ylim[2])
+                    if (all(grepl("ladoga", areas))) {
+                        noaa_ghcdn_tmp <- noaa_ghcdn$RSM00022802_SORTAVALA_RS
+                    } else if (all(grepl("shuchye", areas))) {
+                        noaa_ghcdn_tmp <- noaa_ghcdn$RSM00023226_VORKUTA_RS
+                    } else if (all(grepl("levinson-lessing", areas)) || all(grepl("taymyr", areas))) {
+                        noaa_ghcdn_tmp <- noaa_ghcdn$RSM00021802_SASKYLAH_RS
+                    } else if (all(grepl("emanda", areas))) {
+                        noaa_ghcdn_tmp <- noaa_ghcdn$RSM00024671_TOMPO_RS
+                    } else if (all(grepl("elgygytgyn", areas))) {
+                        noaa_ghcdn_tmp <- noaa_ghcdn$RSM00025248_ILIRNEJ_RS
+                    } else if (all(grepl("two-yurts", areas))) {
+                        noaa_ghcdn_tmp <- noaa_ghcdn$RSM00032389_KLJUCHI_RS
+                    } else if (all(grepl("kotokel", areas))) {
+                        noaa_ghcdn_tmp <- noaa_ghcdn$RSM00030731_GORJACINSK_RS
+                    } else {
+                        stop("noaa ghcdn data not defined for areas\n",
+                             paste(areas, collapse=", "))
+                    }
+                    noaax <- noaa_ghcdn_tmp$ts$time
+                    if (any(varname == c("temp2", "tsurf"))) {
+                        noaay <- noaa_ghcdn_tmp$ts$Tavg
+                    } else if (varname == "aprt") {
+                        noaay <- noaa_ghcdn_tmp$ts$precip
+                    }
+                    if (scale_ts) noaay <- scale(noaay)
+                    ylim <- range(ylim, noaay, na.rm=T)
+                    message("ylim after: ", ylim[1], ", ", ylim[2])
+                } # if temp2, tsurf, aprt
+            } # if exists("noaa_ghcdn")
 
             # increase ylim for legend if many settings
             if (length(z) > 6) {
@@ -3826,118 +3912,35 @@ for (plot_groupi in seq_len(nplot_groups)) {
                       lwd=nsidc_siarean_annual$lwd)
             }
             
-            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
-                message("\n", "add kostroval et al. 2019 to plot ...")
+            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019") &&
+                all(grepl("ladoga", areas))) {
+                message("\n", "add kostrova et al. 2019 to plot ...")
                 points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
                        t=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
                        lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd, 
                        pch=kostrova_etal_2019$pch, cex=kostrova_etal_2019$cex)
             }
             
-            if (T && exists("noaa_ghcdn_mon")) {
-                message("\nadd noadd ghcdn monthly data to plot ...")
-                message("ylim before: ", ylim[1], ", ", ylim[2])
-                if (all(grepl("ladoga", areas))) {
-                    noaax <- noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$time
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        noaay <- noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$Tavg
-                    } else if (varname == "aprt") {
-                        noaay <- noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$precip
-                    }
+            if (add_meyer_etal_xlsx) {
+                message("\n", "add meyer et al. xlsx to plot ...")
+                points(meyer_etal_tmp$data$dtime, meyer_etal_tmp$data$d18o_corr_perm,
+                       t=meyer_etal$type, col=meyer_etal$col, 
+                       lty=meyer_etal$lty, lwd=meyer_etal$lwd, 
+                       pch=meyer_etal$pch, cex=meyer_etal$cex)
+            }
+            
+            if (T && exists("noaa_ghcdn")) {
+                if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                    message("\nadd noadd ghcdn monthly data to plot ...")
                     points(noaax, noaay,
-                           t=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$type, 
-                           col=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$col,
-                           lty=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$lty, 
-                           lwd=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$lwd,
-                           pch=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$pch, 
-                           cex=noaa_ghcdn_mon$RSM00022802_SORTAVALA_RS$ts$cex)
-                } else if (all(grepl("shuchye", areas))) {
-                    noaax <- noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$time
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        noaay <- noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$Tavg
-                    } else if (varname == "aprt") {
-                        noaay <- noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$precip
-                    }
-                    points(noaax, noaay,
-                           t=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$type, 
-                           col=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$col,
-                           lty=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$lty, 
-                           lwd=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$lwd,
-                           pch=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$pch, 
-                           cex=noaa_ghcdn_mon$RSM00023226_VORKUTA_RS$ts$cex)
-                } else if (all(grepl("levinson-lessing", areas)) || all(grepl("taymyr", areas))) {
-                    noaax <- noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$time
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        noaay <- noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$Tavg
-                    } else if (varname == "aprt") {
-                        noaay <- noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$precip
-                    }
-                    points(noaax, noaay,
-                           t=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$type, 
-                           col=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$col,
-                           lty=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$lty, 
-                           lwd=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$lwd,
-                           pch=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$pch, 
-                           cex=noaa_ghcdn_mon$RSM00021802_SASKYLAH_RS$ts$cex)
-                } else if (all(grepl("emanda", areas))) {
-                    noaax <- noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$time
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        noaay <- noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$Tavg
-                    } else if (varname == "aprt") {
-                        noaay <- noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$precip
-                    }
-                    points(noaax, noaay,
-                           t=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$type, 
-                           col=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$col,
-                           lty=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$lty, 
-                           lwd=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$lwd,
-                           pch=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$pch, 
-                           cex=noaa_ghcdn_mon$RSM00024671_TOMPO_RS$ts$cex)
-                } else if (all(grepl("elgygytgyn", areas))) {
-                    noaax <- noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$time
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        noaay <- noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$Tavg
-                    } else if (varname == "aprt") {
-                        noaay <- noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$precip
-                    }
-                    points(noaax, noaay,
-                           t=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$type, 
-                           col=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$col,
-                           lty=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$lty, 
-                           lwd=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$lwd,
-                           pch=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$pch, 
-                           cex=noaa_ghcdn_mon$RSM00025248_ILIRNEJ_RS$ts$cex)
-                } else if (all(grepl("two-yurts", areas))) {
-                    noaax <- noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$time
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        noaay <- noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$Tavg
-                    } else if (varname == "aprt") {
-                        noaay <- noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$precip
-                    }
-                    points(noaax, noaay,
-                           t=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$type, 
-                           col=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$col,
-                           lty=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$lty, 
-                           lwd=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$lwd,
-                           pch=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$pch, 
-                           cex=noaa_ghcdn_mon$RSM00032389_KLJUCHI_RS$ts$cex)
-                } else if (all(grepl("kotokel", areas))) {
-                    noaax <- noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$time
-                    if (any(varname == c("temp2", "tsurf"))) {
-                        noaay <- noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$Tavg
-                    } else if (varname == "aprt") {
-                        noaay <- noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$precip
-                    }
-                    points(noaax, noaay,
-                           t=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$type, 
-                           col=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$col,
-                           lty=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$lty, 
-                           lwd=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$lwd,
-                           pch=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$pch, 
-                           cex=noaa_ghcdn_mon$RSM00030731_GORJACINSK_RS$ts$cex)
-                }
-                message("ylim after: ", ylim[1], ", ", ylim[2])
-            } # if exists("noaa_ghcdn_mon")
+                           t=noaa_ghcdn_tmp$type, 
+                           col=noaa_ghcdn_tmp$col,
+                           lty=noaa_ghcdn$lty, 
+                           lwd=noaa_ghcdn$lwd,
+                           pch=noaa_ghcdn$pch, 
+                           cex=noaa_ghcdn$cex)
+                } # if temp2, tsurf, aprt
+            } # if exists("noaa_ghcdn")
             # finished adding obs
 
             # add legend if wanted
@@ -3979,7 +3982,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch <- c(le$pch, hadcrut4_sat_anom_annual$pch)
                     }
                 }
-                if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019")) {
+                if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019") &&
+                    all(grepl("ladoga", areas))) {
                     message("\n", "add kostrova et al. 2019 to datas legend ...")
                     le$pos <- "bottom"
                     le$text <- c(le$text, kostrova_etal_2019$text)
@@ -3988,7 +3992,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le$lwd <- c(le$lwd, kostrova_etal_2019$lwd)
                     le$pch <- c(le$pch, kostrova_etal_2019$pch)
                 }
-                
+                if (add_meyer_etal_xlsx) {
+                    message("\n", "add meyer et al. xlsx to datas legend ...")
+                    le$pos <- "bottom"
+                    le$text <- c(le$text, meyer_etal_tmp$text)
+                    le$col <- c(le$col, meyer_etal$col)
+                    le$lty <- c(le$lty, meyer_etal$lty)
+                    le$lwd <- c(le$lwd, meyer_etal$lwd)
+                    le$pch <- c(le$pch, meyer_etal$pch)
+                }
+                if (T && exists("noaa_ghcdn")) {
+                    if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                        message("\nadd noadd ghcdn monthly data to legend ...")
+                        le$text <- c(le$text, noaa_ghcdn_tmp$text)
+                        le$col <- c(le$col, noaa_ghcdn_tmp$col)
+                        le$lty <- c(le$lty, noaa_ghcdn_tmp$lty)
+                        le$lwd <- c(le$lwd, noaa_ghcdn_tmp$lwd)
+                        le$pch <- c(le$pch, noaa_ghcdn_tmp$pch)
+                    } # temp2, tsurf, aprt
+                } # noadd_ghcdn
+
                 # reorder reading direction from R's default top->bottom to left->right
                 if (F) {
                     message("\nreorder legend from top->bottom to left->right")
@@ -4321,6 +4344,25 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim_mon <- range(zmon, na.rm=T)
                 message("\n", "ylim_mon=", appendLF=F)
                 dput(ylim_mon)
+                
+                # add obs
+                if (T && exists("noaa_ghcdn")) {
+                    if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                        message("\nadd noaa ghcdn monthly climatology data\n", 
+                                "check https://github.com/chrisdane/PLOT/blob/master/lakes/lake_coords_closest_GHCDN_stations.txt ...")
+                        message("ylim_mon before: ", ylim_mon[1], ", ", ylim_mon[2])
+                        noaax <- noaa_ghcdn_tmp$ts$months
+                        if (any(varname == c("temp2", "tsurf"))) {
+                            noaay <- noaa_ghcdn_tmp$ts$Tavg_mon
+                        } else if (varname == "aprt") {
+                            noaay <- noaa_ghcdn_tmp$ts$precip_mon
+                        }
+                        ylim_mon <- range(ylim_mon, noaay, na.rm=T)
+                        message("ylim_mon after: ", ylim_mon[1], ", ", ylim_mon[2])
+                    } # if temp2, tsurf, aprt
+                } # if exists("noaa_ghcdn")
+                # finised adding obs
+                
                 yat_mon <- pretty(ylim_mon, n=10)
                 ylab_mon <- format(yat_mon, trim=T)
 
@@ -4471,6 +4513,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
                           col=cols_pmon[i], lty=ltys_pmon[i], lwd=lwds_pmon[i], pch=pchs_pmon[i])
                 }
 
+                # add obs
+                if (T && exists("noaa_ghcdn")) {
+                    if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                        message("\nadd noadd ghcdn monthly data to monthly plot ...")
+                        points(noaax, noaay,
+                               t=noaa_ghcdn_tmp$type, 
+                               col=noaa_ghcdn_tmp$col,
+                               lty=noaa_ghcdn$lty, 
+                               lwd=noaa_ghcdn$lwd,
+                               pch=noaa_ghcdn$pch, 
+                               cex=noaa_ghcdn$cex)
+                    } # if temp2, tsurf, aprt
+                } # if exists("noaa_ghcdn")
+                # finished adding obs
+                
                 # add legend if wanted
                 if (add_legend) {
                     message("\n", "add default stuff to ", mode_p, " mon legend ...")
@@ -4501,6 +4558,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     if (F) {
                         message("\n", "add non default stuff to ", mode_p, " mon legend ...")
 
+                    }
+                    if (T && exists("noaa_ghcdn")) {
+                        if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                            message("\nadd noadd ghcdn monthly data to monthly legend ...")
+                            le$text <- c(le$text, noaa_ghcdn_tmp$text)
+                            le$col <- c(le$col, noaa_ghcdn_tmp$col)
+                            le$lty <- c(le$lty, noaa_ghcdn_tmp$lty)
+                            le$lwd <- c(le$lwd, noaa_ghcdn_tmp$lwd)
+                            le$pch <- c(le$pch, noaa_ghcdn_tmp$pch)
+                        }
                     }
                     # reorder reading direction from R's default top->bottom to left->right
                     if (T) {
@@ -4639,6 +4706,25 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim_an <- range(zan, na.rm=T)
                 message("\n", "ylim_an=", appendLF=F)
                 dput(ylim_an)
+            
+                # add obs to ylim
+                if (T && exists("noaa_ghcdn")) {
+                    if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                        message("\nadd noaa ghcdn annual data\n", 
+                                "check https://github.com/chrisdane/PLOT/blob/master/lakes/lake_coords_closest_GHCDN_stations.txt ...")
+                        message("ylim_an before: ", ylim_an[1], ", ", ylim_an[2])
+                        noaax <- noaa_ghcdn_tmp$ts$years
+                        if (any(varname == c("temp2", "tsurf"))) {
+                            noaay <- noaa_ghcdn_tmp$ts$Tavg_an
+                        } else if (varname == "aprt") {
+                            noaay <- noaa_ghcdn_tmp$ts$precip_an
+                        }
+                        ylim_an <- range(ylim_an, noaay, na.rm=T)
+                        message("ylim_an after: ", ylim_an[1], ", ", ylim_an[2])
+                    } # if temp2, tsurf, aprt
+                } # if exists("noaa_ghcdn")
+                
+                # finished ylim
                 yat_an <- pretty(ylim_an, n=10)
                 ylab_an <- format(yat_an, trim=T)
 
@@ -4809,12 +4895,36 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     abline(h=0, col="gray", lwd=0.5)
                 }
 
-                ## add data
+                # add data
                 for (i in seq_along(zan)) {
                     lines(dan$year[[i]], zan[[i]], 
                           col=cols_pan[i], lty=ltys_pan[i], lwd=lwds_pan[i], pch=pchs_pan[i])
                 }
 
+                # add obs 
+                if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019") &&
+                    all(grepl("ladoga", areas))) {
+                    message("\n", "add kostroval et al. 2019 to annul plot ...")
+                    points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
+                           t=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
+                           lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd, 
+                           pch=kostrova_etal_2019$pch, cex=kostrova_etal_2019$cex)
+                }
+                
+                if (T && exists("noaa_ghcdn")) {
+                    if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                        message("\nadd noadd ghcdn monthly data to annual plot ...")
+                        points(noaax, noaay,
+                               t=noaa_ghcdn_tmp$type, 
+                               col=noaa_ghcdn_tmp$col,
+                               lty=noaa_ghcdn$lty, 
+                               lwd=noaa_ghcdn$lwd,
+                               pch=noaa_ghcdn$pch, 
+                               cex=noaa_ghcdn$cex)
+                    } # if temp2, tsurf, aprt
+                } # if exists("noaa_ghcdn")
+                # finished adding obs
+                
                 # add legend if wanted
                 if (add_legend) {
                     message("\n", "add default stuff to ", mode_p, " an legend ...")
@@ -4845,6 +4955,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     if (F) {
                         message("\n", "add non default stuff to ", mode_p, " an legend ...")
 
+                    }
+                    if (T && exists("noaa_ghcdn")) {
+                        if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                            message("\nadd noadd ghcdn monthly data to annual legend ...")
+                            le$text <- c(le$text, noaa_ghcdn_tmp$text)
+                            le$col <- c(le$col, noaa_ghcdn_tmp$col)
+                            le$lty <- c(le$lty, noaa_ghcdn_tmp$lty)
+                            le$lwd <- c(le$lwd, noaa_ghcdn_tmp$lwd)
+                            le$pch <- c(le$pch, noaa_ghcdn_tmp$pch)
+                        }
                     }
                     # reorder reading direction from R's default top->bottom to left->right
                     if (T) {
