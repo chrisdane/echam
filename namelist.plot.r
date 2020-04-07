@@ -186,7 +186,7 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (T) { # Hol-T with vs without orbital acceleration
+} else if (F) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-T", "cosmos-aso-wiso_echam5_Hol-Tx10")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-T_main_mm", "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm")
     prefixes <- c("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm")
@@ -288,6 +288,27 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- c(5*1200, 1200)
     #remove_mean_froms <- c(-179, 0)
     #remove_mean_tos <- c(-179, 0)
+
+} else if (T) { # recT106erai vs recT127era5
+    prefixes <- c("echam5_recT106erai_wiso", "echam6_recT127era5_wiso")
+    models <- c("echam5", "echam6")
+    names_short <- c("recT106erai", "recT127era5")
+    names_legend <- c("T106 ERA-I", "T127 ERA5")
+    fromsf <- c(1958, 1979)
+    tosf <- c(2019, 2019)
+    time_frequencies <- rep("monthly", t=2)
+    #varnames_in <- rep("temp2", t=2)
+    #varnames_in <- rep("tsurf", t=2)
+    varnames_in <- rep("aprt", t=2)
+    modes <- rep("select", t=2)
+    #areas <- rep("ladoga_remapnn", t=2)
+    #areas <- rep("shuchye_remapnn", t=2)
+    #areas <- rep("levinson-lessing_remapnn", t=2)
+    #areas <- rep("taymyr_remapnn", t=2)
+    #areas <- rep("emanda_remapnn", t=2)
+    #areas <- rep("elgygytgyn_remapnn", t=2)
+    #areas <- rep("two-yurts_remapnn", t=2)
+    areas <- rep("kotokel_remapnn", t=2)
 
 # =====================================
 # 3 settings
@@ -723,11 +744,11 @@ if (F) {
 add_first_data_point <- F
 ts_plot_each_setting_in_subplot <- F
 add_data_right_yaxis_ts <- F
-add_cor_data_left_and_right_ts <- T
-add_data_right_yaxis_ts_mon <- T
-add_data_right_yaxis_ts_an <- T
+add_cor_data_left_and_right_ts <- F
+add_data_right_yaxis_ts_mon <- F
+add_data_right_yaxis_ts_an <- F
 add_legend_right_yaxis <- F
-plot_scatter_s1_vs_s2 <- T
+plot_scatter_s1_vs_s2 <- F
 #scatter_s1_vs_s1_varname <- "temp2"
 scatter_s1_vs_s1_varname <- "tsurf"
 #scatter_s1_vs_s1_varname <- "aprt"

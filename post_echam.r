@@ -380,18 +380,6 @@ for (i in 1:nsettings) {
             MM_in <- as.integer(df$MM)
         }
        
-        if (verbose > 0) {
-            message("\nderived years based on ",
-                    ifelse(length(files) == length(years_filenames),
-                           "file names",
-                           "`cdo showdate`"), ":")
-            ht(years_filenames, n=30)
-            if (grepl("<MM>", fpatterns[i])) {
-                message("\nderived months based on file names:")
-                ht(MM_in, n=30)
-            }
-        }
-        
         # update files which were mistakenly included in by given fpattern:
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
@@ -426,6 +414,19 @@ for (i in 1:nsettings) {
             } # if any found files differ from wanted `fpatterns[i]`
         } # if length(files) > 1
 
+        # verbose
+        if (verbose > 0) {
+            message("\nderived years based on ",
+                    ifelse(length(files) == length(years_filenames),
+                           "file names",
+                           "`cdo showdate`"), ":")
+            ht(years_filenames, n=30)
+            if (grepl("<MM>", fpatterns[i])) {
+                message("\nderived months based on file names:")
+                ht(MM_in, n=30)
+            }
+        }
+        
         ## remove found years (which were found based on the file names) out of wanted years
         # wanted years
         #from <- as.POSIXlt(paste0(froms[i], "-01-01"), tz="UTC")
@@ -1041,6 +1042,13 @@ for (i in 1:nsettings) {
                             cdo_version[1] == 1 && cdo_version[2] >= 9 && cdo_version[3] >= 4)) { 
                     
                     cdo_chain <- "alltogether"
+                    message("\n", "cdo version ", paste(cdo_version, collapse="."), " >= 1.9.4",
+                            " AND `new_date_list[[", i, "]]` is NULL\n",
+                            "--> can run a single cdo selection and calculation command as e.g.\n",
+                            "   `[[-t <model>] -f <type> [copy]] -fldmean -sellevel,<lev> -select,name=<varname>`\n",
+                            "   `[[-t <model>] -f <type> [copy]] -fldmean -selmon,<mon> -sellevel,<lev> -select,name=<varname>`\n",
+                            "...")
+
                     cmd <- paste0(cdoprefix, " ", cdoconvert, 
                                   #" ", cmdcat, 
                                   " ", cdocalc, " ", 

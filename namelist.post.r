@@ -351,16 +351,18 @@ if (F) { # old hist
     froms <- 2013 # mw start
     tos <- 2019 # mw end
 
-} else if (F) { # recT127era5: echam6-wiso; T127L95; ERA-5 nudging; ollie
+} else if (T) { # recT127era5: echam6-wiso; T127L95; ERA-5 nudging; ollie
     datapaths <- "/work/ollie/mwerner/echam6-wiso/T127L95/NUDGING_ERA5_T127L95/MONMEAN"
     models <- "echam6"
     fpatterns <- "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
-    prefixes <- "recT127era5_echam6"
-    fvarnames <- "temp2"
-    #modes <- "select"
-    modes <- "fldmean"
+    prefixes <- "echam6_recT127era5_wiso"
+    #fvarnames <- "temp2"
+    #fvarnames <- "tsurf"
+    fvarnames <- "aprt"
+    modes <- "select"
+    #modes <- "fldmean"
     froms <- 1979
-    tos <- 2018
+    tos <- 2019
 
 } else if (F) { # E280_280ppm
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/E280_280ppm/outdata/mpiom"
@@ -507,18 +509,18 @@ cdo_known_cmds <- list("toa_imbalace="=list(cmd="<cdo> -setname,toa_imbalance -a
                                                      "<nco_ncatted> -O -a long_name,aprt_times_temp2,o,c,\"aprt times temp2\"",
                                                      "<nco_ncatted> -O -a units,aprt_times_temp2,o,c,\"mm/month degC\"")),
                        "aprt_times_tsurf"=list(cmd=c("<cdo> -setname,aprt_times_tsurf -mul <aprt> <tsurf>",
-                                                     "<nco_ncatted> -O -a code,aprt_times_tsurf,d,,", # delete old `code` attribute
-                                                     "<nco_ncatted> -O -a table,aprt_times_tsurf,d,,", # delete old `table` attribute
+                                                     "<nco_ncatted> -O -a code,aprt_times_tsurf,d,,",
+                                                     "<nco_ncatted> -O -a table,aprt_times_tsurf,d,,",
                                                      "<nco_ncatted> -O -a long_name,aprt_times_tsurf,o,c,\"aprt times tsurf\"",
                                                      "<nco_ncatted> -O -a units,aprt_times_tsurf,o,c,\"mm/month degC\"")),
                        "temp2aprt"=list(cmd=c("<cdo> -setname,temp2aprt -div -yearsum <aprt_times_temp2> -yearsum <aprt>",
-                                              "<nco_ncatted> -O -a code,temp2aprt,d,,", # delete old `code` attribute
-                                              "<nco_ncatted> -O -a table,temp2aprt,d,,", # delete old `table` attribute
+                                              "<nco_ncatted> -O -a code,temp2aprt,d,,",
+                                              "<nco_ncatted> -O -a table,temp2aprt,d,,",
                                               "<nco_ncatted> -O -a long_name,temp2aprt,o,c,\"temp2 weighted by aprt\"",
                                               "<nco_ncatted> -O -a units,temp2aprt,o,c,\"degC\"")),
                        "tsurfaprt"=list(cmd=c("<cdo> -setname,tsurfaprt -div -yearsum <aprt_times_tsurf> -yearsum <aprt>",
-                                              "<nco_ncatted> -O -a code,tsurfaprt,d,,", # delete old `code` attribute
-                                              "<nco_ncatted> -O -a table,tsurfaprt,d,,", # delete old `table` attribute
+                                              "<nco_ncatted> -O -a code,tsurfaprt,d,,",
+                                              "<nco_ncatted> -O -a table,tsurfaprt,d,,",
                                               "<nco_ncatted> -O -a long_name,tsurfaprt,o,c,\"tsurf weighted by aprt\"",
                                               "<nco_ncatted> -O -a units,tsurfaprt,o,c,\"degC\""))
                       ) # cdo_known_cmds
