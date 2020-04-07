@@ -397,7 +397,8 @@ for (i in 1:nsettings) {
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
         # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
         if (length(files) > 1) {
-            message("\ncheck if any of the ", length(files), " files do not match `fpatterns[", i, "]` =\n",
+            message("\ncheck if any of the ", length(files), " 
+                    files do not match `fpatterns[", i, "]` = ",
                     "   \"", fpatterns[i], "\" ...")
             filesp <- rep(fpatterns[i], t=length(files))
             for (yyyy_patterni in seq_len(n_yyyy_patterns)) { 
@@ -809,7 +810,7 @@ for (i in 1:nsettings) {
                     message("only test")
                     cdocalc <- "-fldsum -vertsum"
                 } # which calculation depending on mode
-                message("\n`modes[", i, "]` = \"", modes[i], "\" --> `cdocalc` = \"", cdocalc, "\" ...")
+                message("`modes[", i, "]` = \"", modes[i], "\" --> `cdocalc` = \"", cdocalc, "\" ...")
 
                 ## sellevel
                 cdosellevel <- "" # default: none
@@ -858,7 +859,7 @@ for (i in 1:nsettings) {
                       cdo_version[1] == 1 && cdo_version[2] > 8 && cdo_version[3] < 4))) { 
                     
                     cdo_chain <- "separate"
-                    message("\n", ifelse(!is.null(new_date_list[[i]]), 
+                    message(ifelse(!is.null(new_date_list[[i]]), 
                                          paste0("`new_date_list[[", i, "]]` is not NULL"),
                                          paste0("cdo version ", paste(cdo_version, collapse="."), " < 1.9.4")),
                             " --> have to run separate cdo selection\n",
@@ -1053,7 +1054,7 @@ for (i in 1:nsettings) {
 
                     # replace multiple spaces by single spaces
                     cmd <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd, perl=T)
-                    message("\n", "run `", cmd, "`")
+                    message("run `", cmd, "`")
                     
                     # check if cmd command is longer than cdo_nchar_max_arglist = 2612710
                     cmd_tmp <- gsub("<files>", paste(paste0(datapaths[i], "/", files), collapse=" "), cmd)

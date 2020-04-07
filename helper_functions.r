@@ -31,18 +31,18 @@ cdo_get_filetype <- function(fin, cdo="cdo", verbose=T) {
     if (!is.null(input_format$warning)) {
         stop(input_format$warning)
     } else {
-        if (verbose) message(" --> \"", input_format$value, "\"", appendLF=F)
+        if (verbose) message("--> \"", input_format$value, "\"", appendLF=F)
     }
     if (any(input_format$value == c("GRIB", "EXTRA  BIGENDIAN", "EXTRA  LITTLEENDIAN"))) {
-        if (verbose) message(" --> convert to netcdf ...")
+        if (verbose) message("--> convert to netcdf ...")
         convert_to_nc <- T
         file_type <- "grb"
     } else if (input_format$value == "netCDF") {
-        if (verbose) message(" --> no need to convert to netcdf ...")
+        if (verbose) message("--> no need to convert to netcdf ...")
         convert_to_nc <- F
         file_type <- "nc"
     } else {
-        if (verbose) message(" --> not defined. set `convert_to_nc` to F and continue ...")
+        if (verbose) message("--> not defined. set `convert_to_nc` to F and continue ...")
         convert_to_nc <- F
         file_type <- input_format$value
     }
