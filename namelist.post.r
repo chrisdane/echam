@@ -505,18 +505,18 @@ cdo_known_cmds <- list("toa_imbalace="=list(cmd="<cdo> -setname,toa_imbalance -a
                                                      "<nco_ncatted> -O -a long_name,aprt_times_temp2,o,c,\"aprt times temp2\"",
                                                      "<nco_ncatted> -O -a units,aprt_times_temp2,o,c,\"mm/month degC\"")),
                        "aprt_times_tsurf"=list(cmd=c("<cdo> -setname,aprt_times_tsurf -mul <aprt> <tsurf>",
-                                                     "<nco_ncatted> -O -a code,aprt_times_tsurf,d,,", # delete old `code` attribute
-                                                     "<nco_ncatted> -O -a table,aprt_times_tsurf,d,,", # delete old `table` attribute
+                                                     "<nco_ncatted> -O -a code,aprt_times_tsurf,d,,",
+                                                     "<nco_ncatted> -O -a table,aprt_times_tsurf,d,,",
                                                      "<nco_ncatted> -O -a long_name,aprt_times_tsurf,o,c,\"aprt times tsurf\"",
                                                      "<nco_ncatted> -O -a units,aprt_times_tsurf,o,c,\"mm/month degC\"")),
                        "temp2aprt"=list(cmd=c("<cdo> -setname,temp2aprt -div -yearsum <aprt_times_temp2> -yearsum <aprt>",
-                                              "<nco_ncatted> -O -a code,temp2aprt,d,,", # delete old `code` attribute
-                                              "<nco_ncatted> -O -a table,temp2aprt,d,,", # delete old `table` attribute
+                                              "<nco_ncatted> -O -a code,temp2aprt,d,,",
+                                              "<nco_ncatted> -O -a table,temp2aprt,d,,",
                                               "<nco_ncatted> -O -a long_name,temp2aprt,o,c,\"temp2 weighted by aprt\"",
                                               "<nco_ncatted> -O -a units,temp2aprt,o,c,\"degC\"")),
                        "tsurfaprt"=list(cmd=c("<cdo> -setname,tsurfaprt -div -yearsum <aprt_times_tsurf> -yearsum <aprt>",
-                                              "<nco_ncatted> -O -a code,tsurfaprt,d,,", # delete old `code` attribute
-                                              "<nco_ncatted> -O -a table,tsurfaprt,d,,", # delete old `table` attribute
+                                              "<nco_ncatted> -O -a code,tsurfaprt,d,,",
+                                              "<nco_ncatted> -O -a table,tsurfaprt,d,,",
                                               "<nco_ncatted> -O -a long_name,tsurfaprt,o,c,\"tsurf weighted by aprt\"",
                                               "<nco_ncatted> -O -a units,tsurfaprt,o,c,\"degC\""))
                       ) # cdo_known_cmds
