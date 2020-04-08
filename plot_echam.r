@@ -22,11 +22,114 @@ fnml <- "namelist.plot.r"
 message("\n", "Read ", fnml, " ...")
 source(fnml)
 
-# ignore these variables
-ignore_vars <- c("time_bnds", "timestamp", 
-                 "hyai", "hybi", "hyam", "hybm",
-                 "depthvec", 
-                 "moc_reg_lat")
+# check user input and defaults
+nsettings <- length(prefixes)
+if (!exists("modes")) {
+    stop("must provide `modes`")
+}
+if (!exists("codes")) codes <- rep("", t=nsettings)
+if (!exists("levs")) levs <- rep("", t=nsettings)
+if (!exists("depths")) depths <- rep("", t=nsettings)
+codesf <- codes
+codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
+if (!exists("fromsp")) fromsp <- rep(NA, t=nsettings)
+if (!exists("tosp")) tosp <- rep(NA, t=nsettings)
+froms_plot <- tos_plot <- rep(NA, t=nsettings)
+if (!exists("new_origins")) new_origins <- rep(NA, t=nsettings)
+if (!exists("time_ref")) time_ref <- NA # only one
+if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
+if (!exists("seasonsp")) seasonsp <- seasonsf
+season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1:12])
+if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effect
+if (all(n_mas == 1)) {
+    if (add_unsmoothed == F) {
+        message("\n", "all `n_mas` = 1, change `add_unsmoothed` from F to T ...")
+        add_unsmoothed <- T
+    }
+    if (add_smoothed == T) {
+        message("\n", "all `n_mas` = 1, change `add_smoothed` from T to F ...")
+        add_smoothed <- F
+    }
+}
+levsf <- levs
+levsf[levs != ""] <- paste0("_sellevel_", levs[levs != ""])
+depthsf <- rep("", t=nsettings)
+depthsf[depths != ""] <- paste0("_", depths[depths != ""], "m")
+if (!exists("depth_fromsf")) depth_fromsf <- rep(NA, t=nsettings)
+if (!exists("depth_tosf")) depth_tosf <- rep(NA, t=nsettings)
+if (!exists("depth_fromsp")) depth_fromsp <- depth_fromsf
+if (!exists("depth_tosp")) depth_tosp <- depth_tosf
+if (!exists("areas")) areas <- rep("global", t=nsettings)
+if (!exists("reg_dxs")) reg_dxs <- rep("", t=nsettings)
+if (!exists("reg_dys")) reg_dys <- rep("", t=nsettings)
+reg_dxsf <- reg_dxs
+reg_dxsf[reg_dxs != ""] <- paste0("_regular_dx", reg_dxs[reg_dxs != ""])
+reg_dysf <- reg_dys
+reg_dysf[reg_dys != ""] <- paste0("_dy", reg_dys[reg_dys != ""])
+if (!exists("remove_setting")) remove_setting <- NA
+if (!exists("remove_mean_froms")) remove_mean_froms <- rep(NA, t=nsettings) 
+if (!exists("remove_mean_tos")) remove_mean_tos <- rep(NA, t=nsettings) 
+if (!is.na(remove_setting)
+    && any(!is.na(remove_mean_froms))) {
+    stop("both `remove_setting` and `remove_mean_froms` have non-NA values. choose 1")
+}
+if (!exists("types")) types <- rep("l", t=nsettings) # default: lines plots and not points
+if (!exists("ltys")) ltys <- rep(1, t=nsettings)
+if (!exists("pchs")) pchs <- rep(1, t=nsettings)
+if (!exists("lwds")) lwds <- rep(1, t=nsettings)
+if (!exists("scatterpchs")) scatterpchs <- rep(16, t=nsettings)
+if (!exists("scatterpchs_vstime")) scatterpchs_vstime <- 1:nsettings
+if (!exists("scattercexs")) scattercexs <- rep(1, t=nsettings)
+# my nicer colors than default:
+if (nsettings == 1) {
+    cols_vec <- "black"
+} else if (nsettings == 2) {
+    cols_vec <- c("black", "#E41A1C") # black, red
+} else if (nsettings >= 3) {
+    # my default: (black, red, blue) instead of R default (black, red, blue)
+    cols_vec <- c("black", "#E41A1C", "#377EB8")
+    if (nsettings > 3) {
+        if (F) {
+            cols_vec <- c(cols_vec, 4:nsettings)
+        } else if (T) {
+            library(RColorBrewer) # https://www.r-bloggers.com/palettes-in-r/
+            cols_vec <- c(cols_vec, brewer.pal(max(3, nsettings), "Dark2")[1:(nsettings-3)])
+        }
+    }
+}
+if (!exists("cols")) {
+    cols <- cols_vec
+} else {
+    if (class(cols) == "integer") { # user provided color numbers
+        cols <- cols_vec[cols]
+    }
+}
+if (exists("cols_samedims")) {
+    if (class(cols_samedims) == "integer") { # user provided color numbers
+        cols_samedims <- cols_vec[cols_samedims]
+    }
+}
+if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
+if (!exists("postpaths")) { # default from post_echam.r
+    postpaths <- rep(paste0(workpath, "/post"), t=nsettings)
+}
+if (!exists("plotpath")) { # default from post_echam.r
+    plotpath <- paste0(workpath, "/plots/", paste(unique(models), collapse="_vs_"))
+}
+base <- 10
+power <- 0 # default: 0 --> 10^0 = 1e0 = 1 --> nothing happens
+cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha)
+if (F) {
+    message("\nuse transparent cols ...")
+    cols_save <- cols
+    cols <- cols_rgb
+}
+
+# allocate
+datas <- vector("list", l=nsettings)
+names(datas) <- names_short
+data_infos <- dims <- dims_per_setting_in <- datas
+
 
 # load special data
 message("\n", "start reading special data sets ...")
@@ -212,29 +315,33 @@ if (file.exists(f)) {
 } # hadcrut4 global annual temperature anomaly wrt 1961-1990
 
 # marcott et al temperature anomaly wrt 1961-1990
-f <- ""
-if (machine_tag == "paleosrv") {
-    f <- "/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/Marcott.SM.database.S1.xlsx"
-    source("/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/read_marcott_etal_2013_function.r")
+if (F) {
+    f <- ""
+    if (machine_tag == "paleosrv") {
+        f <- "/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/Marcott.SM.database.S1.xlsx"
+        source("/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/read_marcott_etal_2013_function.r")
+    }
+    if (file.exists(f)) {
+        message("\n", "disable here if you do not want to read marcott et al. 2013 temperature anomalies wrt to 1961-1990 from ", f, " ...")
+        marcott_etal_2013 <- read_marcott_etal_2013_function(f)
+        time <- marcott_etal_2013$year_before_1950 # -50 -30 -10  10 ... 11210 11230 11250 11270 11290
+        time <- rev(-1*time) # -11290 -11270 -11250 -11230 -11210 -11190 -11170 ... -70 -50 -30 -10  10  30  50
+        timelt <- make_posixlt_origin_function(time, origin_in=1950, origin_out=1950, verbose=0)
+        marcott_etal_2013 <- list(marcott_etal_2013_anom=rev(marcott_etal_2013$"temp_anom_1961-1990_global_5x5"),
+                                  marcott_etal_2013_anom_sd=rev(marcott_etal_2013$"temp_anom_1961-1990_global_5x5_sd"),
+                                  time=timelt, timen=as.numeric(timelt), col="black",
+                                  col_rgb=rgb(t(col2rgb("black")/255), alpha=0.1),
+                                  text="Marcott et al. 2013", lty=1, lwd=1, pch=NA)
+        add_marcott_etal_2013_anom <- F
+        message("set add_marcott_etal_2013_anom=", !add_marcott_etal_2013_anom, 
+                " if you ", ifelse(add_marcott_etal_2013_anom, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+    } # marcott et al. 2013
+} else {
+    message("\nenable here if you want to read marcott et al. 2013 temperature anomalies wrt to 1961-1990")
 }
-if (file.exists(f)) {
-    message("\n", "read marcott et al. 2013 temperature anomalies wrt to 1961-1990 from ", f, " ...")
-    marcott_etal_2013 <- read_marcott_etal_2013_function(f)
-    time <- marcott_etal_2013$year_before_1950 # -50 -30 -10  10 ... 11210 11230 11250 11270 11290
-    time <- rev(-1*time) # -11290 -11270 -11250 -11230 -11210 -11190 -11170 ... -70 -50 -30 -10  10  30  50
-    timelt <- make_posixlt_origin_function(time, origin_in=1950, origin_out=1950, verbose=0)
-    marcott_etal_2013 <- list(marcott_etal_2013_anom=rev(marcott_etal_2013$"temp_anom_1961-1990_global_5x5"),
-                              marcott_etal_2013_anom_sd=rev(marcott_etal_2013$"temp_anom_1961-1990_global_5x5_sd"),
-                              time=timelt, timen=as.numeric(timelt), col="black",
-                              col_rgb=rgb(t(col2rgb("black")/255), alpha=0.1),
-                              text="Marcott et al. 2013", lty=1, lwd=1, pch=NA)
-    add_marcott_etal_2013_anom <- F
-    message("set add_marcott_etal_2013_anom=", !add_marcott_etal_2013_anom, 
-            " if you ", ifelse(add_marcott_etal_2013_anom, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-} # marcott et al. 2013
 
 # gistempv4 global annual temperature anomaly wrt 1951-1980
 f <- ""
@@ -373,222 +480,237 @@ if (file.exists(f)) {
 }
 
 # berger holocene accelerated orbital parameter from paul
-f <- ""
-if (machine_tag == "paleosrv") {
-    f <- "/scratch/simulation_database/incoming/Hol-Tx10/script/HOL_ORB_forcing_0.01ka_resolution_combined.dat"
+if (F) {
+    f <- ""
+    if (machine_tag == "paleosrv") {
+        f <- "/scratch/simulation_database/incoming/Hol-Tx10/script/HOL_ORB_forcing_0.01ka_resolution_combined.dat"
+    }
+    if (file.exists(f)) {
+        message("\n", "disable here if you do not want to read pauls accelerated berger orbital parameters from ", f, " ...")
+        orb_berger_acc <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
+        years <- orb_berger_acc$year_before_1950 # kyr before 1950 --> 7.00 6.99 6.98 6.97 ... 0.03 0.02 0.01 0.00
+        years <- -1*years*1000 # --> -7000 -6990 -6980 -6970 -6960 ... -40 -30 -20 -10   0
+        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        orb_berger_acc <- list(eccentricity=orb_berger_acc$eccentricity, 
+                           precession=orb_berger_acc$precession,
+                           obliquity=orb_berger_acc$obliquity,
+                           time=timelt, timen=as.numeric(timelt),
+                           text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
+        add_orb_berger_acc_eccentricity <- F
+        message("set add_orb_berger_acc_eccentricity=", !add_orb_berger_acc_eccentricity, 
+                " if you ", ifelse(add_orb_berger_acc_eccentricity, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        add_orb_berger_acc_precession <- F
+        message("set add_orb_berger_acc_precession=", !add_orb_berger_acc_precession, 
+                " if you ", ifelse(add_orb_berger_acc_precession, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        add_orb_berger_acc_obliquity <- F
+        message("set add_orb_berger_acc_obliquity=", !add_orb_berger_acc_obliquity, 
+                " if you ", ifelse(add_orb_berger_acc_obliquity, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+    } # berger holocene accelerated orbital parameter from paul
+} else {
+    message("\nenable here if you want to read pauls accelerated berger orbital parameters")
 }
-if (file.exists(f)) {
-    message("\n", "read pauls accelerated berger orbital parameters from ", f, " ...")
-    orb_berger_acc <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
-    years <- orb_berger_acc$year_before_1950 # kyr before 1950 --> 7.00 6.99 6.98 6.97 ... 0.03 0.02 0.01 0.00
-    years <- -1*years*1000 # --> -7000 -6990 -6980 -6970 -6960 ... -40 -30 -20 -10   0
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
-    orb_berger_acc <- list(eccentricity=orb_berger_acc$eccentricity, 
-                       precession=orb_berger_acc$precession,
-                       obliquity=orb_berger_acc$obliquity,
-                       time=timelt, timen=as.numeric(timelt),
-                       text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
-    add_orb_berger_acc_eccentricity <- F
-    message("set add_orb_berger_acc_eccentricity=", !add_orb_berger_acc_eccentricity, 
-            " if you ", ifelse(add_orb_berger_acc_eccentricity, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    add_orb_berger_acc_precession <- F
-    message("set add_orb_berger_acc_precession=", !add_orb_berger_acc_precession, 
-            " if you ", ifelse(add_orb_berger_acc_precession, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    add_orb_berger_acc_obliquity <- F
-    message("set add_orb_berger_acc_obliquity=", !add_orb_berger_acc_obliquity, 
-            " if you ", ifelse(add_orb_berger_acc_obliquity, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-} # berger holocene accelerated orbital parameter from paul
 
 # berger holocene transient orbital parameter from paul
-f <- ""
-if (machine_tag == "stan") {
-    f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
-} else if (machine_tag == "paleosrv") {
-    f <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
+if (F) {
+    f <- ""
+    if (machine_tag == "stan") {
+        f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
+    } else if (machine_tag == "paleosrv") {
+        f <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
+    }
+    if (file.exists(f)) {
+        message("\n", "disable here if you do not want to read pauls transient berger orbital parameters from ", f, " ...")
+        orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
+        years <- orb_berger$year_before_1950 # kyr before 1950 --> 6.999, 6.998, 6997, ...
+        years <- -1*years*1000 # --> -6999, -6998, -6997, ...
+        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        orb_berger <- list(eccentricity=orb_berger$eccentricity, 
+                           precession=orb_berger$precession,
+                           obliquity=orb_berger$obliquity,
+                           time=timelt, timen=as.numeric(timelt),
+                           text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
+        add_orb_berger_eccentricity <- F
+        message("set add_orb_berger_eccentricity=", !add_orb_berger_eccentricity, 
+                " if you ", ifelse(add_orb_berger_eccentricity, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        add_orb_berger_precession <- F
+        message("set add_orb_berger_precession=", !add_orb_berger_precession, 
+                " if you ", ifelse(add_orb_berger_precession, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        add_orb_berger_obliquity <- F
+        message("set add_orb_berger_obliquity=", !add_orb_berger_obliquity, 
+                " if you ", ifelse(add_orb_berger_obliquity, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+    } # berger holocene transient orbital parameter from paul
+} else {
+    message("\nenable here if you want to read pauls transient berger orbital parameters")
 }
-if (F && file.exists(f)) {
-    message("\n", "read pauls transient berger orbital parameters from ", f, " ...")
-    orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
-    years <- orb_berger$year_before_1950 # kyr before 1950 --> 6.999, 6.998, 6997, ...
-    years <- -1*years*1000 # --> -6999, -6998, -6997, ...
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
-    orb_berger <- list(eccentricity=orb_berger$eccentricity, 
-                       precession=orb_berger$precession,
-                       obliquity=orb_berger$obliquity,
-                       time=timelt, timen=as.numeric(timelt),
-                       text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
-    add_orb_berger_eccentricity <- F
-    message("set add_orb_berger_eccentricity=", !add_orb_berger_eccentricity, 
-            " if you ", ifelse(add_orb_berger_eccentricity, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    add_orb_berger_precession <- F
-    message("set add_orb_berger_precession=", !add_orb_berger_precession, 
-            " if you ", ifelse(add_orb_berger_precession, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    add_orb_berger_obliquity <- F
-    message("set add_orb_berger_obliquity=", !add_orb_berger_obliquity, 
-            " if you ", ifelse(add_orb_berger_obliquity, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-} # berger holocene transient orbital parameter from paul
 
 # berger orbital parameter for last 800ka
-f <- ""
-if (machine_tag == "stan") {
-    f <- "/home/ace/cdanek/scripts/fortran/berger_1978/berger_1978_years_-800_to_0_kyears_before_1950.txt"
-}
-if (file.exists(f)) {
-    message("\n", "read my berger orbital parameters from ", f, " ...")
-    my_orb_berger <- read.table(f, header=T)
-    # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: calendar_day_of_perihelion 5: angle_of_perihelion_deg_from_vernal_equinox
-    years <- my_orb_berger$kyear_from_1950 # kyr before 1950 in reverse order --> -800, -799, -798, ...
-    years <- years*1000 # -800000, -799000, -798000, ...
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
-    my_orb_berger <- list(eccentricity=my_orb_berger$ecc, 
-                          obliquity=my_orb_berger$obl_deg,
-                          calendar_day_of_perihelion=my_orb_berger$calendar_day_of_perihelion,
-                          angle_of_perihelion_deg_from_vernal_equinox=my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox,
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
-    add_my_orb_berger_eccentricity <- F
-    message("set add_my_orb_berger_eccentricity=", !add_my_orb_berger_eccentricity, 
-            " if you ", ifelse(add_my_orb_berger_eccentricity, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    add_my_orb_berger_precession <- F
-    message("set add_my_orb_berger_precession=", !add_my_orb_berger_precession, 
-            " if you ", ifelse(add_my_orb_berger_precession, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    add_my_orb_berger_obliquity <- F
-    message("set add_my_orb_berger_obliquity=", !add_my_orb_berger_obliquity, 
-            " if you ", ifelse(add_my_orb_berger_obliquity, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    if (F) { # plot berger
-        message("plot ...")
-        xlim <- range(unclass(my_orb_berger$time)$year + 1900)
-        xat <- pretty(xlim, n=20)
-        if (any(!(xat %in% xlim))) {
-            out_inds <- which(xat > max(xlim))
-            if (length(out_inds) > 0) xat <- xat[-out_inds]
-            out_inds <- which(xat < min(xlim))
-            if (length(out_inds) > 0) xat <- xat[-out_inds]
-        }
-        png("~/berger.png", width=4000, height=8000, res=400)
-        par(mfrow=c(4, 1))
-        # ecc
-        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$eccentricity, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Eccentricity")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_berger$eccentricity, n=8), las=2)
-        # obl
-        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$obliquity, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Obliquity [deg]")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_berger$obliquity, n=8), las=2)
-        # calendar_day_of_perihelion
-        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$calendar_day_of_perihelion, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Calendar day of perihelion")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_berger$calendar_day_of_perihelion, n=8), las=2)
-        # angle_of_perihelion_deg_from_vernal_equinox
-        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Angle of perihelion [deg from v.e.]")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox, n=8), las=2)
-        dev.off()
+if (F) {
+    f <- ""
+    if (machine_tag == "stan") {
+        f <- "/home/ace/cdanek/scripts/fortran/berger_1978/berger_1978_years_-800_to_0_kyears_before_1950.txt"
     }
+    if (file.exists(f)) {
+        message("\n", "disable here if you do not want to read my berger orbital parameters from ", f, " ...")
+        my_orb_berger <- read.table(f, header=T)
+        # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: calendar_day_of_perihelion 5: angle_of_perihelion_deg_from_vernal_equinox
+        years <- my_orb_berger$kyear_from_1950 # kyr before 1950 in reverse order --> -800, -799, -798, ...
+        years <- years*1000 # -800000, -799000, -798000, ...
+        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        my_orb_berger <- list(eccentricity=my_orb_berger$ecc, 
+                              obliquity=my_orb_berger$obl_deg,
+                              calendar_day_of_perihelion=my_orb_berger$calendar_day_of_perihelion,
+                              angle_of_perihelion_deg_from_vernal_equinox=my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox,
+                              time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
+                              text="Berger", col="red", lty=2, lwd=0.5, pch=NA)
+        add_my_orb_berger_eccentricity <- F
+        message("set add_my_orb_berger_eccentricity=", !add_my_orb_berger_eccentricity, 
+                " if you ", ifelse(add_my_orb_berger_eccentricity, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        add_my_orb_berger_precession <- F
+        message("set add_my_orb_berger_precession=", !add_my_orb_berger_precession, 
+                " if you ", ifelse(add_my_orb_berger_precession, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        add_my_orb_berger_obliquity <- F
+        message("set add_my_orb_berger_obliquity=", !add_my_orb_berger_obliquity, 
+                " if you ", ifelse(add_my_orb_berger_obliquity, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        if (F) { # plot berger
+            message("plot ...")
+            xlim <- range(unclass(my_orb_berger$time)$year + 1900)
+            xat <- pretty(xlim, n=20)
+            if (any(!(xat %in% xlim))) {
+                out_inds <- which(xat > max(xlim))
+                if (length(out_inds) > 0) xat <- xat[-out_inds]
+                out_inds <- which(xat < min(xlim))
+                if (length(out_inds) > 0) xat <- xat[-out_inds]
+            }
+            png("~/berger.png", width=4000, height=8000, res=400)
+            par(mfrow=c(4, 1))
+            # ecc
+            plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$eccentricity, t="l", 
+                 xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Eccentricity")
+            axis(1, at=xat, labels=abs(xat)/1000)
+            axis(2, at=pretty(my_orb_berger$eccentricity, n=8), las=2)
+            # obl
+            plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$obliquity, t="l", 
+                 xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Obliquity [deg]")
+            axis(1, at=xat, labels=abs(xat)/1000)
+            axis(2, at=pretty(my_orb_berger$obliquity, n=8), las=2)
+            # calendar_day_of_perihelion
+            plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$calendar_day_of_perihelion, t="l", 
+                 xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Calendar day of perihelion")
+            axis(1, at=xat, labels=abs(xat)/1000)
+            axis(2, at=pretty(my_orb_berger$calendar_day_of_perihelion, n=8), las=2)
+            # angle_of_perihelion_deg_from_vernal_equinox
+            plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox, t="l", 
+                 xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Angle of perihelion [deg from v.e.]")
+            axis(1, at=xat, labels=abs(xat)/1000)
+            axis(2, at=pretty(my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox, n=8), las=2)
+            dev.off()
+        }
+    }
+} else {
+    message("\nenable here if you want to read my berger orbital parameters")
 }
 
 # laskar orbital parameter for last 800ka
-f <- ""
-if (machine_tag == "stan") {
-    f <- "/home/ace/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
-} else if (machine_tag == "paleosrv") {
-    f <- "/home/csys/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
-}
-if (file.exists(f)) {
-    message("\n", "read laskar orbital parameters from ", f, " ...")
-    my_orb_laskar <- read.table(f, header=T)
-    # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: angle_of_perihelion_deg_from_vernal_equinox
-    years <- my_orb_laskar$kyear_from_2000 # kyr before 2000 in reverse order --> -800, -799, -798, ..., -3, -2, -1,  0
-    years <- years*1000 # -800000, -799000, -798000, ..., -3000, -2000, -1000,  0
-    timelt <- make_posixlt_origin_function(years, origin_in=2000, origin_out=1950, verbose=0)
-    my_orb_laskar <- list(eccentricity=my_orb_laskar$ecc, 
-                          obliquity=my_orb_laskar$obl_deg,
-                          angle_of_perihelion_deg_from_vernal_equinox=my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox,
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          text="Laskar", col="blue", lty=2, lwd=0.5, pch=NA)
-    add_my_orb_laskar_eccentricity <- F
-    message("set add_my_orb_laskar_eccentricity=", !add_my_orb_laskar_eccentricity, 
-            " if you ", ifelse(add_my_orb_laskar_eccentricity, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    add_my_orb_laskar_precession <- F
-    message("set add_my_orb_laskar_precession=", !add_my_orb_laskar_precession, 
-            " if you ", ifelse(add_my_orb_laskar_precession, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    add_my_orb_laskar_obliquity <- F
-    message("set add_my_orb_laskar_obliquity=", !add_my_orb_laskar_obliquity, 
-            " if you ", ifelse(add_my_orb_laskar_obliquity, 
-                               "dont want (or set add_data_right_yaxis_ts=F)", 
-                               "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
-    if (F) { # plot laskar
-        message("plot ...")
-        xlim <- range(unclass(my_orb_laskar$time)$year + 1900)
-        xat <- pretty(xlim, n=20)
-        if (any(!(xat %in% xlim))) {
-            out_inds <- which(xat > max(xlim))
-            if (length(out_inds) > 0) xat <- xat[-out_inds]
-            out_inds <- which(xat < min(xlim))
-            if (length(out_inds) > 0) xat <- xat[-out_inds]
-        }
-        png("~/laskar.png", width=4000, height=6000, res=400)
-        par(mfrow=c(3, 1))
-        # ecc
-        plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$eccentricity, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Eccentricity")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_laskar$eccentricity, n=8), las=2)
-        # obl
-        plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$obliquity, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Obliquity [deg]")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_laskar$obliquity, n=8), las=2)
-        # angle_of_perihelion_deg_from_vernal_equinox
-        plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Angle of perihelion [deg from v.e.]")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox, n=8), las=2)
-        dev.off()
+if (F) {
+    f <- ""
+    if (machine_tag == "stan") {
+        f <- "/home/ace/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
+    } else if (machine_tag == "paleosrv") {
+        f <- "/home/csys/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
     }
+    if (file.exists(f)) {
+        message("\n", "disable here if you do not want to read laskar orbital parameters from ", f, " ...")
+        my_orb_laskar <- read.table(f, header=T)
+        # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: angle_of_perihelion_deg_from_vernal_equinox
+        years <- my_orb_laskar$kyear_from_2000 # kyr before 2000 in reverse order --> -800, -799, -798, ..., -3, -2, -1,  0
+        years <- years*1000 # -800000, -799000, -798000, ..., -3000, -2000, -1000,  0
+        timelt <- make_posixlt_origin_function(years, origin_in=2000, origin_out=1950, verbose=0)
+        my_orb_laskar <- list(eccentricity=my_orb_laskar$ecc, 
+                              obliquity=my_orb_laskar$obl_deg,
+                              angle_of_perihelion_deg_from_vernal_equinox=my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox,
+                              time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
+                              text="Laskar", col="blue", lty=2, lwd=0.5, pch=NA)
+        add_my_orb_laskar_eccentricity <- F
+        message("set add_my_orb_laskar_eccentricity=", !add_my_orb_laskar_eccentricity, 
+                " if you ", ifelse(add_my_orb_laskar_eccentricity, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        add_my_orb_laskar_precession <- F
+        message("set add_my_orb_laskar_precession=", !add_my_orb_laskar_precession, 
+                " if you ", ifelse(add_my_orb_laskar_precession, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        add_my_orb_laskar_obliquity <- F
+        message("set add_my_orb_laskar_obliquity=", !add_my_orb_laskar_obliquity, 
+                " if you ", ifelse(add_my_orb_laskar_obliquity, 
+                                   "dont want (or set add_data_right_yaxis_ts=F)", 
+                                   "want (set also add_data_right_yaxis_ts=T)"), 
+                " to add this data to plot")
+        if (F) { # plot laskar
+            message("plot ...")
+            xlim <- range(unclass(my_orb_laskar$time)$year + 1900)
+            xat <- pretty(xlim, n=20)
+            if (any(!(xat %in% xlim))) {
+                out_inds <- which(xat > max(xlim))
+                if (length(out_inds) > 0) xat <- xat[-out_inds]
+                out_inds <- which(xat < min(xlim))
+                if (length(out_inds) > 0) xat <- xat[-out_inds]
+            }
+            png("~/laskar.png", width=4000, height=6000, res=400)
+            par(mfrow=c(3, 1))
+            # ecc
+            plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$eccentricity, t="l", 
+                 xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Eccentricity")
+            axis(1, at=xat, labels=abs(xat)/1000)
+            axis(2, at=pretty(my_orb_laskar$eccentricity, n=8), las=2)
+            # obl
+            plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$obliquity, t="l", 
+                 xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Obliquity [deg]")
+            axis(1, at=xat, labels=abs(xat)/1000)
+            axis(2, at=pretty(my_orb_laskar$obliquity, n=8), las=2)
+            # angle_of_perihelion_deg_from_vernal_equinox
+            plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox, t="l", 
+                 xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Angle of perihelion [deg from v.e.]")
+            axis(1, at=xat, labels=abs(xat)/1000)
+            axis(2, at=pretty(my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox, n=8), las=2)
+            dev.off()
+        }
+    }
+} else {
+    message("\nenable here if you want to read laskar orbital parameters")
 }
 
 if (F) { # compare koehler et al. 2017 vs paul
-
-    message("plot koehler et al. 2017 vs paul ...")
+    message("\ncompare pauls and koehlers et al. 2017 CO2 ...")
     xlim <- range(unclass(koehler_etal_2017$time)$year + 1900)
     xlim <- range(xlim, unclass(koehler_etal_2017_paul$time)$year + 1900)
     xat <- pretty(xlim, n=20)
@@ -621,11 +743,12 @@ if (F) { # compare koehler et al. 2017 vs paul
     axis(4, at=pretty(ylim, n=15), las=2, col="blue", col.axis="blue", col.ticks="blue")
     mtext(side=4, "Difference Paul minus Köhler [µmol/mol]", line=4.5, cex=0.9, col="blue")
     dev.off()
-
+} else {
+    message("\nenable here if you want to compare pauls and koehlers et al. 2017 CO2")
 } # compare koehler et al. 2017 vs paul
 
 if (F) { # compare berger and laskar orb
-    message("plot berger vs laskar ...")
+    message("\nplot berger vs laskar ...")
     xlim <- range(unclass(my_orb_laskar$time)$year + 1900)
     xlim <- range(xlim, unclass(my_orb_berger$time)$year + 1900)
     xat <- pretty(xlim, n=20)
@@ -673,6 +796,8 @@ if (F) { # compare berger and laskar orb
         mtext(side=4, "Difference Berger minus Laskar", line=4.5, cex=0.9, col="blue")
     }
     dev.off()
+} else {
+    message("\nenable here to compare berger and laskar orbital parameter")
 } # comapre berger and laskar orb
 
 # hanno meyer et al. PLOT excel sheet
@@ -683,17 +808,20 @@ if (T) {
         source("/isibhv/projects/paleo_work/cdanek/data/meyer_etal/read_meyer_etal_function.r")
     }
     if (file.exists(f)) {
-        message("\nread hanno meyer et al. PLOT excel sheet. disable here if you do not want that")
+        message("\ndisable here if you do not want to read hanno meyer et al. PLOT data from ", f)
+        message("run read_meyer_etal_function() ...")
         tmp <- read_meyer_etal_function(xlsx_file=f, verbose=F)
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Ladoga", verbose=T)
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake", verbose=T)
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Two Jurts Lake", verbose=T)
         meyer_etal <- list(data=tmp,
-                           type="o", col="#377EB8",
+                           type="o", 
+                           #col="#377EB8", # blue
+                           col="#1B9E77", # green
                            lty=1, lwd=1, pch=1, cex=1)
     }
 } else {
-    message("\nenable here to read hanno meyer et al. PLOT excel sheet")
+    message("\nenable here to read hanno meyer et al. PLOT data excel sheet")
 }
 
 # pangaea
@@ -716,11 +844,11 @@ if (F) {
         pdoi <- "10.1016/j.quascirev.2009.11.024"
     }
 } else {
-    message("\nenable here if you want to load dataseats from https://pangaea.de ...\n")
+    message("\nenable here if you want to load dataseats from https://pangaea.de ...")
 }
 
 # NOAA monthly station data
-if (T) {
+if (F) {
     ghcdn_csv <- ""
     if (machine_tag == "ollie") {
         ghcdn_csv <- list.files("/work/ollie/cdanek/data/NOAA/station_data/GHCDN/monthly",
@@ -809,120 +937,12 @@ for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin",
     if (exists(obj)) rm(obj)
 }
 
-message("\n", "finished reading special data sets ...")
+message("finished reading special data sets ...")
 # finished reading extra datasets depending on machine
 
 
-# check user input and defaults
-nsettings <- length(prefixes)
-if (!exists("modes")) {
-    stop("must provide `modes`")
-}
-if (!exists("codes")) codes <- rep("", t=nsettings)
-if (!exists("levs")) levs <- rep("", t=nsettings)
-if (!exists("depths")) depths <- rep("", t=nsettings)
-codesf <- codes
-codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
-if (!exists("fromsp")) fromsp <- rep(NA, t=nsettings)
-if (!exists("tosp")) tosp <- rep(NA, t=nsettings)
-froms_plot <- tos_plot <- rep(NA, t=nsettings)
-if (!exists("new_origins")) new_origins <- rep(NA, t=nsettings)
-if (!exists("time_ref")) time_ref <- NA # only one
-if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
-if (!exists("seasonsp")) seasonsp <- seasonsf
-season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1:12])
-if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effect
-if (all(n_mas == 1)) {
-    if (add_unsmoothed == F) {
-        message("\n", "all `n_mas` = 1, change `add_unsmoothed` from F to T ...")
-        add_unsmoothed <- T
-    }
-    if (add_smoothed == T) {
-        message("\n", "all `n_mas` = 1, change `add_smoothed` from T to F ...")
-        add_smoothed <- F
-    }
-}
-levsf <- levs
-levsf[levs != ""] <- paste0("_sellevel_", levs[levs != ""])
-depthsf <- rep("", t=nsettings)
-depthsf[depths != ""] <- paste0("_", depths[depths != ""], "m")
-if (!exists("depth_fromsf")) depth_fromsf <- rep(NA, t=nsettings)
-if (!exists("depth_tosf")) depth_tosf <- rep(NA, t=nsettings)
-if (!exists("depth_fromsp")) depth_fromsp <- depth_fromsf
-if (!exists("depth_tosp")) depth_tosp <- depth_tosf
-if (!exists("areas")) areas <- rep("global", t=nsettings)
-if (!exists("reg_dxs")) reg_dxs <- rep("", t=nsettings)
-if (!exists("reg_dys")) reg_dys <- rep("", t=nsettings)
-reg_dxsf <- reg_dxs
-reg_dxsf[reg_dxs != ""] <- paste0("_regular_dx", reg_dxs[reg_dxs != ""])
-reg_dysf <- reg_dys
-reg_dysf[reg_dys != ""] <- paste0("_dy", reg_dys[reg_dys != ""])
-if (!exists("remove_setting")) remove_setting <- NA
-if (!exists("remove_mean_froms")) remove_mean_froms <- rep(NA, t=nsettings) 
-if (!exists("remove_mean_tos")) remove_mean_tos <- rep(NA, t=nsettings) 
-if (!is.na(remove_setting)
-    && any(!is.na(remove_mean_froms))) {
-    stop("both `remove_setting` and `remove_mean_froms` have non-NA values. choose 1")
-}
-if (!exists("types")) types <- rep("l", t=nsettings) # default: lines plots and not points
-if (!exists("ltys")) ltys <- rep(1, t=nsettings)
-if (!exists("pchs")) pchs <- rep(1, t=nsettings)
-if (!exists("lwds")) lwds <- rep(1, t=nsettings)
-if (!exists("scatterpchs")) scatterpchs <- rep(16, t=nsettings)
-if (!exists("scatterpchs_vstime")) scatterpchs_vstime <- 1:nsettings
-if (!exists("scattercexs")) scattercexs <- rep(1, t=nsettings)
-# my nicer colors than default:
-if (nsettings == 1) {
-    cols_vec <- "black"
-} else if (nsettings == 2) {
-    cols_vec <- c("black", "#E41A1C") # black, red
-} else if (nsettings >= 3) {
-    # my default: (black, red, blue) instead of R default (black, red, blue)
-    cols_vec <- c("black", "#E41A1C", "#377EB8")
-    if (nsettings > 3) {
-        if (F) {
-            cols_vec <- c(cols_vec, 4:nsettings)
-        } else if (T) {
-            library(RColorBrewer) # https://www.r-bloggers.com/palettes-in-r/
-            cols_vec <- c(cols_vec, brewer.pal(max(3, nsettings), "Dark2")[1:(nsettings-3)])
-        }
-    }
-}
-if (!exists("cols")) {
-    cols <- cols_vec
-} else {
-    if (class(cols) == "integer") { # user provided color numbers
-        cols <- cols_vec[cols]
-    }
-}
-if (exists("cols_samedims")) {
-    if (class(cols_samedims) == "integer") { # user provided color numbers
-        cols_samedims <- cols_vec[cols_samedims]
-    }
-}
-if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
-if (!exists("postpaths")) { # default from post_echam.r
-    postpaths <- rep(paste0(workpath, "/post"), t=nsettings)
-}
-if (!exists("plotpath")) { # default from post_echam.r
-    plotpath <- paste0(workpath, "/plots/", paste(unique(models), collapse="_vs_"))
-}
-base <- 10
-power <- 0 # default: 0 --> 10^0 = 1e0 = 1 --> nothing happens
-cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha)
-if (F) {
-    message("\nuse transparent cols ...")
-    cols_save <- cols
-    cols <- cols_rgb
-}
-
-# allocate
-datas <- vector("list", l=nsettings)
-names(datas) <- names_short
-data_infos <- dims <- dims_per_setting_in <- datas
-
 # read data
-message("\n", "Read data ...")
+message("\n", "Read model data ...")
 for (i in 1:nsettings) {
 
     message("\n", "*********************************************")
@@ -3597,7 +3617,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim <- range(ylim, nsidc_siarean_annual$siarean, na.rm=T)
             } # if add nsidc
 
-            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019") &&
+            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("kostrova_etal_2019") &&
                 all(grepl("ladoga", areas))) {
                 message("\nadd kostrova et al. 2019 d18o data ...")
                 message("ylim before: ", ylim[1], ", ", ylim[2])
@@ -3627,9 +3647,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     add_meyer_etal_xlsx <- F
                 }
                 if (add_meyer_etal_xlsx) {
-                    if (scale_ts) meyer_etal$data$d18o_corr_perm <- scale(meyer_etal$data$d18o_corr_perm)
+                    if (scale_ts) meyer_etal_tmp$data$d18o_corr_perm <- scale(meyer_etal_tmp$data$d18o_corr_perm)
                     message("ylim before: ", ylim[1], ", ", ylim[2])
-                    ylim <- range(ylim, meyer_etal$data$d18o_corr_perm, na.rm=T)
+                    ylim <- range(ylim, meyer_etal_tmp$data$d18o_corr_perm, na.rm=T)
                     message("ylim after: ", ylim[1], ", ", ylim[2])
                 }
             } else {  
@@ -3881,7 +3901,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             ## add obs, etc.
             if (F && varname == "temp2") {
-                message("\n", "add hadcrut4_sat_anom, gistempv4_sat_anom to plot ...")
+                message("\n", "add hadcrut4_sat_anom, gistempv4_sat_anom to datas plot ...")
                 polygon(c(as.POSIXct(hadcrut4_sat_anom_annual$time), 
                           rev(as.POSIXct(hadcrut4_sat_anom_annual$time))),
                         c(hadcrut4_sat_anom_annual$hadcrut4_sat_anom_lower_uncert,
@@ -3894,7 +3914,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #      col=cols[2], lwd=2, lty=2)
             }
             if (F && varname == "moc_max_26.25deg") {
-                message("\n", "add moc_rapid$moc_annual to plot ...")
+                message("\n", "add moc_rapid$moc_annual to datas plot ...")
                 # exclude NA values
                 nainds <- which(!is.na(moc_rapid$moc) & !is.na(moc_rapid$moc_error)) 
                 #polygon(c(as.POSIXct(moc_rapid$time[nainds]), rev(as.POSIXct(moc_rapid$time[nainds]))),
@@ -3906,15 +3926,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                       lwd=moc_rapid$lwd)
             }
             if (T && varname == "siarean") {
-                message("\n", "add nsidc annual to plot ...")
+                message("\n", "add nsidc annual to datas plot ...")
                 lines(nsidc_siarean_annual$time, nsidc_siarean_annual$siarean,
                       col=nsidc_siarean_annual$col, lty=nsidc_siarean_annual$lty,
                       lwd=nsidc_siarean_annual$lwd)
             }
             
-            if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019") &&
+            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("kostrova_etal_2019") &&
                 all(grepl("ladoga", areas))) {
-                message("\n", "add kostrova et al. 2019 to plot ...")
+                message("\n", "add kostrova et al. 2019 to datas plot ...")
                 points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
                        t=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
                        lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd, 
@@ -3922,8 +3942,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
             
             if (add_meyer_etal_xlsx) {
-                message("\n", "add meyer et al. xlsx to plot ...")
-                points(meyer_etal_tmp$data$dtime, meyer_etal_tmp$data$d18o_corr_perm,
+                message("\n", "add meyer et al. xlsx to datas plot ...")
+                points(meyer_etal_tmp$data$time, meyer_etal_tmp$data$d18o_corr_perm,
                        t=meyer_etal$type, col=meyer_etal$col, 
                        lty=meyer_etal$lty, lwd=meyer_etal$lwd, 
                        pch=meyer_etal$pch, cex=meyer_etal$cex)
@@ -3931,7 +3951,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             if (T && exists("noaa_ghcdn")) {
                 if (any(varname == c("temp2", "tsurf", "aprt"))) {
-                    message("\nadd noadd ghcdn monthly data to plot ...")
+                    message("\nadd noadd ghcdn monthly data to datas plot ...")
                     points(noaax, noaay,
                            t=noaa_ghcdn_tmp$type, 
                            col=noaa_ghcdn_tmp$col,
@@ -3945,12 +3965,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # add legend if wanted
             if (add_legend) {
-                message("\n", "add default stuff to ts legend ...")
+                message("\n", "add default stuff to datas legend ...")
                 le <- list()
                 le$pos <- "topleft" 
                 #le$pos <- "left"
                 #le$pos <- "bottomleft" 
-                #le$pos <- "topright"
+                le$pos <- "topright"
                 #le$pos <- "bottomright" 
                 #le$ncol <- length(z)/2
                 le$ncol <- 1
@@ -3982,7 +4002,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch <- c(le$pch, hadcrut4_sat_anom_annual$pch)
                     }
                 }
-                if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019") &&
+                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("kostrova_etal_2019") &&
                     all(grepl("ladoga", areas))) {
                     message("\n", "add kostrova et al. 2019 to datas legend ...")
                     le$pos <- "bottom"
@@ -3994,12 +4014,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 if (add_meyer_etal_xlsx) {
                     message("\n", "add meyer et al. xlsx to datas legend ...")
-                    le$pos <- "bottom"
+                    if (all(grepl("ladoga", areas))) le$pos <- "bottom"
+                    if (all(grepl("shuchye", areas))) le$pos <- "top"
+                    if (all(grepl("kotokel", areas))) le$pos <- "bottom"
                     le$text <- c(le$text, meyer_etal_tmp$text)
                     le$col <- c(le$col, meyer_etal$col)
                     le$lty <- c(le$lty, meyer_etal$lty)
                     le$lwd <- c(le$lwd, meyer_etal$lwd)
                     le$pch <- c(le$pch, meyer_etal$pch)
+                    le$cex <- 0.7
                 }
                 if (T && exists("noaa_ghcdn")) {
                     if (any(varname == c("temp2", "tsurf", "aprt"))) {
@@ -4902,7 +4925,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 # add obs 
-                if (T && varname == "wisoaprt_d" && exists("kostrova_etal_2019") &&
+                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("kostrova_etal_2019") &&
                     all(grepl("ladoga", areas))) {
                     message("\n", "add kostroval et al. 2019 to annul plot ...")
                     points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
