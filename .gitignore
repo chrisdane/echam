@@ -4,6 +4,7 @@
 # except
 !wiso/
 !mpiom/
+!jsbach/
 !README.md
 !requirements.txt
 !post_echam.r
