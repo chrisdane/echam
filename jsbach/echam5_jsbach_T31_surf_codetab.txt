@@ -1,0 +1,7 @@
+ 203   1 jsswniracc                          0.00    1.00 net surface NIR accumulated [W/m**2]
+ 204   1 jsswvisacc                          0.00    1.00 net surface visible accumulated [W/m**2]
+ 205   1 jsswdifniracc                       0.00    1.00 net surface diffuse NIR accumulated [W/m**2]
+ 206   1 jsswdifvisacc                       0.00    1.00 net surface diffuse visible accumulated [W/m**2]
+ 207   1 longwave_down_acc                   0.00    1.00 downward longwave radiation [W/m**2]
+ 212   1 az0lh                               0.00    1.00 roughness length of heat over land [m]
+ 213   1 az0                                 0.00    1.00 roughness length [m]
