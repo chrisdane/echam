@@ -5,6 +5,7 @@
 if (file.exists("~/scripts/r/functions/myfunctions.r")) {
     message("source \"~/scripts/r/functions/myfunctions.r\" ...")
     source("~/scripts/r/functions/myfunctions.r")
+    # needed: ht(), make_posixlt_origin_function(), is.leap() 
 } else {
     stop("could not load \"~/scripts/r/functions/myfunctions.r\"")
 }

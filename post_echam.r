@@ -141,10 +141,10 @@ if (any(file.access(postpaths, mode=0) != 0)) { # check existance
         permission_check <- tryCatch(dir.create(i, recursive=T), error=function(e) e, warning=function(w) w)
         if (typeof(permission_check) == "logical" || # dir creation permission
             grepl("already exists", permission_check$message)) { # just warning that directory already exists
-            message("create postpath '", i, "' ...")
+            message("create postpath \"", i, "\"")
             dir.create(i, recursive=T, showWarnings=F)
         } else { # no dir creation permission
-            stop("have no write permission to create postpath '", i, "'. error message:\n",
+            stop("have no write permission to create postpath \"", i, "\". error message:\n",
                  permission_check)
         }
     }
@@ -188,6 +188,7 @@ lev_fnames[which(!is.na(levs_out))] <- paste0("_", levs_out[which(!is.na(levs_ou
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
 
 # check for new times if wanted
+message("check if `new_date_list` is set and correct ...")
 if (!exists("new_date_list")) {
     new_date_list <- NULL
 } else {
@@ -386,7 +387,7 @@ for (i in 1:nsettings) {
         # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
         if (length(files) > 1) {
             message("\ncheck if any of the ", length(files), 
-                    "files do not match `fpatterns[", i, "]` = \"", fpatterns[i], "\" ...")
+                    " files do not match `fpatterns[", i, "]` = \"", fpatterns[i], "\" ...")
             filesp <- rep(fpatterns[i], t=length(files))
             for (yyyy_patterni in seq_len(n_yyyy_patterns)) { 
                 filesp <- stringr::str_replace(string=filesp, 
