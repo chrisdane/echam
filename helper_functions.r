@@ -1,26 +1,14 @@
 # r
 
-# headtail
-ht <- function(d, n=7) { 
-    print(head(d, n))
-    message(system("printf \"   ⋮\"", intern=T))
-    print(tail(d, n))
+
+# todo: how to load functions from another repo without the "subrepo" hazle?
+if (file.exists("~/scripts/r/functions/myfunctions.r")) {
+    message("source \"~/scripts/r/functions/myfunctions.r\" ...")
+    source("~/scripts/r/functions/myfunctions.r")
+} else {
+    stop("could not load \"~/scripts/r/functions/myfunctions.r\"")
 }
 
-# catch errors
-tryCatch.W.E <- function(expr) {
-
-    # from `demo(error.catching)`
-    W <- NULL
-    w.handler <- function(w) { # warning handler
-        W <<- w
-        invokeRestart("muffleWarning")
-    }
-    list(value=withCallingHandlers(tryCatch(expr, error=function(e) e),
-                                   warning=w.handler), 
-         warning=W)
-
-} # tryCatch.W.E
 
 # get file format
 cdo_get_filetype <- function(fin, cdo="cdo", verbose=T) {
@@ -50,13 +38,4 @@ cdo_get_filetype <- function(fin, cdo="cdo", verbose=T) {
     return(list(convert_to_nc=convert_to_nc, file_type=file_type))
 
 } # cdo_get_filetype
-
-
-# leap year
-is.leap <- function(years) {
-    return(((years %% 4 == 0) & (years %% 100 != 0)) | (years %% 400 == 0))
-}
-
-# make POSIX time with negative years
-# todo: make_posixlt_origin_function from myfunctions.r
 
