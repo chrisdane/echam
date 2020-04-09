@@ -385,9 +385,8 @@ for (i in 1:nsettings) {
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
         # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
         if (length(files) > 1) {
-            message("\ncheck if any of the ", length(files), " 
-                    files do not match `fpatterns[", i, "]` = ",
-                    "   \"", fpatterns[i], "\" ...")
+            message("\ncheck if any of the ", length(files), 
+                    "files do not match `fpatterns[", i, "]` = \"", fpatterns[i], "\" ...")
             filesp <- rep(fpatterns[i], t=length(files))
             for (yyyy_patterni in seq_len(n_yyyy_patterns)) { 
                 filesp <- stringr::str_replace(string=filesp, 

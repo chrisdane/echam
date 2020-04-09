@@ -1,0 +1,4 @@
+  82   3 wiso_evapotranspiration             0.00    1.00 Evapotranspiration (avg) - Water Isotopes [kg m-2 s-1]
+  85   3 wiso_transpiration                  0.00    1.00 Transpiration(avg) - Water Isotopes [kg m-2 s-1]
+  97   3 wiso_glacier_runoff                 0.00    1.00 Glacier Runoff - Water Isotopes [kg m-2 s-1]
+ 120   3 wiso_snow_depth_canopy              0.00    1.00 Snow Depth on Canopy - Water Isotopes [m]

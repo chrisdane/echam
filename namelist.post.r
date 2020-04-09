@@ -111,19 +111,19 @@ if (F) { # old hist
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
     # hol-t on stan:
-    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom"
     #datapaths <- "/ace/user/stschuet/Hol-T_echam5_wiso_links"
     # hol-7 on stan:
-    datapaths <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-7/outdata/echam5"
+    #datapaths <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-7/outdata/echam5"
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom"
     models <- "echam5"
     #models <- "mpiom1"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
-    fpatterns <- "Hol-7_echam5_wiso_mm_<YYYY><MM>.nc"
+    fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-7_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_link_<YYYY><MM>" # steffens links
     #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc" # daily
@@ -138,8 +138,8 @@ if (F) { # old hist
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-7_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-7_wiso_mm"
     #prefixes <- "Hol-T_echam5_wiso" # steffens files
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_timeser_ext"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_timeser_ext"
@@ -160,10 +160,14 @@ if (F) { # old hist
     #fvarnames <- "srad0d"
     #fvarnames <- "trad0"
     #fvarnames <- "aprt"
+    #fvarnames <- "evap"
+    #fvarnames <- "pe"
     #fvarnames <- "albedo"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
-    fvarnames <- "wisoaprt_d_post"
+    #fvarnames <- "wisoevap"
+    fvarnames <- "wisope"
+    #fvarnames <- "wisoaprt_d_post"
     #levs_out <- 2
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "aprt_times_tsurf"
@@ -252,34 +256,34 @@ if (F) { # old hist
                                                                  )
                                               ) # setting 1
                                           )
-    #modes <- "select"
+    modes <- "select"
     #modes <- "timmean"
     #modes <- "yearmean"
     #modes <- "monmean"
     #modes <- "ymonmean"
     #modes <- "fldmean"
-    modes <- "yearsum"
+    #modes <- "yearsum"
     #modes <- "timsum"
     #modes <- "zonmean"
-    season_names <- "annual"
+    #season_names <- "annual"
     #froms <- "0001" # Hol-Tx10 links: beginning counting from 1
-    #froms <- "0004" # Hol-T links: beginning of chunk 1
+    froms <- "0004" # Hol-T links: beginning of chunk 1
     #froms <- "0100"
     #froms <- "0800" # Hol-7 raw: beginning
     #froms <- "2791" # Hol-7 raw: beginning of most files
-    froms <- "2800" # Hol-7 raw: beginning of wiso_mm
+    #froms <- "2800" # Hol-7 raw: beginning of wiso_mm
     #froms <- "2901" # Hol-Tx10 raw: beginning
     #froms <- "3572"
     #tos <- "0011"
     #tos <- "0013" 
     #tos <- "0129"
     #tos <- "0809"
-    tos <- "2900" # Hol-7 raw: end
+    #tos <- "2900" # Hol-7 raw: end
     #tos <- "2910"
     #tos <- "3601" # Hol-Tx10 raw: end
     #tos <- "5903" # Hol-T links: end of chunk 2
     #tos <- "6821"
-    #tos <- "7000" # Hol-T links: end of chunk 3
+    tos <- "7000" # Hol-T links: end of chunk 3
     #tos <- "7001" # Hol-Tx10 links: end counting from 1 
     if (grepl("Hol-Tx10_", prefixes[1])) {
         if (modes[1] == "timmean") {
@@ -351,7 +355,7 @@ if (F) { # old hist
     froms <- 2013 # mw start
     tos <- 2019 # mw end
 
-} else if (T) { # recT127era5: echam6-wiso; T127L95; ERA-5 nudging; ollie
+} else if (F) { # recT127era5: echam6-wiso; T127L95; ERA-5 nudging; ollie
     datapaths <- "/work/ollie/mwerner/echam6-wiso/T127L95/NUDGING_ERA5_T127L95/MONMEAN"
     models <- "echam6"
     fpatterns <- "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
@@ -497,8 +501,12 @@ cdo_known_cmds <- list("toa_imbalace="=list(cmd="<cdo> -setname,toa_imbalance -a
                        "wisoaprl_d_post"=list(cmd="<cdo> -setname,wisoaprl_d -setcode,13 -mulc,1000. -subc,1. -div -div <wisoaprl> <aprl> <wiso_smow_files>"),
                        "wisoaprc_d_post"=list(cmd="<cdo> -setname,wisoaprc_d -setcode,14 -mulc,1000. -subc,1. -div -div <wisoaprc> <aprc> <wiso_smow_files>"),
                        "wisoaprs_d_post"=list(cmd="<cdo> -setname,wisoaprs_d -setcode,15 -mulc,1000. -subc,1. -div -div <wisoaprs> <aprs> <wiso_smow_files>"),
-                       "wisoevap_d_post"=list(cmd="<cdo> -setname,wisoevap_d -setcode,19 -mulc,1000. -subc,1. -div -div <wisoevap> <evap> <wiso_smow_files>"),
-                       "wisope_d_post"=list(cmd="<cdo> -setname,wisope_d -setcode,20 -mulc,1000. -subc,1. -div -div <wisope> <pe> <wiso_smow_files>"),
+                       "wisoevap_d_post"=list(cmd=c("<cdo> -setname,wisoevap_d -setcode,19 -mulc,1000. -subc,1. -div -div <wisoevap> <evap> <wiso_smow_files>",
+                                                    "<nco_ncatted> -O -a long_name,wisoevap_d,o,c,\"delta of evaporation\"",
+                                                    "<nco_ncatted> -O -a units,wisoevap_d,o,c,\"o/oo\"")),
+                       "wisope_d_post"=list(cmd=c("<cdo> -setname,wisope_d -setcode,20 -mulc,1000. -subc,1. -div -div <wisope> <pe> <wiso_smow_files>",
+                                                  "<nco_ncatted> -O -a long_name,wisope_d,o,c,\"delta of precip minus evap\"",
+                                                  "<nco_ncatted> -O -a units,wisope_d,o,c,\"o/oo\"")),
                        "wisows_d_post"=list(cmd="<cdo> -setname,wisows_d -setcode,11 -mulc,1000. -subc,1. -div -div <wisows> <ws> <wiso_smow_files>"),
                        "wisosn_d_post"=list(cmd="<cdo> -setname,wisosn_d -setcode,12 -mulc,1000. -subc,1. -div -div <wisosn> <sn> <wiso_smow_files>"),
                        "wisosnglac_d_post"=list(cmd="<cdo> -setname,wisoasnglac_d -setcode,33 -mulc,1000. -subc,1. -div -div <wisosnglac> <snglac> <wiso_smow_files>"),
