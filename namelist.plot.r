@@ -280,7 +280,7 @@ if (F) { # awi-esm-1-1-lr hist
     #remove_mean_froms <- c(-179, 0)
     #remove_mean_tos <- c(-179, 0)
 
-} else if (F) { # recT106erai vs recT127era5
+} else if (T) { # recT106erai vs recT127era5
     prefixes <- c("echam5_recT106erai_wiso", "echam6_recT127era5_wiso")
     models <- c("echam5", "echam6")
     names_short <- c("recT106erai", "recT127era5")
@@ -288,9 +288,10 @@ if (F) { # awi-esm-1-1-lr hist
     fromsf <- c(1958, 1979)
     tosf <- c(2019, 2019)
     time_frequencies <- rep("monthly", t=2)
-    #varnames_in <- rep("temp2", t=2)
+    n_mas <- rep(36, t=2)
+    varnames_in <- rep("temp2", t=2)
     #varnames_in <- rep("tsurf", t=2)
-    varnames_in <- rep("aprt", t=2)
+    #varnames_in <- rep("aprt", t=2)
     modes <- rep("select", t=2)
     #areas <- rep("ladoga_remapnn", t=2)
     #areas <- rep("shuchye_remapnn", t=2)
@@ -298,8 +299,8 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("taymyr_remapnn", t=2)
     #areas <- rep("emanda_remapnn", t=2)
     #areas <- rep("elgygytgyn_remapnn", t=2)
-    #areas <- rep("two-yurts_remapnn", t=2)
-    areas <- rep("kotokel_remapnn", t=2)
+    areas <- rep("two-yurts_remapnn", t=2)
+    #areas <- rep("kotokel_remapnn", t=2)
 
 # =====================================
 # 3 settings
@@ -336,7 +337,7 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " last 30 years mean minus piControl")))))
     }
 
-} else if (T) { # Hol-7 vs Hol-T with vs without orbital acceleration
+} else if (F) { # Hol-7 vs Hol-T with vs without orbital acceleration
     prefixes <- c("cosmos-aso-wiso_echam5_Hol-7_wiso_mm", 
                   "cosmos-aso-wiso_echam5_Hol-T_wiso_mm", 
                   "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm") 
@@ -382,7 +383,9 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- rep("Jun", t=3)
     #seasonsp <- rep("Sep", t=3)
     #varnames_in <- rep("wisoaprt_d", t=3)
-    varnames_in <- rep("wisoaprt_d_post", t=3)
+    #varnames_in <- rep("wisoaprt_d_post", t=3)
+    #varnames_in <- rep("wisoevap_d_post", t=3)
+    varnames_in <- rep("wisope_d_post", t=3)
     #varnames_in <- rep("c204_ICEARE_GLO", t=3)
     #varnames_in <- rep("c64_ICEARE_ARC", t=3)
     #varnames_in <- rep("c144_ICEARE_SO", t=3)
@@ -398,14 +401,14 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("northern_hemisphere", t=3)
     #areas <- rep("southern_hemisphere", t=3)
     #areas <- rep("weddelmld", t=3)
-    #areas <- rep("ladoga_remapnn", t=3)
+    areas <- rep("ladoga_remapnn", t=3)
     #areas <- rep("shuchye_remapnn", t=3)
     #areas <- rep("levinson-lessing_remapnn", t=3)
     #areas <- rep("taymyr_remapnn", t=3)
     #areas <- rep("emanda_remapnn", t=3)
     #areas <- rep("elgygytgyn_remapnn", t=3)
     #areas <- rep("two-yurts_remapnn", t=3)
-    areas <- rep("kotokel_remapnn", t=3)
+    #areas <- rep("kotokel_remapnn", t=3)
     levs <- rep(2, t=3)
     #n_mas <- c(30, 3*30, 30)
     #n_mas <- c(90, 3*90, 90)
@@ -737,7 +740,7 @@ add_smoothed <- T
 add_sd <- F
 add_linear_trend <- F
 add_nonlinear_trend <- F
-scale_ts <- T
+scale_ts <- F
 ts_highlight_seasons <- list(bool=F, suffix="") # default
 if (F) {
     ts_highlight_seasons <- list(bool=T,

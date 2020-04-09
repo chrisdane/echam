@@ -801,7 +801,7 @@ if (F) { # compare berger and laskar orb
 } # comapre berger and laskar orb
 
 # hanno meyer et al. PLOT excel sheet
-if (T) {
+if (F) {
     f <- ""
     if (machine_tag == "paleosrv") {
         f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
@@ -848,7 +848,7 @@ if (F) {
 }
 
 # NOAA monthly station data
-if (F) {
+if (T) {
     ghcdn_csv <- ""
     if (machine_tag == "ollie") {
         ghcdn_csv <- list.files("/work/ollie/cdanek/data/NOAA/station_data/GHCDN/monthly",
@@ -860,29 +860,34 @@ if (F) {
     if (file.exists(ghcdn_csv[1])) {
         message("\ndisable here if you do not want to load NOAA station datasets ...")
         message("load noaa ghcdn monthly station data ...")
+        message("station", appendLF=F)
         noaa_ghcdn <- vector("list", l=length(ghcdn_csv))
         for (i in seq_along(ghcdn_csv)) {
+            message(" ", i, ": \"", basename(ghcdn_csv[i]), "\"", appendLF=F)
             d <- read.csv(ghcdn_csv[i], stringsAsFactors=F)
             tmp <- list(time=as.POSIXlt(paste0(d$DATE, "-15"), tz="UTC"),
                         Tavg=d$TAVG, Tmin=d$TMIN, Tmax=d$TMAX, precip=d$PRCP)
             tmp$timen <- as.numeric(tmp$time)
+            #if (i == 8) stop("asd")
             # annual means
             tmp$years <- unique(tmp$time$year+1900)
-            Tavg_an <- Tmin_an <- Tmax_an <- precip_an <- rep(NA, t=length(tmp$years))
+            Tavg_an <- Tmin_an <- Tmax_an <- precip_an <- nmonths_an <- rep(NA, t=length(tmp$years))
             for (yi in seq_along(tmp$years)) {
                 yinds <- which(tmp$time$year+1900 == tmp$years[yi])
                 Tavg_an[yi] <- mean(tmp$Tavg[yinds], na.rm=T)
                 Tmin_an[yi] <- mean(tmp$Tmin[yinds], na.rm=T)
                 Tmax_an[yi] <- mean(tmp$Tmax[yinds], na.rm=T)
                 precip_an[yi] <- mean(tmp$precip[yinds], na.rm=T)
+                nmonths_an[yi] <- length(yinds)
             }
             tmp$Tavg_an <- Tavg_an
             tmp$Tmin_an <- Tmin_an
             tmp$Tmax_an <- Tmax_an
             tmp$precip_an <- precip_an
+            tmp$nmonths_an <- nmonths_an
             # monthly climatologies
             tmp$months <- 1:12 #sort(unique(tmp$time$mon+1))
-            Tavg_mon <- Tmin_mon <- Tmax_mon <- precip_mon <- rep(NA, t=length(tmp$months))
+            Tavg_mon <- Tmin_mon <- Tmax_mon <- precip_mon <- nyears_mon <- rep(NA, t=length(tmp$months))
             for (mi in seq_along(tmp$months)) {
                 minds <- which(tmp$time$mon+1 == tmp$months[mi])
                 if (length(minds) > 0) {
@@ -890,12 +895,14 @@ if (F) {
                     Tmin_mon[mi] <- mean(tmp$Tmin[minds], na.rm=T)
                     Tmax_mon[mi] <- mean(tmp$Tmax[minds], na.rm=T)
                     precip_mon[mi] <- mean(tmp$precip[minds], na.rm=T)
+                    nyears_mon[mi] <- length(minds)
                 }
             }
             tmp$Tavg_mon <- Tavg_mon
             tmp$Tmin_mon <- Tmin_mon
             tmp$Tmax_mon <- Tmax_mon
             tmp$precip_mon <- precip_mon
+            tmp$nyears_mon <- nyears_mon
             noaa_ghcdn[[i]]$coords <- c(lon=d$LONGITUDE[1], lat=d$LATITUDE[1])
             noaa_ghcdn[[i]]$ts <- tmp
             noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1])
@@ -1686,12 +1693,24 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$offset$operator <- "-"
             data_infos[[i]][[vi]]$offset$value <- 1000
     
-        } else if (any(varname == c("wisoaprt_d", "wisoaprt_d_post"))) {
+        } else if (varname == "wisoaprt_d") {
             data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (‰)"))
             if (scale_ts) {
                 data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (Index)"))
             }
 
+        } else if (varname == "wisoevap_d") {
+            data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O evaporation (‰)"))
+            if (scale_ts) {
+                data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O evaporation (Index)"))
+            }
+
+        } else if (varname == "wisope_d") {
+            data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O (P-E) (‰)"))
+            if (scale_ts) {
+                data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O (P-E) (Index)"))
+            }
+        
         } else if (varname == "lm_temp2_as_time_slope") {
             message("special label")
             data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
@@ -3617,7 +3636,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim <- range(ylim, nsidc_siarean_annual$siarean, na.rm=T)
             } # if add nsidc
 
-            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("kostrova_etal_2019") &&
+            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
                 all(grepl("ladoga", areas))) {
                 message("\nadd kostrova et al. 2019 d18o data ...")
                 message("ylim before: ", ylim[1], ", ", ylim[2])
@@ -3626,7 +3645,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("ylim after: ", ylim[1], ", ", ylim[2])
             }
 
-            if (any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("meyer_etal")) {
+            if (any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("meyer_etal")) {
                 add_meyer_etal_xlsx <- T
                 message("\nadd meyer et al. xlsx d18o data ...")
                 if (all(grepl("ladoga", areas))) {
@@ -3686,6 +3705,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         noaay <- noaa_ghcdn_tmp$ts$precip
                     }
                     if (scale_ts) noaay <- scale(noaay)
+                    if (exists("zma")) {
+                        if (length(unique(n_mas)) != 1) stop("different n_ma present. dont know which to use for noaa ghcdn station data")
+                        message("filter(noaay) by n_mas[1] = ", n_mas[1])
+                        noaay <- filter(noaay, rep(1/n_mas[1], t=n_mas[1]))
+                    }
                     ylim <- range(ylim, noaay, na.rm=T)
                     message("ylim after: ", ylim[1], ", ", ylim[2])
                 } # if temp2, tsurf, aprt
@@ -3932,7 +3956,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                       lwd=nsidc_siarean_annual$lwd)
             }
             
-            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("kostrova_etal_2019") &&
+            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
                 all(grepl("ladoga", areas))) {
                 message("\n", "add kostrova et al. 2019 to datas plot ...")
                 points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
@@ -4002,7 +4026,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch <- c(le$pch, hadcrut4_sat_anom_annual$pch)
                     }
                 }
-                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("kostrova_etal_2019") &&
+                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
                     all(grepl("ladoga", areas))) {
                     message("\n", "add kostrova et al. 2019 to datas legend ...")
                     le$pos <- "bottom"
@@ -4925,7 +4949,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 # add obs 
-                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post")) && exists("kostrova_etal_2019") &&
+                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
                     all(grepl("ladoga", areas))) {
                     message("\n", "add kostroval et al. 2019 to annul plot ...")
                     points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
