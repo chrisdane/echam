@@ -795,11 +795,11 @@ if (F) { # compare berger and laskar orb
     }
     dev.off()
 } else {
-    message("\nenable here to compare berger and laskar orbital parameter")
+    message("\nenable here if you want to compare berger and laskar orbital parameter")
 } # comapre berger and laskar orb
 
 # hanno meyer et al. PLOT excel sheet
-if (F) {
+if (T) {
     f <- ""
     if (machine_tag == "paleosrv") {
         f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
@@ -808,14 +808,17 @@ if (F) {
     if (file.exists(f)) {
         message("\ndisable here if you do not want to read hanno meyer et al. PLOT data from ", f)
         message("run read_meyer_etal_function() ...")
-        tmp <- read_meyer_etal_function(xlsx_file=f, verbose=F)
-        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Ladoga", verbose=T)
-        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake", verbose=T)
-        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Two Jurts Lake", verbose=T)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, verbose=F)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Ladoga")
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake")
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Two Jurts Lake")
+        tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Kotokel", verbose=F)
         meyer_etal <- list(data=tmp,
                            type="o", 
-                           #col="#377EB8", # blue
-                           col="#1B9E77", # green
+                           #col="#377EB8", # myblue
+                           col="#1B9E77", # mygreen
                            lty=1, lwd=1, pch=1, cex=1)
     }
 } else {
@@ -846,7 +849,7 @@ if (F) {
 }
 
 # NOAA monthly station data
-if (T) {
+if (F) {
     ghcdn_csv <- ""
     if (machine_tag == "ollie") {
         ghcdn_csv <- list.files("/work/ollie/cdanek/data/NOAA/station_data/GHCDN/monthly",
@@ -929,9 +932,10 @@ if (T) {
                 }
             } # special legend labels
         } # for i ghdcn csv files
+        message()
     } # if ghcdn files present
 } else {
-    message("\nenable here if you want to load NOAA station datasets ...\n")
+    message("\nenable here if you want to load NOAA station datasets ...")
 } # if NOAA station data
 
 # clean
@@ -942,7 +946,7 @@ for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin",
     if (exists(obj)) rm(obj)
 }
 
-message("finished reading special data sets ...")
+message("\nfinished reading special data sets ...")
 # finished reading extra datasets depending on machine
 
 
@@ -1054,6 +1058,8 @@ for (i in 1:nsettings) {
         ht(timein_lt, n=20)
         message("range(timein_lt) = ", appendLF=F)
         print(range(timein_lt))
+        message("range(timein_lt$mon+1) = ", appendLF=F)
+        print(range(timein_lt$mon+1))
 
         # find out temoral interval (e.g. 1hr, 3hr, 6hr, day, week, month, year)
         if (exists("time_frequencies")) {
@@ -1073,7 +1079,7 @@ for (i in 1:nsettings) {
         # as.POSIXlt's 'year' starts at 1900
         if (!is.na(new_origins[i])) {
             # from year in  = min(timein_lt$year) + 1900
-            message("\n", "new_origins is given --> new_origins[", i, "] = ", new_origins[i])
+            message("\nprovided `new_origins[", i, "]` = ", new_origins[i])
             message("--> shift range(timein_lt) = ", appendLF=F)
             print(range(timein_lt))
             #shift_by <- -(timein_lt$year[1] + 1900 - new_origins[i]) 
@@ -1154,15 +1160,14 @@ for (i in 1:nsettings) {
 
             # all other season cases:
             } else { # not seasonsp="annual" & seasonsf="Jan-Dec"
-                message("\n", "cut season from `seasonsf[", i, "]` = \"", seasonsf[i], 
-                        "\" to `seasonsp[", i, "] = \"", seasonsp[i], "\" ...")
                 if (is.character(seasonsp[i])) { # "DJF" or "Jul"
+                    message("\nprovided `seasonsp[", i, "] = \"", seasonsp[i], "\" != `seasonsf[", i, 
+                            "]` = \"", seasonsf[i], "\"")
                     # check if substring is in DJFMAM ...
                     season_inds <- regexpr(seasonsp[i], season_check$string)
-                    if (any(season_inds != -1)) {
+                    if (any(season_inds != -1)) { # if season like "DJF", "JJA"
                         season_inds <- season_check$inds[season_inds:(season_inds+attributes(season_inds)$match.length-1)]
-                    } else {
-                        # check if "Jul", etc ...
+                    } else { # else (e.g. "Jan", "Jul")
                         season_inds <- regexpr(seasonsp[i], season_check$names)
                         if (length(which(season_inds != -1)) == 1) {
                             season_inds <- which(season_inds != -1)
@@ -1171,12 +1176,16 @@ for (i in 1:nsettings) {
                         }
                     }
                 } else if (is.numeric(seasonsp[i])) {
+                    message("\nprovided `seasonsp[", i, "] = ", seasonsp[i], " != `seasonsf[", i, 
+                            "]` = \"", seasonsf[i], "\"\n", "--> find season indices ...")
                     stop("not yet")
                 }
+                message("--> found ", length(season_inds), " season_inds = ", paste(season_inds, collapse=", "))
                 months_in <- unclass(timein_lt)$mon + 1
                 month_inds <- months_in %in% season_inds
                 month_inds <- which(month_inds)
-                message("found ", length(month_inds), " month_inds")
+                message("--> found ", length(month_inds), " month_inds:")
+                ht(month_inds)
                 timein_lt <- timein_lt[month_inds]
                 if (!is.null(time_inds)) {
                     time_inds <- time_inds[month_inds]
@@ -1207,10 +1216,11 @@ for (i in 1:nsettings) {
         # POSIXlt as numeric
         #dims[[i]]$timen <- lapply(dims[[i]]$time, as.numeric)
 
-        message("\nmin/max(dims[[", i, "]]$timelt) = ", 
-                min(dims[[i]]$timelt),  " / ", max(dims[[i]]$timelt))
-        message("min/max(dims[[", i, "]]$timelt$mon+1) = ", 
-                min(dims[[i]]$timelt$mon+1),  " / ", max(dims[[i]]$timelt$mon+1))
+        message("\nfinished time dim stuff:")
+        message("range(dims[[", i, "]]$timelt) = ", appendLF=F)
+        print(range(dims[[i]]$timelt))
+        message("range(dims[[", i, "]]$timelt$mon+1) = ", appendLF=F)
+        print(range(dims[[i]]$timelt$mon+1))
 
     } else { # if none of file dims is "time"
 
@@ -3992,10 +4002,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 le$pos <- "topleft" 
                 #le$pos <- "left"
                 #le$pos <- "bottomleft" 
-                le$pos <- "topright"
+                #le$pos <- "topright"
                 #le$pos <- "bottomright" 
                 #le$ncol <- length(z)/2
-                le$ncol <- 1
+                #le$ncol <- 1
+                le$ncol <- 2
                 #le$ncol <- length(z)
                 #le$ncol <- ceiling(length(z)/4) 
                 le$text <- names_legend_p
@@ -4038,7 +4049,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     message("\n", "add meyer et al. xlsx to datas legend ...")
                     if (all(grepl("ladoga", areas))) le$pos <- "bottom"
                     if (all(grepl("shuchye", areas))) le$pos <- "top"
-                    if (all(grepl("kotokel", areas))) le$pos <- "bottom"
+                    if (all(grepl("kotokel", areas))) le$pos <- "top"
                     le$text <- c(le$text, meyer_etal_tmp$text)
                     le$col <- c(le$col, meyer_etal$col)
                     le$lty <- c(le$lty, meyer_etal$lty)

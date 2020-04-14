@@ -280,7 +280,7 @@ if (F) { # awi-esm-1-1-lr hist
     #remove_mean_froms <- c(-179, 0)
     #remove_mean_tos <- c(-179, 0)
 
-} else if (T) { # recT106erai vs recT127era5
+} else if (F) { # recT106erai vs recT127era5
     prefixes <- c("echam5_recT106erai_wiso", "echam6_recT127era5_wiso")
     models <- c("echam5", "echam6")
     names_short <- c("recT106erai", "recT127era5")
@@ -337,7 +337,7 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " last 30 years mean minus piControl")))))
     }
 
-} else if (F) { # Hol-7 vs Hol-T with vs without orbital acceleration
+} else if (T) { # Hol-7 vs Hol-T with vs without orbital acceleration
     prefixes <- c("cosmos-aso-wiso_echam5_Hol-7_wiso_mm", 
                   "cosmos-aso-wiso_echam5_Hol-T_wiso_mm", 
                   "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm") 
@@ -376,7 +376,13 @@ if (F) { # awi-esm-1-1-lr hist
     #time_frequencies <- rep("monthly", t=3)
     time_frequencies <- rep("annual", t=3)
     time_ref <- 1950 # any string, e.g. "BP", or number
-    seasonsf <- rep("annual", t=3)
+    #seasonsf <- rep("annual", t=3)
+    #seasonsf <- rep("yearsum", t=3)
+    seasonsf <- rep("seassum", t=3) # cdo default: date is middle of season
+    #seasonsp <- rep("DJF", t=3)
+    #seasonsp <- rep("MAM", t=3)
+    #seasonsp <- rep("JJA", t=3)
+    seasonsp <- rep("SON", t=3)
     #seasonsp <- rep("Jan", t=3)
     #seasonsp <- rep("Feb", t=3)
     #seasonsp <- rep("Mar", t=3)
@@ -395,27 +401,29 @@ if (F) { # awi-esm-1-1-lr hist
     #codes <- rep(101, t=3)
     #modes <- rep("fldmean", t=3)
     #modes <- rep("fldsum", t=3)
-    modes <- rep("yearsum", t=3)
+    #modes <- rep("yearsum", t=3)
+    modes <- rep("seassum", t=3)
     #areas <- rep("moc26.5N", t=3)
     #levs <- rep("-0to-5420m", t=3)
     #areas <- rep("northern_hemisphere", t=3)
     #areas <- rep("southern_hemisphere", t=3)
     #areas <- rep("weddelmld", t=3)
-    areas <- rep("ladoga_remapnn", t=3)
+    #areas <- rep("ladoga_remapnn", t=3)
     #areas <- rep("shuchye_remapnn", t=3)
     #areas <- rep("levinson-lessing_remapnn", t=3)
     #areas <- rep("taymyr_remapnn", t=3)
     #areas <- rep("emanda_remapnn", t=3)
     #areas <- rep("elgygytgyn_remapnn", t=3)
     #areas <- rep("two-yurts_remapnn", t=3)
-    #areas <- rep("kotokel_remapnn", t=3)
+    areas <- rep("kotokel_remapnn", t=3)
     levs <- rep(2, t=3)
     #n_mas <- c(30, 3*30, 30)
     #n_mas <- c(90, 3*90, 90)
     #n_mas <- rep(120, t=3)
-    #n_mas <- c(90, 3*150, 150)
+    n_mas <- c(90, 3*150, 150) # seasons
     #n_mas <- c(120, 3*120, 120)
-    n_mas <- c(30, 500, 50)
+    #n_mas <- c(30, 150, 50)
+    #n_mas <- c(30, 300, 100)
     #n_mas <- c(1200, 12000, 1200)
     #fromsp <- c(-7010, -6996, -7000) # zoom: 7k control/7k transient transition 
     #tosp <- c(-7001, -6980, -6980)
@@ -740,7 +748,7 @@ add_smoothed <- T
 add_sd <- F
 add_linear_trend <- F
 add_nonlinear_trend <- F
-scale_ts <- F
+scale_ts <- T
 ts_highlight_seasons <- list(bool=F, suffix="") # default
 if (F) {
     ts_highlight_seasons <- list(bool=T,
