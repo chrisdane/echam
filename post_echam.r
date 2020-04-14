@@ -671,9 +671,11 @@ for (i in 1:nsettings) {
                     nchunks <- 1 # for rest of script
                     fout_vec <- fout
 
-                    message("\nhowever, requested variable \"", fvarnames[i], "\" is one of the variables defined in `cdo_known_cmds`:")
-                    for (vari in 1:length(cdo_known_cmds)) {
-                        message("   ", vari, " \"", names(cdo_known_cmds)[vari], "\": ", appendLF=F)
+                    message("\nhowever, requested variable \"", fvarnames[i], 
+                            "\" is one of the variables defined in `cdo_known_cmds`:")
+                    #for (vari in 1:length(cdo_known_cmds)) {
+                        vari <- which(names(cdo_known_cmds) == fvarnames[i])
+                        message("   cdo_known_cmds[[", vari, "]]: \"", names(cdo_known_cmds)[vari], "\": ", appendLF=F)
                         if (length(cdo_known_cmds[[vari]]$cmd) == 1) {
                             message("`", cdo_known_cmds[[vari]]$cmd, "`")
                         } else {
@@ -682,7 +684,7 @@ for (i in 1:nsettings) {
                                 message("      `", cdo_known_cmds[[vari]]$cmd[cmdi], "`")
                             }
                         }
-                    }
+                    #}
 
                     # check command if all necessary input files are available
                     cmdsin <- cdo_known_cmds[[fvarnames[i]]]$cmd
