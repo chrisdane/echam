@@ -24,9 +24,7 @@ source(fnml)
 
 # check user input and defaults
 nsettings <- length(prefixes)
-if (!exists("modes")) {
-    stop("must provide `modes`")
-}
+if (!exists("modes")) stop("must provide `modes`")
 if (!exists("codes")) codes <- rep("", t=nsettings)
 if (!exists("levs")) levs <- rep("", t=nsettings)
 if (!exists("depths")) depths <- rep("", t=nsettings)
@@ -1169,7 +1167,7 @@ for (i in 1:nsettings) {
                         if (length(which(season_inds != -1)) == 1) {
                             season_inds <- which(season_inds != -1)
                         } else {
-                            stop("do not understand `seasonsp[", i, "]` = \"", seasonsp[i], "\".")
+                            stop("`seasonsp[", i, "]` = \"", seasonsp[i], "\" not defined")
                         }
                     }
                 } else if (is.numeric(seasonsp[i])) {
