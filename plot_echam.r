@@ -799,7 +799,7 @@ if (F) { # compare berger and laskar orb
 } # comapre berger and laskar orb
 
 # hanno meyer et al. PLOT excel sheet
-if (T) {
+if (F) {
     f <- ""
     if (machine_tag == "paleosrv") {
         f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
@@ -822,7 +822,7 @@ if (T) {
                            lty=1, lwd=1, pch=1, cex=1)
     }
 } else {
-    message("\nenable here to read hanno meyer et al. PLOT data excel sheet")
+    message("\nenable here if you want to read hanno meyer et al. PLOT data excel sheet")
 }
 
 # pangaea
@@ -1092,7 +1092,7 @@ for (i in 1:nsettings) {
             ht(timein_lt, n=20)
             message("--> new range(timein_lt) = ", appendLF=F)
             print(range(timein_lt))
-
+            dims[[i]]$time_shift_by <- shift_by
         } # if !is.na(new_origins[i])
         # set new origin
 
@@ -1180,7 +1180,8 @@ for (i in 1:nsettings) {
                             "]` = \"", seasonsf[i], "\"\n", "--> find season indices ...")
                     stop("not yet")
                 }
-                message("--> found ", length(season_inds), " season_inds = ", paste(season_inds, collapse=", "))
+                dims[[i]]$season_inds <- season_inds
+                message("--> found ", length(season_inds), " season_inds: ", paste(season_inds, collapse=", "))
                 months_in <- unclass(timein_lt)$mon + 1
                 month_inds <- months_in %in% season_inds
                 month_inds <- which(month_inds)
@@ -3406,8 +3407,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # prepare right axis data if necessary
             if (add_data_right_yaxis_ts) {
-                warning("update data_right datas for plot groups: samevars and samedims")
                 message("\n", "prepare data right yaxis ..")
+                message("update data_right datas for plot groups: samevars and samedims")
                 data_right <- list(data=list())
                 if (exists("add_co2_hist") && add_co2_hist) {
                     data_right$data$co2_hist <- list(x=co2_hist$time, y=co2_hist$co2_ppm, 
@@ -3505,25 +3506,70 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     data_right <- list(data=vector("list", l=length(z)))
                     names(data_right$data) <- names_short
                     for (i in seq_along(data_right$data)) {
-                        inpath <- paste0(workpath, "/post/", models[i], "/yearsum/wisoaprt_d_post") 
-                        fname <- paste0(prefixes[i], "_yearsum", 
-                                        codesf[i], "_wisoaprt_d_post_sellevel_2_", areas[i],
-                                        "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
+                        inpath <- paste0(workpath, "/post/", models[i], "/",
+                                         #mode_p,
+                                         "yearsum",
+                                         #"seassum",
+                                         "/wisoaprt_d_post") 
+                        fname <- paste0(prefixes[i], "_",
+                                        #mode_p,
+                                        "yearsum", 
+                                        #"seassum",
+                                        codesf[i], "_wisoaprt_d_post_sellevel_2_", areas[i], "_", 
+                                        #seasonsf[i], 
+                                        "yearsum",
+                                        #"seassum",
+                                        "_", fromsf[i], "-", tosf[i], 
                                         depthsf[i], 
                                         ".nc") # todo: levs 
                         ncin <- nc_open(paste0(inpath, "/", fname))
                         message("read ", inpath, "/", fname, " ...")
-                        data_right$data[[i]] <- list(x=d$time[[i]], # use dims of z!
+                        data_right$data[[i]] <- list(x=ncin$dim$time$vals,
                                                      y=ncvar_get(ncin, "wisoaprt_d"),
                                                      text="wisoaprt_d_sellevel_2", 
-                                                     #col=cols[i], 
-                                                     cols="#E41A1C",
-                                                     lty=1, lwd=1, pch=NA)
-                        message("(used dims of main data!)")
-                    }
+                                                     col=cols[i], 
+                                                     #cols="#E41A1C",
+                                                     lty=ltys[i]+1, lwd=1, pch=NA)
+                        if (substr(ncin$dim$time$units, 1, 11) == "days since ") {
+                            data_right$data[[i]]$timelt <- as.POSIXlt(data_right$data[[i]]$x*86400, 
+                                                                      origin=substr(ncin$dim$time$units, 
+                                                                                    12, 
+                                                                                    nchar(ncin$dim$time$units)),
+                                                                      tz="UTC")
+                        } else {
+                            stop("not defined")
+                        }
+                    } # for i 
                     data_right$label <- eval(substitute(expression(paste(delta, ""^18, "O [\u2030]")))) 
                     data_right$suffix <- "_with_wisoaprt_d_sellevel_2"
-                } # temp2
+                } # load data_right based on variable
+
+                for (i in seq_along(data_right$data)) {
+                    
+                    # shift data_right time as main data if necessary
+                    if (!is.null(dims[[i]]$time_shift_by)) {
+                        message("shift data_right years by ", dims[[i]]$time_shift_by, " years ...")
+                        data_right$data[[i]]$timelt$year <- data_right$data[[i]]$timelt$year + dims[[i]]$time_shift_by
+                    } # shift_by
+
+                    # cut data_right time as main data if necessary
+                    if (!is.null(dims[[i]]$time_inds)) {
+                        if (!is.null(dims[[i]]$season_inds)) {
+                            months_in_right <- unclass(data_right$data[[i]]$timelt)$mon + 1
+                            month_inds_right <- months_in_right %in% season_inds
+                            time_inds_right <- which(month_inds_right)
+                        } else {
+                            #time_inds_right <- 
+                            stop("not implemented yet")
+                        }
+                        message("cut right data of length ", length(data_right$data[[i]]$y), " by ", 
+                                length(time_inds_right), " time_inds_right:")
+                        ht(time_inds_right)
+                        data_right$data[[i]]$timelt <- data_right$data[[i]]$timelt[time_inds_right]
+                        data_right$data[[i]]$y <- data_right$data[[i]]$y[time_inds_right]
+                    } # if time_inds
+                    data_right$data[[i]]$x <- as.POSIXct(data_right$data[[i]]$timelt)
+                }
                 # finished variable specific stuff for add_data_right_yaxis_ts
                 
                 # check
@@ -3560,7 +3606,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         } else {
                             timeinds <- which(data_right$data[[i]]$x >= tlimlt[1] & data_right$data[[i]]$x <= tlimlt[2])
                             if (length(timeinds) == 0) {
-                                message("all data of data_right$data[[", i, "]]: ", names(data_right$data)[1], " are out of tlimlt")
+                                message("all data of data_right$data[[", i, "]]: ", names(data_right$data)[i], 
+                                        " are out of tlimlt", appendLF=F)
+                                print(range(tlimlt))
                                 ylim_right[[i]] <- NA
                             } else {
                                 ylim_right[[i]] <- range(data_right$data[[i]]$y[timeinds], na.rm=T)
@@ -4183,17 +4231,23 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 } # if add_legend
 
-                if (add_cor_data_left_and_right_ts && length(z) == 1) {
+                if (add_cor_data_left_and_right_ts) {
+                    
+                    message("`add_cor_data_left_and_right_ts`=T ...")
 
-                    cor <- cor.test(z[[i]], data_right$data[[i]]$y)
-                    # plusminus: %+-%
-                    subtitle <- substitute(paste("cor(", x, ",", y, ") = ", r, " " %+-% "", uncert, "; p ", p),
-                                           list(x=varname, y=data_right$data[[i]]$text,
-                                                r=round(cor$estimate, 2), 
-                                                uncert=round(cor$estimate - cor$conf.int[1], 3),
-                                                p=ifelse(cor$p.value < 1e-3, 
-                                                         paste0("< 1e-3"), round(cor$p.value, 3))))
-                    mtext(subtitle, cex=0.7)
+                    for (i in seq_along(z)) {
+                        cor <- cor.test(z[[i]], data_right$data[[i]]$y)
+                        # plusminus: %+-%
+                        subtitle <- substitute(paste(setting, ": cor(", x, ",", y, ") = ", r, " " %+-% "", uncert, "; p ", p),
+                                               list(setting=names_legend[i],
+                                                    x=varname, y=data_right$data[[i]]$text,
+                                                    r=round(cor$estimate, 2), 
+                                                    uncert=round(cor$estimate - cor$conf.int[1], 3),
+                                                    p=ifelse(cor$p.value < 1e-3, 
+                                                             paste0("< 1e-3"), round(cor$p.value, 3))))
+                        message(subtitle)
+                        mtext(subtitle, line=i-1, cex=0.7)
+                    }
 
                 } # if add_cor_data_left_and_right_ts
 
@@ -4792,22 +4846,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     message("update zan data_right")
                     data_right_an <- list(data=vector("list", l=length(zan)))
                     names(data_right_an$data) <- names_short_p
-                    if (F && varname == "temp2") {
+                    if (T && any(varname == c("temp2", "tsurf", "tsurfaprt", "ptemp"))) {
                         for (i in seq_along(data_right_an$data)) {
-                            inpath <- paste0(workpath, "/post/", models[i], "/", mode_p, "/wisoaprt_d") 
-                            fname <- paste0(prefixes[i], "_", mode_p, 
-                                            codesf[i], "_wisoaprt_d_sellevel_2_", areas[i],
-                                            "_annual_", fromsf[i], "-", tosf[i], 
+                            inpath <- paste0(workpath, "/post/", models[i], "/",
+                                             "yearsum",
+                                             "/wisoaprt_d_post") 
+                            fname <- paste0(prefixes[i], "_", 
+                                            "yearsum", 
+                                            codesf[i], "_wisoaprt_d_post_sellevel_2_", areas[i], "_",
+                                            "yearsum", 
+                                            "_", fromsf[i], "-", tosf[i], 
                                             depthsf[i], 
                                             ".nc") # todo: levs 
                             ncin <- nc_open(paste0(inpath, "/", fname))
                             message("read ", inpath, "/", fname, " ...")
                             data_right_an$data[[i]] <- list(x=dims[[i]]$year,
-                                                             y=ncvar_get(ncin, "wisoaprt_d"),
-                                                             text="wisoaprt_d_sellevel_2", 
-                                                             #col=cols[i], 
-                                                             cols="#E41A1C",
-                                                             lty=1, lwd=1, pch=NA)
+                                                            y=ncvar_get(ncin, "wisoaprt_d"),
+                                                            text="wisoaprt_d_sellevel_2", 
+                                                            #col=cols[i], 
+                                                            cols="#E41A1C",
+                                                            lty=1, lwd=1, pch=NA)
                         }
                         data_right_an$label <- eval(substitute(expression(paste(delta, ""^18, "O [\u2030]")))) 
                         data_right_an$suffix <- "_with_wisoaprt_d_sellevel_2"
@@ -4960,7 +5018,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # add obs 
                 if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
                     all(grepl("ladoga", areas))) {
-                    message("\n", "add kostroval et al. 2019 to annul plot ...")
+                    message("\n", "add kostroval et al. 2019 to annual plot ...")
                     points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
                            t=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
                            lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd, 
@@ -5131,16 +5189,24 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
                     } # if add_legend
 
-                    if (add_cor_data_left_and_right_ts) { # this only make sense if there is only 1 setting to plot
+                    if (add_cor_data_left_and_right_ts_an) {
 
-                        cor <- cor.test(zan[[i]], data_right_an$data[[i]]$y)
-                        # plusminus: %+-%
-                        subtitle <- substitute(paste("cor(", x, ",", y, ") = ", rfrom-rto),
-                                               list(x=names_legend_pan[i], y=data_right_an$data[[i]]$text,
-                                                    rfrom=round(cor$conf.int[1], 3), rto=round(cor$conf.int[2], 3)))
-                        mtext(subtitle, cex=0.7)
+                        message("`add_cor_data_left_and_right_ts_an`=T ...")
+                        for (i in seq_along(zan)) {
+                            cor <- cor.test(zan[[i]], data_right_an$data[[i]]$y)
+                            # plusminus: %+-%
+                            subtitle <- substitute(paste(setting, ": cor(", x, ",", y, ") = ", r, " " %+-% "", uncert, "; p ", p),
+                                                   list(setting=names_legend[i],
+                                                        x=varname, y=data_right_an$data[[i]]$text,
+                                                        r=round(cor$estimate, 2), 
+                                                        uncert=round(cor$estimate - cor$conf.int[1], 3),
+                                                        p=ifelse(cor$p.value < 1e-3, 
+                                                                 paste0("< 1e-3"), round(cor$p.value, 3))))
+                            message(subtitle)
+                            mtext(subtitle, line=i-1, cex=0.7)
+                        }
 
-                    } # if add_cor_data_left_and_right_ts
+                    } # if add_cor_data_left_and_right_ts_an
                 
                 } # if add_data_right_yaxis_ts_an
 
