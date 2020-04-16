@@ -386,8 +386,8 @@ for (i in 1:nsettings) {
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
         # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
         if (length(files) > 1) {
-            message("\ncheck if any of the ", length(files), 
-                    " files do not match `fpatterns[", i, "]` = \"", fpatterns[i], "\" ...")
+            message("\ncheck if any of the ", length(files), " files do not match\n",
+                    "   `fpatterns[", i, "]` = \"", fpatterns[i], "\"\n...")
             filesp <- rep(fpatterns[i], t=length(files))
             for (yyyy_patterni in seq_len(n_yyyy_patterns)) { 
                 filesp <- stringr::str_replace(string=filesp, 
@@ -1355,12 +1355,12 @@ for (i in 1:nsettings) {
                                 
                                 # input and wanted years
                                 years_filenames_chunki <- years_filenames[dates_in_list[[chunki]]$file_inds]
-                                message("years_filenames_chunki[1/n] = ", years_filenames_chunki[1], "/", 
+                                message("years_filenames_chunki[1 to n] = ", years_filenames_chunki[1], " to ", 
                                         years_filenames_chunki[length(years_filenames_chunki)], 
                                         " (n = ", length(years_filenames_chunki), ")")
                                 #years_in_chunki <- unique(dates_in_list[[chunki]]$years)
                                 years_in_chunki <- dates_in_list[[chunki]]$years
-                                message("years_in_chunki[1/n] = ", years_in_chunki[1], "/", 
+                                message("years_in_chunki[1 to n] = ", years_in_chunki[1], " to ", 
                                         years_in_chunki[length(years_in_chunki)], " (n = ",
                                         length(years_in_chunki), ")") 
 
