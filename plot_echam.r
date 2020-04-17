@@ -4,6 +4,10 @@
 requirements <- scan("requirements_plot.txt", what="char", quiet=T)
 for (r in requirements) library(r, character.only=T)
 
+# load necessary libraries
+requirements <- scan("requirements_plot.txt", what="char")
+for (r in requirements) library(r, character.only=T)
+
 #options(warn = 2) # stop on warnings
 if (T) {
     rm(list=ls())
