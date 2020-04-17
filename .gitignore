@@ -6,10 +6,12 @@
 !mpiom/
 !jsbach/
 !README.md
-!requirements.txt
+!requirements_post.txt
+!requirements_plot.txt
 !post_echam.r
 !plot_echam.r
 !helper_functions.r
 !namelist.post.r
 !namelist.plot.r
+!namelist.plot.r.loop
 
