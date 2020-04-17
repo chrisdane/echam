@@ -1,39 +1,9 @@
 # input for plot.echam.r
 
-# host options
-machine <- system("hostname -f", intern=T)
-message(paste0("Run on ", machine, ":"))
-if (regexpr("ollie", machine) != -1 ||
-    regexpr("prod-", machine) != -1 ||
-    regexpr("fat-", machine) != -1) {
-    machine_tag <- "ollie"
-    homepath <- "~/scripts/r"
-    workpath <- "/work/ollie/cdanek"
-} else if (regexpr("hpc.dkrz", machine) != -1) {
-    machine <- substr(machine, 1, regexpr(".hpc.dkrz", machine) - 1)
-    machine_tag <- "mistral"
-    homepath <- "~/scripts/r"
-    #workpath <- "/work/ba0941/a270073"
-    workpath <- "/work/ab0246/a270073"
-} else if (regexpr("paleosrv", machine) != -1) {
-    machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
-    machine_tag <- "paleosrv"
-    homepath <- "~/scripts/r"
-    workpath <- "/isibhv/projects/paleo_work/cdanek"
-} else if (regexpr("stan", machine) != -1) {
-    machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
-    machine_tag <- "stan"
-    homepath <- "~/scripts/r"
-    workpath <- "/ace/user/cdanek"
-} else {
-    message(paste0("   (unknown machine, use default paths)"))
-    homepath <- "~/scripts/r"
-    workpath <- homepath
-}
-message(paste0("   homepath = ", homepath))
-message(paste0("   workpath = ", workpath))
+## general part
+# <-- namelist.plot.r general part start --> # keep this line for plot_loop_echam.r
 
-# ignore these variables
+# ignore these netcdf variables
 ignore_vars <- c("time_bnds", "timestamp", 
                  "hyai", "hybi", "hyam", "hybm",
                  "depthvec", 
@@ -41,7 +11,92 @@ ignore_vars <- c("time_bnds", "timestamp",
 message("\nthese variables will be ignored:\n",
 		"\"", paste(ignore_vars, collapse="\", \""), "\"")
 
-# =====================================
+# plot options
+add_title <- T
+add_legend <- T
+message("\nrun myfunctions.r:setDefaultPlotOptions() ...")
+p <- setDefaultPlotOptions(plot_type="png", 
+                           #plot_type="pdf",
+                           #family_png="Droid Sans Mono", 
+                           #family_pdf="Droid Sans Mono"
+                           )
+                           #family_pdf="CM Roman")
+alpha <- 0.2 # transparent: 0,1 (0 fully transparent)
+
+# time series plot options
+# woa13 seasons: "JFM" "AMJ" "JAS" "OND"
+# other seasons: "Jan-Dec" "DJF" "MAM" "JJA" "SON" "JJ"
+# months: "Feb" "Jul" "Jan"  "Jul"
+add_xgrid <- F
+add_ygrid <- F
+add_zeroline <- T
+add_unsmoothed <- F
+add_smoothed <- T
+add_sd <- F
+add_linear_trend <- F
+add_nonlinear_trend <- F
+scale_ts <- T
+ts_highlight_seasons <- list(bool=F, suffix="") # default
+if (F) {
+    ts_highlight_seasons <- list(bool=T,
+                                 seasons=c("DJF", "MAM", "JJA", "SON"),
+                                 #t="l",
+                                 t="p",
+                                 #cols=c("blue", "darkgreen", "red", "brown")
+                                 cols=rgb(t(col2rgb(c("blue", "darkgreen", "red", "brown"))/255), alpha=alpha),
+                                 ltys=c(1,2,3,4),
+                                 lwds=c(1,1,1,1),
+                                 #pchs=1:4,
+                                 pchs=c(16, 16, 16, 16),
+                                 suffix="_highlight_seasons") 
+}
+add_first_data_point <- F
+ts_plot_each_setting_in_subplot <- F
+add_data_right_yaxis_ts <- F
+add_cor_data_left_and_right_ts <- T
+add_data_right_yaxis_ts_mon <- F
+add_data_right_yaxis_ts_an <- F
+add_cor_data_left_and_right_ts_an <- T
+add_legend_right_yaxis <- F
+plot_scatter_s1_vs_s2 <- F
+#scatter_s1_vs_s1_varname <- "temp2"
+scatter_s1_vs_s1_varname <- "tsurf"
+#scatter_s1_vs_s1_varname <- "aprt"
+#scatter_s1_vs_s1_varname <- "wisoaprt_d"
+plot_scatter_v1_vs_v2 <- F
+varnamex <- varnamey <- "abc"
+if (F) { # TOA imbalance gregory et al. 2004 stuff 
+    varnamex <- "temp2"
+    varnamey <- "toa_imbalance"
+} else if (F) { # temp2 vs precipitation weighted temp2
+    varnamex <- "temp2"
+    varnamey <- "ptemp"
+} else if (F) {
+    varnamex <- "temp2"
+    varnamey <- "wisoaprt_d"
+}
+add_1to1_line_scatter <- T
+
+# time vs depth:
+add_ts_to_time_vs_depth <- T
+
+# special
+plot_redfit <- F
+
+# map plot options
+proj <- "rectangular" #"rectangular"
+add_land <- T
+reorder_lon_from_0360_to_180180 <- T
+add_grid <- F
+
+# general script options
+squeeze_data <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
+nchar_max_foutname <- 255
+
+# <-- namelist.plot.r general part end --> # keep this line for plot_loop_echam.r
+
+## setting specific part
+
 # 1 setting
 if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "hist_echam6_echammon_awi-esm-1-1-lr"
@@ -731,86 +786,4 @@ if (F) { # awi-esm-1-1-lr hist
     ltys_samedims <- c(rep(2, t=4), rep(1, t=4))
 
 } # which settings
-# ==================================================
-
-# script options
-squeeze_data <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
-nchar_max_foutname <- 255
-
-# general plot options
-add_title <- T
-add_legend <- T
-p <- setDefaultPlotOptions(plot_type="png", 
-                           #plot_type="pdf",
-                           #family_png="Droid Sans Mono", 
-                           #family_pdf="Droid Sans Mono"
-                           )
-                           #family_pdf="CM Roman")
-alpha <- 0.2 # transparent: 0,1 (0 fully transparent)
-
-# time series plot options
-# woa13 seasons: "JFM" "AMJ" "JAS" "OND"
-# other seasons: "Jan-Dec" "DJF" "MAM" "JJA" "SON" "JJ"
-# months: "Feb" "Jul" "Jan"  "Jul"
-add_xgrid <- F
-add_ygrid <- F
-add_zeroline <- T
-add_unsmoothed <- F
-add_smoothed <- T
-add_sd <- F
-add_linear_trend <- F
-add_nonlinear_trend <- F
-scale_ts <- F
-ts_highlight_seasons <- list(bool=F, suffix="") # default
-if (F) {
-    ts_highlight_seasons <- list(bool=T,
-                                 seasons=c("DJF", "MAM", "JJA", "SON"),
-                                 #t="l",
-                                 t="p",
-                                 #cols=c("blue", "darkgreen", "red", "brown")
-                                 cols=rgb(t(col2rgb(c("blue", "darkgreen", "red", "brown"))/255), alpha=alpha),
-                                 ltys=c(1,2,3,4),
-                                 lwds=c(1,1,1,1),
-                                 #pchs=1:4,
-                                 pchs=c(16, 16, 16, 16),
-                                 suffix="_highlight_seasons") 
-}
-add_first_data_point <- F
-ts_plot_each_setting_in_subplot <- F
-add_data_right_yaxis_ts <- T
-add_cor_data_left_and_right_ts <- T
-add_data_right_yaxis_ts_mon <- F
-add_data_right_yaxis_ts_an <- T
-add_cor_data_left_and_right_ts_an <- T
-add_legend_right_yaxis <- F
-plot_scatter_s1_vs_s2 <- F
-#scatter_s1_vs_s1_varname <- "temp2"
-scatter_s1_vs_s1_varname <- "tsurf"
-#scatter_s1_vs_s1_varname <- "aprt"
-#scatter_s1_vs_s1_varname <- "wisoaprt_d"
-plot_scatter_v1_vs_v2 <- F
-varnamex <- varnamey <- "abc"
-if (F) { # TOA imbalance gregory et al. 2004 stuff 
-    varnamex <- "temp2"
-    varnamey <- "toa_imbalance"
-} else if (F) { # temp2 vs precipitation weighted temp2
-    varnamex <- "temp2"
-    varnamey <- "ptemp"
-} else if (F) {
-    varnamex <- "temp2"
-    varnamey <- "wisoaprt_d"
-}
-add_1to1_line_scatter <- T
-
-## time vs depth:
-add_ts_to_time_vs_depth <- T
-
-## special
-plot_redfit <- F
-
-## map plot options
-proj <- "rectangular" #"rectangular"
-add_land <- T
-reorder_lon_from_0360_to_180180 <- T
-add_grid <- F
 

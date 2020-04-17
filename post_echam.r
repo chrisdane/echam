@@ -1,22 +1,32 @@
-## R
+## r
 
 rm(list=ls()); graphics.off()
 
-# necessary libraries
-requirements <- scan("requirements.txt", what="char")
+# load necessary libraries
+requirements <- scan("requirements_post.txt", what="char", quiet=T)
 for (r in requirements) library(r, character.only=T)
 
-# load functions and user input
-pwd <- getwd()
-message("\n", paste0("Load ", pwd, "/helper_functions.r ..."))
-source(paste0(pwd, "/helper_functions.r"))
-message(paste0("Load ", pwd, "/mpiom/mpiom_functions.r ..."))
-source(paste0(pwd, "/mpiom/mpiom_functions.r"))
-message("Read ", pwd, "/namelist.post.r ...")
-source(paste0(pwd, "/namelist.post.r"))
+# load helper functions of this repo
+message("\nload helper_functions.r ...")
+source(helper_functions.r)
+
+# get host options
+host <- get_host()
+
+# todo: how to load functions from another repo without the subrepo hassle?
+if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
+    message("\nload ", host$homepath, "/functions/myfunctions.r ...")
+    source(paste0(host$homepath, "/functions/myfunctions.r"))
+    # post_echam.r needs the functions: ht(), make_posixlt_origin_function(), is.leap() 
+} else {
+    stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
+}
+
+# load user input namelist for this repo
+message("\nload and check namelist.post.r ...")
+source("namelist.post.r")
 
 # Check user input and set defaults
-message("\n", "Check user input ...")
 message("verbose = ", verbose)
 message("clean = ", clean)
 
@@ -127,7 +137,7 @@ if (!exists("areas_out")) {
 }
 # check if postpaths can be created/have writing rights
 if (!exists("postpaths")) {
-    postpaths <- paste(workpath, "post", models, modes, fvarnames, sep="/")
+    postpaths <- paste(host$workpath, "post", models, modes, fvarnames, sep="/")
 } else {
     postpaths <- normalizePath(postpaths)
 }
@@ -229,6 +239,12 @@ if (!exists("new_date_list")) {
 if (!exists("wiso_smow_files")) wiso_smow_files <- rep(NA, t=nsettings)
 if (!exists("wiso_code_tables")) wiso_code_tables <- rep(NA, t=nsettings)
 if (!exists("wiso_paramater_tables")) wiso_paramater_tables <- rep(NA, t=nsettings)
+
+# check mpiom stuff
+if (any(models == "mpiom1")) {
+    message("\nsome of provided `models` are \"mpiom1\" --> load mpiom/mpiom_functions.r ...")
+    source("mpiom/mpiom_functions.r")
+}
 
 # do for every model setting
 elapsed <- vector("list", l=nsettings)

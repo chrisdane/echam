@@ -2,14 +2,16 @@
 *
 
 # except
-!wiso/
-!mpiom/
 !jsbach/
+!mpiom/
+!wiso/
 !README.md
-!requirements.txt
-!post_echam.r
-!plot_echam.r
 !helper_functions.r
-!namelist.post.r
+!namelist.loop.plot.r
 !namelist.plot.r
-
+!namelist.post.r
+!plot_echam.r
+!plot_loop_echam.r
+!post_echam.r
+!requirements_plot.txt
+!requirements_post.txt

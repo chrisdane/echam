@@ -1,38 +1,5 @@
 # input for post.echam.r
 
-# host options
-machine <- system("hostname -f", intern=T)
-message(paste0("Run on ", machine, ":"))
-if (regexpr("ollie", machine) != -1 ||
-    regexpr("prod-", machine) != -1 ||
-    regexpr("fat-", machine) != -1) {
-    machine_tag <- "ollie"
-    homepath <- "~/scripts/r"
-    workpath <- "/work/ollie/cdanek"
-} else if (regexpr("hpc.dkrz", machine) != -1) {
-    machine <- substr(machine, 1, regexpr(".hpc.dkrz", machine) - 1)
-    machine_tag <- "mistral"
-    homepath <- "~/scripts/r"
-    #workpath <- "/work/ba0941/a270073"
-    workpath <- "/work/ab0246/a270073"
-} else if (regexpr("paleosrv", machine) != -1) {
-    machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
-    machine_tag <- "paleosrv"
-    homepath <- "~/scripts/r"
-    workpath <- "/isibhv/projects/paleo_work/cdanek"
-} else if (regexpr("stan", machine) != -1) {
-    machine <- substr(machine, 1, regexpr(".awi.de", machine) - 1)
-    machine_tag <- "stan"
-    homepath <- "~/scripts/r"
-    workpath <- "/ace/user/cdanek"
-} else {
-    message(paste0("   (unknown machine, use default paths)"))
-    homepath <- "~/scripts/r"
-    workpath <- homepath
-}
-message(paste0("   homepath = ", homepath))
-message(paste0("   workpath = ", workpath))
-
 verbose <- 1 # 0,1
 clean <- T # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""

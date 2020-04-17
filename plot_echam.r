@@ -1,4 +1,8 @@
-## R
+## r
+
+# load necessary libraries
+requirements <- scan("requirements_plot.txt", what="char", quiet=T)
+for (r in requirements) library(r, character.only=T)
 
 #options(warn = 2) # stop on warnings
 if (T) {
@@ -8,19 +12,25 @@ if (T) {
 }
 graphics.off()
 
-# load packages if not run with my default .Rprofile
-if (!interactive()) {
-    library(ncdf4)
-}
-
 # helper functions
-message("\n", "Read helper_functions.r ...")
+message("\nload helper_functions.r ...")
 source("helper_functions.r")
 
-# user input
-fnml <- "namelist.plot.r"
-message("\n", "Read ", fnml, " ...")
-source(fnml)
+# get host options
+host <- get_host()
+
+# todo: how to load functions from another repo without the subrepo hassle?
+if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
+    message("\nload ", host$homepath, "/functions/myfunctions.r ...")
+    source(paste0(host$homepath, "/functions/myfunctions.r"))
+    # plot_echam.r needs the functions: setDefaultPlotOptions()
+} else {
+    stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
+}
+
+# user input via namelist.plot.r
+message("\nload and check namelist.plot.r ...")
+source("namelist.plot.r")
 
 # check user input and defaults
 nsettings <- length(prefixes)
@@ -109,10 +119,10 @@ if (exists("cols_samedims")) {
 }
 if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
 if (!exists("postpaths")) { # default from post_echam.r
-    postpaths <- rep(paste0(workpath, "/post"), t=nsettings)
+    postpaths <- rep(paste0(host$workpath, "/post"), t=nsettings)
 }
 if (!exists("plotpath")) { # default from post_echam.r
-    plotpath <- paste0(workpath, "/plots/", paste(unique(models), collapse="_vs_"))
+    plotpath <- paste0(host$workpath, "/plots/", paste(unique(models), collapse="_vs_"))
 }
 base <- 10
 power <- 0 # default: 0 --> 10^0 = 1e0 = 1 --> nothing happens
@@ -134,7 +144,7 @@ message("\n", "start reading special data sets ...")
 
 # cmip6 co2 hist
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/pool/data/ECHAM6/input/r0007/greenhouse_historical.nc"
 }
 if (file.exists(f)) {
@@ -150,7 +160,7 @@ if (file.exists(f)) {
 
 # cmip6 co2 1pct
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/pool/data/ECHAM6/input/r0008/greenhouse_1pctCO2.nc"
 }
 if (file.exists(f)) {
@@ -173,7 +183,7 @@ message("set add_co2_4co2=T if you want to add to plot")
 
 # koehler et al. 2017 ghg by paul
 f <- ""
-if (machine_tag == "stan") {
+if (host$machine_tag == "stan") {
     f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Koehler_GHG_forcing_0.001ka_resolution.dat"
 }
 if (file.exists(f)) {
@@ -205,7 +215,7 @@ if (file.exists(f)) {
 
 # koehler et al. 2017 ghg original data
 f <- ""
-if (machine_tag == "stan") {
+if (host$machine_tag == "stan") {
     f <- "/ace/user/cdanek/data/koehler_etal_2017/datasets/CO2_stack_156K_spline_V2.tab"
     source("/ace/user/cdanek/data/koehler_etal_2017/read_koehler_etal_2017_function.r")
 }
@@ -240,7 +250,7 @@ if (file.exists(f)) {
 
 # cmip6 historical monthly total solar irradiance 
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_monthly_1850-2014.nc"
 }
 if (file.exists(f)) {
@@ -258,7 +268,7 @@ if (file.exists(f)) {
 
 # cmip6 historical annual total solar irradiance 
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_annual_1850-2014.nc"
 }
 if (file.exists(f)) {
@@ -276,7 +286,7 @@ if (file.exists(f)) {
 
 # hadcrut4 global monthly temperature anomaly wrt 1961-1990
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.monthly_ns_avg.txt.nc"
 }
 if (file.exists(f)) {
@@ -294,7 +304,7 @@ if (file.exists(f)) {
 
 # hadcrut4 global annual temperature anomaly wrt 1961-1990
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.annual_ns_avg.txt.nc"
 }
 if (file.exists(f)) {
@@ -315,7 +325,7 @@ if (file.exists(f)) {
 # marcott et al temperature anomaly wrt 1961-1990
 if (F) {
     f <- ""
-    if (machine_tag == "paleosrv") {
+    if (host$machine_tag == "paleosrv") {
         f <- "/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/Marcott.SM.database.S1.xlsx"
         source("/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/read_marcott_etal_2013_function.r")
     }
@@ -343,7 +353,7 @@ if (F) {
 
 # gistempv4 global annual temperature anomaly wrt 1951-1980
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/GISTEMPv4/GISTEMPv4_global_SAT_anomaly_wrt_1951-1980_GLB.Ts+dSST.csv.nc"
 }
 if (file.exists(f)) {
@@ -359,7 +369,7 @@ if (file.exists(f)) {
 
 # rapid moc
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/RAPID/moc_transports.nc"
     f_err <- "/work/ba0941/a270073/data/RAPID/moc_error.mat"
 }
@@ -397,7 +407,7 @@ if (file.exists(f)) {
 
 # monthly nsidc sea ice index northern hemisphere
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_monthly_v3.0.nc"
 }
 if (file.exists(f)) {
@@ -415,7 +425,7 @@ if (file.exists(f)) {
 
 # monthly nsidc sea ice index southern hemisphere
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_monthly_v3.0.nc"
 }
 if (file.exists(f)) {
@@ -433,7 +443,7 @@ if (file.exists(f)) {
 
 # annual nsidc sea ice index northern hemisphere
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_annual_v3.0.nc"
 }
 if (file.exists(f)) {
@@ -456,7 +466,7 @@ if (file.exists(f)) {
 
 # annual nsidc sea ice index southern hemisphere
 f <- ""
-if (machine_tag == "mistral") {
+if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_annual_v3.0.nc"
 }
 if (file.exists(f)) {
@@ -480,7 +490,7 @@ if (file.exists(f)) {
 # berger holocene accelerated orbital parameter from paul
 if (F) {
     f <- ""
-    if (machine_tag == "paleosrv") {
+    if (host$machine_tag == "paleosrv") {
         f <- "/scratch/simulation_database/incoming/Hol-Tx10/script/HOL_ORB_forcing_0.01ka_resolution_combined.dat"
     }
     if (file.exists(f)) {
@@ -520,9 +530,9 @@ if (F) {
 # berger holocene transient orbital parameter from paul
 if (F) {
     f <- ""
-    if (machine_tag == "stan") {
+    if (host$machine_tag == "stan") {
         f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
-    } else if (machine_tag == "paleosrv") {
+    } else if (host$machine_tag == "paleosrv") {
         f <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
     }
     if (file.exists(f)) {
@@ -562,7 +572,7 @@ if (F) {
 # berger orbital parameter for last 800ka
 if (F) {
     f <- ""
-    if (machine_tag == "stan") {
+    if (host$machine_tag == "stan") {
         f <- "/home/ace/cdanek/scripts/fortran/berger_1978/berger_1978_years_-800_to_0_kyears_before_1950.txt"
     }
     if (file.exists(f)) {
@@ -638,9 +648,9 @@ if (F) {
 # laskar orbital parameter for last 800ka
 if (F) {
     f <- ""
-    if (machine_tag == "stan") {
+    if (host$machine_tag == "stan") {
         f <- "/home/ace/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
-    } else if (machine_tag == "paleosrv") {
+    } else if (host$machine_tag == "paleosrv") {
         f <- "/home/csys/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
     }
     if (file.exists(f)) {
@@ -799,9 +809,9 @@ if (F) { # compare berger and laskar orb
 } # comapre berger and laskar orb
 
 # hanno meyer et al. PLOT excel sheet
-if (F) {
+if (T) {
     f <- ""
-    if (machine_tag == "paleosrv") {
+    if (host$machine_tag == "paleosrv") {
         f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
         source("/isibhv/projects/paleo_work/cdanek/data/meyer_etal/read_meyer_etal_function.r")
     }
@@ -809,18 +819,35 @@ if (F) {
         message("\ndisable here if you do not want to read hanno meyer et al. PLOT data from ", f)
         message("run read_meyer_etal_function() ...")
         #tmp <- read_meyer_etal_function(xlsx_file=f, verbose=F)
+        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Ladoga")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake")
-        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Two Jurts Lake")
-        tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Kotokel", verbose=F)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Two Jurts Lake", year_from=-7000, verbose=T)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Kotokel", verbose=F)
         meyer_etal <- list(data=tmp,
                            type="o", 
                            #col="#377EB8", # myblue
                            col="#1B9E77", # mygreen
                            lty=1, lwd=1, pch=1, cex=1)
-    }
+        if (F) { # plot meyer et al data
+            for (i in seq_along(meyer_etal$data)) {
+                plotname <- gsub(" ", "_", names(meyer_etal$data)[i])
+                plotname <- gsub("[[:punct:]]", "_", plotname)
+                plotname <- paste0(dirname(f), "/", plotname, ".png")
+                message("save ", plotname, " ...")
+                png(plotname, width=p$ts_width, height=p$ts_height, res=p$dpi)
+                plot(meyer_etal$data[[i]]$data$time, meyer_etal$data[[i]]$data$d18o_corr_perm,
+                     t="o", xaxt="n", yaxt="n",
+                     xlab="year from 1950", ylab="d18O diatom [permil]") 
+                title(paste0("sheet = \"", names(meyer_etal$data)[i], "\""))
+                axis.POSIXct(1, at=pretty(meyer_etal$data[[i]]$data$time, n=20))
+                axis(2, at=pretty(meyer_etal$data[[i]]$data$d18o_corr_perm, n=8), las=2)
+                dev.off()
+            } # for all excel sheets
+        } # if plot meyer et al data
+    } # if file.exists(f)
 } else {
     message("\nenable here if you want to read hanno meyer et al. PLOT data excel sheet")
 }
@@ -851,10 +878,10 @@ if (F) {
 # NOAA monthly station data
 if (F) {
     ghcdn_csv <- ""
-    if (machine_tag == "ollie") {
+    if (host$machine_tag == "ollie") {
         ghcdn_csv <- list.files("/work/ollie/cdanek/data/NOAA/station_data/GHCDN/monthly",
                                 pattern=glob2rx("*.csv"), full.names=T)
-    } else if (machine_tag == "paleosrv") {
+    } else if (host$machine_tag == "paleosrv") {
         ghcdn_csv <- list.files("/isibhv/projects/paleo_work/cdanek/data/NOAA/station_data/GHCDN/monthly",
                                 pattern=glob2rx("*.csv"), full.names=T)
     }
@@ -2284,7 +2311,7 @@ if (any(ntime_per_setting > 1)) {
     tlabsrt <- 0
 
     # time labels
-    tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with very small negative years, e.g. -800000 (800ka BP) 
+    tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
 
     # remove lables which are possibly out of limits due to pretty
     tlab_diff_secs <- as.numeric(diff(range(tlablt)), units="secs") # total time label distance
@@ -3095,11 +3122,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             message("\n", zname, " ", mode_p, " plot lon vs lat ...")
 
             # colorbar values
-            source(paste0(homepath, "/functions/image.plot.pre.r"))
+            source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(range(z, na.rm=T), verbose=F)
 
             # determine number of rows and columns
-            source(paste0(homepath, "/functions/image.plot.nxm.r"))
+            source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, dry=T)
 
             plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
@@ -3158,11 +3185,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         # colorbar values
                         zanom <- list(z[[2]] - z[[1]])
                         names(zanom) <- paste0(names_legend_p[2], " minus ", names_legend_p[1])
-                        source(paste0(homepath, "/functions/image.plot.pre.r"))
+                        source(paste0(host$homepath, "/functions/image.plot.pre.r"))
                         ip <- image.plot.pre(range(zanom, na.rm=T), verbose=F)
 
                         # determine number of rows and columns
-                        source(paste0(homepath, "/functions/image.plot.nxm.r"))
+                        source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
                         nm <- image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, dry=T)
 
                         plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
@@ -3267,7 +3294,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 neg_cols <- NULL
                 nlevels <- 11
             }
-            source(paste0(homepath, "/functions/image.plot.pre.r"))
+            source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim, nlevels=nlevels,
                                  palname="RdBu", 
                                  center_include=T, pos_cols=pos_cols, neg_cols=neg_cols)
@@ -3282,7 +3309,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             
             # determine number of rows and columns
-            source(paste0(homepath, "/functions/image.plot.nxm.r"))
+            source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             nm <- image.plot.nxm(x=d$time, y=d$lat, z=z
                                  , n=1, m=2 # special
                                  , ip=ip, dry=T)
@@ -3348,11 +3375,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (F && varname == "thetao") {
                 zlevels <- seq(ceiling(zlim[1]), min(10, zlim[2]), b=1)
             }
-            source(paste0(homepath, "/functions/image.plot.pre.r"))
+            source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim, zlevels=zlevels, verbose=T, axis.addzlims=T)
 
             # determine number of rows and columns
-            source(paste0(homepath, "/functions/image.plot.nxm.r"))
+            source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             nm <- image.plot.nxm(x=d$time, y=d$depth, z=z, ip=ip, dry=T)
 
             plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
@@ -3486,7 +3513,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     data_right <- list(data=vector("list", l=length(z)))
                     names(data_right$data) <- names_short
                     for (i in seq_along(data_right$data)) {
-                        inpath <- paste0(workpath, "/post/", models[i], "/", mode_p, "/siareas") 
+                        inpath <- paste0(host$workpath, "/post/", models[i], "/", mode_p, "/siareas") 
                         fname <- paste0(prefixes[i], "_", mode_p, 
                                         codesf[i], "_siareas_antarctic",
                                         "_", seasonsf[i], "_", fromsf[i], "-", tosf[i], 
@@ -3506,7 +3533,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     data_right <- list(data=vector("list", l=length(z)))
                     names(data_right$data) <- names_short
                     for (i in seq_along(data_right$data)) {
-                        inpath <- paste0(workpath, "/post/", models[i], "/",
+                        inpath <- paste0(host$workpath, "/post/", models[i], "/",
                                          #mode_p,
                                          "yearsum",
                                          #"seassum",
@@ -4294,7 +4321,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 dir.create(dirname(plotname), recursive=T, showWarnings=F)
                 
-                source(paste0(homepath, "/functions/plot.nxm.r"))
+                source(paste0(host$homepath, "/functions/plot.nxm.r"))
                 nm <- plot.nxm(d$time, y, dry=T) 
                 
                 message("plot ", plotname, " ...")
@@ -4486,7 +4513,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         data_right_mon <- list(data=vector("list", l=length(zmon)))
                         names(data_right_mon$data) <- names_short
                         for (i in seq_along(data_right_mon$data)) {
-                            inpath <- paste0(workpath, "/post/", models[i], "/", mode_p, "/wisoaprt_d") 
+                            inpath <- paste0(host$workpath, "/post/", models[i], "/", mode_p, "/wisoaprt_d") 
                             fname <- paste0(prefixes[i], "_", mode_p, 
                                             codesf[i], "_wisoaprt_d_sellevel_2_", areas[i],
                                             "_ymonmean_", fromsf[i], "-", tosf[i], 
@@ -4848,7 +4875,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     names(data_right_an$data) <- names_short_p
                     if (T && any(varname == c("temp2", "tsurf", "tsurfaprt", "ptemp"))) {
                         for (i in seq_along(data_right_an$data)) {
-                            inpath <- paste0(workpath, "/post/", models[i], "/",
+                            inpath <- paste0(host$workpath, "/post/", models[i], "/",
                                              "yearsum",
                                              "/wisoaprt_d_post") 
                             fname <- paste0(prefixes[i], "_", 
@@ -5270,11 +5297,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # add moc topp if varname is any moc
 
                 # colorbar values
-                source(paste0(homepath, "/functions/image.plot.pre.r"))
+                source(paste0(host$homepath, "/functions/image.plot.pre.r"))
                 ip <- image.plot.pre(range(zltm, na.rm=T), verbose=F)
 
                 # determine number of rows and columns
-                source(paste0(homepath, "/functions/image.plot.nxm.r"))
+                source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
                 nm <- image.plot.nxm(dltm$lat, dltm$depth, z=zltm, ip=ip, dry=T)
 
                 plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
