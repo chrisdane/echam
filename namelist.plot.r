@@ -35,7 +35,7 @@ add_smoothed <- T
 add_sd <- F
 add_linear_trend <- F
 add_nonlinear_trend <- F
-scale_ts <- T
+scale_ts <- F
 ts_highlight_seasons <- list(bool=F, suffix="") # default
 if (F) {
     ts_highlight_seasons <- list(bool=T,
@@ -232,7 +232,7 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (T) { # Hol-T with vs without orbital acceleration
+} else if (F) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-T", "cosmos-aso-wiso_echam5_Hol-Tx10")
     #prefixes <- c("cosmos-aso-wiso_echam5_Hol-T_main_mm", "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm")
     prefixes <- c("cosmos-aso-wiso_echam5_Hol-T_wiso_mm", "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm")
@@ -404,7 +404,7 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " last 30 years mean minus piControl")))))
     }
 
-} else if (F) { # Hol-7 vs Hol-T with vs without orbital acceleration
+} else if (T) { # Hol-7 vs Hol-T with vs without orbital acceleration
     prefixes <- c("cosmos-aso-wiso_echam5_Hol-7_wiso_mm", 
                   "cosmos-aso-wiso_echam5_Hol-T_wiso_mm", 
                   "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm") 
@@ -440,25 +440,26 @@ if (F) { # awi-esm-1-1-lr hist
     #new_origins <- c(-7110, -6996, -7000) # hol-7 last 110 years, hol-tx10, hol-t
     new_origins <- c(-7101, -6996, -7000) # hol-7 last 101 years, hol-tx10, hol-t
     #new_origins <- c(-6996, -6996, -6996) # ch, st, ch_w_st
-    #time_frequencies <- rep("monthly", t=3)
-    time_frequencies <- rep("annual", t=3)
+    time_frequencies <- rep("monthly", t=3)
+    #time_frequencies <- rep("annual", t=3)
     time_ref <- 1950 # any string, e.g. "BP", or number
     #seasonsf <- rep("annual", t=3)
     #seasonsf <- rep("yearsum", t=3)
-    seasonsf <- rep("seassum", t=3) # cdo default: date is middle of season
+    #seasonsf <- rep("seassum", t=3) # cdo default: date is middle of season
     #seasonsp <- rep("DJF", t=3)
     #seasonsp <- rep("MAM", t=3)
     #seasonsp <- rep("JJA", t=3)
-    seasonsp <- rep("SON", t=3)
+    #seasonsp <- rep("SON", t=3)
     #seasonsp <- rep("Jan", t=3)
     #seasonsp <- rep("Feb", t=3)
     #seasonsp <- rep("Mar", t=3)
     #seasonsp <- rep("Jun", t=3)
     #seasonsp <- rep("Sep", t=3)
+    varnames_in <- rep("aprt", t=3)
     #varnames_in <- rep("wisoaprt_d", t=3)
     #varnames_in <- rep("wisoaprt_d_post", t=3)
     #varnames_in <- rep("wisoevap_d_post", t=3)
-    varnames_in <- rep("wisope_d_post", t=3)
+    #varnames_in <- rep("wisope_d_post", t=3)
     #varnames_in <- rep("c204_ICEARE_GLO", t=3)
     #varnames_in <- rep("c64_ICEARE_ARC", t=3)
     #varnames_in <- rep("c144_ICEARE_SO", t=3)
@@ -466,24 +467,25 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("zmld", t=3)
     #varnames_in <- rep("amoc", t=3)
     #codes <- rep(101, t=3)
+    modes <- rep("select", t=3)
     #modes <- rep("fldmean", t=3)
     #modes <- rep("fldsum", t=3)
     #modes <- rep("yearsum", t=3)
-    modes <- rep("seassum", t=3)
+    #modes <- rep("seassum", t=3)
     #areas <- rep("moc26.5N", t=3)
     #levs <- rep("-0to-5420m", t=3)
     #areas <- rep("northern_hemisphere", t=3)
     #areas <- rep("southern_hemisphere", t=3)
     #areas <- rep("weddelmld", t=3)
-    #areas <- rep("ladoga_remapnn", t=3)
+    areas <- rep("ladoga_remapnn", t=3)
     #areas <- rep("shuchye_remapnn", t=3)
     #areas <- rep("levinson-lessing_remapnn", t=3)
     #areas <- rep("taymyr_remapnn", t=3)
     #areas <- rep("emanda_remapnn", t=3)
     #areas <- rep("elgygytgyn_remapnn", t=3)
     #areas <- rep("two-yurts_remapnn", t=3)
-    areas <- rep("kotokel_remapnn", t=3)
-    levs <- rep(2, t=3)
+    #areas <- rep("kotokel_remapnn", t=3)
+    #levs <- rep(2, t=3)
     #n_mas <- c(30, 3*30, 30)
     #n_mas <- c(90, 3*90, 90)
     #n_mas <- rep(120, t=3)

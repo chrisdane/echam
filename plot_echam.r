@@ -822,9 +822,9 @@ if (T) {
     if (file.exists(f)) {
         message("\ndisable here if you do not want to read hanno meyer et al. PLOT data from ", f)
         message("run read_meyer_etal_function() ...")
-        #tmp <- read_meyer_etal_function(xlsx_file=f, verbose=F)
-        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
-        #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Ladoga")
+        #tmp <- read_meyer_etal_function(xlsx_file=f)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
+        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake")
@@ -850,6 +850,7 @@ if (T) {
                 axis(2, at=pretty(meyer_etal$data[[i]]$data$d18o_corr_perm, n=8), las=2)
                 dev.off()
             } # for all excel sheets
+            #stop("asd")
         } # if plot meyer et al data
     } # if file.exists(f)
 } else {

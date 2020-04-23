@@ -8,7 +8,7 @@ for (r in requirements) library(r, character.only=T)
 
 # load helper functions of this repo
 message("\nload helper_functions.r ...")
-source(helper_functions.r)
+source("helper_functions.r")
 
 # get host options
 host <- get_host()
