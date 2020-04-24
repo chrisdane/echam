@@ -74,11 +74,11 @@ if (F) { # old hist
 
 } else if (T) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     # hol-7 on stan:
-    #datapaths <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-7/outdata/echam5"
+    datapaths <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-7/outdata/echam5"
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom"
     # hol-tx10 on paleosrv:
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output"
-    datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
+    #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5"
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
     # hol-t on stan:
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5"
@@ -88,8 +88,8 @@ if (F) { # old hist
     #models <- "mpiom1"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-7_echam5_wiso_mm_<YYYY><MM>.nc"
-    fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
+    fpatterns <- "Hol-7_echam5_wiso_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_link_<YYYY><MM>" # steffens links
     #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
@@ -106,8 +106,8 @@ if (F) { # old hist
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_main_mm"
-    #prefixes <- "cosmos-aso-wiso_echam5_Hol-7_wiso_mm"
-    prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_echam5_Hol-7_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_echam5_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_echam5_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_echam5_wiso" # steffens files
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-7_timeser_ext"
@@ -124,7 +124,7 @@ if (F) { # old hist
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-7_grb_code_15_remapcon2_r120x101" # sicomo
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-Tx10_grb_code_15_remapcon2_r120x101"
     #prefixes <- "cosmos-aso-wiso_mpiom1_Hol-T_grb_code_15_remapcon2_r120x101"
-    #fvarnames <- "temp2"
+    fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "wind10"
     #fvarnames <- "srad0"
@@ -133,7 +133,7 @@ if (F) { # old hist
     #fvarnames <- "aprt"
     #fvarnames <- "evap"
     #fvarnames <- "pe"
-    fvarnames <- "ws"
+    #fvarnames <- "ws"
     #fvarnames <- "albedo"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
@@ -247,13 +247,13 @@ if (F) { # old hist
     #season_names <- "annual"
     #season_names <- "yearsum"
     #season_names <- "seassum"
-    froms <- "0001" # Hol-Tx10 links: beginning counting from 1
+    #froms <- "0001" # Hol-Tx10 links: beginning counting from 1
     #froms <- "0004" # Hol-T links: beginning of chunk 1
     #froms <- "0100"
     #froms <- "0800" # Hol-7 raw: beginning
     #froms <- "0985" # Hol-T links: 6k mean beginning
     #froms <- "2791" # Hol-7 raw: beginning of most files
-    #froms <- "2800" # Hol-7 raw: beginning of wiso_mm
+    froms <- "2800" # Hol-7 raw: beginning of wiso_mm
     #froms <- "2901" # Hol-Tx10 raw: beginning
     #froms <- "3572"
     #froms <- "6971" # Hol-T links: pi mean beginning
@@ -262,13 +262,13 @@ if (F) { # old hist
     #tos <- "0129"
     #tos <- "0809"
     #tos <- "1014" # Hol-T links: 6k mean end
-    #tos <- "2900" # Hol-7 raw: end
+    tos <- "2900" # Hol-7 raw: end
     #tos <- "2910"
     #tos <- "3601" # Hol-Tx10 raw: end
     #tos <- "5903" # Hol-T links: end of chunk 2
     #tos <- "6821"
     #tos <- "7000" # Hol-T links: end of chunk 3
-    tos <- "7001" # Hol-Tx10 links: end counting from 1 
+    #tos <- "7001" # Hol-Tx10 links: end counting from 1 
     if (grepl("Hol-Tx10_", prefixes[1])) {
         if (modes[1] == "timmean") {
             if (froms[1] == "2901" && tos[1] == "3601") {
