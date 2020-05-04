@@ -4,10 +4,6 @@
 requirements <- scan("requirements_plot.txt", what="char", quiet=T)
 for (r in requirements) library(r, character.only=T)
 
-# load necessary libraries
-requirements <- scan("requirements_plot.txt", what="char")
-for (r in requirements) library(r, character.only=T)
-
 #options(warn = 2) # stop on warnings
 if (T) {
     rm(list=ls())
@@ -813,7 +809,7 @@ if (F) { # compare berger and laskar orb
 } # comapre berger and laskar orb
 
 # hanno meyer et al. PLOT excel sheet
-if (T) {
+if (F) {
     f <- ""
     if (host$machine_tag == "paleosrv") {
         f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
@@ -823,8 +819,8 @@ if (T) {
         message("\ndisable here if you do not want to read hanno meyer et al. PLOT data from ", f)
         message("run read_meyer_etal_function() ...")
         #tmp <- read_meyer_etal_function(xlsx_file=f)
-        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
-        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
+        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake")
@@ -1092,20 +1088,6 @@ for (i in 1:nsettings) {
         print(range(timein_lt))
         message("range(timein_lt$mon+1) = ", appendLF=F)
         print(range(timein_lt$mon+1))
-
-        # find out temoral interval (e.g. 1hr, 3hr, 6hr, day, week, month, year)
-        if (exists("time_frequencies")) {
-            if (length(time_frequencies) != nsettings || class(time_frequencies) != "character") {
-                stop("\n`time_frequencies` is set but not of class \"character\" and/or of length ", nsettings)
-            } else {
-                message("\nprovided `time_frequencies[", i, "]` = \"", time_frequencies[i], "\"")
-                dims[[i]]$time_frequency <- time_frequencies[i]
-            }
-        } else {
-            message("\n`time_frequencies` not set")
-            dims[[i]]$time_frequency <- ""
-        }
-        # finished getting tempral interval (e.g. 1hr, 3hr, 6hr, day, week, month, year)
 
         # shift times due to e.g. senseless spinup years
         # as.POSIXlt's 'year' starts at 1900
@@ -1659,7 +1641,7 @@ if (F) { # for testing
 
 
 # set variable specific things
-message("\n", "set variable specific things ...")
+message("\n", "set variable specific things (define axis labels for specific variables here) ...")
 for (i in 1:nsettings) {
     for (vi in 1:length(datas[[i]])) {
 
@@ -2046,12 +2028,12 @@ for (vi in 1:length(varnames_unique)) {
 }
 
 
-# apply moving average --> datasma
+# apply moving average in time --> datasma
 if (add_smoothed && 
     any(sapply(lapply(lapply(dims, names), "==", "time"), any)) &&
     #any(seasonsp == "Jan-Dec") && 
     !all(n_mas == 1)) {
-    message("\n", "`add_smoothed` = T --> apply moving averages ...")
+    message("\n", "some settings have \"time\" dimension and `add_smoothed` = T --> apply moving averages ...")
     datasma <- datas
     for (i in 1:nsettings) {
         message(i, "/", nsettings, ": ", names_short[i], " ...")
@@ -2061,8 +2043,8 @@ if (add_smoothed &&
                 dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                 timedimind <- which(dims_of_var == "time")
                 if (length(timedimind) == 1) {
-                    npy <- unclass(dims[[i]]$timelt)
-                    npy <- length(npy$year[which(npy$year == npy$year[1])])
+                    # use number of time points of middle year (avoid possible incomplete start/ending of time series)
+                    npy <- length(dims[[i]]$timelt$year[which(dims[[i]]$timelt$year == dims[[i]]$timelt$year[length(dims[[i]]$time)/2])])
                     apply_dims <- 1:length(dim(datas[[i]][[vi]]))
                     message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi], 
                             ": n_mas[", i, "]: ", n_mas[i], " (ntime = ", length(dims[[i]]$time), 
@@ -2100,136 +2082,124 @@ if (!exists("datasma")) {
 
 
 # calculate monthly and annual means
-if (any(sapply(lapply(lapply(dims, names), "==", "time"), any)) 
-    && any(seasonsp == "Jan-Dec") 
-    && any(sapply(dims, "[", "time_frequency") == "monthly")) {
+if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) { 
 
+    message("\nsome settings have \"time\" dimension --> calc monthly climatology and annual means ...")
     datasmon <- datasan <- datas
     monlim <- anlim <- NA
     
     for (i in 1:nsettings) {
-        if (i == 1) {
-            message("\n", "`dims[[", i, "]]$time_frequency == \"monthly\" ",
-                    "--> calc monthly climatology and annual means of setting")
-        }
         message(i, "/", nsettings, ": ", names_short[i], " ...")
-        if (dims[[i]]$time_frequency == "monthly" && seasonsp[i] == "Jan-Dec") {    
-            for (vi in 1:length(datas[[i]])) { # for all vars per setting
-                message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi], " ...")
-                if (any(attributes(datas[[i]][[vi]])$dims == "time")) { # if var has time dim
-                    
-                    # monthly climatology 
-                    months <- unclass(dims[[i]]$timelt)$mon + 1
-                    months_unique <- unique(months)
-                    dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
-                    timedimind <- which(dims_of_var == "time")
-                    datasmon_dims <- dim(datas[[i]][[vi]])
-                    datasmon_dims[timedimind] <- length(months_unique)
-                    datasmon_dims_ntime1 <- datasmon_dims
-                    datasmon_dims_ntime1[timedimind] <- 1
-                    tmp <- array(NA, dim=datasmon_dims)
-                    apply_dims <- 1:length(datasmon_dims)
-                    if (length(apply_dims) == 1) {
-                        apply_dims <- 1
+        for (vi in 1:length(datas[[i]])) { # for all vars per setting
+            message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi], " ...")
+            if (any(attributes(datas[[i]][[vi]])$dims == "time")) { # if var has time dim
+                
+                # monthly climatology 
+                months <- unclass(dims[[i]]$timelt)$mon + 1
+                months_unique <- sort(unique(months)) # sort here for plot later
+                dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
+                timedimind <- which(dims_of_var == "time")
+                datasmon_dims <- dim(datas[[i]][[vi]])
+                datasmon_dims[timedimind] <- length(months_unique)
+                datasmon_dims_ntime1 <- datasmon_dims
+                datasmon_dims_ntime1[timedimind] <- 1
+                tmp <- array(NA, dim=datasmon_dims)
+                apply_dims <- 1:length(datasmon_dims)
+                if (length(apply_dims) == 1) {
+                    apply_dims <- 1
+                } else {
+                    apply_dims <- apply_dims[-timedimind]
+                }
+                message("mon ", appendLF=F)
+                for (mi in 1:length(months_unique)) {
+                    time_inds <- which(months == months_unique[mi])
+                    message(months_unique[mi], " (n=", length(time_inds), ") ", appendLF=F)
+                    if (mi == length(months_unique)) message()
+                    indslhs <- indsrhs <- rep(",", t=length(dims_of_var))
+                    indslhs[timedimind] <- mi
+                    indsrhs[timedimind] <- paste0("time_inds")
+                    if (length(datasmon_dims) == 1) { # var has only time dim
+                        cmd1 <- paste0("tmp2 <- mean(datas[[", i, "]][[", vi, "]][",
+                                       paste(indsrhs, collapse=""), "], na.rm=T)")
                     } else {
-                        apply_dims <- apply_dims[-timedimind]
+                        cmd1 <- paste0("tmp2 <- apply(datas[[", i, "]][[", vi, "]][", 
+                                      paste(indsrhs, collapse=""), "]",
+                                      ", c(", paste(apply_dims, collapse=","), ")", 
+                                      ", mean, na.rm=T)")
                     }
-                    message("mon ", appendLF=F)
-                    for (mi in 1:length(months_unique)) {
-                        time_inds <- which(months == months_unique[mi])
-                        message(months_unique[mi], " (n=", length(time_inds), ") ", appendLF=F)
-                        if (mi == length(months_unique)) message()
-                        indslhs <- indsrhs <- rep(",", t=length(dims_of_var))
-                        indslhs[timedimind] <- mi
-                        indsrhs[timedimind] <- paste0("time_inds")
-                        if (length(datasmon_dims) == 1) { # var has only time dim
-                            cmd1 <- paste0("tmp2 <- mean(datas[[", i, "]][[", vi, "]][",
-                                           paste(indsrhs, collapse=""), "], na.rm=T)")
-                        } else {
-                            cmd1 <- paste0("tmp2 <- apply(datas[[", i, "]][[", vi, "]][", 
-                                          paste(indsrhs, collapse=""), "]",
-                                          ", c(", paste(apply_dims, collapse=","), ")", 
-                                          ", mean, na.rm=T)")
-                        }
-                        #message(cmd1)
-                        eval(parse(text=cmd1))
-                        dim(tmp2) <- datasmon_dims_ntime1
-                        cmd2 <- paste0("tmp[", paste(indslhs, collapse=""), "] <- tmp2")
-                        #message(cmd2)
-                        eval(parse(text=cmd2))
-                    } # for all unique months
-                    datasmon[[i]][[vi]] <- tmp
-                    attributes(datasmon[[i]][[vi]])$dim <- datasmon_dims
-                    attributes(datasmon[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims
-                    attributes(datasmon[[i]][[vi]])$dims[timedimind] <- "month"
+                    #message(cmd1)
+                    eval(parse(text=cmd1))
+                    dim(tmp2) <- datasmon_dims_ntime1
+                    cmd2 <- paste0("tmp[", paste(indslhs, collapse=""), "] <- tmp2")
+                    #message(cmd2)
+                    eval(parse(text=cmd2))
+                } # for all unique months
+                datasmon[[i]][[vi]] <- tmp
+                attributes(datasmon[[i]][[vi]])$dim <- datasmon_dims
+                attributes(datasmon[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims
+                attributes(datasmon[[i]][[vi]])$dims[timedimind] <- "month"
 
-                    # annual means
-                    years <- unclass(dims[[i]]$timelt)$year + 1900
-                    years_unique <- unique(years)
-                    datasan_dims <- dim(datas[[i]][[vi]])
-                    datasan_dims[timedimind] <- length(years_unique)
-                    datasan_dims_ntime1 <- datasan_dims
-                    datasan_dims_ntime1[timedimind] <- 1
-                    tmp <- array(NA, dim=datasan_dims)
-                    apply_dims <- 1:length(datasan_dims)
-                    if (length(apply_dims) == 1) {
-                        apply_dims <- 1
+                # annual means
+                years <- unclass(dims[[i]]$timelt)$year + 1900
+                years_unique <- unique(years)
+                datasan_dims <- dim(datas[[i]][[vi]])
+                datasan_dims[timedimind] <- length(years_unique)
+                datasan_dims_ntime1 <- datasan_dims
+                datasan_dims_ntime1[timedimind] <- 1
+                tmp <- array(NA, dim=datasan_dims)
+                apply_dims <- 1:length(datasan_dims)
+                if (length(apply_dims) == 1) {
+                    apply_dims <- 1
+                } else {
+                    apply_dims <- apply_dims[-timedimind]
+                }
+                message("year ", appendLF=F)
+                for (yi in 1:length(years_unique)) {
+                    time_inds <- which(years == years_unique[yi])
+                    if (yi < 14 ||
+                        yi >= (length(years_unique) - 14)) {
+                        message(years_unique[yi], " (n=", length(time_inds), ") ", appendLF=F)
+                        if (yi == 13) message("... ", appendLF=F)
+                        if (yi == length(years_unique)) message()
+                    }
+                    indslhs <- indsrhs <- rep(",", t=length(dims_of_var))
+                    indslhs[timedimind] <- yi
+                    indsrhs[timedimind] <- paste0("time_inds")
+                    if (length(datasan_dims) == 1) { # var has only time dim
+                        cmd1 <- paste0("tmp2 <- mean(datas[[", i, "]][[", vi, "]][",
+                                       paste(indsrhs, collapse=""), "], na.rm=T)")
                     } else {
-                        apply_dims <- apply_dims[-timedimind]
+                        cmd1 <- paste0("tmp2 <- apply(datas[[", i, "]][[", vi, "]][", 
+                                      paste(indsrhs, collapse=""), "]",
+                                      ", c(", paste(apply_dims, collapse=","), ")", 
+                                      ", mean, na.rm=T)")
                     }
-                    message("year ", appendLF=F)
-                    for (yi in 1:length(years_unique)) {
-                        time_inds <- which(years == years_unique[yi])
-                        if (yi < 14 ||
-                            yi >= (length(years_unique) - 14)) {
-                            message(years_unique[yi], " (n=", length(time_inds), ") ", appendLF=F)
-                            if (yi == 13) message("... ", appendLF=F)
-                            if (yi == length(years_unique)) message()
-                        }
-                        indslhs <- indsrhs <- rep(",", t=length(dims_of_var))
-                        indslhs[timedimind] <- yi
-                        indsrhs[timedimind] <- paste0("time_inds")
-                        if (length(datasan_dims) == 1) { # var has only time dim
-                            cmd1 <- paste0("tmp2 <- mean(datas[[", i, "]][[", vi, "]][",
-                                           paste(indsrhs, collapse=""), "], na.rm=T)")
-                        } else {
-                            cmd1 <- paste0("tmp2 <- apply(datas[[", i, "]][[", vi, "]][", 
-                                          paste(indsrhs, collapse=""), "]",
-                                          ", c(", paste(apply_dims, collapse=","), ")", 
-                                          ", mean, na.rm=T)")
-                        }
-                        #message(cmd1)
-                        eval(parse(text=cmd1))
-                        dim(tmp2) <- datasan_dims_ntime1
-                        cmd2 <- paste0("tmp[", paste(indslhs, collapse=""), "] <- tmp2")
-                        #message(cmd2)
-                        eval(parse(text=cmd2))
-                    } # for all unique months
-                    datasan[[i]][[vi]] <- tmp
-                    attributes(datasan[[i]][[vi]])$dim <- datasan_dims
-                    attributes(datasan[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims
-                    attributes(datasan[[i]][[vi]])$dims[timedimind] <- "year"
+                    #message(cmd1)
+                    eval(parse(text=cmd1))
+                    dim(tmp2) <- datasan_dims_ntime1
+                    cmd2 <- paste0("tmp[", paste(indslhs, collapse=""), "] <- tmp2")
+                    #message(cmd2)
+                    eval(parse(text=cmd2))
+                } # for all unique months
+                datasan[[i]][[vi]] <- tmp
+                attributes(datasan[[i]][[vi]])$dim <- datasan_dims
+                attributes(datasan[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims
+                attributes(datasan[[i]][[vi]])$dims[timedimind] <- "year"
 
-                } else { # variable has no time dim
-                    #message("variable has no \"time\" dim ...")
-                    datasmon[[i]][[vi]] <- NA
-                    datasan[[i]][[vi]] <- NA
-                } # if variable has time dim or not
+            } else { # variable has no time dim
+                #message("variable has no \"time\" dim ...")
+                datasmon[[i]][[vi]] <- NA
+                datasan[[i]][[vi]] <- NA
+            } # if variable has time dim or not
 
-            } # for vi nvars
-        
-            dims[[i]]$month <- months_unique
-            dims[[i]]$monmean_range <- paste0(fromsp[i], "-", tosp[i])
-            monlim <- range(monlim, dims[[i]]$month, na.rm=T)
-            dims[[i]]$year <- years_unique
-            dims[[i]]$yearmean_range <- dims[[i]]$monmean_range
-            anlim <- range(anlim, dims[[i]]$year, na.rm=T)
-
-        } else {
-
-            message(" --> no monthly output or seasonp[", i, "] is not \"Jan-Dec\"")
-        
-        } # if input data is monthly 
+        } # for vi nvars
+    
+        dims[[i]]$month <- months_unique
+        dims[[i]]$monmean_range <- paste0(fromsp[i], "-", tosp[i])
+        monlim <- range(monlim, dims[[i]]$month, na.rm=T)
+        dims[[i]]$year <- years_unique
+        dims[[i]]$yearmean_range <- dims[[i]]$monmean_range
+        anlim <- range(anlim, dims[[i]]$year, na.rm=T)
 
     } # for i nsettings
     
@@ -2249,7 +2219,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))
     anat <- pretty(anlim, n=10)
     anlab <- anat
 
-} # if any(seasonsp == "Jan-Dec") && any(attributes(datas[[i]][[vi]])$dims == "time")
+} # if any setting has time dim
 # finished calculating monthly means if applicable
 
 
@@ -2257,7 +2227,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
     datasltm <- datas
     for (i in 1:nsettings) {
-        if (i == 1) message("\n", "calc temporal mean of setting")
+        if (i == 1) message("\n", "some settings have \"time\" dimension --> calc temporal means ...")
         ltm_range <- paste0(dims[[i]]$time[1], " to ", dims[[i]]$time[length(dims[[i]]$time)])
         message(i, "/", nsettings, ": ", names_short[i], " (", ltm_range, ") ...")
         for (vi in 1:length(datas[[i]])) {
@@ -2306,7 +2276,7 @@ if (exists("datasltm")) {
 ## get time axis values
 ntime_per_setting <- sapply(sapply(dims, "[", "time"), length)
 if (any(ntime_per_setting > 1)) {
-    message("\n", "find good time axis labels ...")
+    message("\n", "some settings have \"time\" dims and some are longer than 1 --> find good time axis labels ...")
 
     # POSIX will be converted to numeric by plot(), so use these numeric values as limits
     tlim <- range(lapply(sapply(dims, "[", "time"), as.numeric)) # seconds by default 
@@ -2376,7 +2346,7 @@ if (any(ntime_per_setting > 1)) {
 # 2nd: plot all vars with same dims together (datas, datasma, datasmon, datasltm)
 # 3rd: <define>
 plot_groups <- c("samevars", "samedims")
-message("\nprepare plotting ...")
+message("\n********************* prepare plotting *********************")
 
 if (F) { # test
     datas_save <- datas
@@ -3665,6 +3635,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if add nsidc
                 message("\n", "ylim_right=", appendLF=F)
                 dput(ylim_right)
+                ylim_right[is.infinite(ylim_right)] <- 0
                 if (!exists("yat_right")) {
                     message("use automatic data right yaxis labels ...")
                     yat_right <- pretty(ylim_right, n=8)
@@ -3703,6 +3674,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else if (!add_unsmoothed && add_smoothed) {
                 ylim <- range(ylimma)
             }
+            ylim[is.infinite(ylim)] <- 0
 
             # ylim of obs, etc.
             if (F && varname == "temp2") {
@@ -3733,7 +3705,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("ylim after: ", ylim[1], ", ", ylim[2])
             }
 
-            if (any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("meyer_etal")) {
+            if (#any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && 
+                exists("meyer_etal")) {
                 add_meyer_etal_xlsx <- T
                 message("\nadd meyer et al. xlsx d18o data ...")
                 if (all(grepl("ladoga", areas))) {
@@ -4486,6 +4459,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim_mon <- range(zmon, na.rm=T)
                 message("\n", "ylim_mon=", appendLF=F)
                 dput(ylim_mon)
+                ylim_mon[is.infinite(ylim_mon)] <- 0
                 
                 # add obs
                 if (T && exists("noaa_ghcdn")) {
@@ -4563,6 +4537,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     
                     message("\n", "ylim_right_mon=", appendLF=F)
                     dput(ylim_right_mon)
+                    ylim_right_mon[is.infinite(ylim_right_mon)] <- 0
+
                     if (!exists("yat_right_mon")) {
                         message("use automatic data right yaxis labels ...")
                         yat_right_mon <- pretty(ylim_right_mon, n=10)
@@ -4848,6 +4824,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim_an <- range(zan, na.rm=T)
                 message("\n", "ylim_an=", appendLF=F)
                 dput(ylim_an)
+                ylim_an[is.infinite(ylim_an)] <- 0
             
                 # add obs to ylim
                 if (T && exists("noaa_ghcdn")) {
@@ -4955,6 +4932,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     
                     message("ylim_right_an=", appendLF=F)
                     dput(ylim_right_an)
+                    ylim_right_an[is.infinite(ylim_right_an)] <- 0
                     if (!exists("yat_right_an")) {
                         message("use automatic data right yaxis labels ...")
                         yat_right_an <- pretty(ylim_right_an, n=10)
@@ -5384,7 +5362,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         scatter_set1_vs_set2[[1]] <- scatter_set1_vs_set2[[1]][inds1]
                         scatter_set1_vs_set2[[2]] <- scatter_set1_vs_set2[[2]][inds2]
 
-                        if (all(sapply(dims, "[[", "time_frequency") == "monthly")) {
+                        if (T) { # monthly
                            
                             # color data by time or seasons
                             if (F) { # by time
@@ -5528,7 +5506,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 }
                             }
 
-                        } # if dims[[i]]$time_frequency == "monthly"
+                        } # if T monthly
 
                     } else {
                         message(" but `dim_names_set1_vs_set2` = \"", 
@@ -5908,7 +5886,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                             for (i in seq_along(varx)) {
 
-                                if (dims[[i]]$time_frequency == "monthly") {
+                                if (T) { # monthly
                                     
                                     # color data by time or seasons
                                     if (F) { # by time
@@ -6051,7 +6029,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                         }
                                     }
 
-                                } # if dims[[i]]$time_frequency == "monthly"
+                                } # T monthly
 
                             } # for i nsettings
 

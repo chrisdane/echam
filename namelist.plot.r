@@ -449,13 +449,16 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- rep("DJF", t=3)
     #seasonsp <- rep("MAM", t=3)
     #seasonsp <- rep("JJA", t=3)
-    #seasonsp <- rep("SON", t=3)
+    seasonsp <- rep("SON", t=3)
     #seasonsp <- rep("Jan", t=3)
     #seasonsp <- rep("Feb", t=3)
     #seasonsp <- rep("Mar", t=3)
     #seasonsp <- rep("Jun", t=3)
     #seasonsp <- rep("Sep", t=3)
-    varnames_in <- rep("aprt", t=3)
+    #varnames_in <- rep("aprt", t=3)
+    #varnames_in <- rep("evap", t=3)
+    #varnames_in <- rep("pe", t=3)
+    varnames_in <- rep("ws", t=3)
     #varnames_in <- rep("wisoaprt_d", t=3)
     #varnames_in <- rep("wisoaprt_d_post", t=3)
     #varnames_in <- rep("wisoevap_d_post", t=3)
@@ -489,10 +492,9 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- c(30, 3*30, 30)
     #n_mas <- c(90, 3*90, 90)
     #n_mas <- rep(120, t=3)
-    n_mas <- c(90, 3*150, 150) # seasons
-    #n_mas <- c(120, 3*120, 120)
-    #n_mas <- c(30, 150, 50)
-    #n_mas <- c(30, 300, 100)
+    n_mas <- c(90, 3*150, 150) # compare seasons
+    #n_mas <- c(1000, 3*500, 500) # Hol-7 mean
+    #n_mas <- c(1000, 6*500, 3*500) # Hol-7 mean
     #n_mas <- c(1200, 12000, 1200)
     #fromsp <- c(-7010, -6996, -7000) # zoom: 7k control/7k transient transition 
     #tosp <- c(-7001, -6980, -6980)
