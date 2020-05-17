@@ -1,16 +1,17 @@
 ## r
 
-# load necessary libraries
-requirements <- scan("requirements_plot.txt", what="char", quiet=T)
-for (r in requirements) library(r, character.only=T)
-
 #options(warn = 2) # stop on warnings
-if (T) {
+
+if (F) {
     rm(list=ls())
     fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
     # `[` <- fctbackup 
 }
 graphics.off()
+
+# load libraries necessary for plot_echam.r
+requirements <- scan("requirements_plot.txt", what="char", quiet=T)
+for (r in requirements) library(r, character.only=T)
 
 # helper functions
 message("\nload helper_functions.r ...")
@@ -126,7 +127,7 @@ if (!exists("plotpath")) { # default from post_echam.r
 }
 base <- 10
 power <- 0 # default: 0 --> 10^0 = 1e0 = 1 --> nothing happens
-cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha)
+cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha_rgb)
 if (F) {
     message("\nuse transparent cols ...")
     cols_save <- cols
@@ -1152,7 +1153,7 @@ for (i in 1:nsettings) {
                     # cut from time dimension
                     dims[[i]]$time <- dims[[i]]$time[time_inds]
                 } else {
-                    message(" --> use complete time dimension of ", 
+                    message("--> use complete time dimension of ", 
                             length(dims[[i]]$time), " time points ...")
                 }
             }
@@ -2073,9 +2074,8 @@ if (add_smoothed &&
     } # for i nsettings
 } # if add_smoothed && any(attributes(datas[[i]][[vi]])$dims == "time") && !all(n_mas == 1)
 if (!exists("datasma")) {
-    message("\n", "`datasma` does not exist. --> set `add_smoothed` = T ",
-            "and/or `n_mas` not equal 1\n",
-            "in order to apply moving averages ...")
+    message("\n", "`datasma` does not exist\n--> set `add_smoothed` = T ",
+            "and/or `n_mas` not equal 1 in order to apply moving averages ...")
     add_smoothed <- F
 }
 # finished applying moving average
@@ -2085,7 +2085,7 @@ if (!exists("datasma")) {
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) { 
 
     message("\nsome settings have \"time\" dimension --> calc monthly climatology and annual means ...")
-    datasmon <- datasan <- datas
+    datasmon <- datasan <- datas # lazy declaration
     monlim <- anlim <- NA
     
     for (i in 1:nsettings) {
@@ -2095,7 +2095,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
             if (any(attributes(datas[[i]][[vi]])$dims == "time")) { # if var has time dim
                 
                 # monthly climatology 
-                months <- unclass(dims[[i]]$timelt)$mon + 1
+                months <- dims[[i]]$timelt$mon + 1
                 months_unique <- sort(unique(months)) # sort here for plot later
                 dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                 timedimind <- which(dims_of_var == "time")
@@ -2110,37 +2110,47 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                 } else {
                     apply_dims <- apply_dims[-timedimind]
                 }
-                message("mon ", appendLF=F)
-                for (mi in 1:length(months_unique)) {
-                    time_inds <- which(months == months_unique[mi])
-                    message(months_unique[mi], " (n=", length(time_inds), ") ", appendLF=F)
-                    if (mi == length(months_unique)) message()
-                    indslhs <- indsrhs <- rep(",", t=length(dims_of_var))
-                    indslhs[timedimind] <- mi
-                    indsrhs[timedimind] <- paste0("time_inds")
-                    if (length(datasmon_dims) == 1) { # var has only time dim
-                        cmd1 <- paste0("tmp2 <- mean(datas[[", i, "]][[", vi, "]][",
-                                       paste(indsrhs, collapse=""), "], na.rm=T)")
+                if (length(months_unique) == 1 || # whole time series has only one month --> var vs months has no sense
+                    length(months_unique) == length(months)) { # or every months occurs only once --> `datasmon` would yield the same as `datas`
+                    if (length(months_unique) == 1) {
+                        message("   whole time series consists of only 1 month: ", months_unique, " --> do not calc monthly climatology")
                     } else {
-                        cmd1 <- paste0("tmp2 <- apply(datas[[", i, "]][[", vi, "]][", 
-                                      paste(indsrhs, collapse=""), "]",
-                                      ", c(", paste(apply_dims, collapse=","), ")", 
-                                      ", mean, na.rm=T)")
+                        message("   every month of the time series occurs only once --> do not calc monthly climatology")
                     }
-                    #message(cmd1)
-                    eval(parse(text=cmd1))
-                    dim(tmp2) <- datasmon_dims_ntime1
-                    cmd2 <- paste0("tmp[", paste(indslhs, collapse=""), "] <- tmp2")
-                    #message(cmd2)
-                    eval(parse(text=cmd2))
-                } # for all unique months
-                datasmon[[i]][[vi]] <- tmp
-                attributes(datasmon[[i]][[vi]])$dim <- datasmon_dims
-                attributes(datasmon[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims
-                attributes(datasmon[[i]][[vi]])$dims[timedimind] <- "month"
+                    datasmon[[i]][[vi]] <- NA
+                } else {
+                    message("mon ", appendLF=F)
+                    for (mi in 1:length(months_unique)) {
+                        time_inds <- which(months == months_unique[mi])
+                        message(months_unique[mi], " (n=", length(time_inds), ") ", appendLF=F)
+                        if (mi == length(months_unique)) message()
+                        indslhs <- indsrhs <- rep(",", t=length(dims_of_var))
+                        indslhs[timedimind] <- mi
+                        indsrhs[timedimind] <- paste0("time_inds")
+                        if (length(datasmon_dims) == 1) { # var has only time dim
+                            cmd1 <- paste0("tmp2 <- mean(datas[[", i, "]][[", vi, "]][",
+                                           paste(indsrhs, collapse=""), "], na.rm=T)")
+                        } else {
+                            cmd1 <- paste0("tmp2 <- apply(datas[[", i, "]][[", vi, "]][", 
+                                          paste(indsrhs, collapse=""), "]",
+                                          ", c(", paste(apply_dims, collapse=","), ")", 
+                                          ", mean, na.rm=T)")
+                        }
+                        #message(cmd1)
+                        eval(parse(text=cmd1))
+                        dim(tmp2) <- datasmon_dims_ntime1
+                        cmd2 <- paste0("tmp[", paste(indslhs, collapse=""), "] <- tmp2")
+                        #message(cmd2)
+                        eval(parse(text=cmd2))
+                    } # for all unique months
+                    datasmon[[i]][[vi]] <- tmp
+                    attributes(datasmon[[i]][[vi]])$dim <- datasmon_dims
+                    attributes(datasmon[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims
+                    attributes(datasmon[[i]][[vi]])$dims[timedimind] <- "month"
+                } # if time series has only one month or more
 
                 # annual means
-                years <- unclass(dims[[i]]$timelt)$year + 1900
+                years <- dims[[i]]$timelt$year + 1900
                 years_unique <- unique(years)
                 datasan_dims <- dim(datas[[i]][[vi]])
                 datasan_dims[timedimind] <- length(years_unique)
@@ -2153,38 +2163,48 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                 } else {
                     apply_dims <- apply_dims[-timedimind]
                 }
-                message("year ", appendLF=F)
-                for (yi in 1:length(years_unique)) {
-                    time_inds <- which(years == years_unique[yi])
-                    if (yi < 14 ||
-                        yi >= (length(years_unique) - 14)) {
-                        message(years_unique[yi], " (n=", length(time_inds), ") ", appendLF=F)
-                        if (yi == 13) message("... ", appendLF=F)
-                        if (yi == length(years_unique)) message()
-                    }
-                    indslhs <- indsrhs <- rep(",", t=length(dims_of_var))
-                    indslhs[timedimind] <- yi
-                    indsrhs[timedimind] <- paste0("time_inds")
-                    if (length(datasan_dims) == 1) { # var has only time dim
-                        cmd1 <- paste0("tmp2 <- mean(datas[[", i, "]][[", vi, "]][",
-                                       paste(indsrhs, collapse=""), "], na.rm=T)")
+                if (length(years_unique) == 1 || # whole time series has only one year --> var vs years has no sense
+                    length(years_unique) == length(years)) {  # or every year occurs only once --> `datasan` would yield the same as `datas`
+                    if (length(years_unique) == 1) {
+                        message("   whole time series consists of only 1 year: ", years_unique, " --> do not calc annual means")
                     } else {
-                        cmd1 <- paste0("tmp2 <- apply(datas[[", i, "]][[", vi, "]][", 
-                                      paste(indsrhs, collapse=""), "]",
-                                      ", c(", paste(apply_dims, collapse=","), ")", 
-                                      ", mean, na.rm=T)")
+                        message("   every year of the time series occurs only once --> do not calc annual means")
                     }
-                    #message(cmd1)
-                    eval(parse(text=cmd1))
-                    dim(tmp2) <- datasan_dims_ntime1
-                    cmd2 <- paste0("tmp[", paste(indslhs, collapse=""), "] <- tmp2")
-                    #message(cmd2)
-                    eval(parse(text=cmd2))
-                } # for all unique months
-                datasan[[i]][[vi]] <- tmp
-                attributes(datasan[[i]][[vi]])$dim <- datasan_dims
-                attributes(datasan[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims
-                attributes(datasan[[i]][[vi]])$dims[timedimind] <- "year"
+                    datasan[[i]][[vi]] <- NA
+                } else {
+                    message("year ", appendLF=F)
+                    for (yi in 1:length(years_unique)) {
+                        time_inds <- which(years == years_unique[yi])
+                        if (yi < 14 ||
+                            yi >= (length(years_unique) - 14)) {
+                            message(years_unique[yi], " (n=", length(time_inds), ") ", appendLF=F)
+                            if (yi == 13) message("... ", appendLF=F)
+                            if (yi == length(years_unique)) message()
+                        }
+                        indslhs <- indsrhs <- rep(",", t=length(dims_of_var))
+                        indslhs[timedimind] <- yi
+                        indsrhs[timedimind] <- paste0("time_inds")
+                        if (length(datasan_dims) == 1) { # var has only time dim
+                            cmd1 <- paste0("tmp2 <- mean(datas[[", i, "]][[", vi, "]][",
+                                           paste(indsrhs, collapse=""), "], na.rm=T)")
+                        } else {
+                            cmd1 <- paste0("tmp2 <- apply(datas[[", i, "]][[", vi, "]][", 
+                                          paste(indsrhs, collapse=""), "]",
+                                          ", c(", paste(apply_dims, collapse=","), ")", 
+                                          ", mean, na.rm=T)")
+                        }
+                        #message(cmd1)
+                        eval(parse(text=cmd1))
+                        dim(tmp2) <- datasan_dims_ntime1
+                        cmd2 <- paste0("tmp[", paste(indslhs, collapse=""), "] <- tmp2")
+                        #message(cmd2)
+                        eval(parse(text=cmd2))
+                    } # for all unique months
+                    datasan[[i]][[vi]] <- tmp
+                    attributes(datasan[[i]][[vi]])$dim <- datasan_dims
+                    attributes(datasan[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims
+                    attributes(datasan[[i]][[vi]])$dims[timedimind] <- "year"
+                } # if time series has only 1 year or more
 
             } else { # variable has no time dim
                 #message("variable has no \"time\" dim ...")
@@ -2193,35 +2213,49 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
             } # if variable has time dim or not
 
         } # for vi nvars
-    
-        dims[[i]]$month <- months_unique
-        dims[[i]]$monmean_range <- paste0(fromsp[i], "-", tosp[i])
-        monlim <- range(monlim, dims[[i]]$month, na.rm=T)
-        dims[[i]]$year <- years_unique
-        dims[[i]]$yearmean_range <- dims[[i]]$monmean_range
-        anlim <- range(anlim, dims[[i]]$year, na.rm=T)
+   
+        if (all(is.na(datasmon[[i]]))) {
+            datasmon[[i]] <- NA
+        } else {
+            # remove NA entries
+            navars <- which(is.na(datasmon[[i]]))
+            if (length(navars) > 0) {
+                datasmon[[i]][navars] <- NULL
+            }
+            dims[[i]]$month <- months_unique
+            dims[[i]]$monmean_range <- paste0(fromsp[i], "-", tosp[i])
+            monlim <- range(monlim, dims[[i]]$month, na.rm=T)
+        }
+        if (all(is.na(datasan[[i]]))) {
+            datasan[[i]] <- NA
+        } else {
+            # remove NA entries
+            navars <- which(is.na(datasan[[i]]))
+            if (length(navars) > 0) {
+                datasan[[i]][navars] <- NULL
+            }
+            dims[[i]]$year <- years_unique
+            dims[[i]]$yearmean_range <- dims[[i]]$monmean_range
+            anlim <- range(anlim, dims[[i]]$year, na.rm=T)
+        }
 
     } # for i nsettings
-    
-    # remove NA entries
-    for (i in 1:nsettings) {
-        navars <- which(is.na(datasmon[[i]]))
-        if (length(navars) > 0) {
-            datasmon[[i]][navars] <- NULL
-        }
-        navars <- which(is.na(datasan[[i]]))
-        if (length(navars) > 0) {
-            datasan[[i]][navars] <- NULL
-        }
+  
+    if (!all(is.na(datasmon))) { # monthly labels of all settings
+        monat <- monlim[1]:monlim[2]
+        monlab <- substr(month.abb[monat], 1, 1) # Jan -> J
+    } else {
+        rm(datasmon) # for later exists("datasmon") checks
+    } 
+    if (!all(is.na(datasan))) { # annual labels of all settings
+        anat <- pretty(anlim, n=10)
+        anlab <- anat
+    } else {
+        rm(datasan) # for later exists("datasan") checks
     }
-    monat <- monlim[1]:monlim[2]
-    monlab <- substr(month.abb[monat], 1, 1) # Jan -> J
-    anat <- pretty(anlim, n=10)
-    anlab <- anat
 
 } # if any setting has time dim
 # finished calculating monthly means if applicable
-
 
 ## calculate temporal mean (long term mean; ltm)
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
@@ -2946,6 +2980,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # take varinfo of first found occurence of current variable
             data_info <- data_infos[[dinds_samevars[[ploti]][[1]]]][[vinds_samevars[[ploti]][[1]]]]
             names_legend_p <- names_legend[sapply(dinds, "[")]
+            text_cols_p <- text_cols[sapply(dinds, "[")]
             cols_p <- cols[sapply(dinds, "[")]
             ltys_p <- ltys[sapply(dinds, "[")]
             if (exists("datasma")) zma <- zma_samevars[[ploti]]
@@ -2955,6 +2990,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dmoninds <- dmoninds_samevars[[ploti]]
                 vmoninds <- vmoninds_samevars[[ploti]]
                 names_legend_pmon <- names_legend[sapply(dmoninds , "[")]
+                text_cols_pmon <- text_cols[sapply(dmoninds, "[")]
             }
             if (exists("datasan")) {
                 zan <- zan_samevars[[ploti]]
@@ -2962,6 +2998,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 daninds <- daninds_samevars[[ploti]]
                 vaninds <- vaninds_samevars[[ploti]]
                 names_legend_pan <- names_legend[sapply(daninds , "[")]
+                text_cols_pan <- text_cols[sapply(daninds, "[")]
             }
             if (exists("datasltm")) {
                 zltm <- zltm_samevars[[ploti]]
@@ -2969,6 +3006,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dltminds <- dltminds_samevars[[ploti]]
                 vltminds <- vltminds_samevars[[ploti]]
                 names_legend_pltm <- names_legend[sapply(dltminds , "[")]
+                text_cols_pltm <- text_cols[sapply(dltminds, "[")]
             }
             
         # plot all vars with same dims together (datas, datasma, datasmon, datasan, datasltm)
@@ -3017,7 +3055,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         froms_plot_p <- froms_plot[sapply(dinds, "[")]
         tos_plot_p <- tos_plot[sapply(dinds, "[")]
         types_p <- types[sapply(dinds, "[")]
-        cols_rgb_p <- rgb(t(col2rgb(cols_p)/255), alpha=alpha)
+        cols_rgb_p <- rgb(t(col2rgb(cols_p)/255), alpha=alpha_rgb)
         lwds_p <- lwds[sapply(dinds, "[")]
         pchs_p <- pchs[sapply(dinds, "[")]
         if (exists("datasmon")) {
@@ -5389,7 +5427,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 season_pchs[son_inds] <- scatterpchs_vstime[4]
                                 scatter_suffix <- "_byseason"
                             }
-                            timecols_rgb <- rgb(t(col2rgb(timecols)/255), alpha=alpha)
+                            timecols_rgb <- rgb(t(col2rgb(timecols)/255), alpha=alpha_rgb)
                             
                             xlim <- range(scatter_set1_vs_set2[[1]], na.rm=T)
                             ylim <- range(scatter_set1_vs_set2[[2]], na.rm=T)
@@ -5550,12 +5588,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         eval(parse(text=paste0("vary_infos <- ", varnamey, "_infos")))
 
                         if (varname == "temp2_vs_toa_imbalance" && T) {
-                            message("\n", "substract last PI value from experiments ...")
+                            message("\n", "special: substract last PI value from experiments ...")
                             for (i in 2:length(varx)) {
                                 varx[[i]] <- varx[[i]] - rep(varx[[1]][length(varx[[1]])], t=length(length(varx[[1]])))
                                 varx_infos[[i]]$label <- "2m temperature increase [K]"
                             }
-                            # atlast: pi itself
+                            # last: pi itself
                             varx[[1]] <- varx[[1]] - rep(varx[[1]][length(varx[[1]])], t=length(length(varx[[1]])))
                             varx_infos[[1]]$label <- "2m temperature increase [K]"
                         }
@@ -5626,12 +5664,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                         # add data to scatter plot
                         message("add data ...")
-                        plotorder <- 1:length(z)
+                        plotorder <- seq_along(varx)
                         
                         # special: change plot order
-                        if (varname == "temp2_vs_toa_imbalance" && any(names_short == "piControl")) {
+                        if (varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
                             message("change plot order from ", paste0(plotorder, collapse=","), " to ", appendLF=F)
-                            plotorder <- c(plotorder[-which(names_short == "piControl")], which(names_short == "piControl"))
+                            plotorder <- c(plotorder[-which(grepl("piControl", names_short))], which(grepl("piControl", names_short)))
+                            if (length(plotorder) == 0) stop("length(plotorder) new is 0")
                             message(paste(plotorder, collapse=","), " ...")
                         }
 
@@ -5651,13 +5690,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         
                         # now add real data 
                         for (i in plotorder) {
-                            if (varname == "temp2_vs_toa_imbalance" && names_short[i] == "piControl") {
-                                message("special: plot only time mean")
+                            if (varname == "temp2_vs_toa_imbalance" && grepl("piControl", names_short[i])) {
+                                message("special: plot only time mean for setting ", names_short[i])
                                 points(mean(varx[[i]]), mean(vary[[i]]), 
                                        #col=cols_rgb[i], 
                                        col=cols[i],
                                        pch=scatterpchs[i], cex=scattercexs[i])
-                            } else if (varname == "temp2_vs_toa_imbalance" && T) { 
+                            } else if (T && varname == "temp2_vs_toa_imbalance") { 
                                 message("special: use year as symbols")
                                 #years_of_setting_to_show <- c(1:10, seq(25, 250, b=25))
                                 years_of_setting_to_show <- c(1:10, 15, seq(20, 100, b=10), seq(125, 250, b=25))
@@ -5676,7 +5715,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                      #col=cols_rgb[i], 
                                      col=cols[i], 
                                      cex=scattercexs[i])
-                            } else {
+                            } else { # default
                                 points(varx[[i]], vary[[i]], 
                                        col=cols_rgb[i], 
                                        #col=cols[i],
@@ -5708,11 +5747,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 }
                                 # plot regression line within data limits only
                                 if (F) {
-                                    message("draw linear regression line withinregression limits only ...")
+                                    message("draw linear regression line within regression limits only ...")
                                     lines(varx[[i]], lms_lin[[i]]$fitted.values, 
                                           col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
                                 # or plot line through whole plot with regression coefficients
-                                } else if (T) {
+                                } else if (F || (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i]))) {
                                     message("draw linear regression line through whole plot ...")
                                     abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
                                            col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
@@ -5732,7 +5771,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     }
                                 }
                                 # special stuff 
-                                if (varname == "temp2_vs_toa_imbalance" && names_short[i] == "1pctCO2") {
+                                if (varname == "temp2_vs_toa_imbalance" && grepl("1pctCO2", names_short[i])) {
 
                                     ## winton et al. 2014: transient climate respomse: TCR
                                     # use global warming as modeled in the 1pct experiment when the pi CO2 value doubled
@@ -5745,12 +5784,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                             co2_hist$time[co2_hist_1850_ind], ") at year ", co2_1pct_1850_doubled_ind, " = ", 
                                             co2_1pct$time[co2_1pct_1850_doubled_ind], " = ", co2_1pct_1850_doubled, " ppm", "\n",
                                             " --> deltaT of 1pctCO2 experiment at this year = ", deltaT_1pct_1850_co2_doubled, " K = TCR")
-                                    # or use model year 61-80 --> 1911-1930 (20 year) mean global warming as in winton et al. 2014
-                                    year_inds <- which(time_dim[[i]] >= as.POSIXlt("1911-01-01", tz="UTC") &
-                                                       time_dim[[i]] <= as.POSIXlt("1931-01-01", tz="UC"))
+                                    # or use model year 61-80 starting frmo 1850 --> 1911-1930 (20 year) mean global warming as in winton et al. 2014
+                                    year_inds <- which(d$time[[i]] >= as.POSIXct("1911-01-01", tz="UTC") &
+                                                       d$time[[i]] <= as.POSIXct("1931-01-01", tz="UTC"))
+                                    if (length(year_inds) == 0) {
+                                        warning("cannot add transient climate response between year 1911 and 1931: out or range of d$time[[", i, "]]. use whole time instead ...")
+                                        year_inds <- seq_along(d$time[[i]])
+                                    }
                                     average_deltaT_1pct_1850_co2_doubled <- mean(varx[[i]][year_inds])
-                                    message("average deltaT of 1pctCO2 experiment of years ", min(time_dim[[i]][year_inds]), " to ", 
-                                            max(time_dim[[i]][year_inds]), " = ", average_deltaT_1pct_1850_co2_doubled, " K")
+                                    message("average deltaT of 1pctCO2 experiment of years ", min(d$time[[i]][year_inds]), " to ", 
+                                            max(d$time[[i]][year_inds]), " = ", average_deltaT_1pct_1850_co2_doubled, " K")
                                     lm_text <- c(lm_text,
                                                  eval(substitute(expression(paste("TCR = ", Delta, "T"["1%"], "(CO"[2], "=2" %*% "CO"[paste("2,PI")], 
                                                                                   " = ", co2_1pct_1850_doubled, " ppm)")),
@@ -5759,7 +5802,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                                   " = ", average_deltaT_1pct_1850_co2_doubled, " K")),
                                                                  list(average_deltaT_1pct_1850_co2_doubled=round(average_deltaT_1pct_1850_co2_doubled, 2)))))
 
-                                } else if (varname == "temp2_vs_toa_imbalance" && names_short[i] == "abrupt-4xCO2") {
+                                } else if (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i])) {
                                     
                                     # gregory et al. 2004: equilibrium climate sensitivity (ECS):
                                     alpha <- slope
@@ -5785,7 +5828,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                  eval(substitute(expression(paste("F"[paste("4" %*% "")], "/|", alpha, ""[paste("4" %*% "")], 
                                                                                   "| = ", Delta, "T"[paste("eq,4" %*% "")],
                                                                                   " = ", deltaT_eq_4x_lower, "-", deltaT_eq_4x_upper, " K")),
-                                                                 list(deltaT_eq_4x_lower=round(min(deltaT_eq_4x), 2), deltaT_eq_4x_upper=round(max(T_eq_4x), 2)))),
+                                                                 list(deltaT_eq_4x_lower=round(min(deltaT_eq_4x), 2), deltaT_eq_4x_upper=round(max(deltaT_eq_4x), 2)))),
                                                  eval(substitute(expression(paste("ECS = ", Delta, "T"[paste("eq,2" %*% "")], " = 1/2 ", Delta, "T"[paste("eq,4" %*% "")], 
                                                                                   " = ", deltaT_eq_2x_lower, "-", deltaT_eq_2x_upper, " K")),
                                                                  list(deltaT_eq_2x_lower=round(min(deltaT_eq_2x), 2), deltaT_eq_2x_upper=round(max(deltaT_eq_2x), 2)))))
@@ -5793,7 +5836,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             } # for i in seq_along(varx)
                             if (exists("deltaT_eq_2x") && exists("average_deltaT_1pct_1850_co2_doubled")) {
                                 CER <- average_deltaT_1pct_1850_co2_doubled/deltaT_eq_2x # climate equilibrium ratio
-                                message("TCR/ECS = ", min(CER), ",", max(CER))
+                                message("min/max of climate equilibirum ratio CER = TCR/ECS = ", min(CER), "/", max(CER))
                             }
                             if (!is.null(lm_text)) {
                                 message("add special linear regression infos to plot")
@@ -5845,6 +5888,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             le$lwds <- NA
                             #le$pchs <- scatterpchs
                             le$pchs <- pchs_p
+                            if (T && varname == "temp2_vs_toa_imbalance") {
+                                le$pchs <- rep(NA, t=length(varx))
+                            }
                             le$cex <- 1
                             # add stuf to legend here
                             if (F) {
@@ -5913,7 +5959,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                         season_pchs[son_inds] <- scatterpchs_vstime[4]
                                         scatter_suffix <- "_byseason"
                                     }
-                                    timecols_rgb <- rgb(t(col2rgb(timecols)/255), alpha=alpha)
+                                    timecols_rgb <- rgb(t(col2rgb(timecols)/255), alpha=alpha_rgb)
                                     
                                     xlim <- range(varx[[i]], na.rm=T)
                                     ylim <- range(vary[[i]], na.rm=T)

@@ -30,31 +30,55 @@ if (F) { # old hist
     #modes <- "timmean"
     prefixes <- "dynveg"
     
-} else if (F) { # pi
-    datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
-    if (F) {
-        fpatterns <- "piControl_echam6_echammon_<YYYY><MM>.grb"
-        fvarnames <- "temp2"
-        codes <- 167
-        #fvarnames <- "srad0d"
-        #codes <- 184
-    } else if (F) {
-        fpatterns <- "piControl_echam6_echam_<YYYY><MM>.grb"
-        #fvarnames <- "trad0"
-        #codes <- 179
-        fvarnames <- "srad0"
-        codes <- 178
-    } else if (F) {
-        fpatterns <- "piControl_echam6_aeroptmon_<YYYY><MM>.grb"
-        fvarnames <- "tau_aero_550_pt"
-        codes <- 11
-    }
+} else if (T) { # cmip6
     models <- "echam6"
-    froms <- 1912 # last 30 years: 1912:1941; last 100 years: 1842:1941 
-    tos <- 1941
-    #modes <- "fldmean"
+    #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
+    #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/1percCO2/outdata/echam"
+    #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/4CO2/outdata/echam"
+    #datapaths <- "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_HIST/outdata/echam" # awi-cm-1-2-lr
+    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/tas/gn/v20200212"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/ts/gn/v20200212"
+    #fpatterns <- "piControl_echam6_echam_<YYYY><MM>.grb"
+    #fpatterns <- "piControl_echam6_echammon_<YYYY><MM>.grb"
+    #fpatterns <- "piControl_echam6_aeroptmon_<YYYY><MM>.grb"
+    #fpatterns <- "1percCO2_echam6_echam_<YYYY><MM>.grb"
+    #fpatterns <- "1percCO2_echam6_echam_<YYYY><MM>.nc"
+    #fpatterns <- "4CO2_echam6_echam_<YYYY><MM>.grb"
+    #fpatterns <- "4CO2_echam6_echam_<YYYY><MM>.nc"
+    #fpatterns <- "CMIP6_HIST_echam6_echam_<YYYY><MM>.grb"
+    fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
+    #prefixes <- "awi-cm-1-1-lr_1percCO2_echam6_echam"
+    #prefixes <- "awi-cm-1-1-lr_4CO2_echam6_echam"
+    #prefixes <- "awi-esm-1-1-lr_piControl_echam6_echam"
+    prefixes <- "awi-esm-1-1-lr_piControl_echam6"
+    #prefixes <- "awi-esm-1-2-lr_historical_echam6_echam"
+    #fvarnames <- "temp2"
+    #codes <- 167
+    #fvarnames <- "srad0"
+    #codes <- 178
+    #fvarnames <- "trad0"
+    #codes <- 179
+    #fvarnames <- "srad0d"
+    #codes <- 184
+    #fvarnames <- "tau_aero_550_pt"
+    #codes <- 11
+    fvarnames <- "tas" # 2m
+    #fvarnames <- "ts" # = cmor tsurf
+    #froms <- 1850
+    froms <- 1855
+    #froms <- 1870
+    #froms <- 1873
+    #froms <- 1912 # last 30 years: 1912:1941; last 100 years: 1842:1941 
+    #tos <- 1859
+    #tos <- 1869 # 1percCO2: 1850-1869.nc
+    #tos <- 1872 # 4CO2: 1850-1872.nc
+    #tos <- 1941
+    tos <- 1954
+    #tos <- 2099
     modes <- "timmean"
-    prefixes <- "awi-esm-1-1-lr"
+    #modes <- "yseasmean" 
+    #modes <- "fldmean"
+    new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
 } else if (F) { # xiaoxu
     datapaths <- "/mnt/lustre02/work/ba0989/a270064/esm-experiments/lgm_anm/outdata/echam" # 3537:2872 (n=336)
@@ -72,7 +96,7 @@ if (F) { # old hist
     modes <- "fldmean"
     prefixes <- "awi-esm-1-1-lr_lgm"
 
-} else if (T) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
+} else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     # hol-7 on stan:
     datapaths <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-7/outdata/echam5"
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom"
@@ -410,75 +434,133 @@ if (F) { # old hist
 # ======================================================
 # 3 settings
 } else if (F) { # deck hist 1pct 4co2
-    datapaths <- c("/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/hist/outdata/echam",
-                   "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/1percCO2/outdata/echam",
-                   "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/4CO2/outdata/echam")
-    fpatterns <- c("hist_echam6_echam_<YYYY><MM>.nc",
-                   "1percCO2_echam6_echam_<YYYY><MM>.nc",
-                   "4CO2_echam6_echam_<YYYY><MM>.nc")
-    #fvarnames <- c("temp2", "temp2", "temp2")
+    models <- c("echam6", "echam6", "echam6") # for check if `cdo -t echam6` can be used
+    if (F) { # awi-esm-1-1-rl
+        datapaths <- c("/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/hist/outdata/echam",
+                       "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/1percCO2/outdata/echam",
+                       "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/4CO2/outdata/echam")
+        fpatterns <- c("hist_echam6_echam_<YYYY><MM>.nc",
+                       "1percCO2_echam6_echam_<YYYY><MM>.nc",
+                       "4CO2_echam6_echam_<YYYY><MM>.nc")
+        prefixes <- paste0("awi-esm-1-1-lr_", c("historical", "1percCO2", "4CO2"), 
+                           "_echam6_echam") 
+    } else if (F) { # awi-esm-1-2-lr
+        datapaths <- c("/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_HIST/outdata/echam",
+                       "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_1percCO2/outdata/echam",
+                       "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_4CO2/outdata/echam")
+        fpatterns <- c("CMIP6_HIST_echam6_echam_<YYYY><MM>.grb",
+                       "CMIP6_1percCO2_echam6_echam_<YYYY><MM>.grb",
+                       "CMIP6_4CO2_echam6_echam_<YYYY><MM>.grb")
+        prefixes <- paste0("awi-esm-1-2-lr_", c("historical", "1percCO2", "4CO2"), 
+                           "_echam6_echam") 
+    }
+    fvarnames <- rep("temp2", t=3)
     #fvarnames <- rep("srad0d", t=3)
     #fvarnames <- rep("srad0", t=3)
-    fvarnames <- rep("trad0", t=3)
-    models <- c("echam6", "echam6", "echam6") # for check if `cdo -t echam6` can be used
+    #fvarnames <- rep("trad0", t=3)
     froms <- c(1850, 1850, 1850)
     #froms <- c(1985, 1985, 1985)
     #froms <- c(1985, 2070, 2070)
     #tos <- c(1851, 1851, 1851)
     #tos <- c(2014, 2014, 2014)
-    tos <- c(2014, 2099, 2099)
+    tos <- c(2014, 2074, 2021) # lars awi-esm-1-2-lr
+    #tos <- c(2014, 2099, 2099)
     #season_inds <- list(c(12, 1, 2), c(12, 1, 2), c(12, 1, 2)) # DJF
     #season_inds <- list(3:5, 3:5, 3:5) # MAM
     #season_inds <- list(6:8, 6:8, 6:8) # JJA
     #season_inds <- list(9:11, 9:11, 9:11) # SON
-    modes <- c("fldmean", "fldmean", "fldmean")
-    #modes <- c("timmean", "timmean", "timmean")
-    prefixes <- rep("awi-esm-1-1-lr", t=3)
+    modes <- rep("fldmean", t=3)
+    #modes <- rep("timmean", t=3)
 
-} else if (F) { # deck pi hist 1pct 4cos2
-    datapaths <- c("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam",
-                   "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/hist/outdata/echam",
-                   "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/1percCO2/outdata/echam",
-                   "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/4CO2/outdata/echam")
-    if (F) {
-        fpatterns <- c("piControl_echam6_echam_<YYYY><MM>.grb",
-                       "hist_echam6_echam_<YYYY><MM>.nc",
-                       "1percCO2_echam6_echam_<YYYY><MM>.nc",
-                       "4CO2_echam6_echam_<YYYY><MM>.nc")
-    } else if (F) {
-        fpatterns <- c("piControl_echam6_echammon_<YYYY><MM>.grb",
-                       "hist_echam6_echammon_<YYYY><MM>.nc",
-                       "1percCO2_echam6_echammon_<YYYY><MM>.nc",
-                       "4CO2_echam6_echammon_<YYYY><MM>.nc")
-    } else if (F) {
-        fpatterns <- c("piControl_echam6_aeroptmon_<YYYY><MM>.grb",
-                       "hist_echam6_echammon_<YYYY><MM>.nc",
-                       "1percCO2_echam6_echammon_<YYYY><MM>.nc",
-                       "4CO2_echam6_echammon_<YYYY><MM>.nc")
+# ======================================================
+# 4 settings
+} else if (F) { # deck pi hist 1pct 4co2
+    models <- rep("echam6", t=4) # for check if `cdo -t echam6` can be used
+    if (F) { # awi-cm-1-1-lr
+        datapaths <- c("/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/PI-CTRL_nodynveg2/outdata/echam",
+                       "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/historical/outdata/echam",
+                       "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/1percCO2/outdata/echam",
+                       "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/4CO2/outdata/echam")
+        if (F) { # srad0, trad0
+            fpatterns <- c("PI-CTRL_nodynveg2_echam6_echam_<YYYY><MM>.grb",
+                           "historical_echam6_echam_<YYYY><MM>.grb",
+                           "1percCO2_echam6_echam_<YYYY><MM>.grb",
+                           "4CO2_echam6_echam_<YYYY><MM>.grb")
+            prefixes <- paste0("awi-cm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
+                               "_echam6_echam") 
+        } else if (F) { # temp2
+            fpatterns <- c("PI-CTRL_nodynveg2_echam6_echammon_<YYYY><MM>.grb",
+                           "historical_echam6_echammon_<YYYY><MM>.grb",
+                           "1percCO2_echam6_echammon_<YYYY><MM>.grb",
+                           "4CO2_echam6_echammon_<YYYY><MM>.grb")
+            prefixes <- paste0("awi-cm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
+                               "_echam6_echammon") 
+        }
+        froms <- c(1855, 1850, 1850, 1850) # pi last 30 years: 1924:1954; pi last 100 years: 1855:1954
+        tos <- c(1954, 2014, 2099, 2099)
+    } else if (F) { # awi-esm-1-1-lr
+        datapaths <- c("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam",
+                       "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/hist/outdata/echam",
+                       "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/1percCO2/outdata/echam",
+                       "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/4CO2/outdata/echam")
+        if (F) { # srad0, trad0
+            fpatterns <- c("piControl_echam6_echam_<YYYY><MM>.grb",
+                           "hist_echam6_echam_<YYYY><MM>.nc",
+                           "1percCO2_echam6_echam_<YYYY><MM>.nc",
+                           "4CO2_echam6_echam_<YYYY><MM>.nc")
+            prefixes <- paste0("awi-esm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
+                               "_echam6_echam") 
+        } else if (F) { # temp2
+            fpatterns <- c("piControl_echam6_echammon_<YYYY><MM>.grb",
+                           "hist_echam6_echammon_<YYYY><MM>.nc",
+                           "1percCO2_echam6_echammon_<YYYY><MM>.nc",
+                           "4CO2_echam6_echammon_<YYYY><MM>.nc")
+            prefixes <- paste0("awi-esm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
+                               "_echam6_echammon") 
+        } else if (F) { # tau_aero_550
+            fpatterns <- c("piControl_echam6_aeroptmon_<YYYY><MM>.grb",
+                           "hist_echam6_echammon_<YYYY><MM>.nc",
+                           "1percCO2_echam6_echammon_<YYYY><MM>.nc",
+                           "4CO2_echam6_echammon_<YYYY><MM>.nc")
+            prefixes <- paste0("awi-esm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
+                               "_echam6_", c("aeroptmon", "echammon", "echammon", "echammon")) 
+        }
+        froms <- c(1842, 1850, 1850, 1850) # pi last 30 years: 1912:1941; pi last 100 years: 1842:1941
+        tos <- c(1941, 2014, 2099, 2099)
+    } else if (F) { # awi-esm-1-2-lr
+        datapaths <- c("/work/ba0989/a270124/CMIP6_PMIP4/PI_LA04_cont02/outdata/echam",
+                       "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_HIST/outdata/echam",
+                       "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_1percCO2/outdata/echam",
+                       "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_4CO2/outdata/echam")
+        fpatterns <- c("PI_LA04_cont02_echam6_echam_<YYYY><MM>.grb",
+                       "CMIP6_HIST_echam6_echam_<YYYY><MM>.grb",
+                       "CMIP6_1percCO2_echam6_echam_<YYYY><MM>.grb",
+                       "CMIP6_4CO2_echam6_echam_<YYYY><MM>.grb")
+        prefixes <- paste0("awi-esm-1-2-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
+                           "_echam6_echam")
+        froms <- c(1016, 1850, 1850, 1850) # lars
+        tos <- c(1045, 2014, 2074, 2021)
     }
     #fvarnames <- rep("temp2", t=4)
-    #fvarnames <- rep("srad0d", t=3)
-    #fvarnames <- rep("srad0", t=3)
-    #fvarnames <- rep("trad0", t=3)
-    fvarnames <- rep("tau_aero_550", t=4)
-    codes <- rep(11, t=4)
-    models <- rep("echam6", t=4) # for check if `cdo -t echam6` can be used
-    froms <- c(1842, 1850, 1850, 1850) # pi last 30 years: 1912:1941; pi last 100 years: 1842:1941
-    tos <- c(1941, 2014, 2099, 2099)
+    #fvarnames <- rep("srad0d", t=4)
+    #fvarnames <- rep("srad0", t=4)
+    #fvarnames <- rep("trad0", t=4)
+    fvarnames <- rep("toa_imbalance", t=4)
+    #fvarnames <- rep("tau_aero_550", t=4)
+    #codes <- rep(11, t=4)
     #tos <- froms
     #season_inds <- list(c(12, 1, 2), c(12, 1, 2), c(12, 1, 2)) # DJF
     #season_inds <- list(3:5, 3:5, 3:5) # MAM
     #season_inds <- list(6:8, 6:8, 6:8) # JJA
     #season_inds <- list(9:11, 9:11, 9:11) # SON
-    #modes <- rep("fldmean", t=4)
+    modes <- rep("fldmean", t=4)
     #modes <- rep("timmean", t=4)
-    modes <- rep("volint", t=4)
-    prefixes <- rep("awi-esm-1-1-lr", t=4)
+    #modes <- rep("volint", t=4)
 }
 
 # https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_calc_wiso_echam5_monmean.sh
 # /ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh
-cdo_known_cmds <- list("toa_imbalace="=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
+cdo_known_cmds <- list("toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
                        "wisoaprt_d_post"=list(cmd=c("<cdo> -setname,wisoaprt_d -setcode,10 -mulc,1000. -subc,1. -div -div <wisoaprt> <aprt> <wiso_smow_files>",
                                                     "<nco_ncatted> -O -a long_name,wisoaprt_d,o,c,\"delta of total precipitation\"",
                                                     "<nco_ncatted> -O -a units,wisoaprt_d,o,c,\"o/oo\"")),

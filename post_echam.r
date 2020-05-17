@@ -13,11 +13,11 @@ source("helper_functions.r")
 # get host options
 host <- get_host()
 
-# todo: how to load functions from another repo without the subrepo hassle?
+# todo: how to load helper functions from another repo without the subrepo hassle?
 if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
     message("\nload ", host$homepath, "/functions/myfunctions.r ...")
     source(paste0(host$homepath, "/functions/myfunctions.r"))
-    # post_echam.r needs the functions: ht(), make_posixlt_origin_function(), is.leap() 
+    # post_echam.r needs the functions: ht(), make_posixlt_origin_function(), is.leap(), tryCatch.W.E(), identical_list() 
 } else {
     stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
 }
@@ -33,6 +33,7 @@ message("clean = ", clean)
 # check if cdo is available
 if (!exists("cdo")) {
     cmd <- paste0("which cdo")
+    message("`cdo` not set by user -> check if cdo binary can be found: run `", cmd, "`")
     message("check if cdo can be found: run `", cmd, "`")
     cdo <- system(cmd, intern=T)
     if (!is.null(attributes(cdo)$status)) {
@@ -57,46 +58,13 @@ if (any(tmp)) {
 } else {
     stop("the case of 0 as.numeric() of `cdo --version?` is not implemented here")
 }
-message("   cdo = ", cdo)
-message("   cdo_version = ", paste(cdo_version, collapse="."))
-message("   cdo_silent = \"", cdo_silent, "\"")
-message("   cdo_force = ", cdo_force) #  -O necessary for ens<STAT>, merge, mergetime
-message("   cdo_OpenMP_threads = \"", cdo_OpenMP_threads, "\"") # OMP supported operators: https://code.mpimet.mpg.de/projects/cdo/wiki/OpenMP_support
-message("   cdo_set_rel_time = ", cdo_set_rel_time)
-message("   cdo_run_from_script = ", cdo_run_from_script)
-
-# check if ncap2 is available
-if (!exists("nco_ncap2")) {
-    cmd <- paste0("which ncap2")
-    message("check if ncap2 can be found: run `", cmd, "`")
-    nco_ncap2 <- system(cmd, intern=T)
-    if (!is.null(attributes(nco_ncap2)$status)) {
-        stop("`which ncap2` gave exit status ", attributes(nco_ncap2)$status)
-    }
-}
-message("   ncap2 = ", nco_ncap2)
-
-# check if ncrcat is available
-if (!exists("nco_ncrcat")) {
-    cmd <- paste0("which ncrcat")
-    message("check if ncrcat can be found: run `", cmd, "`")
-    nco_ncrcat <- system(cmd, intern=T)
-    if (!is.null(attributes(nco_ncrcat)$status)) {
-        stop("`which ncrcat` gave exit status ", attributes(nco_nrcat)$status)
-    }
-}
-message("   ncrcat = ", nco_ncrcat)
-
-# check if ncatted is available
-if (!exists("nco_ncatted")) {
-    cmd <- paste0("which ncatted")
-    message("check if ncatted can be found: run `", cmd, "`")
-    nco_ncatted <- system(cmd, intern=T)
-    if (!is.null(attributes(nco_ncatted)$status)) {
-        stop("`which ncatted` gave exit status ", attributes(nco_ncatted)$status)
-    }
-}
-message("   ncatted = ", nco_ncatted)
+message("cdo = ", cdo)
+message("cdo_version = ", paste(cdo_version, collapse="."))
+message("cdo_silent = \"", cdo_silent, "\"")
+message("cdo_force = ", cdo_force) #  -O necessary for ens<STAT>, merge, mergetime
+message("cdo_OpenMP_threads = \"", cdo_OpenMP_threads, "\"") # OMP supported operators: https://code.mpimet.mpg.de/projects/cdo/wiki/OpenMP_support
+message("cdo_set_rel_time = ", cdo_set_rel_time)
+message("cdo_run_from_script = ", cdo_run_from_script)
 
 # check if necessary user variables exist
 exist_checks <- c("datapaths", "fpatterns", "fvarnames",
@@ -233,6 +201,29 @@ if (!exists("new_date_list")) {
             }
         } # final years are given or not
     } # for i nsettings
+
+    # check if ncap2 is available
+    if (!exists("nco_ncap2")) {
+        cmd <- paste0("which ncap2")
+        message("`nco_ncap2` not set by user -> check if ncap2 binary can be found to set new times of nc file: run `", cmd, "`")
+        nco_ncap2 <- system(cmd, intern=T)
+        if (!is.null(attributes(nco_ncap2)$status)) {
+            stop("`which ncap2` gave exit status ", attributes(nco_ncap2)$status)
+        }
+    }
+    message("found ncap2 = ", nco_ncap2)
+
+    # check if ncrcat is available
+    if (!exists("nco_ncrcat")) {
+        cmd <- paste0("which ncrcat")
+        message("`nco_ncrcat` not set by user -> check if ncrcat binary can be found to eventually cat chunks with new times of nc file: run `", cmd, "`")
+        nco_ncrcat <- system(cmd, intern=T)
+        if (!is.null(attributes(nco_ncrcat)$status)) {
+            stop("`which ncrcat` gave exit status ", attributes(nco_nrcat)$status)
+        }
+    }
+    message("found ncrcat = ", nco_ncrcat)
+
 } # if new_date_list provided or not
 
 # check wiso stuff
@@ -245,6 +236,11 @@ if (any(models == "mpiom1")) {
     message("\nsome of provided `models` are \"mpiom1\" --> load mpiom/mpiom_functions.r ...")
     source("mpiom/mpiom_functions.r")
 }
+
+# special filename patterns
+special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>", "<MM>", "<MM_from>", "<MM_to>")
+
+message("\nnameslist.post.r checks finished. start running post_echam.r for ", nsettings, " model setups ...")
 
 # do for every model setting
 elapsed <- vector("list", l=nsettings)
@@ -309,19 +305,72 @@ for (i in 1:nsettings) {
             if (!check) warning("something went wrong deleting file ", fout)
         }
 
-        # read input file names
-        # e.g.
-        # hist_echam6_echam_185001.nc
-        # PI-CTRL4_echam6_g3bid_299901.grb 
-        fpattern <- fpatterns[i]
-        # replace <YYYY> by * if existing
-        if (grepl("<YYYY>", fpattern)) {
-            fpattern <- gsub("<YYYY>", "*", fpattern)
-        }
-        # replace <MM> by * if existing
-        if (grepl("<MM>", fpattern)) {
-            fpattern <- gsub("<MM>", "*", fpattern)
-        }
+        ## read input file names based on fpatterns `text_<PATTERN>_text.nc`
+        message("\ncheck `fpatterns[", i, "]` = \"", fpatterns[i], "\" for \"<...>\" patterns to replace ...")
+        sub_list <- NULL # default
+        pattern_inds_open <- gregexpr("<", fpatterns[i])[[1]]
+        pattern_inds_closed <- gregexpr(">", fpatterns[i])[[1]]
+        if (length(pattern_inds_open) != 0 || length(pattern_inds_closed) != 0) {
+            if (length(pattern_inds_open) != length(pattern_inds_closed)) {
+                stop("you provided ", length(pattern_inds_open), 
+                     " opening brackets \"<\" to indicate a file pattern to replace but ", 
+                     length(pattern_inds_closed), " closing brackets \">\". there must be a \"<\" for every \">\".")
+            }
+            n_patterns_per_file <- length(pattern_inds_open)
+            sub_list <- vector("list", l=n_patterns_per_file)
+            for (pati in seq_len(n_patterns_per_file)) {
+                pattern <- substr(fpatterns[i], pattern_inds_open[pati], pattern_inds_closed[pati]) # pattern to replace with leading "<" and trailing ">"
+                sub_list[[pati]]$pattern <- pattern
+                sub_list[[pati]]$pattern_inds <- c(pattern_inds_open[pati], pattern_inds_closed[pati])
+                # special patterns: replace <YYYY*>, <MM*>, etc. with "*"
+                if (pattern %in% special_patterns) {
+                    message("   replace special pattern \"", pattern, "\" by \"*\"")
+                    sub_list[[pati]]$replacement <- "*"
+                    if (any(pattern == c("<YYYY>", "<YYYY_from>", "<YYYY_to>"))) {
+                        sub_list[[pati]]$replacement_length <- 4
+                    } else if (any(pattern == c("<MM>", "<MM_from>", "<MM_to>"))) {
+                        sub_list[[pati]]$replacement_length <- 2
+                    }
+                # all other patterns: replace <pattern> by value of object in the current work space named `pattern`
+                } else { 
+                    obj <- substr(pattern, 2, nchar(pattern)-1) # pattern string without leading "<" and trailing ">"
+                    if (exists(eval(obj))) { # variable with the name of the pattern exists
+                        eval(parse(text=paste0("length_of_obj <- length(", obj, ")")))
+                        if (length_of_obj == nsettings) { # assume that the entry of setting i should be replaced
+                            eval(parse(text=paste0("replacement <- ", obj, "[i]")))
+                        } else {
+                            eval(parse(text=paste0("replacement <- ", obj)))
+                        }
+                    } else { # no such a variable exists
+                        stop("   did not find an object named \"", obj, " to replace the pattern \"", 
+                             pattern, "\". dont know how to interpret this case.")
+                    }
+                    message("   replace pattern \"", pattern, "\" by \"", replacement, "\"")
+                    sub_list[[pati]]$replacement <- replacement
+                    sub_list[[pati]]$replacement_length <- nchar(replacement)
+                } # special or default <pattern>
+                sub_list[[pati]]$nchar_diff <- sub_list[[pati]]$replacement_length - nchar(sub_list[[pati]]$pattern)
+            } # for pati n <patterns> to replace
+
+            # apply replacements of patterns one by one (thats why `sub()` and not `gsub()`; the latter would replace all occurences at once)
+            fpattern <- fpatterns[i]
+            for (pati in seq_along(sub_list)) {
+                fpattern <- sub(sub_list[[pati]]$pattern, sub_list[[pati]]$replacement, fpattern)
+            }
+            message("   -> \"", fpattern, "\"")
+            
+            # find replacement inds
+            for (pati in seq_along(sub_list)) {
+                if (pati == 1) { # first pattern
+                    sub_list[[pati]]$replacement_inds <- sub_list[[pati]]$pattern_inds[1]
+                } else if (pati == length(sub_list)) { # last
+                    sub_list[[pati]]$replacement_inds <- sub_list[[pati]]$pattern_inds[1] + sum(sapply(sub_list[1:(pati-1)], "[[", "nchar_diff"))
+                } else { # all other patterns in between first and last
+                    sub_list[[pati]]$replacement_inds <- sub_list[[pati]]$pattern_inds[1] + sum(sapply(sub_list[1:(pati-1)], "[[", "nchar_diff"))
+                }
+                sub_list[[pati]]$replacement_inds[2] <- sub_list[[pati]]$replacement_inds[1] + sub_list[[pati]]$replacement_length - 1
+            }
+        } # if user provided other <patterns> than <YYYY> and <MM>
 
         # find based on fpattern files
         # todo: search for files and links and compare
@@ -334,7 +383,7 @@ for (i in 1:nsettings) {
         ticcmd <- Sys.time()
         files <- system(cmd, intern=T)
         toccmd <- Sys.time()
-        if (length(files) == 0) stop("no files found (are `datapaths` and `fpattern` correct?")
+        if (length(files) == 0) stop("Zero files found. Are `datapaths` and `fpattern` correct?")
         elapsedcmd <- toccmd - ticcmd
         message("`find` of ", length(files), " files took ", elapsedcmd, " ", attributes(elapsedcmd)$units) 
 
@@ -360,18 +409,40 @@ for (i in 1:nsettings) {
             }
         }
         
-        # identify correct YYYY, MM, etc. based on file names or `cdo showdate`
-        if (grepl("<YYYY>", fpatterns[i])) {
-            n_yyyy_patterns <- length(gregexpr("<YYYY>", fpatterns[i])[[1]]) 
-            patterninds <- regexpr("<YYYY>", fpatterns[i])
-            patterninds <- c(patterninds, 
-                             patterninds + attributes(patterninds)$match.length - 3) 
-            df$YYYY <- substr(basenames, patterninds[1], patterninds[2]) 
-            years_filenames <- as.integer(df$YYYY)
-        } else {
-            message("\npattern \"<YYYY>\" not included in `fpatterns[", i, "]` = \"", fpatterns[i], "\"\n",
-                    " --> derive input years by `cdo showdate` ...")
-            n_yyyy_patterns <- 0
+        # identify years/months/etc. of found files based on <YYYY*>, <MM*>, etc. patterns if given or, alternatively, based on `cdo showdate`
+        if (any(special_patterns %in% sapply(sub_list, "[[", "pattern"))) {
+            message("\nfind years/months/etc. of based on <YYYY*>, <MM*>, etc. patterns of found files ...")
+            
+            special_patterns_in_filenames <- special_patterns[which(special_patterns %in% sapply(sub_list, "[[", "pattern"))]
+            for (pati in seq_along(special_patterns_in_filenames)) {
+                pattern_inds <- which(sapply(sub_list, "[[", "pattern") == special_patterns_in_filenames[pati])
+                pattern_list <- vector("list", l=length(pattern_inds))
+                for (patj in seq_along(pattern_inds)) {
+                    pattern_list[[patj]] <- substr(basenames, 
+                                                   sub_list[[pattern_inds[patj]]]$replacement_inds[1],
+                                                   sub_list[[pattern_inds[patj]]]$replacement_inds[2])
+                }
+                # check if all found values for <YYYY*>, <MM*>, etc. patterns are identical
+                if (identical_list(pattern_list)) {
+                    df[sub(">", "", sub("<", "", special_patterns_in_filenames[pati]))] <- pattern_list[[1]]
+                    if (special_patterns_in_filenames[pati] == "<YYYY>") {
+                        years_filenames <- as.integer(df$YYYY)
+                    } else if (special_patterns_in_filenames[pati] == "<MM>") {
+                        months_filenames <- as.integer(df$MM)
+                    }
+                    # todo: YYYY_from, YYYY_to, MM_from, MM_to
+                } else {
+                    message("\npattern \"", special_patterns_in_filenames[pati], " occurs ", length(pati_list), 
+                            " times and the values differ from each other:")
+                    for (patj in yyyy_list) ht(yyyy_list[[patj]])
+                    stop("-> dont know how to interpret this.")
+                }
+            } # for pati all special patterns in fnames
+
+        } else { # no <YYYY*>, <MM*>, etc. special patterns given by user
+            message("\nfind years/months/etc. of based on `cdo showdate` of found files ...")
+            stop("update")
+            n_yyyy_patterns_per_file <- 0
             years_filenames <- vector("list", l=length(files))
             for (fi in seq_along(files)) {
                 cmd <- paste0(cdo, " showdate ", datapaths[i], "/", files[fi])
@@ -386,48 +457,61 @@ for (i in 1:nsettings) {
                 years_filenames[[fi]] <- substr(dates, 1, 4)
             }
             years_filenames <- as.numeric(unlist(years_filenames))
-
-        } # if "<YYYY>" is in `fpatterns` or not
-        if (grepl("<MM>", fpatterns[i])) {
-            n_mm_patterns <- length(gregexpr("<MM>", fpatterns[i])[[1]]) 
-            patterninds <- regexpr("<MM>", fpatterns[i])
-            patterninds <- c(patterninds - 2,
-                             patterninds - 2 + attributes(patterninds)$match.length - 3) 
-            df$MM <- substr(basenames, patterninds[1], patterninds[2]) 
-            MM_in <- as.integer(df$MM)
-        }
+        } # if <YYYY*> or <MM*> patterns are given by user or not
        
+        # show years, months, etc. of found files
+        if (verbose > 0) {
+            message("\n", "found years/months/etc. based on ", length(files), " file", 
+                    ifelse(length(files) > 1, "s", ""), ":")
+            if (length(files) > 1) {
+                ht(df)
+            } else {
+                print(df)
+            }
+        }
+        
         # update files which were mistakenly included in by given fpattern:
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
         # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
-        if (length(files) > 1) {
-            message("\ncheck if any of the ", length(files), " files do not match\n",
-                    "   `fpatterns[", i, "]` = \"", fpatterns[i], "\"\n...")
+        if (length(files) > 1 && !is.null(sub_list)) {
+            message("\ncheck if any of the ", length(files), " found files do not match given\n",
+                    "   `fpatterns[", i, "]` = \"", fpatterns[i], "\"\n... ", appendLF=F)
+            
+            # construct file names that should be found based on `fpatterns` with all given <patterns>
             filesp <- rep(fpatterns[i], t=length(files))
-            for (yyyy_patterni in seq_len(n_yyyy_patterns)) { 
-                filesp <- stringr::str_replace(string=filesp, 
-                                               pattern="<YYYY>", 
-                                               replacement=df$YYYY)
-            }
-            if (grepl("<MM>", fpatterns[i])) {
-                for (mm_patterni in seq_len(n_mm_patterns)) { 
-                    filesp <- stringr::str_replace(string=filesp, 
-                                                   pattern="<MM>", 
-                                                   replacement=df$MM)
+
+            # apply replacements one by one (thats why `str_replace()` and not `str_replace_all()`)  
+            # vectorized (thats why stringr and not base package) and take care of special patterns <YYYY*>, <MM*>, etc. 
+            for (pati in seq_along(sub_list)) {
+                if (any(sub_list[[pati]]$pattern %in% special_patterns)) { # special patterns
+                    filesp <- stringr::str_replace(string=filesp,
+                                                   pattern=sub_list[[pati]]$pattern, 
+                                                   replacement=as.character(df[[sub(">", "", sub("<", "", sub_list[[pati]]$pattern))]]))
+                } else { # all other patterns
+                    filesp <- stringr::str_replace(string=filesp,
+                                                   pattern=sub_list[[pati]]$pattern, 
+                                                   replacement=sub_list[[pati]]$replacement)
                 }
-            }
+            } # for pati in sub_list
+
+            # identify and throw out fount files that do not fit to given `fpatterns` 
             if (any(!(files %in% filesp))) {
                 wrong_file_inds <- which(!files %in% filesp)
-                message("\nthese ", length(wrong_file_inds), " files differ from wanted `fpatterns[", i, "]` = ", fpatterns[i], ":")
+                message("these ", length(wrong_file_inds), " files differ from wanted `fpatterns[", i, "]` = ", fpatterns[i], ":")
                 ht(files[wrong_file_inds])
+                if (length(wrong_file_inds) == length(files)) {
+                    stop("removing them would yield zero files. something with the given fpattern is maybe strange?")
+                }
                 message("remove them ...")
                 files <- files[-wrong_file_inds]
                 basenames <- basenames[-wrong_file_inds]
                 df <- df[-wrong_file_inds,]
                 years_filenames <- years_filenames[-wrong_file_inds]
-                if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[-wrong_file_inds]
-            } # if any found files differ from wanted `fpatterns[i]`
+                if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[-wrong_file_inds]
+            } else { # if any found files differ from wanted `fpatterns[i]` or not
+                message("ok")
+            }
         } # if length(files) > 1
 
         # verbose
@@ -439,7 +523,7 @@ for (i in 1:nsettings) {
             ht(years_filenames, n=30)
             if (grepl("<MM>", fpatterns[i])) {
                 message("\nderived months based on file names:")
-                ht(MM_in, n=30)
+                ht(months_filenames, n=30)
             }
         }
         
@@ -468,7 +552,8 @@ for (i in 1:nsettings) {
             to_ind <- which(years_filenames == as.integer(tos[i]))
             to_ind <- to_ind[length(to_ind)]
             years_wanted <- years_filenames[from_ind:to_ind]
-            message("--> found filename years from inds ", from_ind, " to ", to_ind, ": ",
+            message("--> found filename years from inds ", from_ind, " to ", to_ind, 
+                    " (from total 1 to ", length(files), "): ",
                     min(years_wanted), " to ", max(years_wanted))
         }
         outside_years_inds <- which(years_filenames %in% years_wanted == F)
@@ -490,7 +575,7 @@ for (i in 1:nsettings) {
                 basenames <- basenames[-outside_years_inds]
                 df <- df[-outside_years_inds,]
                 years_filenames <- years_filenames[-outside_years_inds]
-                if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[-outside_years_inds]
+                if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[-outside_years_inds]
                 if (verbose > 0) {
                     message("\n", "      --> remaining ", length(files), " file", 
                             ifelse(length(files) > 1, "s", ""), ":")
@@ -527,7 +612,7 @@ for (i in 1:nsettings) {
             message("\n", "season_inds = ", paste(season_inds[[i]], collapse=","), 
                     " -> season = ", season_names[i])
             if (grepl("<MM>", fpatterns[i])) { # <MM> is in fpatterns
-                file_season_inds <- which(MM_in %in% season_inds[[i]])
+                file_season_inds <- which(months_filenames %in% season_inds[[i]])
                 if (length(file_season_inds) == 0) { # no files in wanted season 
                     stop("no files found at season_inds = ", paste(season_inds[[i]], collapse=","), 
                          " based on given <MM> pattern.")
@@ -537,7 +622,7 @@ for (i in 1:nsettings) {
                 basenames <- basenames[file_season_inds]
                 df <- df[file_season_inds,]
                 years_filenames <- years_filenames[-outside_years_inds]
-                MM_in <- MM_in[-outside_years_inds]
+                months_filenames <- months_filenames[-outside_years_inds]
                 if (verbose > 0) ht(df)
 
             } else { # <MM> is not in fpatterns
@@ -592,45 +677,45 @@ for (i in 1:nsettings) {
             basenames <- basenames[years_filenames_ordered_inds]
             df <- df[years_filenames_ordered_inds,]
             years_filenames <- years_filenames[years_filenames_ordered_inds]
-            if (grepl("<MM>", fpatterns[i])) MM_in <- MM_in[years_filenames_ordered_inds]
+            if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[years_filenames_ordered_inds]
             if (verbose > 0) ht(df) 
         } # if years_filenames are not monotonically increasing/decreasing
 
         # sort months
         if (F) { # not correct yet; however, not needed because of `find ... | sort`
             if (grepl("<MM>", fpatterns[i])) {
-                #if (MM_in) { # <-- correct condition missing
+                #if (months_filenames) { # <-- correct condition missing
                     message("\n", "months obtained from file names are not monotonically increasing\n",
                             " --> sort from 1 to 12 ...")
                     # at this points, `years_filenames` are allready in correct order
                     stop("asd")
                     years_unique <- unique(years_filenames)
-                    MM_in_ordered_inds <- rep(NA, t=length(MM_in))
-                    inds_all <- seq_len(length(MM_in))
+                    months_filenames_ordered_inds <- rep(NA, t=length(months_filenames))
+                    inds_all <- seq_len(length(months_filenames))
                     for (yi in seq_len(length(years_unique))) {
                         inds_yeari <- which(years_filenames == years_unique[yi])
                         inds_yeari_lhs <- ((yi-1)*length(inds_yeari)+1):(yi*length(inds_yeari))
-                        inds_yeari_rhs <- inds_all[inds_yeari][sort(MM_in[inds_yeari], index.return=T)$ix]
-                        MM_in_ordered_inds[inds_yeari_lhs] <- inds_yeari_rhs
+                        inds_yeari_rhs <- inds_all[inds_yeari][sort(months_filenames[inds_yeari], index.return=T)$ix]
+                        months_filenames_ordered_inds[inds_yeari_lhs] <- inds_yeari_rhs
                     } # for yi years_unique
                     # update:
-                    files <- files[MM_in_ordered_inds]
-                    basenames <- basenames[MM_in_ordered_inds]
-                    df <- df[MM_in_ordered_inds,]
-                    years_filenames <- years_filenames[MM_in_ordered_inds]
-                    MM_in <- MM_in[MM_in_ordered_inds]
+                    files <- files[months_filenames_ordered_inds]
+                    basenames <- basenames[months_filenames_ordered_inds]
+                    df <- df[months_filenames_ordered_inds,]
+                    years_filenames <- years_filenames[months_filenames_ordered_inds]
+                    months_filenames <- months_filenames[months_filenames_ordered_inds]
                     if (verbose > 0) ht(df)
-                #} # if MM_in are not monotonically increasing/decreasing
+                #} # if months_filenames are not monotonically increasing/decreasing
             } # if <MM> is given in fpatterns or not
         } # F
 
         # todo: if links, check for broken links
 
         # get format of input files
-        message("\nget input file format ...")
+        message("\nget input file format from first found file ...")
         cmd <- paste0("cdo showformat ", datapaths[i], "/", basenames[1])
         convert_to_nc <- cdo_get_filetype(paste0(datapaths[i], "/", basenames[1]))
-        filetype <- convert_to_nc$file_type
+        filetype <- gsub(" ", "_", convert_to_nc$file_type) # "NetCDF4 classic zip" -> "NetCDF4_classic_zip"
         convert_to_nc <- convert_to_nc$convert_to_nc
 
         # construct cdo command (chained cdo commands will be executed from right to left)
@@ -659,12 +744,12 @@ for (i in 1:nsettings) {
                 cdoselect <- paste0("-select,code=", codes[i])
                 message("\"var", codes[i], "\"", appendLF=F)
             } else {
-                cdoselect <- paste0("-select,name=", fvarnames[i])
+                cdoselect <- paste0("--no_history -select,name=", fvarnames[i])
                 message("\"", fvarnames[i], "\"", appendLF=F)
             }
             message(" is present in first found file ...")
             varcheck_file <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", filetype)
-            cmd <- paste0(cdoprefix, " ", cdoselect, " ", datapaths[i], "/", files[1], " ", varcheck_file)
+            cmd <- paste0(cdoprefix, " ", cdoconvert, " ", cdoselect, " ", datapaths[i], "/", files[1], " ", varcheck_file)
             message("run `", cmd, "`")
             check <- system(cmd, intern=T)
             
@@ -672,10 +757,10 @@ for (i in 1:nsettings) {
             
             if (F) { # test
                 message("\n*********** for testing set variable to not found ************\n")
-                check <- 1
+                attributes(check) <- list(status=1)
             }
             
-            if (length(check) != 0) { 
+            if (!is.null(attributes(check))) { # requested variable not in first found file
 
                 message("--> requested variable \"", fvarnames[i], "\" was not found in first file:\n",
                         "   \"", datapaths[i], "/", files[1], "\"")
@@ -715,7 +800,7 @@ for (i in 1:nsettings) {
                         if (length(replace_inds_open) == 1 && replace_inds_open == -1) { # not a single "<" was found in command
                             # nothing to do, let user commands as they are in the namelist
                         } else {
-                            for (cmdj in 1:length(replace_inds_open)) {
+                            for (cmdj in seq_along(replace_inds_open)) {
                                 # check if a variable in the current workspace exists with the same name
                                 pattern <- substr(cmdsin[cmdi], replace_inds_open[cmdj] + 1, replace_inds_close[cmdj] - 1)
                                 if (exists(eval(pattern))) { # variable with the name of the pattern exists
@@ -788,8 +873,8 @@ for (i in 1:nsettings) {
                 # else requested variable is not defined in `cdo_known_cmds`
                 } else { 
 
-                    message("and no command name \"", fvarnames[i], "\" was defined in `cdo_known_cmds` in namelist.post.r")
-                    stop()
+                    message("and none of `cdo_known_cmds` is named \"", fvarnames[i], "\" in namelist.post.r.")
+                    stop("dont know how to proceed")
 
                 } # if special case if requested variable is one of the wiso delta variables or not
                 
@@ -1242,7 +1327,7 @@ for (i in 1:nsettings) {
                         cmd <- paste0(cdoprefix, " showdate ")
                         cmd <- paste0(cmd, selfile_vec[chunki])
                         cmd <- paste0(cmd, " > ", cdo_showdate_file)
-                        message("\nrun `", cmd, "` # caution: `cdo showdate` does not print erroneous dates")
+                        message("\nrun `", cmd, "` # caution: `cdo showdate` does not print erroneous or duplicate dates")
                         system(cmd)
                         cdo_dates <- scan(cdo_showdate_file, what="char", quiet=T)
                         if (length(cdo_dates) == 0) stop("sth went wrong")
@@ -1513,7 +1598,7 @@ for (i in 1:nsettings) {
                         months_out <- dates_in_list[[chunki]]$months
                         
                         # new days
-                        # todo: get days from file names like `years_filenames_chunki` and `MM_in` if present
+                        # todo: get days from file names like `years_filenames_chunki` and `months_filenames` if present
                         days_out <- dates_in_list[[chunki]]$days
                         #if (length(days_out) != length(months_out)) {
                         #    # e.g. if input were monthly files and `cdo -yearsum` yields annual files
@@ -1627,12 +1712,13 @@ for (i in 1:nsettings) {
                         } # only once at beginning
 
                         message("\nconstruct new times values with `new_date_list[[", 
-                                i, "]]$nc_time_units` = \"", new_date_list[[i]]$nc_time_units, "\" ...")
+                                i, "]]$nc_time_units` = \"", new_date_list[[i]]$nc_time_units, "\":")
                         if (cdo_set_rel_time) {
                             if (F) { # old
                                 dates_out_ncap <- as.POSIXlt(dates_out, tz="UTC") # old
                             } else if (T) { # new
-                                message("\nrun `make_posixlt_origin_function(years_out)` ...")
+                                message("run `make_posixlt_origin_function(years_out=c(",
+                                        paste(c(head(years_out), "...", tail(years_out)), collapse=","), "))` ...")
                                 dates_out_ncap <- make_posixlt_origin_function(years_out)
                                 dates_out_ncap$mon <- months_out - 1 # posix months start counting from zero
                                 dates_out_ncap$mday <- days_out
@@ -1706,15 +1792,16 @@ for (i in 1:nsettings) {
                                                      paste0("_origin_", new_date_list[[i]]$nc_time_origin, ".nc"),
                                                      selfile_vec[chunki])
                        
-                        if (!file.exists(nco_fout_vec[chunki])) {
+                        #if (!file.exists(nco_fout_vec[chunki])) { # why did i do this?
+                        if (T) {
 
                             # if input has absolute time units but `new_date_list[[i]]$nc_time_units` shall be relative,
                             # the input needs to be converted from absolute to relative time units
-                            # BEFORE setting new time values with nco ncap2
+                            # before setting new time values with nco ncap2
+                            # todo: need to update this with a check
                             #cmd_cp_and_mv <- paste0("cp ", fout_vec[chunki], " ", nco_fout_vec[chunki])
-                            message("\nneed to update this with a check\n")
                             cmd_cp_and_mv <- paste0(cdoprefix, " -r copy ", selfile_vec[chunki], " ", nco_fout_vec[chunki])
-                            cmd_ncap2 <- paste0(nco_ncap2, " -O -s 'time(:)={<dates_out_ncap>}; time@units=\"",
+                            cmd_ncap2 <- paste0(nco_ncap2, " -O -h -s 'time(:)={<dates_out_ncap>}; time@units=\"",
                                                 new_date_list[[i]]$nc_time_units, "\"' ", nco_fout_vec[chunki], " ", 
                                                 nco_fout_vec[chunki], " || echo error")
                             message("run 1: `", cmd_cp_and_mv, "`\n", 
@@ -1876,7 +1963,7 @@ for (i in 1:nsettings) {
                                         "already exists and `cdo_force`=F. skip ...")
                                 ticcmd <- toccmd <- NULL
                             } else {
-                                message("\nrun `", cmd_source, "`")
+                                message("via `", cmd_source, "`")
                                 message("this may take some time for ", nfiles_per_chunk, " files ...")
                                 ticcmd <- Sys.time()
                                 system(cmd_source)
@@ -1887,7 +1974,7 @@ for (i in 1:nsettings) {
                             if (!file.exists(fout_vec[chunki])) {
                                 stop("fout_vec[", chunki, "] = ", fout_vec[chunki], " does not exist but it should")
                             }
-
+                        
                         } else if (!cdo_run_from_script) {
                             stop("update for cdo_chain separate/alltogether")
                             ticcmd <- Sys.time()
@@ -1902,6 +1989,15 @@ for (i in 1:nsettings) {
                                     elapsedcmd , " ", attributes(elapsedcmd)$units, " for ", 
                                     nfiles_per_chunk, " file", ifelse(nfiles_per_chunk > 1, "s", ""))
                         }
+                            
+                        # clean
+                        if (clean) {
+                            if (cdo_run_from_script) {
+                                system(paste0("rm -v ", scriptname))
+                            }
+                            system(paste0("rm -v ", selfile_vec_old[chunki]))
+                            system(paste0("rm -v ", selfile_vec[chunki]))
+                        } # if clean
 
                     } # for chunki: possible chunks if argument is too long
                 
@@ -1921,7 +2017,7 @@ for (i in 1:nsettings) {
         
         # cat chunks together (if needed) and remove temporary files
         if (nchunks > 1) {
-            message("\n", "cat ", nchunks, " cdo chunks together ...")
+            message("\n", "cat ", nchunks, " > 1 -> cdo chunks together ...")
             if (F) {
                 # destroys non-default time formats not known by cdo
                 # also, makes "day as %Y%m%d.%f" --> "days since YYYY-MM-DD"
@@ -1935,8 +2031,8 @@ for (i in 1:nsettings) {
         # or rename of necessary 
         } else {
             if (fout_vec != fout) {
-                cmd_rename <- paste0("mv ", fout_vec, " ", fout)
-                message("run `", cmd_rename, "` ...")
+                message("\nnchunks = 1 -> rename temporary file to fout ...")
+                cmd_rename <- paste0("mv -v ", fout_vec, " ", fout)
                 system(cmd_rename)
             }
         }
@@ -1953,7 +2049,8 @@ for (i in 1:nsettings) {
 
         # change from/to in final fout if new dates were applied
         if (!is.null(new_date_list[[i]]$years)) {
-            cmd <- paste0("mv ", fout, " ")
+            message("\nrename initial fout according to new dates ...")
+            cmd <- paste0("mv -v ", fout, " ")
             from_new <- range(sapply(dates_out_list, "[", "years"))[1]
             to_new <- range(sapply(dates_out_list, "[", "years"))[2]
             fout <- gsub(paste0(froms[i], "-", tos[i]), 
@@ -1961,7 +2058,6 @@ for (i in 1:nsettings) {
                                 sprintf(paste0("%0", nchar(tos[i]), "i"), to_new)),
                          fout)
             cmd <- paste0(cmd, fout)
-            message("run `", cmd, "` ...")
             system(cmd)
         } # if !is.null(new_date_list[[i]]$years)
 
@@ -2025,20 +2121,21 @@ for (i in 1:nsettings) {
     toc <- Sys.time()
     elapsed[[i]] <- toc - tic
     message("\n", "setting ", i, "/", nsettings , " took ", elapsed[[i]], " ", 
-            attributes(elapsed[[i]])$units, " for ", modes[i], " calculation\n")
+            attributes(elapsed[[i]])$units, " for ", modes[i], " calculation")
 
     # restore user options for next setting
     cdo_set_rel_time <- cdo_set_rel_time_old
 
 } # for i nsettings
 
-message("\n", "finished", "\n")
+message("\nfinished\n")
 
 for (i in 1:nsettings) {
     message("setting ", i, "/", nsettings , "\n",
             "  ", datapaths[i], "/", fpatterns[i], "\n",
             "took ", elapsed[[i]], " ", 
-            attributes(elapsed[[i]])$units, " for ", modes[i], " calculation\n")
+            attributes(elapsed[[i]])$units, " for ", modes[i], " calculation of ", 
+            length(files), " file", ifelse(length(files) > 1, "s", ""), "\n")
 }
 
 if (!interactive()) {
