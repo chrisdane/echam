@@ -3,6 +3,7 @@
 verbose <- 1 # 0,1
 clean <- T # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
+cdo_select_no_history <- "" # "--no_history" or ""
 cdo_force <- T # redo cdo command although outout file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
 cdo_set_rel_time <- T # conversion from absolute to relative time
@@ -36,8 +37,13 @@ if (F) { # old hist
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/1percCO2/outdata/echam"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/4CO2/outdata/echam"
     #datapaths <- "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_HIST/outdata/echam" # awi-cm-1-2-lr
-    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/tas/gn/v20200212"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/tas/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/ts/gn/v20200212"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/rsdt/gn/v20200212"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/clt/gn/v20200212"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/rsus/gn/v20200212"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Emon/rss/gn/v20200212"
+    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/midHolocene/r1i1p1f1/Amon/tas/gn/v20200212"
     #fpatterns <- "piControl_echam6_echam_<YYYY><MM>.grb"
     #fpatterns <- "piControl_echam6_echammon_<YYYY><MM>.grb"
     #fpatterns <- "piControl_echam6_aeroptmon_<YYYY><MM>.grb"
@@ -46,12 +52,15 @@ if (F) { # old hist
     #fpatterns <- "4CO2_echam6_echam_<YYYY><MM>.grb"
     #fpatterns <- "4CO2_echam6_echam_<YYYY><MM>.nc"
     #fpatterns <- "CMIP6_HIST_echam6_echam_<YYYY><MM>.grb"
-    fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_Emon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
+    fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #prefixes <- "awi-cm-1-1-lr_1percCO2_echam6_echam"
     #prefixes <- "awi-cm-1-1-lr_4CO2_echam6_echam"
     #prefixes <- "awi-esm-1-1-lr_piControl_echam6_echam"
-    prefixes <- "awi-esm-1-1-lr_piControl_echam6"
+    #prefixes <- "awi-esm-1-1-lr_piControl_echam6"
     #prefixes <- "awi-esm-1-2-lr_historical_echam6_echam"
+    prefixes <- "awi-esm-1-1-lr_midHolocene_echam6"
     #fvarnames <- "temp2"
     #codes <- 167
     #fvarnames <- "srad0"
@@ -64,21 +73,27 @@ if (F) { # old hist
     #codes <- 11
     fvarnames <- "tas" # 2m
     #fvarnames <- "ts" # = cmor tsurf
+    #fvarnames <- "rsdt" # = cmor srad0d
+    #fvarnames <- "clt" # = cmor aclcov
+    #fvarnames <- "rss" # = cmor srads
+    #fvarnames <- "rsus" # = cmor sradsu
     #froms <- 1850
-    froms <- 1855
+    #froms <- 1855
     #froms <- 1870
     #froms <- 1873
     #froms <- 1912 # last 30 years: 1912:1941; last 100 years: 1842:1941 
+    froms <- 3106 # awi-esm-1-1-lr midHolocene on esgf
     #tos <- 1859
     #tos <- 1869 # 1percCO2: 1850-1869.nc
     #tos <- 1872 # 4CO2: 1850-1872.nc
     #tos <- 1941
-    tos <- 1954
+    #tos <- 1954
     #tos <- 2099
-    modes <- "timmean"
+    tos <- 3205 # awi-esm-1-1-lr midHolocene on esgf
+    #modes <- "timmean"
     #modes <- "yseasmean" 
-    #modes <- "fldmean"
-    new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
+    modes <- "fldmean"
+    #new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
 } else if (F) { # xiaoxu
     datapaths <- "/mnt/lustre02/work/ba0989/a270064/esm-experiments/lgm_anm/outdata/echam" # 3537:2872 (n=336)
