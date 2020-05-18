@@ -31,7 +31,7 @@ if (F) { # old hist
     #modes <- "timmean"
     prefixes <- "dynveg"
     
-} else if (T) { # cmip6
+} else if (F) { # cmip6
     models <- "echam6"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/1percCO2/outdata/echam"
@@ -95,21 +95,25 @@ if (F) { # old hist
     modes <- "fldmean"
     #new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
-} else if (F) { # xiaoxu
-    datapaths <- "/mnt/lustre02/work/ba0989/a270064/esm-experiments/lgm_anm/outdata/echam" # 3537:2872 (n=336)
-    fpatterns <- "MM_<YYYY>01.01_echam.nc"
-    #fvarnames <- "temp2"
-    fvarnames <- "trad0"
+} else if (T) { # hu/xiaoxu
     models <- "echam6"
-    froms <- 3537 # last 30 years start from 3843
-    tos <- 3872
+    #datapaths <- "/mnt/lustre02/work/ba0989/a270064/esm-experiments/lgm_anm/outdata/echam" # 3537:2872 (n=336)
+    datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
+    fpatterns <- "MM_<YYYY>01.01_echam.nc"
+    fvarnames <- "temp2"
+    #fvarnames <- "trad0"
+    froms <- 2700
+    #froms <- 3537 # last 30 years start from 3843
+    tos <- 3249
+    #tos <- 3872
     #season_inds <- list(c(12, 1, 2)) # DJF
     #season_inds <- list(c(3, 4, 5)) # MAM
     #season_inds <- list(c(6, 7, 8)) # JJA
     #season_inds <- list(c(9, 10, 11)) # SON
     #modes <- "timmean" 
     modes <- "fldmean"
-    prefixes <- "awi-esm-1-1-lr_lgm"
+    #prefixes <- "awi-esm-1-1-lr_lgm_echam6"
+    prefixes <- "awi-esm-1-1-lr_piControl_echam6"
 
 } else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     # hol-7 on stan:
