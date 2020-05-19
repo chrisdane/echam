@@ -6,6 +6,7 @@
 # ignore these netcdf variables
 ignore_vars <- c("time_bnds", "timestamp", 
                  "hyai", "hybi", "hyam", "hybm",
+                 "height", 
                  "depthvec", 
                  "moc_reg_lat")
 message("\nthese variables will be ignored:\n",
@@ -378,12 +379,13 @@ if (F) { # awi-esm-1-1-lr hist
         prefixes <- c("historical_minus_piControl_echam6_echammon_awi-esm-1-1-lr",
                       "1percCO2_minus_piControl_echam6_echammon_awi-esm-1-1-lr",
                       "4CO2_minus_piControl_echam6_echammon_awi-esm-1-1-lr")
+        names_short <- c("hist", "1pctCO2", "abrupt-4xCO2") 
     } else if (F) {
         prefixes <- c("awi-esm-1-1-lr_historical_minus_piControl_monthly_mean",
                       "awi-esm-1-1-lr_1percCO2_minus_piControl_monthly_mean",
                       "awi-esm-1-1-lr_4CO2_minus_piControl_monthly_mean")
+        names_short <- c("hist", "1pctCO2", "abrupt-4xCO2") 
     }
-    names_short <- c("hist", "1pctCO2", "abrupt-4xCO2") 
     if (F) {
         varnames_in <- rep("temp2", t=3)
     } else if (F) {   
@@ -503,7 +505,7 @@ if (F) { # awi-esm-1-1-lr hist
 
 # =====================================
 # 4 settings
-} else if (T) { # awi-esm-1-1-lr deck
+} else if (F) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
     if (F) { # awi-cm-1-1-lr
@@ -737,6 +739,28 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("taymyr_remapnn", "taymyr_remapbil", "taymyr_remapbic", "taymyr_remapdis")
     #areas <- c("emanda_remapnn", "emanda_remapbil", "emanda_remapbic", "emanda_remapdis")
     #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapbil", "elgygytgyn_remapbic", "elgygytgyn_remapdis")
+
+} else if (T) { # awi-esm-1-1-lr cold/warm atmosphere restart problem
+    models <- rep("echam6", t=4)
+    prefixes <- c("awi-esm-1-1-lr_piControl_477_ollie_echam6",
+                  "awi-esm-1-1-lr_midHolocene_warm_echam6",
+                  "awi-esm-1-1-lr_midHolocene_cold_echam6",
+                  "awi-esm-1-1-lr_piControl_mistral_esm_echam6")
+    names_short <- c("PIollie", "MHwarm", "MHcold", "PImistral")
+    fromsf <- c(2700, 3106, 3123, 1842)
+    tosf <- c(3249, 3205, 3166, 1941)
+    new_origins <- c(1, 551, 551, 551)
+    #fromsp <- c(546, rep(NA, t=3))
+    #tosp <- c(NA, rep(555, t=3))
+    time_frequencies <- rep("monthly", t=4)
+    n_mas <- rep(36, t=4)
+    varnames_in <- c("temp2", "tas", "temp2", "tas")
+    modes <- rep("fldmean", t=4)
+    varnames_out_samedims <- "temp2"
+    names_legend_samedims <- names_short
+    cols_samedims <- 1:4 
+    ltys_samedims <- rep(1, t=4)
+    areas <- rep("global", t=4)
 
 # ==================================================
 # 6 settings

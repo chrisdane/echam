@@ -2,7 +2,7 @@
 
 #options(warn = 2) # stop on warnings
 
-if (F) {
+if (T) {
     rm(list=ls())
     fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
     # `[` <- fctbackup 
@@ -35,6 +35,8 @@ source("namelist.plot.r")
 
 # check user input and defaults
 nsettings <- length(prefixes)
+if (!exists("names_short")) stop("must provide `names_short`")
+if (!exists("names_legend")) names_legend <- rep(names_short, t=nsettings)
 if (!exists("modes")) stop("must provide `modes`")
 if (!exists("codes")) codes <- rep("", t=nsettings)
 if (!exists("levs")) levs <- rep("", t=nsettings)
@@ -1669,7 +1671,7 @@ for (i in 1:nsettings) {
         data_infos[[i]][[vi]]$label <- label
 
         # add specific things
-        if (varname == "temp2") {
+        if (any(varname == c("temp2", "tas"))) {
             data_infos[[i]][[vi]]$label <- "2m temperature [°C]"
             if (!is.na(remove_mean_froms[i])) {
                 data_infos[[i]][[vi]]$label <- "2m temperature anomaly [°C]"
@@ -2063,7 +2065,7 @@ if (add_smoothed &&
                         eval(parse(text=cmd))
                     }
                 } else { # variable has no time dim
-                    message("variable \"", names(datas[[i]])[vi], "\" has not time dim ...")
+                    message("variable \"", names(datas[[i]])[vi], "\" has no time dim ...")
                     datasma[[i]][[vi]] <- array(NA, dim=dim(datas[[i]][[vi]]))
                 } # if variable has time dim or not
                 
@@ -2347,24 +2349,25 @@ if (any(ntime_per_setting > 1)) {
     tatn <- as.numeric(tlablt)
 
     # modify time axis labels YYYY-MM-DD depending on range covered:
+    tunit <- "Time"
     if (tlab_diff_secs > 365*24*60*60) { # do not show days if range of tlim is above 1 year
         message("time lims is longer than 1 year, modify automatic time labels ...")
         tlablt <- unclass(tlablt)$year + 1900 # -> YYYY; this destroys POSIX object
+        tunit <- "Year"
     } else { # decrease label size due to long labels
         message("change time label angle ...")
         tlabsrt <- 45
     }
 
     # if all dates < 0, use "abs(dates) BP" instead
-    tunit <- "Time"
-    if (any(tlablt < 0)) {
+    if (tunit == "Year" && any(tlablt < 0)) {
         message("some times are < 0 --> use \"abs(times)\" for time labels instead ...")
         neg_inds <- which(tlablt < 0)
         tlablt[neg_inds] <- abs(tlablt[neg_inds])
         if (!is.na(time_ref)) {
-            tunit <- paste0("year before ", time_ref)
+            tunit <- paste0("Year before ", time_ref)
         } else {
-            tunit <- "year before `time_ref`"
+            tunit <- "Year before `time_ref`"
         }
     }
 
@@ -4088,16 +4091,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # add legend if wanted
             if (add_legend) {
-                message("\n", "add default stuff to datas legend ...")
+                message("\n", "add default stuff to datas legend here1 ...")
                 le <- list()
-                le$pos <- "topleft" 
+                #le$pos <- "topleft" 
                 #le$pos <- "left"
-                #le$pos <- "bottomleft" 
+                le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
                 #le$ncol <- length(z)/2
-                #le$ncol <- 1
-                le$ncol <- 2
+                le$ncol <- 1
+                #le$ncol <- 2
                 #le$ncol <- length(z)
                 #le$ncol <- ceiling(length(z)/4) 
                 le$text <- names_legend_p

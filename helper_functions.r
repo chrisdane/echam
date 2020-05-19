@@ -42,8 +42,28 @@ cdo_get_filetype <- function(fin, cdo="cdo", verbose=T) {
     cmd <- paste0(cdo, " showformat ", fin)
     if (verbose) message("run `", cmd, "`")
     input_format <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
-    if (!is.null(input_format$warning)) {
-        stop(input_format$warning)
+    if (!is.null(input_format$warning)) { # `cdo showformat` yields warn/error
+        # `cdo showformat` on fesom data yields error:
+        # Warning (cdf_read_xcoord): Unsupported array structure, skipped variable tosga!
+        # Warning (cdfInqContents): No data arrays found!
+        # Unsupported file structure
+        message(input_format$warning$message)
+        # -> use `ncdump -k` in this case
+        message("-> try to run `ncdump -k` instead -> try to find ncdump...")
+        ncdump <- system("which ncdump", intern=T)
+        if (!is.null(attributes(ncdump)$status)) {
+            stop(ncdump$warning$message)
+        } else {
+            message("found ", ncdump)
+        }
+        cmd <- paste0(ncdump, " -k ", fin)
+        if (verbose) message("run `", cmd, "`")
+        input_format <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
+        if (!is.null(input_format$warning)) { # `ncdump -k` yields also warn/error
+            stop(input_format$warning$message)
+        } else {
+            if (verbose) message("--> \"", input_format$value, "\" --> ", appendLF=F)
+        }
     } else {
         if (verbose) message("--> \"", input_format$value, "\" --> ", appendLF=F)
     }
@@ -51,12 +71,15 @@ cdo_get_filetype <- function(fin, cdo="cdo", verbose=T) {
         if (verbose) message("convert to netcdf ...")
         convert_to_nc <- T
         file_type <- "grb"
-    } else if (any(input_format$value == c("netCDF", "NetCDF", "NetCDF2", "NetCDF4 classic zip"))) {
+    } else if (any(input_format$value == c("netCDF", "NetCDF", "NetCDF2", 
+                                           "NetCDF4 classic zip", "netCDF-4 classic model"))) {
         if (verbose) message("no need to convert to netcdf ...")
         convert_to_nc <- F
         file_type <- "nc"
     } else {
-        if (verbose) message("not defined in helper_functions.r:cdo_get_filetype() -> assume that conversion to nc is not needed -> set `convert_to_nc` to F and continue ...")
+        if (verbose) message("not defined in helper_functions.r:cdo_get_filetype() ",
+                             "-> assume that conversion to nc is not needed ",
+                             "-> set `convert_to_nc` to F and continue ...")
         convert_to_nc <- F
         file_type <- input_format$value
     }

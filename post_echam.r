@@ -487,13 +487,14 @@ for (i in 1:nsettings) {
                 message("\nspecial patterns \"<YYYY_from>\" and \"<YYYY_to>\" are given but \"<YYYY>\" not\n",
                         "-> derive all input years in a consecutive order ...") 
                 years_filenames <- as.vector(mapply(function(x,y) x:y, years_filenames_from, years_filenames_to))
+                years_filenames <- unlist(years_filenames) # is list if not all x[i]:y[i] sequences from the line above are of same length
                 if (any(diff(years_filenames) < 0)) {
                     stop("derived `years_filenames` are not monotonically increasing")
                 }
             } else {
                 stop("this is not implemented yet")
             }
-            message("derived years:")
+            message("derived ", length(years_filenames), " years:")
             ht(years_filenames, n=30)
         } # if years_filenames does not exist
 

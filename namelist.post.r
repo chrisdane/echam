@@ -31,7 +31,7 @@ if (F) { # old hist
     #modes <- "timmean"
     prefixes <- "dynveg"
     
-} else if (F) { # cmip6
+} else if (T) { # cmip6
     models <- "echam6"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/1percCO2/outdata/echam"
@@ -43,7 +43,8 @@ if (F) { # old hist
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/clt/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/rsus/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Emon/rss/gn/v20200212"
-    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/midHolocene/r1i1p1f1/Amon/tas/gn/v20200212"
+    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Omon/tosga/gn/v20200212"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/midHolocene/r1i1p1f1/Amon/tas/gn/v20200212" # 3106:3205
     #fpatterns <- "piControl_echam6_echam_<YYYY><MM>.grb"
     #fpatterns <- "piControl_echam6_echammon_<YYYY><MM>.grb"
     #fpatterns <- "piControl_echam6_aeroptmon_<YYYY><MM>.grb"
@@ -54,13 +55,15 @@ if (F) { # old hist
     #fpatterns <- "CMIP6_HIST_echam6_echam_<YYYY><MM>.grb"
     #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Emon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
-    fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    fpatterns <- "<fvarnames>_Omon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #prefixes <- "awi-cm-1-1-lr_1percCO2_echam6_echam"
     #prefixes <- "awi-cm-1-1-lr_4CO2_echam6_echam"
     #prefixes <- "awi-esm-1-1-lr_piControl_echam6_echam"
     #prefixes <- "awi-esm-1-1-lr_piControl_echam6"
+    prefixes <- "awi-esm-1-1-lr_piControl_mistral_esm_echam6"
     #prefixes <- "awi-esm-1-2-lr_historical_echam6_echam"
-    prefixes <- "awi-esm-1-1-lr_midHolocene_echam6"
+    #prefixes <- "awi-esm-1-1-lr_midHolocene_echam6"
     #fvarnames <- "temp2"
     #codes <- 167
     #fvarnames <- "srad0"
@@ -71,49 +74,62 @@ if (F) { # old hist
     #codes <- 184
     #fvarnames <- "tau_aero_550_pt"
     #codes <- 11
-    fvarnames <- "tas" # 2m
+    #fvarnames <- "tas" # 2m
     #fvarnames <- "ts" # = cmor tsurf
     #fvarnames <- "rsdt" # = cmor srad0d
     #fvarnames <- "clt" # = cmor aclcov
     #fvarnames <- "rss" # = cmor srads
     #fvarnames <- "rsus" # = cmor sradsu
+    fvarnames <- "tosga"
     #froms <- 1850
-    #froms <- 1855
+    froms <- 1855 # awi-esm-1-1-lr piControl on esgf
     #froms <- 1870
     #froms <- 1873
     #froms <- 1912 # last 30 years: 1912:1941; last 100 years: 1842:1941 
-    froms <- 3106 # awi-esm-1-1-lr midHolocene on esgf
+    #froms <- 3106 # awi-esm-1-1-lr midHolocene on esgf
     #tos <- 1859
     #tos <- 1869 # 1percCO2: 1850-1869.nc
     #tos <- 1872 # 4CO2: 1850-1872.nc
     #tos <- 1941
-    #tos <- 1954
+    tos <- 1954 # awi-esm-1-1-lr piControl on esgf
     #tos <- 2099
-    tos <- 3205 # awi-esm-1-1-lr midHolocene on esgf
+    #tos <- 3205 # awi-esm-1-1-lr midHolocene on esgf
+    modes <- "select"
     #modes <- "timmean"
     #modes <- "yseasmean" 
-    modes <- "fldmean"
-    #new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
+    #modes <- "fldmean"
+    new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
-} else if (T) { # hu/xiaoxu
-    models <- "echam6"
+} else if (F) { # hu/xiaoxu
+    #models <- "echam6"
+    models <- "fesom"
     #datapaths <- "/mnt/lustre02/work/ba0989/a270064/esm-experiments/lgm_anm/outdata/echam" # 3537:2872 (n=336)
-    datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
-    fpatterns <- "MM_<YYYY>01.01_echam.nc"
-    fvarnames <- "temp2"
+    #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/echam" # MH_cold 3123 to 3166
+    datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/fesom" # MH_cold 3105(3123) fesom(echam) to 3166
+    #fpatterns <- "mh_cold_echam6_echammon_<YYYY><MM>.grb" 
+    fpatterns <- "mh_cold_fesom_tosga_<YYYY>0101.nc"
+    #datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
+    #fpatterns <- "MM_<YYYY>01.01_echam.nc"
+    #fvarnames <- "temp2"
     #fvarnames <- "trad0"
-    froms <- 2700
+    fvarnames <- "tosga"
+    #froms <- 2700 
+    froms <- 3105
+    #froms <- 3123
     #froms <- 3537 # last 30 years start from 3843
-    tos <- 3249
+    tos <- 3166
+    #tos <- 3249
     #tos <- 3872
     #season_inds <- list(c(12, 1, 2)) # DJF
     #season_inds <- list(c(3, 4, 5)) # MAM
     #season_inds <- list(c(6, 7, 8)) # JJA
     #season_inds <- list(c(9, 10, 11)) # SON
+    modes <- "select"
     #modes <- "timmean" 
-    modes <- "fldmean"
+    #modes <- "fldmean"
     #prefixes <- "awi-esm-1-1-lr_lgm_echam6"
-    prefixes <- "awi-esm-1-1-lr_piControl_echam6"
+    #prefixes <- "awi-esm-1-1-lr_piControl_echam6"
+    prefixes <- "awi-esm-1-1-lr_midHolocene_cold"
 
 } else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     # hol-7 on stan:
