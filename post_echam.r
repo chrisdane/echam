@@ -282,7 +282,7 @@ for (i in 1:nsettings) {
     # output fname
     fout <- paste0(postpaths[i], "/", 
                    ifelse(!is.na(prefixes[i]), prefixes[i], ""),
-                   "_", modes[i],
+                   "_", models[i], "_", modes[i],
                    ifelse(!is.na(codes[i]), paste0("_selcode_", codes[i]), ""),
                    "_", fvarnames[i], 
                    ifelse(!is.na(levs_out[i]), paste0("_sellevel_", levs_out[i]), ""),
