@@ -168,10 +168,12 @@ lev_fnames[which(!is.na(levs_out))] <- paste0("_", levs_out[which(!is.na(levs_ou
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
 
 # check for new times if wanted
-message("check if `new_date_list` is set and correct ...")
+message("check if `new_date_list` is set and correct ... ", appendLF=F)
 if (!exists("new_date_list")) {
+    message("-> `new_date_list` is not set. user does not want new time values.")
     new_date_list <- NULL
 } else {
+    message("-> `new_date_list` is not NULL")
     for (i in 1:nsettings) {
         if (is.null(new_date_list[[i]]$years)) {
             # user did not provide final years to use 
@@ -207,28 +209,24 @@ if (!exists("new_date_list")) {
     # check if ncap2 is available
     if (!exists("nco_ncap2")) {
         cmd <- paste0("which ncap2")
-        message("`nco_ncap2` not set by user -> check if ncap2 binary can be found to set new times of nc file: run `", cmd, "`")
+        message("   `nco_ncap2` not set by user -> check if ncap2 binary can be found to set new times of nc file: run `", cmd, "`")
         nco_ncap2 <- system(cmd, intern=T)
         if (!is.null(attributes(nco_ncap2)$status)) {
             stop("`which ncap2` gave exit status ", attributes(nco_ncap2)$status)
-        } else {
-            message("found ", appendLF=F)
         }
     }
-    message("ncap2 = ", nco_ncap2)
+    message("   ncap2 = ", nco_ncap2)
 
     # check if ncrcat is available
     if (!exists("nco_ncrcat")) {
         cmd <- paste0("which ncrcat")
-        message("`nco_ncrcat` not set by user -> check if ncrcat binary can be found to eventually cat chunks with new times of nc file: run `", cmd, "`")
+        message("   `nco_ncrcat` not set by user -> check if ncrcat binary can be found to eventually cat chunks with new times of nc file: run `", cmd, "`")
         nco_ncrcat <- system(cmd, intern=T)
         if (!is.null(attributes(nco_ncrcat)$status)) {
             stop("`which ncrcat` gave exit status ", attributes(nco_nrcat)$status)
-        } else {
-            message("found ", appendLF=F)
         }
     }
-    message("ncrcat = ", nco_ncrcat)
+    message("   ncrcat = ", nco_ncrcat)
 
 } # if new_date_list provided or not
 
@@ -1846,7 +1844,7 @@ for (i in 1:nsettings) {
                             
                             # check if nco ncap2 argument is too long
                             nchar_cmd_ncap2 <- nchar(cmd_ncap2_tmp)
-                            message("--> nco ncap2 argument with all input files is ", nchar_cmd_ncap2, " characters long")
+                            message("nco ncap2 argument with all input files is ", nchar_cmd_ncap2, " characters long")
                             if (nchar_cmd_ncap2 > nco_nchar_max_arglist) {
                                 
                                 # run nco ncap2 command in chunks from file 
@@ -1946,6 +1944,8 @@ for (i in 1:nsettings) {
 
                             } else if (nchar_cmd_ncap2 <= nco_nchar_max_arglist) {
                               
+                                message("--> this is not longer than `nco_nchar_max_arglist` = ", nco_nchar_max_arglist, 
+                                        " and does not yield the error \"Argument list too long\"")
                                 # do not select time steps in nco ncap2 chunks but just make a copy and rename
                                 system(cmd_cp_and_mv)
                                 #system(paste0("cdo -r copy ", nco_fout_vec[chunki], " ~/tmp && mv ~/tmp ", nco_fout_vec[chunki])) 
