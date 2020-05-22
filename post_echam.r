@@ -315,9 +315,9 @@ for (i in 1:nsettings) {
         # replace potential <pattern> in `fpatterns[i]`
         message("\ncheck `fpatterns[", i, "]` =\n   \"", fpatterns[i], "\"\nfor \"<...>\" patterns to replace ...")
         sub_list <- NULL # default
-        pattern_inds_open <- gregexpr("<", fpatterns[i])[[1]]
+        pattern_inds_open <- gregexpr("<", fpatterns[i])[[1]] # returns n inds if found or -1 
         pattern_inds_closed <- gregexpr(">", fpatterns[i])[[1]]
-        if (length(pattern_inds_open) != 0 || length(pattern_inds_closed) != 0) {
+        if (!all(pattern_inds_open == -1) || !all(pattern_inds_closed == -1)) {
             if (length(pattern_inds_open) != length(pattern_inds_closed)) {
                 stop("in `fpatterns[", i, "]` you provided ", length(pattern_inds_open), 
                      " opening brackets \"<\" to indicate a file pattern to replace but ", 
@@ -377,7 +377,10 @@ for (i in 1:nsettings) {
                 }
                 sub_list[[pati]]$replacement_inds[2] <- sub_list[[pati]]$replacement_inds[1] + sub_list[[pati]]$replacement_length - 1
             }
-        } # if user provided other <patterns> than <YYYY> and <MM>
+        } else {
+            message("   no \"<...>\" strings detected ...")
+            fpattern <- fpatterns[i]
+        } # if user provided <patterns>
 
         # find files based on datapath and fpattern with potential <patterns> applied
         # todo: search for files and links and compare
@@ -484,8 +487,7 @@ for (i in 1:nsettings) {
         # special treatment: if only YYYY_to and YYYY_from were provided, but not YYYY, derive `years_filenames` now
         if (!exists("years_filenames")) {
             if (exists("years_filenames_from") && exists("years_filenames_to")) {
-                message("\nspecial patterns \"<YYYY_from>\" and \"<YYYY_to>\" are given but \"<YYYY>\" not\n",
-                        "-> derive all input years in a consecutive order ...") 
+                message("\nderive input years based on \"<YYYY_from>\" and \"<YYYY_to>\" in a consecutive order ...") 
                 years_filenames <- as.vector(mapply(function(x,y) x:y, years_filenames_from, years_filenames_to))
                 years_filenames <- unlist(years_filenames) # is list if not all x[i]:y[i] sequences from the line above are of same length
                 if (any(diff(years_filenames) < 0)) {
@@ -499,6 +501,11 @@ for (i in 1:nsettings) {
         } # if years_filenames does not exist
 
         # todo: same as above with months_filenames
+
+        # check if found inpu years are strange: dt not constant
+        if (length(unique(diff(unique(years_filenames)))) != 1) {
+            warning("found years have non-constant dt. evaulate further with e.g. `diff(unique(years_filenames))`")
+        }
 
         # update files which were mistakenly included in by given fpattern:
         # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
@@ -546,10 +553,10 @@ for (i in 1:nsettings) {
 
         # verbose
         if (verbose > 0) {
-            message("\nderived years:")
+            message("\nfinal ", length(years_filenames), " `years_filenames`:")
             ht(years_filenames, n=30)
             if (grepl("<MM>", fpatterns[i])) {
-                message("\nderived months based on file names:")
+                message("\nfinal ", length(months_filenames), " `months_filenames`:")
                 ht(months_filenames, n=30)
             }
         }
@@ -1404,7 +1411,7 @@ for (i in 1:nsettings) {
                                                 not_YYYYMMDD_chunk_inds[length(not_YYYYMMDD_chunk_inds)], ":")
                                         ht(time[not_YYYYMMDD_chunk_inds])
                                     }
-                                    stop("fix this")
+                                    stop("fix this. may setting a dummy time axis helps temporarily: `cdo settaxis,yyyy-mm-dd_origin,,1mon in out`")
                                 } # if wrong times exist
                             } else {
                                 stop("not defined yet")

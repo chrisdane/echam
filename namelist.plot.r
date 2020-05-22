@@ -554,7 +554,7 @@ if (F) { # awi-esm-1-1-lr hist
                           "awi-esm-1-1-lr_4CO2_monthly_mean")
         }
         names_short <- paste0("awi-esm-1-1-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
-    } else if (T) { # awi-esm-1-2-lr
+    } else if (F) { # awi-esm-1-2-lr
         prefixes <- c("awi-esm-1-2-lr_piControl_echam6_echam",
                       "awi-esm-1-2-lr_historical_echam6_echam",
                       "awi-esm-1-2-lr_1percCO2_echam6_echam",
@@ -740,7 +740,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("emanda_remapnn", "emanda_remapbil", "emanda_remapbic", "emanda_remapdis")
     #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapbil", "elgygytgyn_remapbic", "elgygytgyn_remapdis")
 
-} else if (T) { # awi-esm-1-1-lr cold/warm atmosphere restart problem
+} else if (F) { # awi-esm-1-1-lr cold/warm atmosphere restart problem
     models <- rep("echam6", t=4)
     prefixes <- c("awi-esm-1-1-lr_piControl_477_ollie_echam6",
                   "awi-esm-1-1-lr_midHolocene_warm_echam6",
@@ -803,6 +803,35 @@ if (F) { # awi-esm-1-1-lr hist
     areas <- c("moc45to60N", "moc30to60N", "moc50N", "moc45to60N", "moc30to60N", "moc26.5N")
     levs <- c("-285to-2180m", "-285to-2180m", "-0to-5420m", "-0to-5420m", "-0to-5420m", "-0to-5420m")
     names_legend <- paste0(areas, " ", levs)
+
+# ==================================================
+# 7 settings
+} else if (T) { # compare pi/mh cold/warm atmosphere restart problem
+    models <- rep("echam6", t=7)
+    prefixes <- c("awi-esm-1-1-lr_pi477_ollie_echam6", # temp2 2700 to 3249 -> 2051 to 2600
+                  "awi-esm-1-1-lr_piControl_g3bid_echam6", # temp2 2701 to 2999 -> 2051 to 2349
+                  "awi-esm-1-1-lr_piControl_echam6", # tas 1842 to 1941 -> 2350 to 2449
+                  "awi-esm-1-1-lr_mh477_ollie_echam6", # temp2 2623 to 2657
+                  "awi-esm-1-1-lr_mh_new_mistral_echam6", # temp2 2624 to 3001
+                  "awi-esm-1-1-lr_midHolocene_echam6", # tas 3106 to 3205
+                  "awi-esm-1-1-lr_mh_cold_mistral_echam6") # temp2 3105 to 3166
+    names_short <- c("pi477", "piControl_spinup", "piControl", "mh477", "mh_new", "midHolocene", "mh_cold")
+    fromsf <- c(2700, 2701, 1842, 2623, 2624, 3106, 3105)
+    tosf <- c(3249, 2999, 1941, 2657, 3001, 3205, 3166)
+    new_origins <- c(2051, 2051, 2350, NA, NA, NA, NA)
+    #fromsp <- c(546, rep(NA, t=3))
+    #tosp <- c(NA, rep(555, t=3))
+    time_frequencies <- rep("monthly", t=7)
+    n_mas <- rep(36, t=7)
+    varnames_in <- c("temp2", "temp2", "tas", "temp2", "temp2", "tas", "temp2")
+    modes <- rep("fldmean", t=7)
+    varnames_out_samedims <- "temp2"
+    names_legend_samedims <- c("pi477 (2700 to 3249)", "piControl_spinup (2701 to 2999)", "piControl (1842 to 1941)",
+                               "mh477 (2623 to 2657)", "mh_new (2624 to 3001)", "midHolocene (3106 to 3205)",
+                               "mh_cold (3105 to 3166)")
+    cols_samedims <- 1:7
+    ltys_samedims <- rep(1, t=7)
+    areas <- rep("global", t=7)
 
 # ==================================================
 # 8 settings

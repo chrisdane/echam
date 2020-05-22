@@ -31,6 +31,43 @@ if (F) { # old hist
     #modes <- "timmean"
     prefixes <- "dynveg"
     
+} else if (T) { # my stupid cmip6 awi-esm-1-1-lr pi
+    if (F) { # chunk 1: restart_from_hu_oceanonly 2701 to 2702 
+        datapaths <- "/work/ab0246/a270073/awicm-CMIP6/restart_from_hu_oceanonly/outdata/echam"
+        fpatterns <- "restart_from_hu_oceanonly_echam6_g3bid_<YYYY><MM>.grb"
+        froms <- 2701
+        tos <- 2702
+    } else if (T) { # chunk 2: restart_from_restart_from_hu_oceanonly  2703 to 2710
+        datapaths <- "/work/ab0246/a270073/awicm-CMIP6/restart_from_restart_from_hu_oceanonly/outdata/echam"
+        fpatterns <- "restart_from_restart_from_hu_oceanonly_echam6_g3bid_<YYYY><MM>.grb"
+        froms <- 2703
+        tos <- 2710
+    } else if (F) { # pi-ctrl: 2711-2869
+        datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL/outdata/echam"
+        fpatterns <- "PI-CTRL_echam6_g3bid_<YYYY><MM>.grb"
+        froms <- 2750 # 2711 to 2749 are missing?!
+        tos <- 2869
+    } else if (F) { # pi-ctrl2: 
+        datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL2/outdata/echam"
+        fpatterns <- "PI-CTRL2_echam6_g3bid_<YYYY><MM>.grb"
+        froms <- 2870
+        tos <- 2899
+    } else if (F) { # pi-ctrl3: 
+        datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL3/outdata/echam"
+        fpatterns <- "PI-CTRL3_echam6_g3bid_<YYYY><MM>.grb"
+        froms <- 2900
+        tos <- 2910
+    } else if (F) { # pi-ctrl4: 
+        datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL4/outdata/echam"
+        fpatterns <- "PI-CTRL4_echam6_g3bid_<YYYY><MM>.grb"
+        froms <- 2911
+        tos <- 2999
+    }
+    models <- "echam6"
+    prefixes <- "awi-esm-1-1-lr_piControl_g3bid_daily"
+    fvarnames <- "temp2"
+    modes <- "fldmean"
+
 } else if (F) { # cmip6
     models <- "echam6"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
@@ -57,13 +94,12 @@ if (F) { # old hist
     #fpatterns <- "<fvarnames>_Emon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
     fpatterns <- "<fvarnames>_Omon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #prefixes <- "awi-cm-1-1-lr_1percCO2_echam6_echam"
-    #prefixes <- "awi-cm-1-1-lr_4CO2_echam6_echam"
-    #prefixes <- "awi-esm-1-1-lr_piControl_echam6_echam"
-    #prefixes <- "awi-esm-1-1-lr_piControl_echam6"
-    prefixes <- "awi-esm-1-1-lr_piControl_mistral_esm_echam6"
-    #prefixes <- "awi-esm-1-2-lr_historical_echam6_echam"
-    #prefixes <- "awi-esm-1-1-lr_midHolocene_echam6"
+    #prefixes <- "awi-cm-1-1-lr_1percCO2"
+    #prefixes <- "awi-cm-1-1-lr_4CO2"
+    #prefixes <- "awi-esm-1-1-lr_piControl"
+    prefixes <- "awi-esm-1-1-lr_piControl_mistral_esm"
+    #prefixes <- "awi-esm-1-2-lr_historical"
+    #prefixes <- "awi-esm-1-1-lr_midHolocene"
     #fvarnames <- "temp2"
     #codes <- 167
     #fvarnames <- "srad0"
@@ -100,29 +136,35 @@ if (F) { # old hist
     #modes <- "fldmean"
     new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
-} else if (T) { # hu/xiaoxu
-    #datapaths <- "/mnt/lustre02/work/ba0989/a270064/esm-experiments/lgm_anm/outdata/echam" # 3537:2872 (n=336)
-    #fpatterns <- "MM_<YYYY>01.01_echam.nc"
-    #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/echam" # MH_cold 3123 to 3166
-    #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/fesom" # MH_cold 3105(3123) fesom(echam) to 3166
-    #fpatterns <- "mh_cold_echam6_echammon_<YYYY><MM>.grb" 
-    #fpatterns <- "mh_cold_fesom_tosga_<YYYY>0101.nc"
+} else if (F) { # hu/xiaoxu
     #datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
-    datapaths <- "/home/ollie/hyang/work/mh477/cpl_output/copy" # 2623 to 2657
-    fpatterns <- "MM_<YYYY>01.01_echam.nc"
+    #fpatterns <- "MM_<YYYY>01.01_echam.nc"
+    #datapaths <- "/home/ollie/hyang/work/mh477/cpl_output/copy" # 2623 to 2657
+    #fpatterns <- "MM_<YYYY>01.01_echam.nc"
+    #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_new/outdata/echam" # 2624 to 3001
+    #fpatterns <- "MMnew_echam6_echam_<YYYY>01.nc"
+    #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/echam" # 3105 to 3166 
+    #fpatterns <- "mh_cold_echam6_BOT_mm_<YYYY><MM>.nc" # 3105 to 3166 but strange and 3124 is missing
+    #fpatterns <- "mh_cold_echam6_echammon_<YYYY><MM>.grb" # 3123 to 3166
+    datapaths <- "/work/ab0246/a270073/out/awi-esm-1-1-lr/mh_cold"
+    fpatterns <- "mh_cold_echam6_BOT_mm_temp2_<YYYY_from>-<YYYY_to>_with_time.nc"
+    #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/fesom" 
+    #fpatterns <- "mh_cold_fesom_tosga_<YYYY>0101.nc"
     models <- "echam6"
     #models <- "fesom"
     fvarnames <- "temp2"
+    #codes <- 167
     #fvarnames <- "trad0"
     #fvarnames <- "tosga"
+    #froms <- 2624
     #froms <- 2700 
-    froms <- 2623
-    #froms <- 3105
+    froms <- 3105
     #froms <- 3123
     #froms <- 3537 # last 30 years start from 3843
-    #tos <- 3166
+    #tos <- 2657
+    #tos <- 3001
+    tos <- 3166
     #tos <- 3249
-    tos <- 2657
     #tos <- 3872
     #season_inds <- list(c(12, 1, 2)) # DJF
     #season_inds <- list(c(3, 4, 5)) # MAM
@@ -131,9 +173,18 @@ if (F) { # old hist
     #modes <- "select"
     #modes <- "timmean" 
     modes <- "fldmean"
-    #prefixes <- "awi-esm-1-1-lr_lgm"
     #prefixes <- "awi-esm-1-1-lr_pi477_ollie"
-    prefixes <- "awi-esm-1-1-lr_mh477_ollie"
+    #prefixes <- "awi-esm-1-1-lr_lgm"
+    #prefixes <- "awi-esm-1-1-lr_mh477_ollie"
+    #prefixes <- "awi-esm-1-1-lr_mh_new_mistral"
+    prefixes <- "awi-esm-1-1-lr_mh_cold_mistral"
+    if (prefixes == "awi-esm-1-1-lr_mh_cold_mistral" && 
+        (any(fpatterns == c("mh_cold_echam6_BOT_mm_<YYYY><MM>.nc", "mh_cold_echam6_BOT_mm_temp2_<YYYY_from>-<YYYY_to>_with_time.nc"))) &&
+        3124 %in% froms:tos) {
+        message("special: make new time with year 3124 missing") 
+        new_date_list <- list(list(years=rep(froms:tos, e=12), nc_time_origin=1))
+        new_date_list[[1]]$years <- new_date_list[[1]]$years[-(229:240)]
+    }
 
 } else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     # hol-7 on stan:

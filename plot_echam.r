@@ -3,6 +3,7 @@
 #options(warn = 2) # stop on warnings
 
 if (T) {
+    message("rm(list=ls())")
     rm(list=ls())
     fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
     # `[` <- fctbackup 
@@ -4095,9 +4096,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 le <- list()
                 #le$pos <- "topleft" 
                 #le$pos <- "left"
-                le$pos <- "bottomleft" 
+                #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
+                le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
                 #le$ncol <- length(z)/2
                 le$ncol <- 1
                 #le$ncol <- 2
@@ -4116,7 +4118,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 }
                 le$cex <- 1
-                le$cex <- 0.85
+                #le$cex <- 0.85
+                le$cex <- 0.75
+                #le$cex <- 0.66
                 #le$cex <- 0.5
                 # add stuf to legend here
                 if (F && varname == "temp2") {
@@ -4163,7 +4167,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # noadd_ghcdn
 
                 # reorder reading direction from R's default top->bottom to left->right
-                if (F) {
+                if (T) {
                     message("\nreorder legend from top->bottom to left->right")
                     le <- reorder_legend(le)
                 }
