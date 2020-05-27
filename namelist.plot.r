@@ -536,7 +536,7 @@ if (F) { # awi-esm-1-1-lr hist
     #fromsp <- c(-7030, -6996, -7000) # zoom: 7k control/7k transient transition 
     #tosp <- c(-7001, -6900, -6900)
 
-} else if (T) { # three vars of qu, qv, quv
+} else if (F) { # three vars of qu, qv, quv
     prefixes <- c("cosmos-aso-wiso_Hol-Tx10_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev",
                   "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")
     models <- c("echam5", "echam5", "echam5")
@@ -863,18 +863,18 @@ if (F) { # awi-esm-1-1-lr hist
 
 # ==================================================
 # 7 settings
-} else if (F) { # compare pi/mh cold/warm atmosphere restart problem
+} else if (T) { # compare pi/mh cold/warm atmosphere restart problem
     models <- rep("echam6", t=7)
-    prefixes <- c("awi-esm-1-1-lr_pi477_ollie_echam6", # temp2 2700 to 3249 -> 2051 to 2600
-                  "awi-esm-1-1-lr_piControl_g3bid_echam6", # temp2 2701 to 2999 -> 2051 to 2349
-                  "awi-esm-1-1-lr_piControl_echam6", # tas 1842 to 1941 -> 2350 to 2449
-                  "awi-esm-1-1-lr_mh477_ollie_echam6", # temp2 2623 to 2657
-                  "awi-esm-1-1-lr_mh_new_mistral_echam6", # temp2 2624 to 3001
-                  "awi-esm-1-1-lr_midHolocene_echam6", # tas 3106 to 3205
-                  "awi-esm-1-1-lr_mh_cold_mistral_echam6") # temp2 3105 to 3166
+    prefixes <- c("awi-esm-1-1-lr_pi477_ollie", # temp2 2700 to 3249 -> 2051 to 2600
+                  "awi-esm-1-1-lr_piControl_g3bid", # temp2 2701 to 2999 -> 2051 to 2349
+                  "awi-esm-1-1-lr_piControl", # tas 1842 to 1941 -> 2350 to 2449
+                  "awi-esm-1-1-lr_mh477_ollie", # temp2 2623 to 2657
+                  "awi-esm-1-1-lr_mh_new_mistral", # temp2 2624 to 3001
+                  "awi-esm-1-1-lr_midHolocene", # tas 3106 to 3205
+                  "awi-esm-1-1-lr_mh_cold_mistral") # temp2 3105 to 3207
     names_short <- c("pi477", "piControl_spinup", "piControl", "mh477", "mh_new", "midHolocene", "mh_cold")
     fromsf <- c(2700, 2701, 1842, 2623, 2624, 3106, 3105)
-    tosf <- c(3249, 2999, 1941, 2657, 3001, 3205, 3166)
+    tosf <- c(3249, 2999, 1941, 2657, 3001, 3205, 3207)
     new_origins <- c(2051, 2051, 2350, NA, NA, NA, NA)
     #fromsp <- c(546, rep(NA, t=3))
     #tosp <- c(NA, rep(555, t=3))
@@ -885,7 +885,7 @@ if (F) { # awi-esm-1-1-lr hist
     varnames_out_samedims <- "temp2"
     names_legend_samedims <- c("pi477 (2700 to 3249)", "piControl_spinup (2701 to 2999)", "piControl (1842 to 1941)",
                                "mh477 (2623 to 2657)", "mh_new (2624 to 3001)", "midHolocene (3106 to 3205)",
-                               "mh_cold (3105 to 3166)")
+                               "mh_cold (3105 to 3207)")
     cols_samedims <- 1:7
     ltys_samedims <- rep(1, t=7)
     areas <- rep("global", t=7)

@@ -4362,12 +4362,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\n", "add default stuff to datas legend here1 ...")
                 le <- list()
-                le$pos <- "topleft" 
+                #le$pos <- "topleft" 
                 #le$pos <- "left"
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
-                #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
+                le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
                 #le$ncol <- length(z)/2
                 le$ncol <- 1
                 #le$ncol <- 2

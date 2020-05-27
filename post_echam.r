@@ -452,23 +452,28 @@ for (i in 1:nsettings) {
             } # for pati all special patterns in fnames
 
         } else { # no <YYYY*>, <MM*>, etc. special patterns given by user
-            message("\nfind years/months/etc. of based on `cdo showdate` of found files ...")
-            stop("update")
-            n_yyyy_patterns_per_file <- 0
-            years_filenames <- vector("list", l=length(files))
-            for (fi in seq_along(files)) {
-                cmd <- paste0(cdo, " showdate ", datapaths[i], "/", files[fi])
-                message("run `", cmd, "`")
-                dates <- system(cmd, intern=T)
-                dates <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", dates, perl=T) # remove double and leading blanks
-                dates <- strsplit(dates, " ")[[1]]
-                if (verbose) {
-                    message("\ncdo dates:")
-                    ht(dates, n=20)
+
+            if (length(files) == 1) { # assume that user wants to use one specific file
+                years_filenames <- froms[i]:tos[i]
+
+            } else {
+                message("\nno <YYYY*> or <MM*> patterns provided --> find years/months/etc. of based on `cdo showdate` of found files ...")
+                years_filenames <- vector("list", l=length(files))
+                for (fi in seq_along(files)) {
+                    cmd <- paste0(cdo, " showdate ", datapaths[i], "/", files[fi])
+                    message("run `", cmd, "`")
+                    dates <- system(cmd, intern=T)
+                    dates <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", dates, perl=T) # remove double and leading blanks
+                    dates <- strsplit(dates, " ")[[1]]
+                    if (verbose) {
+                        message("\n", length(dates), " cdo dates of this file:")
+                        ht(dates, n=20)
+                    }
+                    years_filenames[[fi]] <- substr(dates, 1, 4)
                 }
-                years_filenames[[fi]] <- substr(dates, 1, 4)
-            }
-            years_filenames <- as.numeric(unlist(years_filenames))
+                years_filenames <- as.numeric(unlist(years_filenames))
+            } # if length(files) == 1 or not
+
         } # if <YYYY*> or <MM*> patterns are given by user or not
        
         # show years, months, etc. of found files
@@ -1352,31 +1357,35 @@ for (i in 1:nsettings) {
                         cdo_ntime <- as.integer(system(cmd, intern=T))
                         message("--> cdo_ntime = ", cdo_ntime)
 
-                        # get time dimension values with `cdo showdate` on the result 
+                        # get time dimension values with `cdo showtimstamp` on the result 
                         # of `cdo -fldmean -select,name=var` 
-                        cdo_showdate_file <- paste0(dirname(fout_vec[chunki]), "/tmp_cdo_showdate_",
-                                                    Sys.getpid(), "_chunk_", chunki, "_of_", nchunks, ".txt")
-                        cmd <- paste0(cdoprefix, " showdate ")
+                        # note: `cdo date` only shows the correct number of dates if the `time` dim is 
+                        #       defined correctly. `cdo showtimestamp` or `cdo showtime`, instead, always
+                        #       return the correct number of time values
+                        #       --> use `cdo showtimestamp` here instead of `cdo showdate`
+                        cdo_showtimestamp_file <- paste0(dirname(fout_vec[chunki]), "/tmp_cdo_showtimestamp_",
+                                                         Sys.getpid(), "_chunk_", chunki, "_of_", nchunks, ".txt")
+                        cmd <- paste0(cdoprefix, " showtimestamp ")
                         cmd <- paste0(cmd, selfile_vec[chunki])
-                        cmd <- paste0(cmd, " > ", cdo_showdate_file)
-                        message("\nrun `", cmd, "` # caution: `cdo showdate` does not print erroneous or duplicate dates")
+                        cmd <- paste0(cmd, " > ", cdo_showtimestamp_file)
+                        message("\nrun `", cmd, "` # caution: `cdo showtimestamp` does not print erroneous or duplicate dates")
                         system(cmd)
-                        cdo_dates <- scan(cdo_showdate_file, what="char", quiet=T)
-                        if (length(cdo_dates) == 0) stop("sth went wrong")
-                        message("\n`cdo showdate` yields ", length(cdo_dates), " dates:")
-                        ht(cdo_dates, n=25)
+                        cdo_timestamps <- scan(cdo_showtimestamp_file, what="char", quiet=T)
+                        if (length(cdo_timestamps) == 0) stop("sth went wrong")
+                        message("\n`cdo showtimestamp` yields ", length(cdo_timestamps), " dates:")
+                        ht(cdo_timestamps, n=25)
 
-                        if (cdo_ntime != length(cdo_dates)) {
+                        if (cdo_ntime != length(cdo_timestamps)) {
                             message("\nwarning: length(`cdo ntime`) = ", cdo_ntime, 
-                                    " and length(`cdo showdate`) = ", length(cdo_dates), " differ")
-                            if (cdo_ntime > length(cdo_dates)) {
-                                message("length(`cdo ntime`) > length(`cdo showdate`) --> ", 
-                                        cdo_ntime - length(cdo_dates), " date entries missing by `cdo showdate` --> ",
+                                    " and length(`cdo showtimestamp`) = ", length(cdo_timestamps), " differ")
+                            if (cdo_ntime > length(cdo_timestamps)) {
+                                message("length(`cdo ntime`) > length(`cdo showtimestamp`) --> ", 
+                                        cdo_ntime - length(cdo_timestamps), " date entries missing by `cdo showtimestamp` --> ",
                                         "possibly incorrect date values exist")
-                            } else if (cdo_ntime < length(cdo_dates)) {
-                                message("length(`cdo ntime`) < length(`cdo showdate`) --> ",
-                                        length(cdo_dates) - cdo_ntime, 
-                                        " `cdo showdate`-dates more than time steps found by `cdo ntime`; never happened")
+                            } else if (cdo_ntime < length(cdo_timestamps)) {
+                                message("length(`cdo ntime`) < length(`cdo showtimestamp`) --> ",
+                                        length(cdo_timestamps) - cdo_ntime, 
+                                        " `cdo showtimestamp`-dates more than time steps found by `cdo ntime`; never happened")
                             }
                             library(ncdf4)
                             ncin <- nc_open(selfile_vec[chunki])
@@ -1422,20 +1431,30 @@ for (i in 1:nsettings) {
                                 years_fout <- timelt$year + 1900
                             }
                             stop("fix input times")
-                        } # if cdo_ntime != length(cdo_dates)
+                        } # if cdo_ntime != length(cdo_timestamps)
                         
                         # save for every chunk
                         dates_in_list[[chunki]]$cdo_ntime <- cdo_ntime
                         dates_in_list[[chunki]]$file_inds <- chunk_inds_list[[chunki]]
                         if (chunki == 1) {
-                            dates_in_list[[chunki]]$time_inds <- seq_along(cdo_dates)
+                            dates_in_list[[chunki]]$time_inds <- seq_along(cdo_timestamps)
                         } else {
-                            dates_in_list[[chunki]]$time_inds <- seq(max(dates_in_list[[chunki-1]]$time_inds) + 1, l=length(cdo_dates))
+                            dates_in_list[[chunki]]$time_inds <- seq(max(dates_in_list[[chunki-1]]$time_inds) + 1, l=length(cdo_timestamps))
                         }
-                        dates_in_list[[chunki]]$dates <- cdo_dates # "YYYY-MM-DD"
-                        dates_in_list[[chunki]]$years <- as.integer(substr(cdo_dates, 1, 4)) # YYYY
-                        dates_in_list[[chunki]]$months <- as.integer(substr(cdo_dates, 6, 7)) # MM
-                        dates_in_list[[chunki]]$days <- as.integer(substr(cdo_dates, 9, 10)) # DD
+                        dates_in_list[[chunki]]$dates <- cdo_timestamps # "YYYY-MM-DDTHH:MM:SS" 
+                        dates_in_list[[chunki]]$years <- as.integer(substr(cdo_timestamps, 1, 4)) # YYYY
+                        dates_in_list[[chunki]]$months <- as.integer(substr(cdo_timestamps, 6, 7)) # MM
+                        dates_in_list[[chunki]]$days <- as.integer(substr(cdo_timestamps, 9, 10)) # DD
+
+                        # incorrect `cdo showtimestap`-months or -days may equal `0`
+                        if (any(dates_in_list[[chunki]]$months == 0)) {
+                            message("correct `cdo showtimestap`-months from 0 to 1 ...")
+                            dates_in_list[[chunki]]$months[which(dates_in_list[[chunki]]$months == 0)] <- 1
+                        }
+                        if (any(dates_in_list[[chunki]]$days == 0)) {
+                            message("correct `cdo showtimestap`-days from 0 to 1 ...")
+                            dates_in_list[[chunki]]$days[which(dates_in_list[[chunki]]$days == 0)] <- 1
+                        }
                    
                     } # for chunki nchunks
 
@@ -1443,7 +1462,7 @@ for (i in 1:nsettings) {
                     dates_in_year_range <- range(lapply(dates_in_list, "[", "years"))
                     dates_in_date_range <- range(lapply(dates_in_list, "[", "dates"))
                     cdo_ntime_fout <- sum(sapply(dates_in_list, "[[", "cdo_ntime")) # all time points of final fout
-                    message("\n`cdo showdate` of all chunks of cdo selection result yields `dates_in_list`:")
+                    message("\n`cdo showtimestamp` of all chunks of cdo selection result yields `dates_in_list`:")
                     cat(capture.output(str(dates_in_list)), sep="\n")
                     message("range(lapply(dates_in_list, \"[\", \"dates\")) = ", appendLF=F)
                     dput(dates_in_date_range)
@@ -1969,8 +1988,8 @@ for (i in 1:nsettings) {
                     selfile_vec <- nco_fout_vec
                
                     if (clean) {
-                        if (file.exists(cdo_showdate_file)) {
-                            system(paste0("rm -v ", cdo_showdate_file))
+                        if (file.exists(cdo_showtimestamp_file)) {
+                            system(paste0("rm -v ", cdo_showtimestamp_file))
                         }
                     }
 
