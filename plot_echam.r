@@ -5,8 +5,8 @@
 if (T) {
     message("rm(list=ls())")
     rm(list=ls())
-    fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
-    # `[` <- fctbackup 
+    #fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
+    # set back to default: `[` <- fctbackup 
 }
 graphics.off()
 
@@ -37,10 +37,18 @@ source("namelist.plot.r")
 # check user input and defaults
 nsettings <- length(prefixes)
 if (!exists("names_short")) stop("must provide `names_short`")
-if (!exists("names_legend")) names_legend <- rep(names_short, t=nsettings)
 if (!exists("modes")) stop("must provide `modes`")
+if (!exists("names_legend")) names_legend <- rep(names_short, t=nsettings)
 if (!exists("codes")) codes <- rep("", t=nsettings)
-if (!exists("levs")) levs <- rep("", t=nsettings)
+if (!exists("levs") && !exists("levsf")) {
+    levs <- levsf <- rep("", t=nsettings)
+} else if (exists("levs") && !exists("levsf")) {
+    levsf <- levs
+    levsf[levs != ""] <- paste0("_sellevel_", levs[levs != ""])
+} else if (!exists("levs") && exists("levsf")) {
+    levs <- levsf
+    levs[levsf != ""] <- gsub("_", "", levsf[levsf != ""])
+}
 if (!exists("depths")) depths <- rep("", t=nsettings)
 codesf <- codes
 codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
@@ -63,8 +71,6 @@ if (all(n_mas == 1)) {
         add_smoothed <- F
     }
 }
-levsf <- levs
-levsf[levs != ""] <- paste0("_sellevel_", levs[levs != ""])
 depthsf <- rep("", t=nsettings)
 depthsf[depths != ""] <- paste0("_", depths[depths != ""], "m")
 if (!exists("depth_fromsf")) depth_fromsf <- rep(NA, t=nsettings)
@@ -72,6 +78,17 @@ if (!exists("depth_tosf")) depth_tosf <- rep(NA, t=nsettings)
 if (!exists("depth_fromsp")) depth_fromsp <- depth_fromsf
 if (!exists("depth_tosp")) depth_tosp <- depth_tosf
 if (!exists("areas")) areas <- rep("global", t=nsettings)
+if (!exists("regboxes")) {
+    regboxes <- vector("list", l=nsettings)
+    regboxes <- lapply(regboxes, append, list(regbox=NA))
+}
+names(regboxes) <- names_short
+areas_out <- areas
+if (any(!is.na(sapply(regboxes, "[[", "regbox")))) { # run namelist.area.r to get lon/lat of regional boxes
+    message("\nsome regboxes$regbox are not NA -> load and check namelist.area.r ...")
+    source("namelist.area.r")
+    areas_out[which(!is.na(sapply(regboxes, "[[", "regbox")))] <- sapply(regboxes, "[[", "regbox")
+}
 if (!exists("reg_dxs")) reg_dxs <- rep("", t=nsettings)
 if (!exists("reg_dys")) reg_dys <- rep("", t=nsettings)
 reg_dxsf <- reg_dxs
@@ -127,6 +144,11 @@ if (!exists("postpaths")) { # default from post_echam.r
 }
 if (!exists("plotpath")) { # default from post_echam.r
     plotpath <- paste0(host$workpath, "/plots/", paste(unique(models), collapse="_vs_"))
+}
+if (exists("varnames_uv")) {
+    if (!all(sapply(varnames_uv, length) == 2)) {
+        stop("provided `varnames_uv` must have 2 entries per given variable")
+    }
 }
 base <- 10
 power <- 0 # default: 0 --> 10^0 = 1e0 = 1 --> nothing happens
@@ -981,7 +1003,6 @@ for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin",
 message("\nfinished reading special data sets ...")
 # finished reading extra datasets depending on machine
 
-
 # read data
 message("\n", "Read model data ...")
 for (i in 1:nsettings) {
@@ -990,7 +1011,7 @@ for (i in 1:nsettings) {
     message("setting ", i, "/", nsettings, ": ", names_short[i], " ...")
     inpath <- paste0(postpaths[i], "/", models[i], "/", modes[i], "/", varnames_in[i])
     
-    fname <- paste0(prefixes[i], "_", modes[i], 
+    fname <- paste0(prefixes[i], "_", models[i], "_", modes[i], 
                     codesf[i], "_", varnames_in[i], 
                     levsf[i], depthsf[i], "_",
                     areas[i], "_", 
@@ -1022,7 +1043,6 @@ for (i in 1:nsettings) {
         }
     }
 
-    
     # time dim as posix object
     if (any(names(dims[[i]]) == "time")) {
 
@@ -1112,9 +1132,9 @@ for (i in 1:nsettings) {
             print(range(timein_lt))
             dims[[i]]$time_shift_by <- shift_by
         } # if !is.na(new_origins[i])
-        # set new origin
+        # finished set new time origin
 
-        # find temporal subset based on given fromsp and tosp
+        # find time inds if wanted (`fromsp` is defined and differnet than `fromsf`)
         if (!is.na(fromsp[i]) || !is.na(tosp[i])) {
             fromind <- 1 # default
             toind <- length(timein_lt)
@@ -1140,7 +1160,6 @@ for (i in 1:nsettings) {
                 stop("--> `fromind` = ", fromind, " > `toind` = ", toind, " --> that does not make sense")
             }
 
-            # take temporal subset
             time_inds <- fromind:toind
             if (length(time_inds) == 0) {
                 stop("temporal subset is of length 0")
@@ -1153,24 +1172,22 @@ for (i in 1:nsettings) {
                     timein_lt <- timein_lt[time_inds]
                     message("after range(timein_lt) = ", appendLF=F)
                     print(range(timein_lt))
-                    # cut from time dimension
                     dims[[i]]$time <- dims[[i]]$time[time_inds]
                 } else {
-                    message("--> use complete time dimension of ", 
+                    message("--> use complete time dim of ", 
                             length(dims[[i]]$time), " time points ...")
                 }
             }
 
-        } else {
+        } else { # `fromsp` is not defined
             fromsp[i] <- timein_lt$year[1] + 1900
             tosp[i] <- timein_lt$year[length(timein_lt)] + 1900
             time_inds <- NULL # default
             
         } # if exists("fromsp") || exists("tosp")
-        # cut year range if wanted
+        # finished find time inds if wanted
 
-        # subset seasons from data if wanted (=seasonsp)
-        # check which seasonsf and seasonp differ
+        # find seasons inds if wanted (`seasonsp` is defined and different from `seasonsf`)
         if (seasonsp[i] != seasonsf[i]) {
             
             # special case:  
@@ -1213,9 +1230,9 @@ for (i in 1:nsettings) {
                 }
             } # if (seasonsp[i] == "annual" && seasonsf[i] == "Jan-Dec") 
         } # if seasonsp[i] != seasonsf[i]
-        # cut season if wanted
+        # finished find season inds if wanted
 
-        # finished time stuff
+        # finish time stuff
         timein_ct <- as.POSIXct(timein_lt)
         if (!is.null(time_inds)) {
             if (class(time_inds) == "logical") {
@@ -1241,15 +1258,139 @@ for (i in 1:nsettings) {
         message("range(dims[[", i, "]]$timelt$mon+1) = ", appendLF=F)
         print(range(dims[[i]]$timelt$mon+1))
 
-    } else { # if none of file dims is "time"
-
     } # if any of file dims is "time"
-    # finfished time dim stuff
     froms_plot[i] <- fromsf[i] # default
     tos_plot[i] <- tosf[i]
     if (!is.na(fromsp[i])) froms_plot[i] <- fromsp[i]
     if (!is.na(tosp[i])) tos_plot[i] <- tosp[i]
+    # finfished time dim stuff
     #stop("asd")
+
+    # reorder lon dim values to (-180,...,180) if wanted and necessary
+    if (any(names(dims[[i]]) == "lon")) {
+        message("\ndetected lon dim of length ", length(dims[[i]]$lon), " with min/max = ", 
+                min(dims[[i]]$lon), "/", max(dims[[i]]$lon), " degree lon")
+        if (reorder_lon_from_0360_to_180180) {
+            if (any(dims[[i]]$lon < 180) && any(dims[[i]]$lon >= 180)) {
+                message("`reorder_lon_from_0360_to_180180` = T AND any(lon < 180) && any(lon >= 180)")
+                dims[[i]]$lon_orig <- dims[[i]]$lon
+                west_of_180_inds <- which(dims[[i]]$lon < 180)
+                east_of_180_inds <- which(dims[[i]]$lon >= 180)
+                dims[[i]]$lon <- dims[[i]]$lon_orig - 180
+                message("--> reorder lon dim value indices from\n",
+                        "   ", west_of_180_inds[1],
+                        ifelse(length(west_of_180_inds) > 1, paste0(",", west_of_180_inds[2]), ""), 
+                        ifelse(length(west_of_180_inds) > 3, ",...", ""),
+                        ifelse(length(west_of_180_inds) > 2, paste0(",", west_of_180_inds[length(west_of_180_inds)]), ""), 
+                        ",", east_of_180_inds[1],
+                        ifelse(length(east_of_180_inds) > 1, paste0(",", east_of_180_inds[2]), ""), 
+                        ifelse(length(east_of_180_inds) > 3, ",...", ""),
+                        ifelse(length(east_of_180_inds) > 2, paste0(",", east_of_180_inds[length(east_of_180_inds)]), ""), 
+                        " (", dims[[i]]$lon_orig[west_of_180_inds[1]], 
+                        ifelse(length(west_of_180_inds) > 1, paste0(",", dims[[i]]$lon_orig[west_of_180_inds[2]]), ""), 
+                        ifelse(length(west_of_180_inds) > 3, ",...", ""),
+                        ifelse(length(west_of_180_inds) > 2, paste0(",", dims[[i]]$lon_orig[west_of_180_inds[length(west_of_180_inds)]]), ""), 
+                        ",", dims[[i]]$lon_orig[east_of_180_inds[1]],
+                        ifelse(length(east_of_180_inds) > 1, paste0(",", dims[[i]]$lon_orig[east_of_180_inds[2]]), ""), 
+                        ifelse(length(east_of_180_inds) > 3, ",...", ""),
+                        ifelse(length(east_of_180_inds) > 2, paste0(",", dims[[i]]$lon_orig[east_of_180_inds[length(east_of_180_inds)]]), ""), 
+                        " deg lon)\n", "to\n   ", east_of_180_inds[1],
+                        ifelse(length(east_of_180_inds) > 1, paste0(",", east_of_180_inds[2]), ""), 
+                        ifelse(length(east_of_180_inds) > 3, ",...", ""),
+                        ifelse(length(east_of_180_inds) > 2, paste0(",", east_of_180_inds[length(east_of_180_inds)]), ""), 
+                        ",", west_of_180_inds[1],
+                        ifelse(length(west_of_180_inds) > 1, paste0(",", west_of_180_inds[2]), ""), 
+                        ifelse(length(west_of_180_inds) > 3, ",...", ""),
+                        ifelse(length(west_of_180_inds) > 2, paste0(",", west_of_180_inds[length(west_of_180_inds)]), ""), 
+                        " (", dims[[i]]$lon_orig[east_of_180_inds[1]], 
+                        ifelse(length(east_of_180_inds) > 1, paste0(",", dims[[i]]$lon_orig[east_of_180_inds[2]]), ""), 
+                        ifelse(length(east_of_180_inds) > 3, ",...", ""),
+                        ifelse(length(east_of_180_inds) > 2, paste0(",", dims[[i]]$lon_orig[east_of_180_inds[length(east_of_180_inds)]]), ""), 
+                        ",", dims[[i]]$lon_orig[west_of_180_inds[1]],
+                        ifelse(length(west_of_180_inds) > 1, paste0(",", dims[[i]]$lon_orig[west_of_180_inds[2]]), ""), 
+                        ifelse(length(west_of_180_inds) > 3, ",...", ""),
+                        ifelse(length(west_of_180_inds) > 2, paste0(",", dims[[i]]$lon_orig[west_of_180_inds[length(west_of_180_inds)]]), ""), 
+                        " deg lon)\n--> are these numbers correct?!")
+                dims[[i]]$west_of_180_inds <- west_of_180_inds
+                dims[[i]]$east_of_180_inds <- east_of_180_inds
+            } # if reordering is necessary
+        } # if reorder_lon_from_0360_to_180180
+    } # reorder lon dim values if necessary
+    
+    # flip lat dim of data necessary (needs to be increasing for plot)
+    if (any(names(dims[[i]]) == "lat")) {
+        if (any(diff(dims[[i]]$lat) < 0)) {
+            message("\ndetected lat dim and lats are decreasing -> flip lat dim values ...") 
+            dims[[i]]$lat_orig <- dims[[i]]$lat
+            dims[[i]]$lat <- rev(dims[[i]]$lat)
+        }
+    }
+
+    # get lon and/or lat inds
+    if (!is.na(regboxes[[i]]$regbox)) {
+        message("\n`regboxes[[", i, "]]$regbox` = \"", regboxes[[i]]$regbox, "\" is not NA")
+        # 2 cases: case 1: rectangular box
+        #          case 2: list of x,y pairs indicating contour of arbitrary polygon
+        # case 1: lons
+        if (!is.null(regboxes[[i]]$lons) && length(regboxes[[i]]$lons) == 2 && any(names(dims[[i]]) == "lon")) {
+            message("   `regboxes[[", i, "]]$lons` of length 2 are given -> find lon inds between min/max(regboxes[[", i, "]]$lons) = ", 
+                    min(regboxes[[i]]$lon), "/", max(regboxes[[i]]$lon), " deg lon ...")
+            lon_inds <- which(dims[[i]]$lon >= regboxes[[i]]$lons[1] & dims[[i]]$lon <= regboxes[[i]]$lons[2])
+            if (length(lon_inds) > 0 && length(lon_inds) != length(dims[[i]]$lon)) { 
+                message("      found lon subset of length ", length(lon_inds), " out of ", 
+                        length(dims[[i]]$lon), " total lon points ...")
+                message("      before range(dims[[i]]$lon) = ", appendLF=F)
+                print(range(dims[[i]]$lon))
+                dims[[i]]$lon <- dims[[i]]$lon[lon_inds]
+                message("      after range(dims[[i]]$lon) = ", appendLF=F)
+                print(range(dims[[i]]$lon))
+                dims[[i]]$lon_inds <- lon_inds
+            } else {
+                if (length(lon_inds) == 0) {
+                    stop("lon subset is of length 0")
+                }
+            }
+        } # if lon lims are given as rectangular box and lon dim is available
+        
+        # case 1: lats
+        if (!is.null(regboxes[[i]]$lats) && length(regboxes[[i]]$lats) == 2 && any(names(dims[[i]]) == "lat")) {
+            message("   `regboxes[[", i, "]]$lats` of length 2 are given -> find lat inds between min/max(regboxes[[", i, "]]$lats) = ", 
+                    min(regboxes[[i]]$lat), "/", max(regboxes[[i]]$lat), " deg lat ...")
+            lat_inds <- which(dims[[i]]$lat >= regboxes[[i]]$lats[1] & dims[[i]]$lat <= regboxes[[i]]$lats[2])
+            if (length(lat_inds) > 0 && length(lat_inds) != length(dims[[i]]$lat)) { 
+                message("      found lat subset of length ", length(lat_inds), " out of ", 
+                        length(dims[[i]]$lat), " total lat points ...")
+                message("      before range(dims[[i]]$lat) = ", appendLF=F)
+                print(range(dims[[i]]$lat))
+                dims[[i]]$lat <- dims[[i]]$lat[lat_inds]
+                message("      after range(dims[[i]]$lat) = ", appendLF=F)
+                print(range(dims[[i]]$lat))
+                dims[[i]]$lat_inds <- lat_inds
+            } else {
+                if (length(lat_inds) == 0) {
+                    stop("lat subset is of length 0")
+                }
+            }
+        } # if case1: if lat lims are given as rectangular box and lat dim is available
+
+        # case 2
+        if (!is.null(regboxes[[i]]$lons) && !is.null(regboxes[[i]]$lats) && 
+            length(regboxes[[i]]$lons) != 2 && length(regboxes[[i]]$lats) != 2 &&
+            any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
+            if (length(regboxes[[i]]$lons) != length(regboxes[[i]]$lats)) {
+                stop("given regboxes[[", i, "]]$lons (n=", length(regboxes[[i]]$lons), 
+                     ") and regboxes[[", i, "]]$lats (n=", length(regboxes[[i]]$lats), 
+                     ") are of different length")
+            }
+            message("   `regboxes[[", i, "]]$lons` and `regboxes[[", i, "]]$lats` both of length ", length(regboxes[[i]]$lons), 
+                    " are given -> find lon/lat inds between min/max(regboxes[[", i, "]]$lons) = ", 
+                    min(regboxes[[i]]$lon), "/", max(regboxes[[i]]$lon), " deg lon and min/max(regboxes[[", i, "]]$lats) = ", 
+                    min(regboxes[[i]]$lat), "/", max(regboxes[[i]]$lat), " deg lat ...")
+            stop("todo")
+        } # if case 2
+
+    } # if regbox is not NA
+    # finished getting lon/lat inds
 
     # get depth inds
     if (any(names(dims[[i]]) == "depth")) {
@@ -1276,7 +1417,6 @@ for (i in 1:nsettings) {
                 stop("depth subset is of length 0")
             }
         }
-    
     } # if any of file dims is "depth"
     #stop("asd")
 
@@ -1286,7 +1426,7 @@ for (i in 1:nsettings) {
     vars <- vector("list", l=ncin$nvars)
     var_infos <- vars
     for (vi in 1:length(vars)) {
-        message(vi, "/", length(vars), ": ", vars_per_file[vi])
+        message(vi, "/", length(vars), ": \"", vars_per_file[vi], "\"")
         
         # ignore variable
         if (any(ignore_vars == vars_per_file[vi])) {
@@ -1302,21 +1442,21 @@ for (i in 1:nsettings) {
         } else {
             names(vars)[vi] <- vars_per_file[vi]
         }
-        vars[[vi]] <- ncvar_get(ncin, vars_per_file[vi], collapse_degen=squeeze_data) 
+        vars[[vi]] <- ncvar_get(ncin, vars_per_file[vi], collapse_degen=squeeze) 
 
         # get infos of variable
         names(var_infos)[vi] <- names(vars)[vi]
         var_infos[[vi]] <- ncatt_get(ncin, vars_per_file[vi])
 
-        # get dimensions of variable
+        # get dims of variable
         dimids <- ncin$var[[vars_per_file[vi]]]$dimids # get dims of data
         dimids <- dimids + 1 # nc dim ids start counting from zero
-        if (squeeze_data) { # drop dims with len=1
+        if (squeeze) { # drop dims with len=1
             dim_lengths <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[", "len")
             names(dim_lengths) <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[", "name")
             if (any(dim_lengths == 1)) {
                 len1_dim_inds <- which(dim_lengths == 1)
-                message(" --> drop dims of length 1: \"", 
+                message("`squeeze=T` --> drop dims of length 1: \"", 
                         paste0(names(len1_dim_inds), collapse="\",\""), "\" ...")
                 dimids <- dimids[-len1_dim_inds]
                 for (di in seq_along(len1_dim_inds)) {
@@ -1325,7 +1465,7 @@ for (i in 1:nsettings) {
             } # if var has dims of length 1 
         } else {
             stop("not implemented")
-        } # if squeeze_data
+        } # if squeeze
         attributes(vars[[vi]]) <- list(dim=dim(vars[[vi]]), dims=dims_per_setting_in[[i]][dimids])
         #cmd <- paste0("tmp <- list(", paste0(dims_per_setting_in[[i]][dimids], "=ncin$dim[[", dimids, "]]$vals", collapse=", "), ")")
     } # for vi nvars per setting
@@ -1343,7 +1483,7 @@ for (i in 1:nsettings) {
     data_infos[[i]] <- var_infos
     rm(vars, var_infos)
 
-    # update dimensions per setting
+    # update dims per setting
     dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
 
     # special missing files                    raw         links               calendar
@@ -1404,8 +1544,9 @@ for (i in 1:nsettings) {
         }
     } # special: set values to NA if files are missing
 
-    # cut temporal subset from data
+    # cut temporal subset from data if wanted
     if (!is.null(dims[[i]]$time_inds)) {
+        message("\n", "cut subset from time dim (or months or seasons) ...")
         # check for variables that have time dim
         vars_with_timedim_inds <- lapply(dims_per_setting, function(x) grep("time", x) != -1)
         vars_with_timedim_inds <- which(sapply(vars_with_timedim_inds, any))
@@ -1417,28 +1558,39 @@ for (i in 1:nsettings) {
                 timedimind <- which(dims_of_var == "time")
                 time_dim_length <- dim_lengths_of_var[timedimind]
                 if (length(dims[[i]]$time_inds) != time_dim_length) {
-                    message("\n", "cut subset from time dim ...")
                     cmd <- rep(",", t=length(dims_of_var))
                     cmd[timedimind] <- paste0("dims[[", i, "]]$time_inds")
                     cmd <- paste0("datas[[", i, "]][[", var_with_timedim_ind, "]] <- ",
-                                  "datas[[", i, "]][[", var_with_timedim_ind, "]][", paste0(cmd, collapse=""), "]")
-                    message(cmd)
+                                  "datas[[", i, "]][[", var_with_timedim_ind, "]][", paste0(cmd, collapse=""))
+                    if (squeeze) {
+                        cmd <- paste0(cmd, ",drop=T]")
+                    } else {
+                        cmd <- paste0(cmd, ",drop=F]")
+                    }
+                    message("   run `", cmd, "` ...")
                     eval(parse(text=cmd))
                     # subsetting removed attributes, apply again
-                    attributes(datas[[i]][[var_with_timedim_ind]]) <- list(dim=dim(datas[[i]][[var_with_timedim_ind]]), 
-                                                                           dims=dims_of_var)
-                } # if time subset inds are of different length then the given time dimension of the data 
+                    if (squeeze) {
+                        attributes(datas[[i]][[var_with_timedim_ind]]) <- list(dim=dim(datas[[i]][[var_with_timedim_ind]]), 
+                                                                               dims=dims_of_var[-timedimind])
+                    } else {
+                        attributes(datas[[i]][[var_with_timedim_ind]]) <- list(dim=dim(datas[[i]][[var_with_timedim_ind]]), 
+                                                                               dims=dims_of_var)
+                    }
+                } # if time subset inds are of different length then the given time dim of the data 
             } # vi vars per file with time dim
-        } # if there are varbels with time dimension
-    } # cut temporal subset
+            # update dims per setting
+            dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
+        } # if there are varbels with time dim
+    } # finished cut temporal subset if wanted
 
-    # cut depth subset from data
+    # cut depth subset from data if wanted
     if (!is.null(dims[[i]]$depth_inds)) {
+        message("\n", "cut subset from depth dim ...")
         # check for variables that have depth dim
         vars_with_depthdim_inds <- lapply(dims_per_setting, function(x) grep("depth", x) != -1)
         vars_with_depthdim_inds <- which(sapply(vars_with_depthdim_inds, any))
         if (length(vars_with_depthdim_inds) > 0) {
-            message("\n", "cut subset from depth dim ...")
             for (vi in 1:length(vars_with_depthdim_inds)) {
                 var_with_depthdim_ind <- vars_with_depthdim_inds[vi]
                 dims_of_var <- attributes(datas[[i]][[var_with_depthdim_ind]])$dims # e.g. "time", "depth"
@@ -1454,111 +1606,141 @@ for (i in 1:nsettings) {
                                                                        dims=dims_of_var)
 
             } # vi vars per file with depth dim
-        } # if there are varbels with depth dimension
-    } # cut depth subset
+            # update dims per setting
+            dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
+        } # if there are varbels with depth dim
+    } # finished cut depth subset if wanted
     
-    # reorder lons to (-180,...,180) if wanted and necessary
-    if (any(names(dims[[i]]) == "lon")) {
-        message("\ndetected lon dimension min/max = ", min(dims[[i]]$lon), "/", max(dims[[i]]$lon), " degree")
-        if (reorder_lon_from_0360_to_180180) {
-            if (any(dims[[i]]$lon < 180) && any(dims[[i]]$lon >= 180)) {
-                message("`reorder_lon_from_0360_to_180180` = T AND any(lon < 180) && any(lon >= 180)", "\n", 
-                        "--> reorder longitudes from (0,...,360) to (-180,...,180) degree ...")
-                dims[[i]]$lon_orig <- dims[[i]]$lon
-                if (i == 1) library(abind)
-                west_of_180_inds <- which(dims[[i]]$lon < 180)
-                east_of_180_inds <- which(dims[[i]]$lon >= 180)
-                dims[[i]]$lon <- dims[[i]]$lon_orig - 180
-                message("reorder lons at indices\n",
-                        paste0(range(west_of_180_inds), collapse=",...,"), ",",
-                        paste0(range(east_of_180_inds), collapse=",...,"), " (",
-                        paste0(range(dims[[i]]$lon_orig[west_of_180_inds]), collapse=",...,"), ",", 
-                        paste0(range(dims[[i]]$lon_orig[east_of_180_inds]), collapse=",...,"), ") deg to\n",
-                        paste0(range(east_of_180_inds), collapse=",...,"), ",",
-                        paste0(range(west_of_180_inds), collapse=",...,"), " (",
-                        paste0(range(dims[[i]]$lon[west_of_180_inds]), collapse=",...,"), ",", 
-                        paste0(range(dims[[i]]$lon[east_of_180_inds]), collapse=",...,"), ") deg ...",
-                        " (are these numbers correct?!)")
+    # reorder lons of data to (-180,...,180) if wanted and necessary
+    if (any(names(dims[[i]]) == "lon_orig")) {
+        # check for variables that have lon dim
+        vars_with_londim_inds <- which(lapply(dims_per_setting, function(x) grep("lon", x)) == 1)
+        if (length(vars_with_londim_inds) > 0) {
+            message("\nreorder lon dim of data ...")
+            if (!any(search() == "package:abind")) library(abind)
+            for (vi in 1:length(vars_with_londim_inds)) {
+                var_with_londim_ind <- vars_with_londim_inds[vi]
+                dims_of_var <- attributes(datas[[i]][[var_with_londim_ind]])$dims # e.g. "lon", "lat"
+                londimind <- which(dims_of_var == "lon")
 
-                # check for variables that have lon dim
-                vars_with_londim_inds <- which(lapply(dims_per_setting, function(x) grep("lon", x)) == 1)
-                if (length(vars_with_londim_inds) > 0) {
-                    for (vi in 1:length(vars_with_londim_inds)) {
-                        var_with_londim_ind <- vars_with_londim_inds[vi]
-                        dims_of_var <- attributes(datas[[i]][[var_with_londim_ind]])$dims # e.g. "lon", "lat"
-                        londimind <- which(dims_of_var == "lon")
+                # case 1: only 1 dim (lon)
+                if (length(dims_of_var) == 1) {
+                    stop("not implemented")
 
-                        # case 1: only 1 dim (lon)
-                        if (length(dims_of_var) == 1) {
-                            stop("not implemented")
-
-                            # case 2: more than 1 dim (and one of them is lon) 
-                        } else if (length(dims_of_var) > 1) {
-                            cmdeast <- rep(",", t=length(dims_of_var)) 
-                            cmdeast[londimind] <- "east_of_180_inds"
-                            cmdeast <- paste0(cmdeast, collapse="")
-                            cmdwest <- rep(",", t=length(dims_of_var)) 
-                            cmdwest[londimind] <- "west_of_180_inds"
-                            cmdwest <- paste0(cmdwest, collapse="")
-                            cmd <- paste0("datas[[", i, "]][[", var_with_londim_ind, "]] <- ",
-                                          "abind(datas[[", i, "]][[", var_with_londim_ind, "]][", cmdeast, "], ",
-                                          "datas[[", i, "]][[", var_with_londim_ind, "]][", cmdwest, "], ",
-                                          "along=", londimind, ")")
-                            message("run ", cmd, " ...")
-                            eval(parse(text=cmd))
-                            # restore attributes removed by subsetting
-                            dimnames(datas[[i]][[var_with_londim_ind]]) <- NULL
-                            attributes(datas[[i]][[var_with_londim_ind]]) <- list(dim=dim(datas[[i]][[var_with_londim_ind]]), 
-                                                                                  dims=dims_of_var)
-                        } # how many dims has the variable of whose dims one dim is "lon" 
-                    } # for vi vars per file with lon dim
-                } # if any vars with lon dim
-            } # if (any(lons[[i]] < 180) && any(lons[[i]] >= 180))
-        } else {
-            message("`reorder_lon_from_0360_to_180180` = F --> do not change longitudes from 0,...,359 to -180,...,0,180 degree")
-        } # if reorder_lon_from_0360_to_180180
-    } # if this file has lon dim
-
-    # flip data with dimension "lat" if necessary (needs to be increasing for plot)
-    if (any(names(dims[[i]]) == "lat")) {
-        if (any(diff(dims[[i]]$lat) < 0)) {
-            message("\n", "detected lat dimension and lats are decreasing -> flip data along lat dim ...") 
-            dims[[i]]$lat_orig <- dims[[i]]$lat
-            dims[[i]]$lat <- rev(dims[[i]]$lat)
-            # check for variables that have lat dim
-            vars_with_latdim_inds <- lapply(dims_per_setting, function(x) regexpr("lat", x) != -1)
-            vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
-            if (length(vars_with_latdim_inds) > 0) {
-                for (vi in 1:length(vars_with_latdim_inds)) {
-                    var_with_latdim_ind <- vars_with_latdim_inds[vi]
-                    dims_of_var <- attributes(datas[[i]][[var_with_latdim_ind]])$dims # e.g. "lon", "lat"
-                    latdimind <- which(dims_of_var == "lat")
-                    cmdlat <- rep(",", t=length(dims_of_var)) 
-                    cmdlat[latdimind] <- paste0("length(dims[[", i, "]]$lat):1")
-                    cmdlat <- paste0(cmdlat, collapse="")
-                    cmd <- paste0("datas[[", i, "]][[", var_with_latdim_ind, "]] <- ",
-                                  "datas[[", i, "]][[", var_with_latdim_ind, "]][", cmdlat, "]")
-                    message("run ", cmd, " ...")
+                    # case 2: more than 1 dim (and one of them is lon) 
+                } else if (length(dims_of_var) > 1) {
+                    cmdeast <- rep(",", t=length(dims_of_var)) 
+                    cmdeast[londimind] <- paste0("dims[[", i, "]]$east_of_180_inds")
+                    cmdeast <- paste0(cmdeast, collapse="")
+                    cmdwest <- rep(",", t=length(dims_of_var)) 
+                    cmdwest[londimind] <- paste0("dims[[", i, "]]$west_of_180_inds")
+                    cmdwest <- paste0(cmdwest, collapse="")
+                    cmd <- paste0("datas[[", i, "]][[", var_with_londim_ind, "]] <- ",
+                                  "abind(datas[[", i, "]][[", var_with_londim_ind, "]][", cmdeast, "], ",
+                                  "datas[[", i, "]][[", var_with_londim_ind, "]][", cmdwest, "], ",
+                                  "along=", londimind, ")")
+                    message("  run `", cmd, "` ...")
                     eval(parse(text=cmd))
-                    
                     # restore attributes removed by subsetting
-                    attributes(datas[[i]][[var_with_latdim_ind]]) <- list(dim=dim(datas[[i]][[var_with_latdim_ind]]), 
+                    dimnames(datas[[i]][[var_with_londim_ind]]) <- NULL
+                    attributes(datas[[i]][[var_with_londim_ind]]) <- list(dim=dim(datas[[i]][[var_with_londim_ind]]), 
                                                                           dims=dims_of_var)
-                } # for vi
-            } # if any vars with lat dim
-        } # if lats are not increasing
-    } # if this file has lat dim
+                } # how many dims has the variable of whose dims one dim is "lon" 
+            } # for vi vars per file with lon dim
+        } # if any vars with lon dim
+    } # finished reorder lons of data to (-180,...,180) if wanted and necessary
+
+    # flip lat dim of data necessary (needs to be increasing for plot)
+    if (any(names(dims[[i]]) == "lat_orig")) {
+        # check for variables that have lat dim
+        vars_with_latdim_inds <- lapply(dims_per_setting, function(x) regexpr("lat", x) != -1)
+        vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
+        if (length(vars_with_latdim_inds) > 0) {
+            message("\nflip lat dim of data ...") 
+            for (vi in 1:length(vars_with_latdim_inds)) {
+                var_with_latdim_ind <- vars_with_latdim_inds[vi]
+                dims_of_var <- attributes(datas[[i]][[var_with_latdim_ind]])$dims # e.g. "lon", "lat"
+                latdimind <- which(dims_of_var == "lat")
+                nlat_of_var <- dim(datas[[i]][[var_with_latdim_ind]])[latdimind]
+                cmdlat <- rep(",", t=length(dims_of_var)) 
+                cmdlat[latdimind] <- paste0(nlat_of_var, ":1")
+                cmdlat <- paste0(cmdlat, collapse="")
+                cmd <- paste0("datas[[", i, "]][[", var_with_latdim_ind, "]] <- ",
+                              "datas[[", i, "]][[", var_with_latdim_ind, "]][", cmdlat, "]")
+                message("   run `", cmd, "` ...")
+                eval(parse(text=cmd))
+                
+                # restore attributes removed by subsetting
+                attributes(datas[[i]][[var_with_latdim_ind]]) <- list(dim=dim(datas[[i]][[var_with_latdim_ind]]), 
+                                                                      dims=dims_of_var)
+            } # for vi
+        } # if any vars with lat dim
+    } # finished flip data with lat dim if necessary (needs to be increasing for plot)
     
-    # flip data with dimension "depth" if necessary (needs to be increasing for plot)
+    # cut rectangular lon subset from data if wanted
+    if (!is.null(dims[[i]]$lon_inds)) {
+        # check for variables that have lon dim
+        vars_with_londim_inds <- lapply(dims_per_setting, function(x) grep("lon", x) != -1)
+        vars_with_londim_inds <- which(sapply(vars_with_londim_inds, any))
+        if (length(vars_with_londim_inds) > 0) {
+            message("\n", "cut data subset along lon dim ...")
+            for (vi in 1:length(vars_with_londim_inds)) {
+                var_with_londim_ind <- vars_with_londim_inds[vi]
+                dims_of_var <- attributes(datas[[i]][[var_with_londim_ind]])$dims # e.g. "time", "lon"
+                londimind <- which(dims_of_var == "lon")
+                cmd <- rep(",", t=length(dims_of_var))
+                cmd[londimind] <- paste0("dims[[", i, "]]$lon_inds")
+                cmd <- paste0("datas[[", i, "]][[", var_with_londim_ind, "]] <- ",
+                              "datas[[", i, "]][[", var_with_londim_ind, "]][", paste0(cmd, collapse=""), "]")
+                message("   run `", cmd, "` ...")
+                eval(parse(text=cmd))
+                # subsetting removed attributes, apply again
+                attributes(datas[[i]][[var_with_londim_ind]]) <- list(dim=dim(datas[[i]][[var_with_londim_ind]]), 
+                                                                      dims=dims_of_var)
+
+            } # vi vars per file with lon dim
+            # update dims per setting
+            dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
+        } # if there are variables with lon dim
+    } # finished cut rectangular lon subset if wanted
+    
+    # cut rectangular lat subset from data if wanted
+    if (!is.null(dims[[i]]$lat_inds)) {
+        # check for variables that have lat dim
+        vars_with_latdim_inds <- lapply(dims_per_setting, function(x) grep("lat", x) != -1)
+        vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
+        if (length(vars_with_latdim_inds) > 0) {
+            message("\n", "cut data subset along lat dim ...")
+            for (vi in 1:length(vars_with_latdim_inds)) {
+                var_with_latdim_ind <- vars_with_latdim_inds[vi]
+                dims_of_var <- attributes(datas[[i]][[var_with_latdim_ind]])$dims # e.g. "time", "lat"
+                latdimind <- which(dims_of_var == "lat")
+                cmd <- rep(",", t=length(dims_of_var))
+                cmd[latdimind] <- paste0("dims[[", i, "]]$lat_inds")
+                cmd <- paste0("datas[[", i, "]][[", var_with_latdim_ind, "]] <- ",
+                              "datas[[", i, "]][[", var_with_latdim_ind, "]][", paste0(cmd, collapse=""), "]")
+                message("   run `", cmd, "` ...")
+                eval(parse(text=cmd))
+                # subsetting removed attributes, apply again
+                attributes(datas[[i]][[var_with_latdim_ind]]) <- list(dim=dim(datas[[i]][[var_with_latdim_ind]]), 
+                                                                      dims=dims_of_var)
+
+            } # vi vars per file with lat dim
+            # update dims per setting
+            dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
+        } # if there are variables with lat dim
+    } # finished cut rectangular lat subset if wanted
+    
+    # flip data with depth dim if necessary (needs to be increasing for plot)
     if (any(names(dims[[i]]) == "depth")) {
         if (any(diff(dims[[i]]$depth) < 0)) {
-            message("\n", "detected depth dimension and depths are decreasing -> flip data along depth dim ...") 
             dims[[i]]$depth_orig <- dims[[i]]$depth
             dims[[i]]$depth <- rev(dims[[i]]$depth)
             # check for variables that have depth dim
             vars_with_depthdim_inds <- lapply(dims_per_setting, function(x) regexpr("depth", x) != -1)
             vars_with_depthdim_inds <- which(sapply(vars_with_depthdim_inds, any))
             if (length(vars_with_depthdim_inds) > 0) {
+                message("\nvalues of depth dim are decreasing -> flip data along depth dim ...") 
                 for (vi in 1:length(vars_with_depthdim_inds)) {
                     var_with_depthdim_ind <- vars_with_depthdim_inds[vi]
                     dims_of_var <- attributes(datas[[i]][[var_with_depthdim_ind]])$dims # e.g. "lat", "depth", "time"
@@ -1568,7 +1750,7 @@ for (i in 1:nsettings) {
                     cmddepth <- paste0(cmddepth, collapse="")
                     cmd <- paste0("datas[[", i, "]][[", var_with_depthdim_ind, "]] <- ",
                                   "datas[[", i, "]][[", var_with_depthdim_ind, "]][", cmddepth, "]")
-                    message("run ", cmd, " ...")
+                    message("   run `", cmd, "` ...")
                     eval(parse(text=cmd))
                     
                     # restore attributes removed by subsetting
@@ -1578,23 +1760,23 @@ for (i in 1:nsettings) {
                 } # for vi
             } # if any vars with depth dim
         } # if depth values are not increasing
-    } # if this file has depth dim
+    } # finished flip data with depth dim if necessary (needs to be increasing for plot)
 
-    # if two dimensions and one is time, make it x-dim
+    # if two dims and one is time, make it x-dim
     if (any(names(dims[[i]]) == "time") && any(names(dims[[i]]) == "lat")) {
-        message("\n", "detected time and lat dims; check if permutation from (lat x time) to (time x lat is necessary) ...") 
         vars_with_timedim_inds <- lapply(dims_per_setting, function(x) grep("time", x) != -1)
         vars_with_timedim_inds <- which(sapply(vars_with_timedim_inds, any))
         vars_with_latdim_inds <- lapply(dims_per_setting, function(x) regexpr("lat", x) != -1)
         vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
         vars_with_timedim_and_latdim_inds <- intersect(vars_with_timedim_inds, vars_with_latdim_inds)
         if (length(vars_with_timedim_and_latdim_inds) > 0) {
+            message("\n", "detected variables with time and lat dims. check if ndims=2 and permute (lat x time) to (time x lat) ...") 
             for (vi in 1:length(vars_with_timedim_and_latdim_inds)) {
                 var_with_timedim_and_latdim <- vars_with_timedim_and_latdim_inds[vi]
                 if (length(attributes(datas[[i]][[vi]])$dims) == 2) {
                     if (attributes(datas[[i]][[vi]])$dims[1] == "lat" &&
                         attributes(datas[[i]][[vi]])$dims[2] == "time") {
-                        message("aperm(datas[[", i, "]][[", var_with_timedim_and_latdim, "]], c(2, 1)) ...")
+                        message("   aperm(datas[[", i, "]][[", var_with_timedim_and_latdim, "]], c(2, 1)) ...")
                         datas[[i]][[var_with_timedim_and_latdim]] <- aperm(datas[[i]][[var_with_timedim_and_latdim]], c(2, 1)) # permutate
                         attributes(datas[[i]][[var_with_timedim_and_latdim]]) <- list(dim=dim(datas[[i]][[var_with_timedim_and_latdim]]),
                                                              dims=dims_of_var[c(2 ,1)])
@@ -1602,17 +1784,21 @@ for (i in 1:nsettings) {
                         # dims are already time x lat; nothing to do
                     }
                 } else {
-                    stop("not implemented yet ...")
+                    message("ndim(datas[[", i, "]][[", vi, "]]) = ", length(attributes(datas[[i]][[vi]])$dims), ". skip.")
                 }
             }
-        }
-
-    } # if any dim is time and lat
+            # update dims per setting
+            dims_per_setting <- sapply(lapply(datas[[i]], attributes), "[", "dims")
+        } # if variables with
+    } # finished if two dims and one is time, make it x-dim
 
 } # for i nsettings
 message("\n", "****************** reading data finished ***************************")
 
 varnames_unique <- unique(as.vector(unlist(sapply(datas, names))))
+if (exists("varnames_uv")) {
+    varnames_uv_unique <- unique(unlist(sapply(varnames_uv, "[")))
+}
 
 # save data before applying offset, multiplication factors, etc. for later
 message("\n", "save original data without multiplication factors or offsets or removal of a temporal mean etc. ...")
@@ -1857,6 +2043,18 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SIV Southern Ocean [km"^3, 
                                                                             " " %*% " ", 10^power, "]")),
                                                            list(power=data_infos[[i]][[vi]]$offset$power)))
+        
+        } else if (any(varname == c("qu", "qv", "quv"))) {
+            if (grepl("int", levs[i])) { # vertical integral
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(g^-1, integral(), bold("u")[h], 
+                                                                                "q dp [kg ", m^-1, " ", s^-1, "]")), 
+                                                               list(g="g", m="m", s="s")))
+            } else {
+                stop("asd")
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(bold("u")[h], 
+                                                                                "q [kg ", unit1^-1, " ", unit2^-1, "]")), 
+                                                               list(unit1="m", unit2="s")))
+            }
 
         } # finished define variable specific things
     
@@ -1966,7 +2164,7 @@ if (any(!is.na(remove_mean_froms))) {
                 } else {
                     for (vi in 1:length(datas[[i]])) {
                         message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi]) 
-                        # check if variable has time dimension 
+                        # check if variable has time dim
                         dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                         timedimind <- which(dims_of_var == "time")
                         if (length(timedimind) == 1) {
@@ -2000,10 +2198,10 @@ if (any(!is.na(remove_mean_froms))) {
                         } # remove temporal mean if variable has time dim
                     } # for vi all variables per setting
                 } # if temporal mean can be removed
-            } else { # if any variable has time dimension or not
+            } else { # if any variable has time dim or not
                 stop("`remove_mean_froms[", i, "]` = \"", remove_mean_froms[i], 
                      "\" but data has not \"time\" dim.")
-            } # if any variable has time dimension or not
+            } # if any variable has time dim or not
         } # if remove_mean_froms[i] is not NA
     } # for i nsettings
 } else {
@@ -2037,7 +2235,7 @@ if (add_smoothed &&
     any(sapply(lapply(lapply(dims, names), "==", "time"), any)) &&
     #any(seasonsp == "Jan-Dec") && 
     !all(n_mas == 1)) {
-    message("\n", "some settings have \"time\" dimension and `add_smoothed` = T --> apply moving averages ...")
+    message("\n", "some settings have \"time\" dim and `add_smoothed` = T --> apply moving averages ...")
     datasma <- datas
     for (i in 1:nsettings) {
         message(i, "/", nsettings, ": ", names_short[i], " ...")
@@ -2087,7 +2285,7 @@ if (!exists("datasma")) {
 # calculate monthly and annual means
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) { 
 
-    message("\nsome settings have \"time\" dimension --> calc monthly climatology and annual means ...")
+    message("\nsome settings have \"time\" dim --> calc monthly climatology and annual means ...")
     datasmon <- datasan <- datas # lazy declaration
     monlim <- anlim <- NA
     
@@ -2263,8 +2461,8 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
 ## calculate temporal mean (long term mean; ltm)
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
     datasltm <- datas
-    for (i in 1:nsettings) {
-        if (i == 1) message("\n", "some settings have \"time\" dimension --> calc temporal means ...")
+    for (i in seq_len(nsettings)) {
+        if (i == 1) message("\n", "some settings have \"time\" dim --> calc temporal means ...")
         ltm_range <- paste0(dims[[i]]$time[1], " to ", dims[[i]]$time[length(dims[[i]]$time)])
         message(i, "/", nsettings, ": ", names_short[i], " (", ltm_range, ") ...")
         for (vi in 1:length(datas[[i]])) {
@@ -2272,42 +2470,51 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                 message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi], " ...")
                 dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                 timedimind <- which(dims_of_var == "time")
-                apply_dims <- 1:length(dim(datas[[i]][[vi]]))
-                if (length(apply_dims) == 1) { # var has only time dim
-                    datasltm[[i]][[vi]] <- mean(datas[[i]][[vi]], na.rm=T)
-                    attributes(datasltm[[i]][[vi]]) <- list(dim=1, dims="ltm_range")
-                } else {
-                    apply_dims <- apply_dims[-timedimind]
-                    cmd <- paste0("datasltm[[", i, "]][[", vi, "]] <- ",
-                                  "apply(datas[[", i, "]][[", vi, "]], ",
-                                  "c(", paste(apply_dims, collapse=","), "), ",
-                                  "mean, na.rm=T)")
-                    #message(cmd)
-                    eval(parse(text=cmd))
-                    attributes(datasltm[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims[-timedimind]
+                if (dim(datas[[i]][[vi]])[timedimind] > 1) {
+                    apply_dims <- 1:length(dim(datas[[i]][[vi]]))
+                    if (length(apply_dims) == 1) { # var has only time dim
+                        datasltm[[i]][[vi]] <- mean(datas[[i]][[vi]], na.rm=T)
+                        attributes(datasltm[[i]][[vi]]) <- list(dim=1, dims="ltm_range")
+                    } else {
+                        apply_dims <- apply_dims[-timedimind]
+                        cmd <- paste0("datasltm[[", i, "]][[", vi, "]] <- ",
+                                      "apply(datas[[", i, "]][[", vi, "]], ",
+                                      "c(", paste(apply_dims, collapse=","), "), ",
+                                      "mean, na.rm=T)")
+                        #message(cmd)
+                        eval(parse(text=cmd))
+                        attributes(datasltm[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims[-timedimind]
+                    }
+                } else { # time dim is of length 1 
+                    datasltm[[i]][[vi]] <- NA
                 }
             } else { # variable has not time dim
                 datasltm[[i]][[vi]] <- NA
             } # if variable has time dim
         } # vi 
         dims[[i]]$ltm_range <- ltm_range
-    } # i
+    } # i nsettings
     # remove NA entries
-    for (i in 1:nsettings) {
+    for (i in seq_len(nsettings)) {
         navars <- which(is.na(datasltm[[i]]))
         if (length(navars) > 0) {
             datasltm[[i]][navars] <- NULL
         }
     }
+    # if no ltm was calculated at all
+    if (all(sapply(datasltm, length)) == 0) {
+        message("--> temporal mean calculation was not necessary")
+        rm(datasltm)
+    }
 } # if any var has time dim
 # finished calculating temoral mean
 
 
-## interpolate data if any dimension is irregular
+## interpolate data if any dims is irregular
 if (exists("datasltm")) {
     # todo
 } # if exsits("datalam")
-# finished interpolate if any dimension is irregular
+# finished interpolate if any dims is irregular
 
 
 ## get time axis values
@@ -2405,7 +2612,7 @@ if (F) { # test
     varnames_unique <- c(varnames_unique, "myvar", "myvar2", "myvar3")
 }
     
-# prepare temporary data matrices for plot (z, zma, zmon, zlm)
+# prepare temporary data matrices for plot (z, zuv, zma, zmon, zlm)
 nplot_groups <- length(plot_groups)
 for (plot_groupi in seq_len(nplot_groups)) {
 
@@ -2417,13 +2624,18 @@ for (plot_groupi in seq_len(nplot_groups)) {
         # prepare datas plots same vars
         z_samevars <- vector("list", l=length(varnames_unique))
         names(z_samevars) <- varnames_unique
+        if (exists("varnames_uv")) {
+            zuv_samevars <- vector("list", l=length(varnames_uv_unique))
+            names(zuv_samevars) <- varnames_uv_unique
+        }
         if (exists("datasma")) zma_samevars <- z_samevars
         dinds_samevars <- vinds_samevars <- z_samevars
         for (vi in seq_along(varnames_unique)) {
             varname <- varnames_unique[vi]
             z <- dinds <- vinds <- list()
+            if (exists("varnames_uv")) zuv <- z
             if (exists("datasma")) zma <- z
-            cnt <- 0
+            cnt <- cnt_uv <- 0
             tmp <- list()
             for (i in seq_len(nsettings)) {
                 varind <- which(names(datas[[i]]) == varname)
@@ -2433,6 +2645,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     names(z)[cnt] <- names_short[i]
                     dinds[[cnt]] <- i
                     vinds[[cnt]] <- varind
+                    if (exists("varnames_uv") && varname %in% varnames_uv[[i]]) {
+                        cnt_uv <- cnt_uv + 1
+                        zuv[[cnt_uv]] <- datas[[i]][[varind]]
+                        names(zuv)[cnt_uv] <- names_short[i]
+                    }
                     if (exists("datasma")) {
                         zma[[cnt]] <- datasma[[i]][[varind]]
                         names(zma)[cnt] <- names_short[i]
@@ -2444,6 +2661,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             z_samevars[[vi]] <- z
             dinds_samevars[[vi]] <- dinds
             vinds_samevars[[vi]] <- vinds
+            if (exists("varnames_uv") && length(zuv) != 0) zuv_samevars[[vi]] <- zuv
             if (exists("datasma")) zma_samevars[[vi]] <- zma
         } # vi in varnames_unique
         # dimensinons in same order as data 
@@ -2459,7 +2677,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             d_samevars[[vi]] <- d
         }
         # finished datas plot preparation
-        
+
         # prepare datasmon plots same vars
         if (exists("datasmon")) {
             varnames_unique_mon <- unique(as.vector(unlist(sapply(datasmon, names))))
@@ -2600,7 +2818,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
         dnames_unique <- vector("list", l=length(ndims_unique))
         for (dimi in seq_along(ndims_unique)) {
-            diminds <- which(ndims == ndims_unique[dimi]) # all variables with same number of dimensions
+            diminds <- which(ndims == ndims_unique[dimi]) # all variables with same number of dims
             dnames_array <- array(NA, dim=c(length(diminds), ndims_unique[dimi]))
             for (dimnamei in seq_along(diminds)) {
                 dnames_array[dimnamei,] <- dnames[[diminds[dimnamei]]]
@@ -2630,7 +2848,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             ) {
                             cnt <- cnt + 1
                             z[[cnt]] <- datas[[i]][[vi]]
-                            names(z)[cnt] <- paste0(names(datas)[i], "_", names(datas[[i]])[vi])
+                            names(z)[cnt] <- paste0(names(datas)[i], "_", names(datas[[i]])[vi]) # <names_short>_vs_<varnames_in> --> these names are used for the varnames_uv check in lon vs lat plots
                             dinds[[cnt]] <- i
                             vinds[[cnt]] <- vi
                             if (exists("datasma")) {
@@ -2675,7 +2893,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             dmonnames_unique <- vector("list", l=length(ndims_unique))
             for (dimi in seq_along(ndims_unique)) {
-                diminds <- which(ndims == ndims_unique[dimi]) # all variables with same number of dimensions
+                diminds <- which(ndims == ndims_unique[dimi]) # all variables with same number of dims
                 dnames_array <- array(NA, dim=c(length(diminds), ndims_unique[dimi]))
                 for (dimnamei in seq_along(diminds)) {
                     dnames_array[dimnamei,] <- dnames[[diminds[dimnamei]]]
@@ -2751,7 +2969,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             dannames_unique <- vector("list", l=length(ndims_unique))
             for (dimi in seq_along(ndims_unique)) {
-                diminds <- which(ndims == ndims_unique[dimi]) # all variables with same number of dimensions
+                diminds <- which(ndims == ndims_unique[dimi]) # all variables with same number of dims
                 dnames_array <- array(NA, dim=c(length(diminds), ndims_unique[dimi]))
                 for (dimnamei in seq_along(diminds)) {
                     dnames_array[dimnamei,] <- dnames[[diminds[dimnamei]]]
@@ -2827,7 +3045,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             dltmnames_unique <- vector("list", l=length(ndims_unique))
             for (dimi in seq_along(ndims_unique)) {
-                diminds <- which(ndims == ndims_unique[dimi]) # all variables with same number of dimensions
+                diminds <- which(ndims == ndims_unique[dimi]) # all variables with same number of dims
                 dnames_array <- array(NA, dim=c(length(diminds), ndims_unique[dimi]))
                 for (dimnamei in seq_along(diminds)) {
                     dnames_array[dimnamei,] <- dnames[[diminds[dimnamei]]]
@@ -2902,69 +3120,71 @@ for (plot_groupi in seq_len(nplot_groups)) {
 # 2nd: plot all vars with same dims together (datas, datasma, datasmon, datasan, datasltm)
 
 # test if z_samevars == z_samedims
-message("\ncheck if z_samevars == z_samedims ...")
-check_vec <- rep(F, t=length(z_samevars)) # default
-if (length(z_samevars) == length(z_samedims)) {
-    for (checki in seq_along(z_samevars)) {
-        if (length(z_samevars[[checki]]) == length(z_samedims[[checki]])) {
-            check_vec[checki] <- T
-            for (checkj in seq_along(z_samevars[[checki]])) {
-                if (!identical(z_samevars[[checki]][[checkj]], 
-                               z_samedims[[checki]][[checkj]])) {
-                    check_vec[checki] <- F
-                    next # entry to check
+if ("samevars" %in% plot_groups && "samedims" %in% plot_groups) {
+    message("\ncheck if z_samevars == z_samedims ...")
+    check_vec <- rep(F, t=length(z_samevars)) # default
+    if (length(z_samevars) == length(z_samedims)) {
+        for (checki in seq_along(z_samevars)) {
+            if (length(z_samevars[[checki]]) == length(z_samedims[[checki]])) {
+                check_vec[checki] <- T
+                for (checkj in seq_along(z_samevars[[checki]])) {
+                    if (!identical(z_samevars[[checki]][[checkj]], 
+                                   z_samedims[[checki]][[checkj]])) {
+                        check_vec[checki] <- F
+                        next # entry to check
+                    }
                 }
             }
         }
     }
-}
 
-# check data preparation for all groups and adjust names_legend/cols/ltys/etc. ...
-if (all(check_vec)) { # if z_samevars == z_samedims 
+    # check data preparation for all groups and adjust names_legend/cols/ltys/etc. ...
+    if (all(check_vec)) { # if z_samevars == z_samedims 
 
-    message("--> z_samevars == z_samedims")
-    plot_groups <- "samevars" # update plot_goups
+        message("--> z_samevars == z_samedims --> drop redundant plot_group \"samedims\" ...")
+        plot_groups <- plot_groups[-which(plot_groups == "samedims")] # update plot_goups: drop redundant "samedims"
 
-} else { # z_samevars != z_samedims
-    
-    # check
-    message("--> z_samevars != z_samedims")
-    if (!exists("varnames_out_samedims")) { # `varnames_out_samedims` not provided
-        varnames_out_samedims <- rep(NA, t=length(z_samedims))
-        for (combi in seq_along(varnames_out_samedims)) {
-            varnames_out_samedims[combi] <- paste0("varname_for_", length(dim(z_samedims[[1]][[1]])), "d_variable_vs_",
-                                                   paste(attributes(z_samedims[[1]][[1]])$dims, collapse="_"))
-        }
-        stop("provide `varnames_out_samedims = ", 
-             ifelse(length(varnames_out_samedims) > 1, "c(", ""), 
-             "\"", paste(varnames_out_samedims, collapse="\", \""), "\"", 
-             ifelse(length(varnames_out_samedims) > 1, ")", ""), 
-             "` for saving plots with vars of same dimlength-dimname-combinations")
-    
-    } else { # `varnames_out_samedims` is provided
-        if (length(varnames_out_samedims) != length(z_samedims)) {
-            stop("provided `varnames_out_samedims = ",
+    } else { # z_samevars != z_samedims
+        
+        # check
+        message("--> z_samevars != z_samedims --> keep plot_group \"samedims\" ...")
+        if (!exists("varnames_out_samedims")) { # `varnames_out_samedims` not provided
+            varnames_out_samedims <- rep(NA, t=length(z_samedims))
+            for (combi in seq_along(varnames_out_samedims)) {
+                varnames_out_samedims[combi] <- paste0("varname_for_", length(dim(z_samedims[[1]][[1]])), "d_variable_vs_",
+                                                       paste(attributes(z_samedims[[1]][[1]])$dims, collapse="_"))
+            }
+            stop("provide `varnames_out_samedims` = ", 
                  ifelse(length(varnames_out_samedims) > 1, "c(", ""), 
                  "\"", paste(varnames_out_samedims, collapse="\", \""), "\"", 
                  ifelse(length(varnames_out_samedims) > 1, ")", ""), 
-                 "` for saving plots with vars of same dimlength-dimname-combinations is of different length than `z_samedims`: ", 
-                 length(varnames_out_samedims), " != ", length(z_samedims))
+                 "` in namelist.plot.r for saving plots with vars of same dimlength-dimname-combinations")
+        
+        } else { # `varnames_out_samedims` is provided
+            if (length(varnames_out_samedims) != length(z_samedims)) {
+                stop("provided `varnames_out_samedims` = ",
+                     ifelse(length(varnames_out_samedims) > 1, "c(", ""), 
+                     "\"", paste(varnames_out_samedims, collapse="\", \""), "\"", 
+                     ifelse(length(varnames_out_samedims) > 1, ")", ""), 
+                     "` in namelist.plot.r for saving plots with vars of same dimlength-dimname-combinations is of different length than `z_samedims`: ", 
+                     length(varnames_out_samedims), " != ", length(z_samedims))
+            }
+        } # if varnames_out_samedims is missing or not
+
+        if (!exists("names_legend_samedims")) {
+            stop("provide `names_legend_samedims`")
         }
-    } # if varnames_out_samedims is missing or not
 
-    if (!exists("names_legend_samedims")) {
-        stop("provide `names_legend_samedims`")
-    }
-
-} # if z_samevars == z_samedims
+    } # if z_samevars == z_samedims or not
+} # if z_samevars AND z_samedims are defined initially
 
 nplot_groups <- length(plot_groups)
 message("--> plot ", nplot_groups, " group", ifelse(nplot_groups > 1, "s", ""), ": \"",
         paste(plot_groups, collapse="\", \""), "\" ...")
 
-message("\nstart plotting ...")
+message("\n********************* start plotting *********************")
 for (plot_groupi in seq_len(nplot_groups)) {
-
+        
     if (plot_groups[plot_groupi] == "samevars") { # --> plot same vars together (datas, datasma, datasmon, datasan, datasltm)
         nplots <- length(z_samevars)
     } else if (plot_groups[plot_groupi] == "samedims") {
@@ -2973,6 +3193,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
     for (ploti in seq_len(nplots)) { # either for all vars with same names or for all vars with same dims or ...
             
+        message("\n========================================\nploti ", ploti, "/", nplots, 
+                " in plot_groupi ", plot_groupi, "/", nplot_groups, 
+                ": \"", plot_groups[plot_groupi], "\" ...\n",
+                "========================================")
+
         # plot same vars together (datas, datasma, datasmon, datasan, datasltm)
         if (plot_groups[plot_groupi] == "samevars") { 
             varname <- varnames_unique[ploti]
@@ -2989,6 +3214,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             ltys_p <- ltys[sapply(dinds, "[")]
             if (exists("datasma")) zma <- zma_samevars[[ploti]]
             if (exists("datasmon")) {
+                zname_mon <- names(zmon_samevars)[ploti]
                 zmon <- zmon_samevars[[ploti]]
                 dmon <- dmon_samevars[[ploti]]
                 dmoninds <- dmoninds_samevars[[ploti]]
@@ -2997,6 +3223,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 text_cols_pmon <- text_cols[sapply(dmoninds, "[")]
             }
             if (exists("datasan")) {
+                zname_an <- names(zan_samevars)[ploti]
                 zan <- zan_samevars[[ploti]]
                 dan <- dan_samevars[[ploti]]
                 daninds <- daninds_samevars[[ploti]]
@@ -3005,6 +3232,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 text_cols_pan <- text_cols[sapply(daninds, "[")]
             }
             if (exists("datasltm")) {
+                zname_ltm <- names(zltm_samevars)[ploti]
                 zltm <- zltm_samevars[[ploti]]
                 dltm <- dltm_samevars[[ploti]]
                 dltminds <- dltminds_samevars[[ploti]]
@@ -3023,10 +3251,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
             vinds <- vinds_samedims[[ploti]]
             data_info <- data_infos[[dinds_samedims[[ploti]][[1]]]][[vinds_samedims[[ploti]][[1]]]]
             names_legend_p <- names_legend_samedims[sapply(dinds, "[")]
-            cols_p <- cols_samedims[sapply(dinds, "[")]
-            ltys_p <- ltys_samedims[sapply(dinds, "[")]
+            if (!exists("cols_samedims")) {
+                cols_p <- cols[sapply(dinds, "[")]
+            } else {
+                cols_p <- cols_samedims[sapply(dinds, "[")]
+            }
+            if (!exists("ltys_samedims")) {
+                ltys_p <- ltys[sapply(dinds, "[")]
+            } else {
+                ltys_p <- ltys_samedims[sapply(dinds, "[")]
+            }
             if (exists("datasma")) zma <- zma_samedims[[ploti]]
             if (exists("datasmon")) {
+                zname_mon <- names(zmon_samedims)[ploti]
                 zmon <- zmon_samedims[[ploti]]
                 dmon <- dmon_samedims[[ploti]]
                 dmoninds <- dmoninds_samedims[[ploti]]
@@ -3034,6 +3271,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 names_legend_pmon <- names_legend_samedims[sapply(dmoninds , "[")]
             }
             if (exists("datasan")) {
+                zname_an <- names(zan_samedims)[ploti]
                 zan <- zan_samedims[[ploti]]
                 dan <- dan_samedims[[ploti]]
                 daninds <- daninds_samedims[[ploti]]
@@ -3041,6 +3279,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 names_legend_pan <- names_legend_samedims[sapply(daninds , "[")]
             }
             if (exists("datasltm")) {
+                zname_ltm <- names(zltm_samedims)[ploti]
                 zltm <- zltm_samedims[[ploti]]
                 dltm <- dltm_samedims[[ploti]]
                 dltminds <- dltminds_samedims[[ploti]]
@@ -3054,7 +3293,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         mode_p <- paste(unique(modes[sapply(dinds, "[")]), collapse="_vs_")
         varnames_in_p <- gsub("_", "", varnames_in[sapply(dinds, "[")])
         names_short_p <- names_short[sapply(dinds, "[")]
-        areas_p <- areas[sapply(dinds, "[")]
+        areas_p <- areas_out[sapply(dinds, "[")]
         seasonsp_p <- seasonsp[sapply(dinds, "[")]
         froms_plot_p <- froms_plot[sapply(dinds, "[")]
         tos_plot_p <- tos_plot[sapply(dinds, "[")]
@@ -3065,7 +3304,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (exists("datasmon")) {
             varnames_in_pmon <- gsub("_", "", varnames_in[sapply(dmoninds, "[")])
             names_short_pmon <- names_short[sapply(dmoninds , "[")]
-            areas_pmon <- areas[sapply(dmoninds , "[")]
+            areas_pmon <- areas_out[sapply(dmoninds , "[")]
             seasonsp_pmon <- seasonsp[sapply(dmoninds , "[")]
             froms_plot_pmon <- froms_plot[sapply(dmoninds , "[")]
             tos_plot_pmon <- tos_plot[sapply(dmoninds , "[")]
@@ -3079,7 +3318,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (exists("datasan")) {
             varnames_in_pan <- gsub("_", "", varnames_in[sapply(daninds, "[")])
             names_short_pan <- names_short[sapply(daninds , "[")]
-            areas_pan <- areas[sapply(daninds , "[")]
+            areas_pan <- areas_out[sapply(daninds , "[")]
             seasonsp_pan <- seasonsp[sapply(daninds , "[")]
             froms_plot_pan <- froms_plot[sapply(daninds , "[")]
             tos_plot_pan <- tos_plot[sapply(daninds , "[")]
@@ -3093,7 +3332,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (exists("datasltm")) {
             varnames_in_pltm <- gsub("_", "", varnames_in[sapply(dltminds, "[")])
             names_short_pltm <- names_short[sapply(dltminds , "[")]
-            areas_pltm <- areas[sapply(dltminds , "[")]
+            areas_pltm <- areas_out[sapply(dltminds , "[")]
             seasonsp_pltm <- seasonsp[sapply(dltminds , "[")]
             froms_plot_pltm <- froms_plot[sapply(dltminds , "[")]
             tos_plot_pltm <- tos_plot[sapply(dltminds , "[")]
@@ -3105,32 +3344,38 @@ for (plot_groupi in seq_len(nplot_groups)) {
             pchs_pltm <- pchs[sapply(dltminds , "[")]
         }
        
-        #ndims <- length(dim(z[[1]]))
-        ndims <- sapply(lapply(z, dim), length)
-        ndims <- unique(ndims)
-        if (plot_groups[plot_groupi] == "samevars") {
-            if (length(ndims) != 1) {
-                stop("plotting different dimensions in one plot not implemended")
+        if (F) { # old; why so complicated?
+            #ndims <- length(dim(z[[1]]))
+            ndims <- sapply(lapply(z, dim), length)
+            ndims <- unique(ndims)
+            if (plot_groups[plot_groupi] == "samevars") {
+                if (length(ndims) != 1) {
+                    stop("plotting different dims in one plot not implemended")
+                }
             }
-        }
-        #dim_names <- attributes(z[[1]])$dims
-        dim_names <- sapply(lapply(z, attributes), "[[", "dims")
-        dim_names <- matrix(dim_names, ncol=length(z))
-        dim_names <- apply(dim_names, 1, unique)
-        if (is.list(dim_names)) {
-            stop("plotting different dimensions on one plot not implemented:\n",
-                 dim_names)
-        }
-        message("\n", "plot_groupi ", plot_groupi, " \"", plot_groups[plot_groupi], 
-                "\"\n",
-                "   ploti ", ploti, "\n",
-                "      mode_p = \"", mode_p, "\"\n      z_", plot_groups[plot_groupi], "[[", 
-                ploti, "/", nplots, "]]: \"", zname, "\" has ", ndims, " dim", 
-                ifelse(ndims > 1, "s", ""), ": \"", paste(dim_names, collapse="\", \""), 
-                "\"\n      --> check if this case is defined ...")
-        
-        # plot `datas`
+            #dim_names <- attributes(z[[1]])$dims
+            dim_names <- sapply(lapply(z, attributes), "[[", "dims")
+            dim_names <- matrix(dim_names, ncol=length(z))
+            dim_names <- apply(dim_names, 1, unique)
+            if (is.list(dim_names)) {
+                stop("plotting different dims on one plot not implemented:\n",
+                     dim_names)
+            }
+            message("\nmode_p = \"", mode_p, "\"\n      z_", plot_groups[plot_groupi], "[[", 
+                    ploti, "/", nplots, "]]: zname = \"", zname, "\" has ", ndims, " dim", 
+                    ifelse(ndims > 1, "s", ""), ": \"", paste(dim_names, collapse="\", \""), 
+                    "\"\n--> check if this case is defined ...")
+        } # F
+
+        # plot `datas` (datas always exists)
         message("\n", "****************** plot datas z_* ***************************")
+        #stop("asd")
+
+        ndims <- length(dim(z[[1]]))
+        dim_names <- attributes(z[[1]])$dims
+        message("\n", "z_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname, 
+                "\" has ", ndims, " dim", ifelse(ndims > 1, "s", ""), ": \"", 
+                paste(dim_names, collapse="\", \""), "\". check if this case is defined ...")
 
         ### 2 dims
         ## plot `datas` as lon vs lat
@@ -3138,9 +3383,31 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             message("\n", zname, " ", mode_p, " plot lon vs lat ...")
 
+            quiver_list <- NULL
+            if (exists("varnames_uv")) {
+                if (plot_groups[plot_groupi] == "samevars") {
+                    if (zname %in% names(varnames_uv)) { # if current variable is defined by u,v-components
+                        znameu <- varnames_uv[[zname]]["u"]
+                        znamev <- varnames_uv[[zname]]["v"]
+                        message("prepare u,v-components for quivers: take variables \"", znameu, "\" and \"", znamev, "\"")  
+                        quiver_list <- list(u=zuv_samevars[[znameu]], v=zuv_samevars[[znamev]])
+                    }
+                }
+            }
+
             # colorbar values
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
-            ip <- image.plot.pre(range(z, na.rm=T), verbose=F)
+            zlim <- range(z, na.rm=T) # default
+            nlevels <- NULL 
+            if (zname == "quv") {
+                nlevels <- 200
+                #zlim <- c(5.03, 324.37) # feb 
+                #zlim <- c(6.05, 328.23) # may
+                #zlim <- c(12.1, 474.4) # aug
+                #zlim <- c(8.33, 422.71) # nov
+                zlim <- c(5.03, 474.4)
+            }
+            ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, verbose=F)
 
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
@@ -3165,13 +3432,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # map plot
             add_land <- "world"
-            if (mode_p == "area") { # fesom
-                add_land <- F
-            }
+            if (mode_p == "area") add_land <- F # fesom
+            source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, verbose=T,
                            xlab="Longitude [°]", ylab="Latitude [°]", 
                            zlab=data_info$label, znames=names_legend_p,
-                           add_land=add_land)
+                           add_land=add_land, add_contour=F,
+                           quiver_list=quiver_list, quiver_const=T, quiver_nx_fac=0.5)
             
             message("\n", "save plot ", plotname, " ...")
             dev.off()
@@ -3188,9 +3455,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 message("\n`length(z)` = 2 ", appendLF=F)
 
-                if (areas[1] == areas[2]) {
+                if (areas_p[1] == areas_p[2]) {
 
-                    message("AND areas[1] = \"", areas[1], "\" = areas[2] = \"", areas[2], "\" ", appendLF=F)
+                    message("AND areas[1] = \"", areas_p[1], "\" = areas_p[2] = \"", areas_p[2], "\" ", appendLF=F)
 
                     if (length(d$lon[[1]]) == length(d$lon[[2]]) &&
                         length(d$lat[[1]]) == length(d$lat[[2]])) {
@@ -3249,13 +3516,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
 
                     } else { # if lon_dim and lat_dim of both settings are of same length
-                        message("\nbut lon and lat dims of both settings are of different length --> cannot plot anomaly")
+                        message("but lon and lat dims of both settings are of different length --> cannot plot anomaly as lon vs lat")
                     }
                 } else { # both areas are not equal
-                    message("\nbut areas[1] = \"", areas[1], "\" != areas[2] = \"", areas[2], "\" --> cannot plot anomaly")
+                    message("but areas[1] = \"", areas[1], "\" != areas[2] = \"", areas[2], "\" --> cannot plot anomaly as lon vs lat")
                 }
-            } # if length(z) == 2
-            # finished anomaly plot of 2 dims (lon,lat)
+            } else { # if length(z) != 2
+                message("\nlength(z) != 2 --> cannot plot anomaly as lon vs lat")
+            } # finished anomaly plot of 2 dims (lon,lat)
 
         } # if ndims == 2 and lon,lat
         # finished plot `datas` as lon vs lat
@@ -3374,7 +3642,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # use km instead of m as depth unit
             if (T) {
-                message("divide depth dimension by 1000 m --> km")
+                message("divide depth dim by 1000 m --> km")
                 depth_dim <- lapply(depth_dim, "/", 1000)
                 ylab <- "Depth [km]"
             } else {
@@ -3949,7 +4217,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             season_inds <- which(!is.na(season_inds))
                             #data.frame(dims[[1]]$timelt[season_inds[1:100]], season_inds[1:100])
                             if (length(season_inds) == 0) {
-                                warning("did not find any of these month numbers in time dimension values of data, skip")
+                                warning("did not find any of these month numbers in time dim values of data, skip")
                             } else {
                                 message("   --> min / max (dims[[", i, "]]$timelt[season_inds]) = ", 
                                         min(dims[[i]]$timelt[season_inds]), " / ", max(dims[[i]]$timelt[season_inds]))
@@ -3962,7 +4230,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       #pch=pchs[i]
                                       pch=ts_highlight_seasons$pchs[seasi], cex=0.2
                                      )
-                            } # if wanted month numbers were found in time dimension values of data
+                            } # if wanted month numbers were found in time dim values of data
                         } # for seasi in ts_highlight_seasons$seasons
                     } # for i seq_along(z)
                     
@@ -4094,12 +4362,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\n", "add default stuff to datas legend here1 ...")
                 le <- list()
-                #le$pos <- "topleft" 
+                le$pos <- "topleft" 
                 #le$pos <- "left"
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
-                le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
+                #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
                 #le$ncol <- length(z)/2
                 le$ncol <- 1
                 #le$ncol <- 2
@@ -4367,12 +4635,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             } # if ts_plot_each_setting_in_subplot
 
-        } # if (ndims_unique == 1 && vardims_unique == "time") {
+        } # if (ndims_unique == 1 && dim_names == "time") {
         # finished plot `datas` as time 
         
         
         ## plot `datas` as lat vs depth vs time
-        if (ndims_unique == 3 && all(vardims_unique %in% c("lat", "depth", "time"))) { # e.g. moc
+        if (ndims == 3 && all(dim_names %in% c("lat", "depth", "time"))) { # e.g. moc
 
             # extract time series of lat,depth,time MOC data
             if (any(varname == c("MOCw"))) { # add further moc variables here
@@ -4474,16 +4742,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             } # if varname any MOC
 
-        } # if (ndims_unique == 3 && all(vardims_unique %in% c("lat", "depth", "time"))) {
+        } # if (ndims == 3 && all(dim_names %in% c("lat", "depth", "time"))) {
         # finished plot `datas` as lat vs depth vs time
 
 
-        ## start dimension-specific plots for each variable of `datasmon`
+        ## start dim-specific plots for each variable of `datasmon`
         if (exists("datasmon")) {
             
-            message("\n", "****************** plot datasmon zmon_* ***************************")
+            message("\n****************** plot datasmon zmon_* ***************************")
 
-            zname_mon <- names(zmon)[ploti]
             ndims_mon <- length(dim(zmon[[1]]))
             dim_names_mon <- attributes(zmon[[1]])$dims
             message("\n", "zmon_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname_mon, 
@@ -4840,15 +5107,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # finished plot `datasmon` vs months
 
         } # if exists("datasmon")
-        # finised dimension-specific plots for each variable of `datasmon`
+        # finised dim-specific plots for each variable of `datasmon`
 
 
-        ## start dimension-specific plots for each variable of `datasan`
+        ## start dim-specific plots for each variable of `datasan`
         if (exists("datasan")) {
             
-            message("\n", "****************** plot datasan zan_* ***************************")
+            message("\n****************** plot datasan zan_* ***************************")
 
-            zname_an <- names(zan)[ploti]
             ndims_an <- length(dim(zan[[1]]))
             dim_names_an <- attributes(zan[[1]])$dims
             message("\n", "zan_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname_an, 
@@ -5280,15 +5546,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # finished plot `datasan` vs years
 
         } # if exists("datasan")
-        # finised dimension-specific plots for each variable of `datasan`
+        # finised dim-specific plots for each variable of `datasan`
 
 
-        ## start dimension-specific plots for each variable of `datasltm`
+        ## start dim-specific plots for each variable of `datasltm`
         if (exists("datasltm")) {
             
-            message("\n", "****************** plot of datasltm zltm_* ***************************")
+            message("\n****************** plot of datasltm zltm_* ***************************")
 
-            zname_ltm <- names(zltm)[ploti]
             ndims_ltm <- length(dim(zltm[[1]]))
             dim_names_ltm <- attributes(zltm[[1]])$dims
             message("\n", "zltm_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname_ltm, 
@@ -5351,7 +5616,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # use km instead of m as depth unit
                 if (T) {
-                    message("divide depth dimension by 1000 m --> km")
+                    message("divide depth dim by 1000 m --> km")
                     depth_dim <- lapply(depth_dim, "/", 1000)
                     ylab <- "Depth [km]"
                 } else {
@@ -5377,7 +5642,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # if ndims == 2: lon lat
 
         } # if (exists("datasltm")) {
-        # finised dimension-specific plots for each variable of `datasltm`
+        # finised dim-specific plots for each variable of `datasltm`
 
 
         ## plot var setting1 vs var setting2 of `datas`

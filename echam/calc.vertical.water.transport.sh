@@ -110,7 +110,8 @@ ncatted -O -a units,qv,o,c,"kg_h2o m-1 s-1" $fout_qv
 ncatted -O -a code,qv,d,,, $fout_qv
 
 # norm of u and v components of water vapor transport
-cdo -sqrt -add -sqr $fout_qu -sqr $fout_qv $fout_quv
+cdo -setname,quv -sqrt -add -sqr $fout_qu -sqr $fout_qv $fout_quv
+ncatted -O -a long_name,quv,o,c,"norm of horizontal water vapor transport" $fout_quv
 
 # clean up
 rm delta_pres.?.nc dummy.Q?[UV].nc dummy.PS.nc dummy.?.nc
