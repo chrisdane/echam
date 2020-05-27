@@ -2,7 +2,7 @@
 
 #options(warn = 2) # stop on warnings
 
-if (T) {
+if (F) {
     message("rm(list=ls())")
     rm(list=ls())
     #fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
@@ -902,7 +902,7 @@ if (F) {
     message("\nenable here if you want to load dataseats from https://pangaea.de ...")
 }
 
-# NOAA monthly station data
+# NOAA monthly station data from https://www.ncdc.noaa.gov/cdo-web/search
 if (F) {
     ghcdn_csv <- ""
     if (host$machine_tag == "ollie") {
@@ -2055,6 +2055,9 @@ for (i in 1:nsettings) {
                                                                                 "q [kg ", unit1^-1, " ", unit2^-1, "]")), 
                                                                list(unit1="m", unit2="s")))
             }
+
+        } else if (varname == "quv_direction") {
+            data_infos[[i]][[vi]]$label <- "direction of water vapor transport [°]"
 
         } # finished define variable specific things
     
@@ -6309,8 +6312,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     # add legend if wanted
                                     if (add_legend) {
                                         le <- list()
-                                        le$pos <- "topleft"
-                                        #le$pos <- "topright"
+                                        #le$pos <- "topleft"
+                                        le$pos <- "topright"
                                         le$ncol <- 1
                                         #le$ncol <- 2 
                                         le$text <- names(season_cols) #names_legend[i]

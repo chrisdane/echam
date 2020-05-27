@@ -31,7 +31,7 @@ alpha_rgb <- 0.2 # transparent: 0,1 (0 fully transparent)
 add_xgrid <- F
 add_ygrid <- F
 add_zeroline <- T
-add_unsmoothed <- F
+add_unsmoothed <- T
 add_smoothed <- T
 add_sd <- F
 add_linear_trend <- T
@@ -66,7 +66,7 @@ scatter_s1_vs_s1_varname <- "tsurf"
 #scatter_s1_vs_s1_varname <- "wisoaprt_d"
 plot_scatter_v1_vs_v2 <- T # uses `datas`
 varnamex <- varnamey <- "abc"
-if (T) { # TOA imbalance gregory et al. 2004 stuff 
+if (F) { # TOA imbalance gregory et al. 2004 stuff 
     varnamex <- "temp2"
     varnamey <- "toa_imbalance"
 } else if (F) { # temp2 vs precipitation weighted temp2
@@ -75,6 +75,9 @@ if (T) { # TOA imbalance gregory et al. 2004 stuff
 } else if (F) {
     varnamex <- "temp2"
     varnamey <- "wisoaprt_d"
+} else if (T) {
+    varnamex <- "quv"
+    varnamey <- "quv_direction"
 }
 add_1to1_line_scatter <- F
 
@@ -113,8 +116,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
-    #prefixes <- "cosmos-aso-wiso_Hol-Tx10"
+} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
@@ -129,7 +131,7 @@ if (F) { # awi-esm-1-1-lr hist
     #names_legend <- names_short
     #names_legend <- "global"
     #names_legend <- "60-90N"
-    #names_legend <- "Ladoga Hol-Tx10"
+    names_legend <- "Ladoga Hol-Tx10"
     #names_legend <- "Ladoga Hol-T"
     #names_legend <- "Ladoga (cosmos-aso-wiso)"
     #names_legend <- "Shuchye Hol-Tx10"
@@ -157,7 +159,7 @@ if (F) { # awi-esm-1-1-lr hist
     #time_frequencies <- "annual"
     time_ref <- 1950 # any string, e.g. "BP", or number
     #n_mas <- 30
-    #n_mas <- 5*30
+    n_mas <- 5*12
     #n_mas <- 150
     #n_mas <- 120
     #n_mas <- 1200
@@ -183,9 +185,10 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
     varnames_in <- "quv"
+    #varnames_in <- "quv_direction"
     levsf <- "_int1000-100hPa"
     varnames_out_samedims <- "quv"
-    varnames_uv <- list(quv=c(u="qu", v="qv")) # for quiver
+    #varnames_uv <- list(quv=c(u="qu", v="qv")) # for quiver
     modes <- "select"
     #modes <- "yseasmean"
     #areas <- "sibiria"
@@ -863,7 +866,7 @@ if (F) { # awi-esm-1-1-lr hist
 
 # ==================================================
 # 7 settings
-} else if (T) { # compare pi/mh cold/warm atmosphere restart problem
+} else if (F) { # compare pi/mh cold/warm atmosphere restart problem
     models <- rep("echam6", t=7)
     prefixes <- c("awi-esm-1-1-lr_pi477_ollie", # temp2 2700 to 3249 -> 2051 to 2600
                   "awi-esm-1-1-lr_piControl_g3bid", # temp2 2701 to 2999 -> 2051 to 2349

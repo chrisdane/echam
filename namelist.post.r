@@ -136,7 +136,7 @@ if (F) { # old hist
     #modes <- "fldmean"
     new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
-} else if (T) { # hu/xiaoxu
+} else if (F) { # hu/xiaoxu
     #datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
     #fpatterns <- "MM_<YYYY>01.01_echam.nc"
     #datapaths <- "/home/ollie/hyang/work/mh477/cpl_output/copy" # 2623 to 2657
@@ -196,8 +196,8 @@ if (F) { # old hist
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom"
     # hol-tx10 on paleosrv:
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output" # original w 2901-3601 dy=1 timestamps
-    datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5" # links w dy=10 timestamps
-    #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom" # links w dy=10 timestamps
+    datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5" # links with dt=10 yrs timestamps
+    #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom" # links with dt=10 yrs timestamps
     # hol-t on stan:
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5" # links w correct timestamps
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" # links w correct timestamps
@@ -220,7 +220,8 @@ if (F) { # old hist
     #fpatterns <- "Hol-7_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc" # sicmom
     #fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
-    prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-7_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
@@ -254,7 +255,9 @@ if (F) { # old hist
     #fvarnames <- "sd" # spectral divergence
     #fvarnames <- "svo" # spectral vorticity
     #fvarnames <- "q"
-    fvarnames <- "aps"
+    #fvarnames <- "aps"
+    fvarnames <- "quv_direction"
+    levs_out <- "int1000-100hPa"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
     #fvarnames <- "wisoevap"
@@ -262,7 +265,7 @@ if (F) { # old hist
     #fvarnames <- "wisoaprt_d_post"
     #fvarnames <- "wisoevap_d_post"
     #fvarnames <- "wisope_d_post"
-    #levs_out <- 2
+    #levs_out <- "sellevel_2"
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "aprt_times_tsurf"
     #fvarnames <- "temp2aprt"
@@ -319,7 +322,7 @@ if (F) { # old hist
     #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
     #fvarnames <- "THO"
     #fvarnames <- "SAO"
-    #levs_out <- 6
+    #levs_out <- "sellevel_6
     #fvarnames <- "zmld"
     #fvarnames <- "SICOMO"
     #areas_out_list <- list(list(name="NA45to90N",
@@ -657,6 +660,9 @@ if (F) { # old hist
 # https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_calc_wiso_echam5_monmean.sh
 # /ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh
 cdo_known_cmds <- list("toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
+                       "quv_direction"=list(cmd=c("<cdo> -setname,quv_direction -divc,3.141593 -mulc,180 -atan2 <qu> <qv>",
+                                                  "<nco_ncatted> -O -a long_name,quv_direction,o,c,\"direction of water vapor transport\"",
+                                                  "<nco_ncatted> -O -a units,quv_direction,o,c,\"degree\"")),
                        "wisoaprt_d_post"=list(cmd=c("<cdo> -setname,wisoaprt_d -setcode,10 -mulc,1000. -subc,1. -div -div <wisoaprt> <aprt> <wiso_smow_files>",
                                                     "<nco_ncatted> -O -a long_name,wisoaprt_d,o,c,\"delta of total precipitation\"",
                                                     "<nco_ncatted> -O -a units,wisoaprt_d,o,c,\"o/oo\"")),

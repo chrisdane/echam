@@ -164,7 +164,7 @@ if (exists("season_names")) {
 }
 if (!exists("levs_out")) levs_out <- rep(NA, t=nsettings)
 lev_fnames <- levs_out
-lev_fnames[which(!is.na(levs_out))] <- paste0("_", levs_out[which(!is.na(levs_out))], "m")
+lev_fnames[which(!is.na(levs_out))] <- paste0("_", levs_out[which(!is.na(levs_out))])
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
 
 # check for new times if wanted
@@ -260,6 +260,7 @@ for (i in 1:nsettings) {
     message("fvarname = ", fvarnames[i])
     if (!is.na(codes[i])) message("code = ", codes[i])
     message("postpath = ", postpaths[i])
+    message("prefix = ", prefixes[i])
     message("mode = ", modes[i])
     message("from = ", froms[i])
     message("to = ", tos[i])
@@ -283,7 +284,7 @@ for (i in 1:nsettings) {
                    models[i], "_", modes[i],
                    ifelse(!is.na(codes[i]), paste0("_selcode_", codes[i]), ""),
                    "_", fvarnames[i], 
-                   ifelse(!is.na(levs_out[i]), paste0("_sellevel_", levs_out[i]), ""),
+                   lev_fnames[i], 
                    "_", areas_out[i],
                    "_", season_names[i], "_", froms[i], "-", tos[i], 
                    ".nc")
@@ -818,8 +819,9 @@ for (i in 1:nsettings) {
                             message("`", cdo_known_cmds[[vari]]$cmd, "`")
                         } else {
                             message("\n", appendLF=F)
-                            for (cmdi in 1:length(cdo_known_cmds[[vari]]$cmd)) {
-                                message("      `", cdo_known_cmds[[vari]]$cmd[cmdi], "`")
+                            for (cmdi in seq_along(cdo_known_cmds[[vari]]$cmd)) {
+                                message("      cmd ", cmdi, "/", length(cdo_known_cmds[[vari]]$cmd), ": `", 
+                                        cdo_known_cmds[[vari]]$cmd[cmdi], "`")
                             }
                         }
                     #}
@@ -847,15 +849,19 @@ for (i in 1:nsettings) {
                                     } else {
                                         eval(parse(text=paste0("replacement <- ", pattern)))
                                     }
-                                } else { # no such a variable exists
-                                    # assume an input file is needed
-                                    replacement <- fout
-                                    replacement <- gsub(fvarnames[i], pattern, replacement)
-                                    if (!file.exists(replacement)) {
-                                        stop("\nfound pattern \"<", pattern, 
-                                             ">\" is not a defined variable in the current workspace\n",
-                                             "--> assume it should be an input file. however, file\n   \"", replacement, "\"\n",
-                                             "does not exist\n")
+                                } else { # no variable named `pattern` exists in current work space
+                                    if (pattern == "nco_ncatted") { # special case
+                                        message("   detected special pattern \"<", pattern, ">\" --> run system(\"which ncatted\") ...")
+                                        replacement <- system("which ncatted", intern=T)
+                                    } else { # assume an input file is needed
+                                        replacement <- fout
+                                        replacement <- gsub(fvarnames[i], pattern, replacement)
+                                        if (!file.exists(replacement)) {
+                                            stop("\nfound pattern \"<", pattern, 
+                                                 ">\" is not a defined variable in the current workspace\n",
+                                                 "--> assume it should be an input file. however, file\n   \"", replacement, "\"\n",
+                                                 "does not exist\n")
+                                        }
                                     }
                                 }
                                 # replace found variable/file with pattern in command
