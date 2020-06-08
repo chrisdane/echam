@@ -3346,7 +3346,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         ## dims and dimnames of current plot in current plot_group
         ndims <- length(dim(z[[1]]))
         dim_names <- attributes(z[[1]])$dims
-        message("\n", "z_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname, 
+        message("\nz_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname, 
                 "\" has ", ndims, " dim", ifelse(ndims > 1, "s", ""), ": \"", 
                 paste(dim_names, collapse="\", \""), "\". check if this case is defined ...")
        
@@ -3512,7 +3512,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # update dims and dimnames of current plot in current plot_group after adding obs
             ndims <- length(dim(z[[1]]))
             dim_names <- attributes(z[[1]])$dims
-            message("\n", "z_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname, 
+            message("\npotentially updated z_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname, 
                     "\" has ", ndims, " dim", ifelse(ndims > 1, "s", ""), ": \"", 
                     paste(dim_names, collapse="\", \""), "\". check if this case is defined ...")
         
@@ -4661,14 +4661,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # add legend if wanted
             if (add_legend) {
-                message("\n", "add default stuff to datas legend here1 ...")
+                message("\nadd default stuff to datas legend here1 ...")
                 le <- list()
-                le$pos <- "topleft" 
+                #le$pos <- "topleft" 
                 #le$pos <- "left"
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
+                le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), yat[length(yat)])
                 #le$ncol <- length(z)/2
                 le$ncol <- 1
                 #le$ncol <- 2
@@ -4688,7 +4689,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 le$cex <- 1
                 #le$cex <- 0.85
-                le$cex <- 0.75
+                le$cex <- 0.7
+                #le$cex <- 0.75
                 #le$cex <- 0.66
                 #le$cex <- 0.5
                 # add stuf to legend here

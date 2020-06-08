@@ -36,7 +36,7 @@ add_smoothed <- T
 add_sd <- F
 add_linear_trend <- T
 add_nonlinear_trend <- F
-scale_ts <- T
+scale_ts <- F
 ts_highlight_seasons <- list(bool=F, suffix="") # default
 if (F) {
     ts_highlight_seasons <- list(bool=T,
@@ -116,7 +116,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
@@ -904,7 +904,6 @@ if (F) { # awi-esm-1-1-lr hist
                                "mh_cold (3105 to 3207)")
     cols_samedims <- 1:7
     ltys_samedims <- rep(1, t=7)
-    areas <- rep("global", t=7)
 
 # ==================================================
 # 8 settings
@@ -934,6 +933,33 @@ if (F) { # awi-esm-1-1-lr hist
     names_legend_samedims <- paste0(names_short, rep(paste0(" ", c("surf", "200m", "700m", "2200m")), t=2))
     cols_samedims <- c(1:4, 1:4)
     ltys_samedims <- c(rep(2, t=4), rep(1, t=4))
+
+} else if (T) { # compare pi/mh cold/warm atmosphere restart problem
+    models <- rep("echam6", t=8)
+    prefixes <- c("awi-esm-1-1-lr_pi477_ollie", # temp2 2700 to 3249 -> 2051 to 2600
+                  "awi-esm-1-1-lr_piControl_g3bid", # temp2 2701 to 2999 -> 2051 to 2349
+                  "awi-esm-1-1-lr_piControl", # tas 1842 to 1941 -> 2350 to 2449
+                  "awi-esm-1-1-lr_mh477_ollie", # temp2 2623 to 2657
+                  "awi-esm-1-1-lr_mh_new_mistral", # temp2 2624 to 3001
+                  "awi-esm-1-1-lr_midHolocene", # tas 3106 to 3205
+                  "awi-esm-1-1-lr_mh_cold_mistral", # temp2 3105 to 3207
+                  "awi-esm-1-1-lr_mh_cmip") # temp2 1955 to 1994 -> 2450 to 2389
+    names_short <- c("pi477", "piControl_spinup", "piControl", "mh477", "mh_new", "midHolocene", "mh_cold", "mh_cmip")
+    fromsf <- c(2700, 2701, 1842, 2623, 2624, 3106, 3105, 1955)
+    tosf <- c(3249, 2999, 1941, 2657, 3001, 3205, 3207, 1994)
+    new_origins <- c(2051, 2051, 2350, NA, NA, NA, NA, 2450)
+    #fromsp <- c(546, rep(NA, t=3))
+    #tosp <- c(NA, rep(555, t=3))
+    time_frequencies <- rep("monthly", t=8)
+    n_mas <- rep(36, t=8)
+    varnames_in <- c("temp2", "temp2", "tas", "temp2", "temp2", "tas", "temp2", "temp2")
+    modes <- rep("fldmean", t=8)
+    varnames_out_samedims <- "temp2"
+    names_legend_samedims <- c("pi477 (2700 to 3249)", "piControl_spinup (2701 to 2999)", "piControl (1842 to 1941)",
+                               "mh477 (2623 to 2657)", "mh_new (2624 to 3001)", "midHolocene (3106 to 3205)",
+                               "mh_cold (3105 to 3207)", "mh_cmip (1955 to 1994)")
+    cols_samedims <- 1:8
+    ltys_samedims <- rep(1, t=8)
 
 } # which settings
 
