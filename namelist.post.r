@@ -136,7 +136,7 @@ if (F) { # old hist
     #modes <- "fldmean"
     new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
-} else if (T) { # hu/xiaoxu
+} else if (F) { # hu/xiaoxu
     #datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
     #fpatterns <- "MM_<YYYY>01.01_echam.nc"
     #datapaths <- "/home/ollie/hyang/work/mh477/cpl_output/copy" # 2623 to 2657
@@ -193,7 +193,7 @@ if (F) { # old hist
         new_date_list[[1]]$years <- new_date_list[[1]]$years[-(229:240)] # if starting from 3105
     }
 
-} else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
+} else if (T) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     models <- "echam5"
     #models <- "mpiom1"
     # hol-7 on stan:
@@ -227,7 +227,8 @@ if (F) { # old hist
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
-    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-7_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
@@ -260,9 +261,9 @@ if (F) { # old hist
     #fvarnames <- "sd" # spectral divergence
     #fvarnames <- "svo" # spectral vorticity
     #fvarnames <- "q"
-    fvarnames <- "aps"
-    #fvarnames <- "quv_direction"
-    #levs_out <- "int1000-100hPa"
+    #fvarnames <- "aps"
+    fvarnames <- "quv_direction"
+    levs_out <- "int1000-100hPa"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
     #fvarnames <- "wisoevap"
