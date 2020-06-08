@@ -31,12 +31,12 @@ alpha_rgb <- 0.2 # transparent: 0,1 (0 fully transparent)
 add_xgrid <- F
 add_ygrid <- F
 add_zeroline <- T
-add_unsmoothed <- T
+add_unsmoothed <- F
 add_smoothed <- T
 add_sd <- F
 add_linear_trend <- T
 add_nonlinear_trend <- F
-scale_ts <- F
+scale_ts <- T
 ts_highlight_seasons <- list(bool=F, suffix="") # default
 if (F) {
     ts_highlight_seasons <- list(bool=T,
@@ -129,21 +129,25 @@ if (F) { # awi-esm-1-1-lr hist
     #names_short <- "Hol-T"
     #names_short <- "Hol-T_st"
     #names_legend <- names_short
+    #names_legend <- "Hol-Tx10 DJF"
+    #names_legend <- "Hol-Tx10 MAM"
+    #names_legend <- "Hol-Tx10 JJA"
+    #names_legend <- "Hol-Tx10 SON"
     #names_legend <- "global"
     #names_legend <- "60-90N"
-    names_legend <- "Ladoga Hol-Tx10"
-    #names_legend <- "Ladoga Hol-T"
-    #names_legend <- "Ladoga (cosmos-aso-wiso)"
-    #names_legend <- "Shuchye Hol-Tx10"
-    #names_legend <- "Shuchye Hol-T"
-    #names_legend <- "Levinson-Lessing Hol-Tx10"
-    #names_legend <- "Levinson-Lessing Hol-T"
-    #names_legend <- "Taymyr Hol-Tx10"
-    #names_legend <- "Taymyr Hol-T"
-    #names_legend <- "Emanda Hol-Tx10"
-    #names_legend <- "Emanda Hol-T"
-    #names_legend <- "Elgygytgyn Hol-Tx10"
-    #names_legend <- "Elgygytgyn Hol-T"
+    names_legend <- "Hol-Tx10 Ladoga"
+    #names_legend <- "Hol-T Ladoga"
+    #names_legend <- "cosmos-aso-wiso Ladoga"
+    #names_legend <- "Hol-Tx10 Shuchye"
+    #names_legend <- "Hol-T Shuchye"
+    #names_legend <- "Hol-Tx10 Levinson-Lessing"
+    #names_legend <- "Hol-T Levinson-Lessing"
+    #names_legend <- "Hol-Tx10 Taymyr"
+    #names_legend <- "Hol-T Taymyr"
+    #names_legend <- "Hol-Tx10 Emanda"
+    #names_legend <- "Hol-T Emanda"
+    #names_legend <- "Hol-Tx10 Elgygytgyn"
+    #names_legend <- "Hol-T Elgygytgyn"
     fromsf <- "0001" # Hol-Tx10
     #fromsf <- "0004" # Hol-T; beginning of chunk 1
     #fromsf <- "0100"
@@ -153,26 +157,34 @@ if (F) { # awi-esm-1-1-lr hist
     #tosf <- "6821" # 
     #tosf <- "7000" # Hol-T; end of chunk 3
     tosf <- "7001" # Hol-Tx10
-    new_origins <- -7000 # Hol-Tx10
+    #new_origins <- -7000 # Hol-Tx10
+    new_origins <- -5050 # Hol-Tx10 plus 1950
     #new_origins <- -6996 # Hol-T; model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
     #time_frequencies <- "monthly"
     #time_frequencies <- "annual"
     time_ref <- 1950 # any string, e.g. "BP", or number
     #n_mas <- 30
-    n_mas <- 5*12
+    #n_mas <- 5*12
     #n_mas <- 150
-    #n_mas <- 120
-    #n_mas <- 1200
+    n_mas <- 20/3*12
+    #n_mas <- 10*12
+    #n_mas <- 20*12
+    #n_mas <- 100*12
     #remove_mean_froms <- -827
     #remove_mean_tos <- -827
     #seasonsf <- "annual"
-    #seasonsp <- "Feb" # cdo default season: Feb, May, Aug, Nov
+    #seasonsp <- "Feb" # cdo's default season timestamps: DJF->Feb, MAM->May, JJA->Aug, SON->Nov
     #seasonsp <- "May"
     #seasonsp <- "Jun"
+    #seasonsp <- "Jul"
     #seasonsp <- "Aug"
+    #seasonsp <- "Sep"
     #seasonsp <- "Nov"
     #seasonsp <- "Dec"
+    #seasonsp <- "DJF"
+    #seasonsp <- "MAM"
     #seasonsp <- "JJA"
+    seasonsp <- "SON"
     #varnames_in <- "temp2"
     #varnames_in <- "tsurf"
     #varnames_in <- "aprt"
@@ -188,7 +200,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "quv_direction"
     levsf <- "_int1000-100hPa"
     varnames_out_samedims <- "quv"
-    #varnames_uv <- list(quv=c(u="qu", v="qv")) # for quiver
+    names_legend_samedims <- c("qu", "qv", "quv")
+    varnames_uv <- list(quv=c(u="qu", v="qv")) # for quiver
     modes <- "select"
     #modes <- "yseasmean"
     #areas <- "sibiria"
@@ -371,7 +384,7 @@ if (F) { # awi-esm-1-1-lr hist
     new_origins <- c(-7000, -7000) # Hol-Tx10
     time_ref <- 1950 # any string, e.g. "BP", or number
     n_mas <- c(120, 120)
-    #seasonsp <- "Feb" # cdo default season: Feb, May, Aug, Nov
+    #seasonsp <- "Feb" # cdo's default season timestamps: Feb, May, Aug, Nov
     #seasonsp <- "May"
     #seasonsp <- "Jun"
     #seasonsp <- "Aug"
@@ -550,7 +563,7 @@ if (F) { # awi-esm-1-1-lr hist
     new_origins <- c(-7000, -7000, -7000) # Hol-Tx10
     time_ref <- 1950 # any string, e.g. "BP", or number
     n_mas <- c(120, 120, 120)
-    #seasonsp <- "Feb" # cdo default season: Feb, May, Aug, Nov
+    #seasonsp <- "Feb" # cdo's default season timestamps: Feb, May, Aug, Nov
     #seasonsp <- "May"
     #seasonsp <- "Jun"
     #seasonsp <- "Aug"

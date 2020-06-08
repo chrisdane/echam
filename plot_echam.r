@@ -2,11 +2,13 @@
 
 #options(warn = 2) # stop on warnings
 
-if (F) {
-    message("rm(list=ls())")
+if (T) {
+    message("\nrm(list=ls())")
     rm(list=ls())
     #fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
     # set back to default: `[` <- fctbackup 
+} else {
+    message("\ndo not clear work space ...")
 }
 graphics.off()
 
@@ -106,10 +108,7 @@ if (!exists("types")) types <- rep("l", t=nsettings) # default: lines plots and 
 if (!exists("ltys")) ltys <- rep(1, t=nsettings)
 if (!exists("pchs")) pchs <- rep(1, t=nsettings)
 if (!exists("lwds")) lwds <- rep(1, t=nsettings)
-if (!exists("scatterpchs")) scatterpchs <- rep(16, t=nsettings)
-if (!exists("scatterpchs_vstime")) scatterpchs_vstime <- 1:nsettings
-if (!exists("scattercexs")) scattercexs <- rep(1, t=nsettings)
-# my nicer colors than default:
+# mycols my nicer colors than default:
 if (nsettings == 1) {
     cols_vec <- "black"
 } else if (nsettings == 2) {
@@ -157,13 +156,14 @@ if (F) {
     message("\nuse transparent cols ...")
     cols_save <- cols
     cols <- cols_rgb
-}
+} 
+plotname_suffix <- "" # default
+if (scale_ts) plotname_suffix <- "_scale_ts"
 
 # allocate
 datas <- vector("list", l=nsettings)
 names(datas) <- names_short
 data_infos <- dims <- dims_per_setting_in <- datas
-
 
 # load special data
 message("\n", "start reading special data sets ...")
@@ -917,7 +917,7 @@ if (F) {
         message("load noaa ghcdn monthly station data ...")
         message("station", appendLF=F)
         noaa_ghcdn <- vector("list", l=length(ghcdn_csv))
-        for (i in seq_along(ghcdn_csv)) {
+        for (i in seq_along(ghcdn_csv)) { # one file per station
             message(" ", i, ": \"", basename(ghcdn_csv[i]), "\"", appendLF=F)
             d <- read.csv(ghcdn_csv[i], stringsAsFactors=F)
             tmp <- list(time=as.POSIXlt(paste0(d$DATE, "-15"), tz="UTC"),
@@ -985,26 +985,99 @@ if (F) {
                     noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(two-yurts)=72 km")
                 }
             } # special legend labels
-        } # for i ghdcn csv files
+        } # for i ghdcn csv files; one file per station
         message()
     } # if ghcdn files present
 } else {
     message("\nenable here if you want to load NOAA station datasets ...")
 } # if NOAA station data
 
-# clean
-for (obj in c("f", "time", "years", "timelt", "nyears_to_origin", "origin",
-              "pdoi", "tmp", "d", "ghcdn_csv", 
-              "Tavg_an", "Tmin_an", "Tmax_an", "precip_an", 
-              "Tavg_mon", "Tmin_mon", "Tmax_mon", "precip_an")) {
-    if (exists(obj)) rm(obj)
-}
+# ERA5 time series data
+if (T) {
+    fs <- ""
+    if (host$machine_tag == "paleosrv") {
+        fs <- "/isibhv/projects/paleo_work/cdanek/data/ERA5/post"
+    }
+    if (fs != "") {
+        message("\ndisable here if you do not want to load ERA5 time series ...")
+        fs <- list.files(fs, pattern=glob2rx("era5_select_*"), full.names=T)
+        if (length(fs) > 0) { # e.g. "era5_select_viwvn_emanda_remapnn_Jan-Dec_1990-2010.nc"
+            era5_ts <- list(fs=fs, name="ERA5", n_ma=36,
+                            col="#377EB8", lty=1, lwd=1, pch=1, cex=1)
+        } # if any of fs exists
+    } # if fs != ""
+} else {
+    message("\nenable here if you want to load ERA5 time series ...")
+} # if ERA5 time series
+
+# ERA5 spatial data
+if (T) {
+    fs <- c("era5_viwv_yseasmean_1990-2010.nc", "era5_viwv_direction_yseasmean_1990-2010.nc")
+    if (host$machine_tag == "paleosrv") {
+        fs <- paste0("/isibhv/projects/paleo_work/cdanek/data/ERA5/post/", fs)
+    }
+    if (any(file.exists(fs))) {
+        era5_spatial <- vector("list", l=length(fs))
+        cnt <- 0
+        for (f in fs) {
+            if (file.exists(f)) {
+                cnt <- cnt + 1
+                if (cnt == 1) message("\ndisable here if you do not want to load ERA5 spatial datasets ...")
+                message("load ERA5 data from \"", f, "\" ...")
+                era5_ncin <- nc_open(f)
+                lon <- era5_ncin$dim$lon$vals
+                lon_orig <- NULL # default
+                if (reorder_lon_from_0360_to_180180) {
+                    lon_orig <- lon
+                    west_of_180_inds <- lon < 180
+                    east_of_180_inds <- lon >= 180
+                    lon <- lon_orig - 180
+                }
+                lat <- era5_ncin$dim$lat$vals
+                lat_orig <- NULL # default
+                if (any(diff(lat) < 0)) {
+                    lat_orig <- lat
+                    lat <- rev(lat)
+                }
+                time <- era5_ncin$dim$time$vals
+                timelt <- as.POSIXlt(as.Date(time/24, origin="1990-1-1"), tz="UTC")
+                tmp <- vector("list", l=era5_ncin$nvars)
+                names(tmp) <- names(era5_ncin$var)
+                for (vi in seq_along(tmp)) {
+                    message("   load \"", names(era5_ncin$var)[vi], "\" ...")
+                    dat <- ncvar_get(era5_ncin, names(era5_ncin$var)[vi])
+                    if (!is.null(lon_orig)) {
+                        if (!any(search() == "package:abind")) library(abind)
+                        dat <- abind(dat[east_of_180_inds,,], dat[west_of_180_inds,,], along=1)
+                    }
+                    if (!is.null(lat_orig)) dat <- dat[,length(lat):1,]
+                    attributes(dat) <- list(dim=dim(dat), dims=c("lon", "lat", "time"))
+                    tmp[[vi]] <- dat
+                }
+                tmp <- list(data=tmp, 
+                            dims=list(lon=lon, lat=lat, time=timelt, timen=time))
+                era5_spatial[[cnt]] <- tmp
+                names(era5_spatial)[cnt] <- basename(f)
+            } # if f exists
+        } # for f in fs
+    } # if any of fs exists
+} else {
+    message("\nenable here if you want to load ERA5 spatial datasets ...")
+} # if ERA5 spatial data
+
+# clean work space fom loading special data sets
+objs <- c("f", "time", "years", "timelt", "nyears_to_origin", "origin",
+          "pdoi", "tmp", "tmp2", "d", "ghcdn_csv", 
+          "Tavg_an", "Tmin_an", "Tmax_an", "precip_an", 
+          "Tavg_mon", "Tmin_mon", "Tmax_mon", "precip_an",
+          "cnt", "lon", "lat", "lon_orig", "lat_orig")
+suppressWarnings(rm(list=objs))
 
 message("\nfinished reading special data sets ...")
 # finished reading extra datasets depending on machine
 
 # read data
-message("\n", "Read model data ...")
+message("\nread model data ...")
 for (i in 1:nsettings) {
 
     message("\n", "*********************************************")
@@ -1194,7 +1267,7 @@ for (i in 1:nsettings) {
             if (seasonsp[i] == "annual" && seasonsf[i] == "Jan-Dec") {
 
             # all other season cases:
-            } else { # not seasonsp="annual" & seasonsf="Jan-Dec"
+            } else { # seasonsp != "annual" && seasonsf != "Jan-Dec"
                 if (is.character(seasonsp[i])) { # "DJF" or "Jul"
                     message("\nprovided `seasonsp[", i, "] = \"", seasonsp[i], "\" != `seasonsf[", i, 
                             "]` = \"", seasonsf[i], "\"")
@@ -1268,11 +1341,11 @@ for (i in 1:nsettings) {
 
     # reorder lon dim values to (-180,...,180) if wanted and necessary
     if (any(names(dims[[i]]) == "lon")) {
-        message("\ndetected lon dim of length ", length(dims[[i]]$lon), " with min/max = ", 
-                min(dims[[i]]$lon), "/", max(dims[[i]]$lon), " degree lon")
         if (reorder_lon_from_0360_to_180180) {
             if (any(dims[[i]]$lon < 180) && any(dims[[i]]$lon >= 180)) {
-                message("`reorder_lon_from_0360_to_180180` = T AND any(lon < 180) && any(lon >= 180)")
+                message("\ndetected lon dim of length ", length(dims[[i]]$lon), " with min/max = ", 
+                        min(dims[[i]]$lon), "/", max(dims[[i]]$lon), 
+                        " degree lon\n`reorder_lon_from_0360_to_180180` = T AND any(lon < 180) && any(lon >= 180)")
                 dims[[i]]$lon_orig <- dims[[i]]$lon
                 west_of_180_inds <- which(dims[[i]]$lon < 180)
                 east_of_180_inds <- which(dims[[i]]$lon >= 180)
@@ -1320,7 +1393,9 @@ for (i in 1:nsettings) {
     # flip lat dim of data necessary (needs to be increasing for plot)
     if (any(names(dims[[i]]) == "lat")) {
         if (any(diff(dims[[i]]$lat) < 0)) {
-            message("\ndetected lat dim and lats are decreasing -> flip lat dim values ...") 
+            message("\ndetected lat dim of length ", length(dims[[i]]$lat), " with min/max = ", 
+                    min(dims[[i]]$lat), "/", max(dims[[i]]$lat), 
+                    " degree lat\nlats are decreasing -> flip to get increasing values ...") 
             dims[[i]]$lat_orig <- dims[[i]]$lat
             dims[[i]]$lat <- rev(dims[[i]]$lat)
         }
@@ -1457,7 +1532,7 @@ for (i in 1:nsettings) {
             if (any(dim_lengths == 1)) {
                 len1_dim_inds <- which(dim_lengths == 1)
                 message("`squeeze=T` --> drop dims of length 1: \"", 
-                        paste0(names(len1_dim_inds), collapse="\",\""), "\" ...")
+                        paste0(names(len1_dim_inds), collapse="\", \""), "\" ...")
                 dimids <- dimids[-len1_dim_inds]
                 for (di in seq_along(len1_dim_inds)) {
                     dims[[i]][names(len1_dim_inds)[di]] <- NULL
@@ -1570,7 +1645,7 @@ for (i in 1:nsettings) {
                     message("   run `", cmd, "` ...")
                     eval(parse(text=cmd))
                     # subsetting removed attributes, apply again
-                    if (squeeze) {
+                    if (squeeze && dim(datas[[i]][[var_with_timedim_ind]])[timedimind] == 1) {
                         attributes(datas[[i]][[var_with_timedim_ind]]) <- list(dim=dim(datas[[i]][[var_with_timedim_ind]]), 
                                                                                dims=dims_of_var[-timedimind])
                     } else {
@@ -1793,7 +1868,7 @@ for (i in 1:nsettings) {
     } # finished if two dims and one is time, make it x-dim
 
 } # for i nsettings
-message("\n", "****************** reading data finished ***************************")
+message("\n****************** reading model data finished ***************************")
 
 varnames_unique <- unique(as.vector(unlist(sapply(datas, names))))
 if (exists("varnames_uv")) {
@@ -1801,7 +1876,7 @@ if (exists("varnames_uv")) {
 }
 
 # save data before applying offset, multiplication factors, etc. for later
-message("\n", "save original data without multiplication factors or offsets or removal of a temporal mean etc. ...")
+message("\nsave original data without multiplication factors or offsets or removal of a temporal mean etc. ...")
 for (vi in 1:length(varnames_unique)) {
     cmd <- paste0(varnames_unique[vi], "_datas_orig <- list()")
     eval(parse(text=cmd))
@@ -1822,7 +1897,6 @@ for (vi in 1:length(varnames_unique)) {
     }
 } 
 
-
 if (F) { # for testing
     message("special")
     datas[[1]][[2]] <- datas[[1]][[1]] + 10
@@ -1831,7 +1905,7 @@ if (F) { # for testing
 
 
 # set variable specific things
-message("\n", "set variable specific things (define axis labels for specific variables here) ...")
+message("\nset variable specific things (define axis labels for specific variables here) ...")
 for (i in 1:nsettings) {
     for (vi in 1:length(datas[[i]])) {
 
@@ -1856,6 +1930,7 @@ for (i in 1:nsettings) {
             label <- paste0(label, " [", data_infos[[i]][[vi]]$units, "]")
         }
         data_infos[[i]][[vi]]$label <- label
+        if (scale_ts) data_infos[[i]][[vi]]$label <- paste0(data_infos[[i]][[vi]]$label, " (Index)")
 
         # add specific things
         if (any(varname == c("temp2", "tas"))) {
@@ -2050,7 +2125,7 @@ for (i in 1:nsettings) {
                                                                                 "q dp [kg ", m^-1, " ", s^-1, "]")), 
                                                                list(g="g", m="m", s="s")))
             } else {
-                stop("asd")
+                stop("update")
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(bold("u")[h], 
                                                                                 "q [kg ", unit1^-1, " ", unit2^-1, "]")), 
                                                                list(unit1="m", unit2="s")))
@@ -2067,7 +2142,7 @@ for (i in 1:nsettings) {
 
 
 # save data infos for later
-message("\n", "save data infos ...")
+message("\nsave data infos ...")
 for (vi in 1:length(varnames_unique)) {
     cmd <- paste0(varnames_unique[vi], "_infos <- list()")
     eval(parse(text=cmd))
@@ -2088,7 +2163,7 @@ for (vi in 1:length(varnames_unique)) {
 
 
 # apply offset or mult_fac
-message("\n", "apply variable specific things ...")
+message("\napply variable specific things ...")
 for (i in 1:nsettings) {
     for (vi in 1:length(datas[[i]])) {
         if (!is.null(data_infos[[i]][[vi]]$offset)) {
@@ -2107,7 +2182,7 @@ if (!is.na(remove_setting)) {
 
     remove_setting_ind <- which(names_short == remove_setting)
     if (length(remove_setting_ind) == 1) {
-        message("\n", "remove setting \"", remove_setting, "\" mean from all other settings ...")
+        message("\nremove setting \"", remove_setting, "\" mean from all other settings ...")
         settinginds <- 1:nsettings
         settinginds <- settinginds[-remove_setting_ind]
         for (i in settinginds) {
@@ -2140,7 +2215,7 @@ if (!is.na(remove_setting)) {
 
 # remove some temporal mean if defined
 if (any(!is.na(remove_mean_froms))) {
-    message("\n", "remove temporal means between")
+    message("\nremove temporal means between")
     for (i in 1:nsettings) {
         message(i, "/", nsettings, ": ", names_short[i], " ...")
         if (!is.na(remove_mean_froms[i])) {
@@ -2208,12 +2283,12 @@ if (any(!is.na(remove_mean_froms))) {
         } # if remove_mean_froms[i] is not NA
     } # for i nsettings
 } else {
-    message("\n", "`remove_mean_froms` all NA --> do not remove temporal means ...")
+    message("\n`remove_mean_froms` all NA --> do not remove temporal means ...")
 } # finished removing a temporal mean
 
 
 # save data after applying offset, multiplication factors, temporal mean or setting mean removal
-message("\n", "save data after application of multiplication factors or offsets of temporal mean or setting mean removal etc. ...")
+message("\nsave data after application of multiplication factors or offsets of temporal mean or setting mean removal etc. ...")
 for (vi in 1:length(varnames_unique)) {
     cmd <- paste0(varnames_unique[vi], "_datas <- list()")
     eval(parse(text=cmd))
@@ -2238,7 +2313,7 @@ if (add_smoothed &&
     any(sapply(lapply(lapply(dims, names), "==", "time"), any)) &&
     #any(seasonsp == "Jan-Dec") && 
     !all(n_mas == 1)) {
-    message("\n", "some settings have \"time\" dim and `add_smoothed` = T --> apply moving averages ...")
+    message("\nsome settings have \"time\" dim AND `add_smoothed` = T AND some `n_mas` != 1 --> apply moving averages ...")
     datasma <- datas
     for (i in 1:nsettings) {
         message(i, "/", nsettings, ": ", names_short[i], " ...")
@@ -2278,7 +2353,7 @@ if (add_smoothed &&
     } # for i nsettings
 } # if add_smoothed && any(attributes(datas[[i]][[vi]])$dims == "time") && !all(n_mas == 1)
 if (!exists("datasma")) {
-    message("\n", "`datasma` does not exist\n--> set `add_smoothed` = T ",
+    message("\n`datasma` does not exist\n--> set `add_smoothed` = T ",
             "and/or `n_mas` not equal 1 in order to apply moving averages ...")
     add_smoothed <- F
 }
@@ -2290,7 +2365,6 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
 
     message("\nsome settings have \"time\" dim --> calc monthly climatology and annual means ...")
     datasmon <- datasan <- datas # lazy declaration
-    monlim <- anlim <- NA
     
     for (i in 1:nsettings) {
         message(i, "/", nsettings, ": ", names_short[i], " ...")
@@ -2418,8 +2492,10 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
 
         } # for vi nvars
    
+        # get monthly and annual time lims
         if (all(is.na(datasmon[[i]]))) {
-            datasmon[[i]] <- NA
+            #datasmon[[i]] <- NA
+            rm(datasmon)
         } else {
             # remove NA entries
             navars <- which(is.na(datasmon[[i]]))
@@ -2427,11 +2503,11 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                 datasmon[[i]][navars] <- NULL
             }
             dims[[i]]$month <- months_unique
-            dims[[i]]$monmean_range <- paste0(fromsp[i], "-", tosp[i])
-            monlim <- range(monlim, dims[[i]]$month, na.rm=T)
+            dims[[i]]$monmean_range <- paste0(fromsp[i], " to ", tosp[i])
         }
         if (all(is.na(datasan[[i]]))) {
-            datasan[[i]] <- NA
+            #datasan[[i]] <- NA
+            rm(datasan)
         } else {
             # remove NA entries
             navars <- which(is.na(datasan[[i]]))
@@ -2440,24 +2516,10 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
             }
             dims[[i]]$year <- years_unique
             dims[[i]]$yearmean_range <- dims[[i]]$monmean_range
-            anlim <- range(anlim, dims[[i]]$year, na.rm=T)
         }
 
     } # for i nsettings
   
-    if (!all(is.na(datasmon))) { # monthly labels of all settings
-        monat <- monlim[1]:monlim[2]
-        monlab <- substr(month.abb[monat], 1, 1) # Jan -> J
-    } else {
-        rm(datasmon) # for later exists("datasmon") checks
-    } 
-    if (!all(is.na(datasan))) { # annual labels of all settings
-        anat <- pretty(anlim, n=10)
-        anlab <- anat
-    } else {
-        rm(datasan) # for later exists("datasan") checks
-    }
-
 } # if any setting has time dim
 # finished calculating monthly means if applicable
 
@@ -2520,73 +2582,6 @@ if (exists("datasltm")) {
 # finished interpolate if any dims is irregular
 
 
-## get time axis values
-ntime_per_setting <- sapply(sapply(dims, "[", "time"), length)
-if (any(ntime_per_setting > 1)) {
-    message("\n", "some settings have \"time\" dims and some are longer than 1 --> find good time axis labels ...")
-
-    # POSIX will be converted to numeric by plot(), so use these numeric values as limits
-    tlim <- range(lapply(sapply(dims, "[", "time"), as.numeric)) # seconds by default 
-    tlimlt <- as.POSIXlt(tlim, origin="1970-01-01", tz="UTC")
-    tlimct <- as.POSIXct(tlimlt)
-    tlabcex <- 0.8
-    tlabsrt <- 0
-
-    # time labels
-    tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
-
-    # remove lables which are possibly out of limits due to pretty
-    tlab_diff_secs <- as.numeric(diff(range(tlablt)), units="secs") # total time label distance
-    if (any(tlablt < tlimlt[1])) {
-        # check if the too early autmatic time labels are negligible
-        overshoot_diff <- abs(as.numeric(tlablt[tlablt < tlimlt[1]], units="secs")) - abs(tlim[1])
-        overshoot_rel <- overshoot_diff/tlab_diff_secs*100
-        if (any(overshoot_rel > 1)) { # only change pretty labels if overoot is > 1% of total time label range  
-            message("remove some automatic labels < ", tlimlt[1], " ...")
-            print(tlablt[which(tlablt < tlimlt[1])[overshoot_rel > 1]])
-            tlablt <- tlablt[-which(tlablt < tlimlt[1])[overshoot_rel > 1]]
-        }
-    }
-    if (any(tlablt > tlimlt[2])) {
-        # check if the too late automatic time labels are negligible
-        overshoot_diff <- abs(as.numeric(tlablt[tlablt > tlimlt[2]], units="secs")) - abs(tlim[2])
-        overshoot_rel <- overshoot_diff/tlab_diff_secs*100
-        if (any(overshoot_rel > 1)) { # only change pretty labels if overoot is > 1% of total time label range  
-            message("remove some automatic labels > ", tlimlt[2], " ...")
-            print(tlablt[which(tlablt > tlimlt[2])[overshoot_rel > 1]])
-            tlablt <- tlablt[-which(tlablt > tlimlt[2])[overshoot_rel > 1]]
-        }
-    }
-    tatn <- as.numeric(tlablt)
-
-    # modify time axis labels YYYY-MM-DD depending on range covered:
-    tunit <- "Time"
-    if (tlab_diff_secs > 365*24*60*60) { # do not show days if range of tlim is above 1 year
-        message("time lims is longer than 1 year, modify automatic time labels ...")
-        tlablt <- unclass(tlablt)$year + 1900 # -> YYYY; this destroys POSIX object
-        tunit <- "Year"
-    } else { # decrease label size due to long labels
-        message("change time label angle ...")
-        tlabsrt <- 45
-    }
-
-    # if all dates < 0, use "abs(dates) BP" instead
-    if (tunit == "Year" && any(tlablt < 0)) {
-        message("some times are < 0 --> use \"abs(times)\" for time labels instead ...")
-        neg_inds <- which(tlablt < 0)
-        tlablt[neg_inds] <- abs(tlablt[neg_inds])
-        if (!is.na(time_ref)) {
-            tunit <- paste0("Year before ", time_ref)
-        } else {
-            tunit <- "Year before `time_ref`"
-        }
-    }
-
-    message("tlablt = ", paste(tlablt, collapse=", "))
-    message("tunit = ", tunit)
-
-} # get time axis labels
-# finished getting time axis labels
 
 
 ## plotting
@@ -2594,7 +2589,7 @@ if (any(ntime_per_setting > 1)) {
 # 2nd: plot all vars with same dims together (datas, datasma, datasmon, datasltm)
 # 3rd: <define>
 plot_groups <- c("samevars", "samedims")
-message("\n********************* prepare plotting *********************")
+message("\n********************* prepare plot groups *********************")
 
 if (F) { # test
     datas_save <- datas
@@ -3185,7 +3180,7 @@ nplot_groups <- length(plot_groups)
 message("--> plot ", nplot_groups, " group", ifelse(nplot_groups > 1, "s", ""), ": \"",
         paste(plot_groups, collapse="\", \""), "\" ...")
 
-message("\n********************* start plotting *********************")
+message("\n********************* prepare plots *********************")
 for (plot_groupi in seq_len(nplot_groups)) {
         
     if (plot_groups[plot_groupi] == "samevars") { # --> plot same vars together (datas, datasma, datasmon, datasan, datasltm)
@@ -3347,38 +3342,275 @@ for (plot_groupi in seq_len(nplot_groups)) {
             pchs_pltm <- pchs[sapply(dltminds , "[")]
         }
        
-        if (F) { # old; why so complicated?
-            #ndims <- length(dim(z[[1]]))
-            ndims <- sapply(lapply(z, dim), length)
-            ndims <- unique(ndims)
-            if (plot_groups[plot_groupi] == "samevars") {
-                if (length(ndims) != 1) {
-                    stop("plotting different dims in one plot not implemended")
-                }
-            }
-            #dim_names <- attributes(z[[1]])$dims
-            dim_names <- sapply(lapply(z, attributes), "[[", "dims")
-            dim_names <- matrix(dim_names, ncol=length(z))
-            dim_names <- apply(dim_names, 1, unique)
-            if (is.list(dim_names)) {
-                stop("plotting different dims on one plot not implemented:\n",
-                     dim_names)
-            }
-            message("\nmode_p = \"", mode_p, "\"\n      z_", plot_groups[plot_groupi], "[[", 
-                    ploti, "/", nplots, "]]: zname = \"", zname, "\" has ", ndims, " dim", 
-                    ifelse(ndims > 1, "s", ""), ": \"", paste(dim_names, collapse="\", \""), 
-                    "\"\n--> check if this case is defined ...")
-        } # F
-
-        # plot `datas` (datas always exists)
-        message("\n", "****************** plot datas z_* ***************************")
-        #stop("asd")
-
+        
+        ## dims and dimnames of current plot in current plot_group
         ndims <- length(dim(z[[1]]))
         dim_names <- attributes(z[[1]])$dims
         message("\n", "z_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname, 
                 "\" has ", ndims, " dim", ifelse(ndims > 1, "s", ""), ": \"", 
                 paste(dim_names, collapse="\", \""), "\". check if this case is defined ...")
+       
+
+        ## if plot_group == "samevars" -> append obs to `z` depending on available varnames/areas/etc.
+        if (plot_groups[plot_groupi] == "samevars") {
+            
+            message("\ncheck for obs data that fit to specific dim-varname-area-etc. model data and append to z ...")
+            if (ndims == 1 && dim_names == "time") {
+
+                if (T && exists("era5_ts") && length(unique(areas)) == 1) {
+                    message("\nload varname-and-area-specific era5 ts data. disable here if you do not want that.")
+                    era5var <- NULL # default
+                    if (zname == "quv") era5var <- "viwv"
+                    if (zname == "quv_direction") era5var <- "viwv_direction"
+                    if (!is.null(era5var)) {
+                        era5ind <- which(grepl(paste0(era5var, "_", areas[1]), era5_ts$fs))
+                    }
+                    if (length(era5ind) == 1) {
+                        message("load era5 ts data from \"", era5_ts$fs[era5ind], "\" ...")
+                        era5_ncin <- nc_open(era5_ts$fs[era5ind])
+                        tmp <- list()
+                        tmp$f <- era5_ts$fs[era5ind]
+                        tmp[[era5var]] <- ncvar_get(era5_ncin, era5var)
+                        time <- era5_ncin$dim$time$vals
+                        tmp$timelt <- as.POSIXlt(as.Date(time/24, origin="1990-1-1"), tz="UTC")
+                        tmp$time <- as.POSIXct(tmp$timelt)
+                        # apply season inds if necessary/possible
+                        if (any(seasonsp != "Jan-Dec")) {
+                            # get season inds of all settings
+                            season_inds_unique <- lapply(dims, "[[", "season_inds")
+                            season_inds_unique <- unique(unlist(season_inds_unique))
+                            message("get season_inds ", paste(season_inds_unique, collapse=", "), " of era5 ts data ...")
+                            season_inds <- tmp$timelt$mon + 1
+                            if (any(season_inds %in% season_inds_unique)) {
+                                season_inds <- which(season_inds %in% season_inds_unique)
+                                tmp$time <- tmp$time[season_inds]
+                                tmp$timelt <- tmp$timelt[season_inds]
+                                tmp[[era5var]] <- tmp[[era5var]][season_inds]
+                            } else {
+                                message("-> none of these season_inds are included in era5_ts time -> cannot take seasonal subset.")
+                            }
+                        } # if any(seasnosp != "Jan-Dec")
+                        # temporal smooth
+                        if (exists("datasma")) {
+                           tmp[[paste0(era5var, "_ma")]] <- filter(tmp[[era5var]], rep(1/era5_ts$n_ma, t=era5_ts$n_ma)) 
+                        }
+                        # annual means
+                        tmp$year <- unique(tmp$timelt$year+1900)
+                        tmp_an <- nmonths_an <- rep(NA, t=length(tmp$year))
+                        for (yi in seq_along(tmp$year)) {
+                            yinds <- which(tmp$timelt$year+1900 == tmp$year[yi])
+                            tmp_an[yi] <- mean(tmp[[era5var]][yinds], na.rm=T)
+                            nmonths_an[yi] <- length(yinds)
+                        }
+                        tmp[[paste0(era5var, "_an")]] <- tmp_an
+                        tmp$nmonths_an <- nmonths_an
+                        # monthly climatologies
+                        tmp$month <- sort(unique(tmp$timelt$mon+1))
+                        tmp_mon <- nyears_mon <- rep(NA, t=length(tmp$month))
+                        for (mi in seq_along(tmp$month)) {
+                            minds <- which(tmp$timelt$mon+1 == tmp$month[mi])
+                            if (length(minds) > 0) {
+                                tmp_mon[mi] <- mean(tmp[[paste0(era5var, "_an")]][minds], na.rm=T)
+                                nyears_mon[mi] <- length(minds)
+                            }
+                        }
+                        tmp[[paste0(era5var, "_mon")]] <- tmp_mon
+                        tmp$nyears_mon <- nyears_mon
+                        # temporal mean
+                        tmp[[paste0(era5var, "_ltm")]] <- mean(tmp[[era5var]], na.rm=T)
+                        tmp$ltm_range <- paste0(tmp$time[1], " to ", tmp$time[length(tmp$time)])
+                        era5_ts$data[[era5var]] <- tmp
+                        cat(capture.output(str(era5_ts$data)), sep="\n")
+                    
+                        # append era5 ts to data
+                        z[[era5_ts$name]] <- era5_ts$data[[era5var]][[era5var]]
+                        attributes(z[[era5_ts$name]])$dims <- "time"
+                        d$time[[length(d$time)+1]] <- era5_ts$data[[era5var]]$time
+                        names_legend_p <- c(names_legend_p, era5_ts$name)
+                        text_cols_p <- c(text_cols_p, era5_ts$col)
+                        cols_p <- c(cols_p, era5_ts$col)
+                        ltys_p <- c(ltys_p, era5_ts$lty)
+                        varnames_in_p <- c(varnames_in_p, era5var)
+                        names_short_p <- c(names_short_p, era5_ts$name)
+                        areas_p <- c(areas_p, areas_p[1])
+                        seasonsp_p <- c(seasonsp_p, seasonsp_p[1])
+                        froms_plot_p <- c(froms_plot_p, era5_ts$data[[era5var]]$timelt$year[1]+1900)
+                        tos_plot_p <- c(tos_plot_p, era5_ts$data[[era5var]]$timelt$year[length(era5_ts$data[[era5var]]$timelt)]+1900)
+                        types_p <- c(types_p, types_p[1])
+                        cols_rgb_p <- rgb(t(col2rgb(cols_p)/255), alpha=alpha_rgb)
+                        lwds_p <- c(lwds_p, era5_ts$lwd)
+                        pchs_p <- c(pchs_p, era5_ts$pch)
+                        if (exists("datasma")) {
+                            zma[[era5_ts$name]] <- era5_ts$data[[era5var]][[paste0(era5var, "_ma")]]
+                        }
+                        if (exists("datasmon")) {
+                            zmon[[era5_ts$name]] <- era5_ts$data[[era5var]][[paste0(era5var, "_mon")]]
+                            attributes(zmon[[era5_ts$name]])$dims <- "month"
+                            dmon$month[[length(dmon$month)+1]] <- era5_ts$data[[era5var]]$month
+                            names_legend_pmon <- names_legend_p
+                            text_cols_pmon <- text_cols_p
+                            varnames_in_pmon <- varnames_in_p
+                            names_short_pmon <- names_short_p
+                            areas_pmon <- areas_p
+                            seasonsp_pmon <- seasonsp_p
+                            froms_plot_pmon <- froms_plot_p
+                            tos_plot_pmon <- tos_plot_p
+                            types_pmon <- types_p
+                            cols_pmon <- cols_p
+                            cols_rgb_pmon <- cols_rgb_p
+                            ltys_pmon <- ltys_p
+                            lwds_pmon <- lwds_p
+                            pchs_pmon <- pchs_p
+                        }
+                        if (exists("datasan")) {
+                            zan[[era5_ts$name]] <- era5_ts$data[[era5var]][[paste0(era5var, "_an")]]
+                            attributes(zan[[era5_ts$name]])$dims <- "year"
+                            dan$year[[length(dan$year)+1]] <- era5_ts$data[[era5var]]$year
+                            names_legend_pan <- names_legend_p
+                            text_cols_pan <- text_cols_p
+                            varnames_in_pan <- varnames_in_p
+                            names_short_pan <- names_short_p
+                            areas_pan <- areas_p
+                            seasonsp_pan <- seasonsp_p
+                            froms_plot_pan <- froms_plot_p
+                            tos_plot_pan <- tos_plot_p
+                            types_pan <- types_p
+                            cols_pan <- cols_p
+                            cols_rgb_pan <- cols_rgb_p
+                            ltys_pan <- ltys_p
+                            lwds_pan <- lwds_p
+                            pchs_pan <- pchs_p
+                        }
+                        if (exists("datasltm")) {
+                            #todo
+                            #zltm[[era5_ts$name]] <- era5_ts$data[[era5var]][[paste0(era5var, "_ltm")]]
+                            #attributes(zltm[[era5_ts$name]])$dims <- "ltm_range"
+                            #dltm$ltm_range[[length(dltm$year_range)+1]] <- era5_ts$data[[era5var]]$ltm_range
+                        }
+
+                        # append era5 ts to `datas`
+                        cmd <- paste0(zname, "_datas[[length(", zname, "_datas)+1]] <- era5_ts$data[[\"", era5var, "\"]][[\"", era5var, "\"]]")
+                        message("run `", cmd, "` ...")
+                        eval(parse(text=cmd))
+                        cmd <- paste0("names(", zname, "_datas)[length(", zname, "_datas)] <- \"", era5_ts$name, "\"")
+                        message("run `", cmd, "` ...")
+                        eval(parse(text=cmd))
+                        cmd <- paste0("attributes(", zname, "_datas[[\"", era5_ts$name, "\"]])$dims <- \"time\"")
+                        message("run `", cmd, "` ...")
+                        eval(parse(text=cmd))
+
+                    } else {
+                        message("cannot add era5_ts data: must find 1 file of correct varname/area combination. check `era5_ts$fs`")
+                    } # if era5_ts data fits to varname/area selection
+                } # if exists("era5_ts")
+            
+            } else if (ndims == 2 && all(dim_names == c("lon", "lat"))) {
+            
+            } # which ndims-and-dim_names combination
+            message("\nfinished check for obs data that fit to specific dim-varname-area-etc. model data and append to z")
+            
+            # update dims and dimnames of current plot in current plot_group after adding obs
+            ndims <- length(dim(z[[1]]))
+            dim_names <- attributes(z[[1]])$dims
+            message("\n", "z_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname, 
+                    "\" has ", ndims, " dim", ifelse(ndims > 1, "s", ""), ": \"", 
+                    paste(dim_names, collapse="\", \""), "\". check if this case is defined ...")
+        
+        } # if plot_group == "samevars"  
+        # finished appending obs to z
+
+        
+        ## get time axis values based on final d* lists
+        if (any(sapply(lapply(z, attributes), "[[", "dims") == "time")) {
+            ntime_per_setting <- sapply(d$time, length)
+            if (any(ntime_per_setting > 1)) {
+                message("\n", "some settings have \"time\" dims and some are longer than 1 --> find pretty time axes labels ...")
+
+                # time limits
+                # -> POSIX will be converted to numeric by plot(), so use these numeric values as limits
+                tlim <- range(lapply(d$time, as.numeric)) # seconds by default 
+                tlimlt <- as.POSIXlt(tlim, origin="1970-01-01", tz="UTC")
+                tlimct <- as.POSIXct(tlimlt)
+                tlabcex <- 0.8
+                tlabsrt <- 0
+                monlim <- range(tlimlt$mon+1)
+                anlim <- range(tlimlt$year+1900)
+
+                # time labels
+                tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
+                monat <- monlim[1]:monlim[2]
+                monlab <- substr(month.abb[monat], 1, 1) # Jan -> J
+
+                # remove lables which are possibly out of limits due to pretty
+                tlab_diff_secs <- as.numeric(diff(range(tlablt)), units="secs") # total time label distance
+                if (any(tlablt < tlimlt[1])) {
+                    # check if the too early autmatic time labels are negligible
+                    overshoot_diff <- abs(as.numeric(tlablt[tlablt < tlimlt[1]], units="secs")) - abs(tlim[1])
+                    overshoot_rel <- overshoot_diff/tlab_diff_secs*100
+                    if (any(overshoot_rel > 1)) { # only change pretty labels if overoot is > 1% of total time label range  
+                        message("remove some automatic labels < ", tlimlt[1], " ...")
+                        print(tlablt[which(tlablt < tlimlt[1])[overshoot_rel > 1]])
+                        tlablt <- tlablt[-which(tlablt < tlimlt[1])[overshoot_rel > 1]]
+                    }
+                }
+                if (any(tlablt > tlimlt[2])) {
+                    # check if the too late automatic time labels are negligible
+                    overshoot_diff <- abs(as.numeric(tlablt[tlablt > tlimlt[2]], units="secs")) - abs(tlim[2])
+                    overshoot_rel <- overshoot_diff/tlab_diff_secs*100
+                    if (any(overshoot_rel > 1)) { # only change pretty labels if overoot is > 1% of total time label range  
+                        message("remove some automatic labels > ", tlimlt[2], " ...")
+                        print(tlablt[which(tlablt > tlimlt[2])[overshoot_rel > 1]])
+                        tlablt <- tlablt[-which(tlablt > tlimlt[2])[overshoot_rel > 1]]
+                    }
+                }
+                tatn <- as.numeric(tlablt)
+
+                # modify time axis labels YYYY-MM-DD depending on range covered:
+                tunit <- "Time"
+                if (tlab_diff_secs > 365*24*60*60) { # do not show days if range of tlim is above 1 year
+                    message("time lims is longer than 1 year, modify automatic time labels ...")
+                    tlablt <- unclass(tlablt)$year + 1900 # -> YYYY; this destroys POSIX object
+                    tunit <- "Year"
+                } else { # decrease label size due to long labels
+                    message("change time label angle ...")
+                    tlabsrt <- 45
+                }
+
+                # if all dates < 0, use "abs(dates) BP" instead
+                if (tunit == "Year" && all(tlablt < 0)) {
+                    message("all times are < 0 --> use `abs(times)` for time labels instead ...")
+                    neg_inds <- which(tlablt < 0)
+                    tlablt[neg_inds] <- abs(tlablt[neg_inds])
+                    if (!is.na(time_ref)) {
+                        tunit <- paste0("Year before ", time_ref)
+                    } else {
+                        tunit <- "Year before `time_ref`"
+                    }
+                }
+
+                message("tlablt = ", paste(tlablt, collapse=", "))
+                message("tunit = ", tunit)
+                
+                # use years from time for plots versus years 
+                anat <- tlablt
+                anlab <- anat
+
+            } # if any(ntime_per_setting > 1)
+
+        } # if any data has time axis
+        # finished getting time axis labels
+      
+
+        # verbose
+        message("\nz:")
+        cat(capture.output(str(z)), sep="\n")
+        message("d:")
+        cat(capture.output(str(d)), sep="\n")
+
+
+        ## plot `datas` (`datas` always exists; no exists() check necessary)
+        message("\n", "****************** plot datas z_* ***************************")
+        #stop("asd")
 
         ### 2 dims
         ## plot `datas` as lon vs lat
@@ -3394,22 +3626,92 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         znamev <- varnames_uv[[zname]]["v"]
                         message("prepare u,v-components for quivers: take variables \"", znameu, "\" and \"", znamev, "\"")  
                         quiver_list <- list(u=zuv_samevars[[znameu]], v=zuv_samevars[[znamev]])
+                        quiver_list$nx_fac <- rep(0.5, t=length(quiver_list$u))
+                        quiver_list$ny_fac <- rep(1, t=length(quiver_list$u))
+                        quiver_list$const <- rep(T, t=length(quiver_list$u))
                     }
                 }
             }
+            # finished prepare u,v components if needed
+            
+            # add special data to z
+            if (any(zname == c("quv", "quv_direction"))) {
+                if (exists("era5_spatial")) {
+                    # find temporal/spatial subset as in models
+                    if (zname == "quv") {
+                        era5fname <- "era5_viwv_yseasmean_1990-2010.nc"
+                        era5zname <- "viwv"
+                        era5znameu <- "viwve"
+                        era5znamev <- "viwvn"
+                    }
+                    if (zname == "quv_direction") {
+                        era5fname <- "era5_viwv_direction_yseasmean_1990-2010.nc"
+                        era5zname <- "viwv_direction"
+                    }
+                    if (length(unique(sapply(dims, "[[", "time_inds"))) != 1) {
+                        warning("there are different `time_inds` available in `dims`. dont know which to use for era5 data \"", 
+                                era5zname, "\".")
+                    } else {
+                        era5timeind <- dims[[1]]$time_inds[1]
+                        era5lon <- era5_spatial[[era5fname]]$dims$lon
+                        if (any(era5lon >= sapply(d$lon, min)) && any(era5lon <= sapply(d$lon, max))) {
+                            era5loninds <- which(era5lon >= sapply(d$lon, min) & era5lon <= sapply(d$lon, max)) 
+                        }
+                        era5lat <- era5_spatial[[era5fname]]$dims$lat
+                        if (any(era5lat >= sapply(d$lat, min)) && any(era5lat <= sapply(d$lat, max))) {
+                            era5latinds <- which(era5lat >= sapply(d$lat, min) & era5lat <= sapply(d$lat, max)) 
+                        }
+                        if (length(era5loninds) <= 1 || length(era5latinds) <= 1) {
+                            warning("cannot add era5 data \"", era5zname, 
+                                    "\" to plot. had problems selecting spatial subset.")
+                        } else {
+                            era5lon <- era5lon[era5loninds]
+                            era5lat <- era5lat[era5latinds]
+                            era5 <- era5_spatial[[era5fname]]$data[[era5zname]][era5loninds,era5latinds,era5timeind]
+                            message("special: add era5 (lon,lat,time) subset:")
+                            message("-> lon = ", era5lon[1], " to ", era5lon[length(era5lon)], 
+                                    "°, lat = ", era5lat[1], " to ", era5lat[length(era5lat)], "°, time = ", 
+                                    era5_spatial[[era5fname]]$dims$time[era5timeind], ", min, max = ", appendLF=F)
+                            dput(range(era5, na.rm=T))
+                            message("to z ...")
+                            d$lon <- c(d$lon, list(era5lon))
+                            d$lat <- c(d$lat, list(era5lat))
+                            z <- c(z, list(era5))
+                            names(z)[length(z)] <- paste0("ERA5 ", era5zname)
+                            plotname_suffix <- paste0(plotname_suffix, "_ERA")
+                            names_legend_p <- c(names_legend_p, paste0("ERA5 ", era5zname))
+                            if (!is.null(quiver_list)) { 
+                                era5u <- era5_spatial[[era5fname]]$data[[era5znameu]][era5loninds,era5latinds,era5timeind]
+                                era5v <- era5_spatial[[era5fname]]$data[[era5znamev]][era5loninds,era5latinds,era5timeind]
+                                quiver_list$u <- c(quiver_list$u, list(era5u))
+                                quiver_list$v <- c(quiver_list$v, list(era5v))
+                                names(quiver_list$u)[length(quiver_list$u)] <- paste0("ERA5 ", era5znameu)
+                                names(quiver_list$v)[length(quiver_list$v)] <- paste0("ERA5 ", era5znamev)
+                                quiver_list$nx_fac <- c(quiver_list$nx_fac, 0.03)
+                                quiver_list$ny_fac <- c(quiver_list$ny_fac, 0.075)
+                                quiver_list$const <- c(quiver_list$const, T)
+                            }
+                        } # if era5 subset could be selected
+                    } # if time_ind for era5 can be determined
+                } # if exists era5
+            } # if quv quv_direction
+            # finished add special data to z
 
             # colorbar values
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
-            zlim <- range(z, na.rm=T) # default
+            message("zlim = ", appendLF=F)
+            zlim <- range(z, na.rm=T)
+            dput(zlim)
             nlevels <- NULL 
             if (zname == "quv") {
+                message("special zlim")
                 nlevels <- 200
-                #zlim <- c(5.03, 324.37) # feb 
-                #zlim <- c(6.05, 328.23) # may
-                #zlim <- c(12.1, 474.4) # aug
-                #zlim <- c(8.33, 422.71) # nov
-                zlim <- c(5.03, 474.4)
-            }
+                #zlim <- c(5.03, 324.37) # feb; era5: 0.0244510751217604, 294.239959716797 
+                #zlim <- c(6.05, 328.23) # may; era5: 0.00584759470075369, 297.601440429688
+                #zlim <- c(12.1, 474.4) # aug; era5: 0.077091708779335, 531.362243652344
+                #zlim <- c(8.33, 422.71) # nov; era5: 0.108525462448597, 300.630645751953
+                zlim <- c(0.00584759470075369, 531.362243652344)
+            } # if quv
             ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, verbose=F)
 
             # determine number of rows and columns
@@ -3421,7 +3723,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                paste0(names_short_p, "_", seasonsp_p, 
                                       "_", froms_plot_p, "_to_", tos_plot_p, "_", 
                                       areas_p, collapse="_vs_"), 
-                               ".", p$plot_type)
+                               plotname_suffix, ".", p$plot_type)
             message("plot ", plotname, " ...")
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             if (p$plot_type == "png") {
@@ -3441,7 +3743,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            xlab="Longitude [°]", ylab="Latitude [°]", 
                            zlab=data_info$label, znames=names_legend_p,
                            add_land=add_land, add_contour=F,
-                           quiver_list=quiver_list, quiver_const=T, quiver_nx_fac=0.5)
+                           quiver_list=quiver_list)
             
             message("\n", "save plot ", plotname, " ...")
             dev.off()
@@ -3458,71 +3760,64 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 message("\n`length(z)` = 2 ", appendLF=F)
 
-                if (areas_p[1] == areas_p[2]) {
-
-                    message("AND areas[1] = \"", areas_p[1], "\" = areas_p[2] = \"", areas_p[2], "\" ", appendLF=F)
-
-                    if (length(d$lon[[1]]) == length(d$lon[[2]]) &&
-                        length(d$lat[[1]]) == length(d$lat[[2]])) {
+                if (length(d$lon[[1]]) == length(d$lon[[2]]) &&
+                    length(d$lat[[1]]) == length(d$lat[[2]])) {
+                
+                    message("AND both settings have same number of lons and lats\n",
+                            "--> plot anomalies 2 minus 1: ", names_legend_p[2], " minus ", names_legend_p[1], 
+                            " as lon vs lat ...")
                     
-                        message("AND both settings have same number of lons and lats\n",
-                                "--> plot anomalies 2 minus 1: ", names_legend_p[2], " minus ", names_legend_p[1], 
-                                " as lon vs lat ...")
-                        
-                        # colorbar values
-                        zanom <- list(z[[2]] - z[[1]])
-                        names(zanom) <- paste0(names_legend_p[2], " minus ", names_legend_p[1])
-                        source(paste0(host$homepath, "/functions/image.plot.pre.r"))
-                        ip <- image.plot.pre(range(zanom, na.rm=T), verbose=F)
+                    # colorbar values
+                    zanom <- list(z[[2]] - z[[1]])
+                    names(zanom) <- paste0(names_legend_p[2], " minus ", names_legend_p[1])
+                    source(paste0(host$homepath, "/functions/image.plot.pre.r"))
+                    ip <- image.plot.pre(range(zanom, na.rm=T), verbose=F)
 
-                        # determine number of rows and columns
-                        source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
-                        nm <- image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, dry=T)
+                    # determine number of rows and columns
+                    source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
+                    nm <- image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, dry=T)
 
-                        plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
-                                           varname, "_", 
-                                           paste0(rev(names_short_p), "_", rev(seasonsp_p), 
-                                                  "_", rev(froms_plot_p), "_to_", rev(tos_plot_p), "_", 
-                                                  rev(areas_p), collapse="_minus_"), 
-                                           ".", p$plot_type)
-                        message("plot ", plotname, " ...")
-                        dir.create(dirname(plotname), recursive=T, showWarnings=F)
-                        if (p$plot_type == "png") {
-                            png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
-                                res=p$dpi, family=p$family_png)
-                        } else if (p$plot_type == "pdf") {
-                            pdf(plotname, width=nm$ncol*p$inch, 
-                                height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
-                                family=p$family_pdf)
-                        }
-
-                        # map plot
-                        data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]][[varname]]
-                        add_land <- "world"
-                        if (mode_p == "area") { # fesom
-                            add_land <- F
-                        }
-                        image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, verbose=T,
-                                       xlab="Longitude [°]", ylab="Latitude [°]", 
-                                       zlab=data_info$label, 
-                                       znames=paste0(names_short_p[2], " minus ", names_short_p[1]),
-                                       add_land=add_land)
-                        
-                        message("\n", "save plot ", plotname, " ...")
-                        dev.off()
-                        if (p$plot_type == "pdf") {
-                            if("extrafont" %in% (.packages())){
-                                extrafont::embed_fonts(plotname, outfile=plotname)
-                            } else {
-                                grDevices::embedFonts(plotname, outfile=plotname)
-                            }
-                        }
-
-                    } else { # if lon_dim and lat_dim of both settings are of same length
-                        message("but lon and lat dims of both settings are of different length --> cannot plot anomaly as lon vs lat")
+                    plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                       varname, "_", 
+                                       paste0(rev(names_short_p), "_", rev(seasonsp_p), 
+                                              "_", rev(froms_plot_p), "_to_", rev(tos_plot_p), "_", 
+                                              rev(areas_p), collapse="_minus_"), 
+                                       ".", p$plot_type)
+                    message("plot ", plotname, " ...")
+                    dir.create(dirname(plotname), recursive=T, showWarnings=F)
+                    if (p$plot_type == "png") {
+                        png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
+                            res=p$dpi, family=p$family_png)
+                    } else if (p$plot_type == "pdf") {
+                        pdf(plotname, width=nm$ncol*p$inch, 
+                            height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
+                            family=p$family_pdf)
                     }
-                } else { # both areas are not equal
-                    message("but areas[1] = \"", areas[1], "\" != areas[2] = \"", areas[2], "\" --> cannot plot anomaly as lon vs lat")
+
+                    # map plot
+                    data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]][[varname]]
+                    add_land <- "world"
+                    if (mode_p == "area") { # fesom
+                        add_land <- F
+                    }
+                    image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, verbose=T,
+                                   xlab="Longitude [°]", ylab="Latitude [°]", 
+                                   zlab=data_info$label, 
+                                   znames=paste0(names_short_p[2], " minus ", names_short_p[1]),
+                                   add_land=add_land)
+                    
+                    message("\n", "save plot ", plotname, " ...")
+                    dev.off()
+                    if (p$plot_type == "pdf") {
+                        if("extrafont" %in% (.packages())){
+                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        } else {
+                            grDevices::embedFonts(plotname, outfile=plotname)
+                        }
+                    }
+
+                } else { # if lon_dim and lat_dim of both settings are of same length
+                    message("but lon and lat dims of both settings are of different length --> cannot plot anomaly as lon vs lat")
                 }
             } else { # if length(z) != 2
                 message("\nlength(z) != 2 --> cannot plot anomaly as lon vs lat")
@@ -4107,6 +4402,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       froms_plot_p, "_to_", tos_plot_p, "_", 
                                       areas_p, collapse="_vs_"), 
                                data_right$suffix, ts_highlight_seasons$suffix,
+                               plotname_suffix,
                                ".", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
                 if (plot_groups[plot_groupi] == "samevars") {
@@ -4114,12 +4410,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                        varname, "_",
                                        paste0(names_short_p, "_", areas_p, collapse="_vs_"), 
                                        data_right$suffix, ts_highlight_seasons$suffix,
+                                       plotname_suffix,
                                        ".", p$plot_type)
                 } else if (plot_groups[plot_groupi] == "samedims") {
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, "_", varnames_in_p, collapse="_vs_"), 
                                        data_right$suffix, ts_highlight_seasons$suffix,
+                                       plotname_suffix,
                                        ".", p$plot_type)
                 }
             }
@@ -4145,7 +4443,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (F) {
                 if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
             }
-            if (add_data_right_yaxis_ts) mar[4] <- mar[2] # same as left  
+            if (add_data_right_yaxis_ts) mar[4] <- mar[2] # right same as left  
 
             # open plot
             par(mar=mar)
@@ -4265,14 +4563,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     # finished if ts_highlight_seasons$bool
                     
                 # default unsmoothed data 
-                } else { 
+                } else { # if not (ts_highlight_seasons$bool)
                     for (i in seq_along(z)) {
                         points(d$time[[i]], z[[i]], t=types_p[i],
                                col=ifelse(add_smoothed, cols_rgb_p[i], cols_p[i]), 
                                lty=ltys_p[i], lwd=lwds_p[i], pch=pchs_p[i])
                     }
-                }
-            }
+                } # if (ts_highlight_seasons$bool)
+            } # if add_unsmoothed
 
             # smoothed data after unsmoothed data
             if (add_smoothed) {
@@ -4365,12 +4663,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\n", "add default stuff to datas legend here1 ...")
                 le <- list()
-                #le$pos <- "topleft" 
+                le$pos <- "topleft" 
                 #le$pos <- "left"
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
-                le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
+                #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
                 #le$ncol <- length(z)/2
                 le$ncol <- 1
                 #le$ncol <- 2
@@ -4792,7 +5090,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         message("ylim_mon after: ", ylim_mon[1], ", ", ylim_mon[2])
                     } # if temp2, tsurf, aprt
                 } # if exists("noaa_ghcdn")
-                # finised adding obs
+                # finished adding obs
                 
                 yat_mon <- pretty(ylim_mon, n=10)
                 ylab_mon <- format(yat_mon, trim=T)
@@ -5675,6 +5973,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         scatter_set1_vs_set2[[1]] <- scatter_set1_vs_set2[[1]][inds1]
                         scatter_set1_vs_set2[[2]] <- scatter_set1_vs_set2[[2]][inds2]
 
+                        scattercexs <- rep(1, t=length(varx))
+                        scatterpchs <- rep(16, t=length(varx))
+                        scatterpchs_vstime <- seq_along(varx)
+
                         if (T) { # monthly
                            
                             # color data by time or seasons
@@ -5855,10 +6157,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                     if (all(dim_names_varx == "time") && all(dim_names_vary == "time")) {
 
+                        message("plot v1 vs v2 of all settings along time dims ...")
+                        scattercexs <- rep(1, t=length(varx))
+                        scatterpchs <- rep(16, t=length(varx))
+
                         varname <- paste0(varnamex, "_vs_", varnamey)
-                        message("\nvarnamex = \"", varnamex, "\"\n",
-                                 "varnamey = \"", varnamey, "\"\n",
-                                 "varname = \"", varname, "\"")
+                        message("varnamex = \"", varnamex, "\"\n",
+                                "varnamey = \"", varnamey, "\"\n",
+                                "varname = \"", varname, "\"")
                         eval(parse(text=paste0("varx_infos <- ", varnamex, "_infos")))
                         eval(parse(text=paste0("vary_infos <- ", varnamey, "_infos")))
 
@@ -5949,8 +6255,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             message(paste(plotorder, collapse=","), " ...")
                         }
 
-                        # add gray dots of data first
+                        # special: add gray dots of data first
                         if (varname == "temp2_vs_toa_imbalance") {
+                            messge("special: add every non-pi data point gray")
                             for (i in plotorder) {
                                 if (names_short[i] == "piControl") {
                                     # nothing
@@ -5963,7 +6270,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             }
                         } # if add gray dots of data first
                         
-                        # now add real data 
+                        # add data 
                         for (i in plotorder) {
                             if (varname == "temp2_vs_toa_imbalance" && grepl("piControl", names_short[i])) {
                                 message("special: plot only time mean for setting ", names_short[i])
@@ -5992,7 +6299,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                      cex=scattercexs[i])
                             } else { # default
                                 points(varx[[i]], vary[[i]], 
-                                       col=cols_rgb[i], 
+                                       col=cols_rgb_p[i],
+                                       #col=cols_rgb[i], 
                                        #col=cols[i],
                                        pch=scatterpchs[i], cex=scattercexs[i])
                             } # special plots depending on setting
@@ -6124,7 +6432,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                         # add non-linear trend
                         if (add_nonlinear_trend) {
-                            message("\n", "add non-linear trend ...")
+                            message("\nadd non-linear trend ...")
                             lms_exp <- vector("list", l=length(varx))
                             library(forecast)
                             for (i in seq_along(varx)) {
@@ -6149,27 +6457,28 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                         # add legend if wanted
                         if (add_legend) {
-                            message("\n", "add default stuff to plot_scatter_v1_vs_v2 legend ...")
+                            message("\nadd default stuff to plot_scatter_v1_vs_v2 legend ...")
                             le <- list()
                             #le$pos <- "topright"
                             le$pos <- "bottomright"
                             le$ncol <- 1
                             #le$ncol <- 2 
                             le$text <- names_legend_p
+                            le$col <- cols_p
                             #le$col <- cols_rgb
-                            le$col <- cols
+                            #le$col <- cols
                             le$text_cols <- text_cols_p
                             le$lty <- NA
                             le$lwds <- NA
-                            #le$pchs <- scatterpchs
-                            le$pchs <- pchs_p
+                            le$pchs <- scatterpchs
+                            #le$pchs <- pchs_p
                             if (T && varname == "temp2_vs_toa_imbalance") {
                                 le$pchs <- rep(NA, t=length(varx))
                             }
                             le$cex <- 1
                             # add stuf to legend here
                             if (F) {
-                                message("\n", "add non default stuff to plot_scatter_v1_vs_v2 legend ...")
+                                message("add non default stuff to plot_scatter_v1_vs_v2 legend ...")
 
                             }
                             # reorder reading direction from R's default top->bottom to left->right
@@ -6189,7 +6498,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         } # if add_legend
 
                         box()
-                        message("\n", "save plot ", plotname, " ...")
+                        message("save v1 vs v2 plot ", plotname, " ...")
                         dev.off()
                         if (p$plot_type == "pdf") {
                             if("extrafont" %in% (.packages())){
@@ -6201,29 +6510,40 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                         ## scatter plot for each setting colored by time or season
                         if (T) {
-                            message("\nspecial: scatter vs seasons ...")
-
+                            message("\nspecial: v1 vs v2 colored by time or seasons for every setting ...")
                             message("update dinds/vinds")
 
+                            xlim <- range(varx, na.rm=T)
+                            ylim <- range(vary, na.rm=T)
+                            xat <- pretty(xlim, n=10)
+                            xlab <- format(xat, trim=T)
+                            yat <- pretty(ylim, n=10)
+                            ylab <- format(yat, trim=T)
+                            message("xlim = ", min(xlim), " / ", max(xlim))
+                            message("ylim = ", min(ylim), " / ", max(ylim))
+
                             for (i in seq_along(varx)) {
+
+                                message("varx[[", i, "]] vs vary[[", i, "]] ...")
 
                                 if (T) { # monthly
                                     
                                     # color data by time or seasons
                                     if (F) { # by time
-                                        message("color by time ...")
+                                        message("color v1 vs v2 by time ...")
                                         timecols <- colorRampPalette(c("blue", "red"))(length(varx[[i]]))
                                         scatter_suffix <- "_bytime"
                                     } else if (T) { # by season
-                                        message("color by season ...")
+                                        message("color v1 vs v2 by season ...")
                                         if (i == 1) scatterpchs_vstime <- 1:4
                                         season_cols <- c(DJF="blue", MAM="darkgreen", JJA="red", SON="brown")
                                         timecols <- rep(NA, t=length(varx[[i]]))
                                         season_pchs <- timecols
-                                        djf_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(1, 2, 12))))
-                                        mam_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(3, 4, 5))))
-                                        jja_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(6, 7, 8))))
-                                        son_inds <- which(!is.na(match(unclass(dims[[i]]$timelt)$mon+1, c(9, 10, 11))))
+                                        timelt <- as.POSIXlt(d$time[[i]])
+                                        djf_inds <- which(!is.na(match(timelt$mon+1, c(1, 2, 12))))
+                                        mam_inds <- which(!is.na(match(timelt$mon+1, c(3, 4, 5))))
+                                        jja_inds <- which(!is.na(match(timelt$mon+1, c(6, 7, 8))))
+                                        son_inds <- which(!is.na(match(timelt$mon+1, c(9, 10, 11))))
                                         timecols[djf_inds] <- season_cols["DJF"]
                                         timecols[mam_inds] <- season_cols["MAM"]
                                         timecols[jja_inds] <- season_cols["JJA"]
@@ -6236,13 +6556,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     }
                                     timecols_rgb <- rgb(t(col2rgb(timecols)/255), alpha=alpha_rgb)
                                     
-                                    xlim <- range(varx[[i]], na.rm=T)
-                                    ylim <- range(vary[[i]], na.rm=T)
-                                    xat <- pretty(xlim, n=10)
-                                    xlab <- format(xat, trim=T)
-                                    yat <- pretty(ylim, n=10)
-                                    ylab <- format(yat, trim=T)
-
                                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                                        varname, "_", 
                                                        paste0(names_short_p[i], "_", seasonsp_p[i], "_",
@@ -6267,7 +6580,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                                     # open plot
                                     par(mar=mar)
-                                    plot(varx[[1]], vary[[1]], t="n",
+                                    plot(varx[[i]], vary[[i]], t="n",
                                          xlab=NA, ylab=NA, 
                                          xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
                                     axis(1, at=xat, labels=xlab)
@@ -6285,8 +6598,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     }
 
                                     # add variable label
-                                    mtext(side=1, varx_infos[[i]]$label, line=3.4, cex=0.9)
-                                    mtext(side=2, vary_infos[[i]]$label, line=3.4, cex=0.9)
+                                    mtext(side=1, varx_infos[[1]]$label, line=3.4, cex=0.9)
+                                    mtext(side=2, vary_infos[[1]]$label, line=3.4, cex=0.9)
 
                                     # add zero lines
                                     if (add_zeroline) {
@@ -6301,7 +6614,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     }
                                     
                                     # add data to scatter plot colored by time
-                                    message("add data")
+                                    message("add ", names(varx)[i], " data vs seasons ...")
                                     points(varx[[i]], vary[[i]], 
                                            col=timecols,
                                            #col=timecols_rgb,
@@ -6340,7 +6653,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     } # if add_legend
 
                                     box()
-                                    message("\n", "save plot ", plotname, " ...")
+                                    message("save v1 vs v2 plot colored by time/season/.. ", plotname, " ...")
                                     dev.off()
                                     if (p$plot_type == "pdf") {
                                         if("extrafont" %in% (.packages())){

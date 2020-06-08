@@ -17,7 +17,8 @@ host <- get_host()
 if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
     message("\nload ", host$homepath, "/functions/myfunctions.r ...")
     source(paste0(host$homepath, "/functions/myfunctions.r"))
-    # post_echam.r needs the functions: ht(), make_posixlt_origin_function(), is.leap(), tryCatch.W.E(), identical_list() 
+    # post_echam.r needs the myfunctions.r functions: 
+    # ht(), make_posixlt_origin_function(), is.leap(), tryCatch.W.E(), identical_list(), cdo_get_filetype()
 } else {
     stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
 }
@@ -829,7 +830,7 @@ for (i in 1:nsettings) {
                     # check command if all necessary input files are available
                     cmdsin <- cdo_known_cmds[[fvarnames[i]]]$cmd
                     cmdsout <- cmdsin
-                    for (cmdi in 1:length(cmdsin)) {
+                    for (cmdi in 1:length(cmdsin)) { # todo: update with `sub_list` as above
                         message("\ncheck user cmd ", cmdi, "/", length(cmdsin), " for \"<\" and \">\": `", cmdsin[cmdi], "` ...")
                         replace_inds_open <- gregexpr("<", cmdsin[cmdi])[[1]]
                         replace_inds_close <- gregexpr(">", cmdsin[cmdi])[[1]]
@@ -842,18 +843,18 @@ for (i in 1:nsettings) {
                             for (cmdj in seq_along(replace_inds_open)) {
                                 # check if a variable in the current workspace exists with the same name
                                 pattern <- substr(cmdsin[cmdi], replace_inds_open[cmdj] + 1, replace_inds_close[cmdj] - 1)
-                                if (exists(eval(pattern))) { # variable with the name of the pattern exists
+                                if (exists(eval(pattern))) { # case 1/2: variable with the name of the pattern exists
                                     eval(parse(text=paste0("length_of_pattern_var <- length(", pattern, ")")))
                                     if (length_of_pattern_var == nsettings) { # assume that the entry of setting i should be replaced
                                         eval(parse(text=paste0("replacement <- ", pattern, "[i]")))
                                     } else {
                                         eval(parse(text=paste0("replacement <- ", pattern)))
                                     }
-                                } else { # no variable named `pattern` exists in current work space
-                                    if (pattern == "nco_ncatted") { # special case
+                                } else { # case 2/2: no variable named `pattern` exists in current work space
+                                    if (pattern == "nco_ncatted") { # case 2a: special case
                                         message("   detected special pattern \"<", pattern, ">\" --> run system(\"which ncatted\") ...")
                                         replacement <- system("which ncatted", intern=T)
-                                    } else { # assume an input file is needed
+                                    } else { # case 2b: assume an input file is needed
                                         replacement <- fout
                                         replacement <- gsub(fvarnames[i], pattern, replacement)
                                         if (!file.exists(replacement)) {
