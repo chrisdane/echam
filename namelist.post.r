@@ -196,14 +196,14 @@ if (F) { # old hist
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom"
     # hol-tx10 on paleosrv:
     #datapaths <- "/scratch/simulation_database/incoming/Hol-Tx10/output" # original w 2901-3601 dy=1 timestamps
-    datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5" # links with dt=10 yrs timestamps
+    #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5" # links with dt=10 yrs timestamps
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom" # links with dt=10 yrs timestamps
     # hol-t on stan:
-    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5" # links w correct timestamps
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5" # links w correct timestamps
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" # links w correct timestamps
     #datapaths <- "/ace/user/stschuet/Hol-T_echam5_wiso_links"
-    fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
+    fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-7_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
@@ -221,8 +221,8 @@ if (F) { # old hist
     #fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
-    prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
+    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-7_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
@@ -255,9 +255,9 @@ if (F) { # old hist
     #fvarnames <- "sd" # spectral divergence
     #fvarnames <- "svo" # spectral vorticity
     #fvarnames <- "q"
-    #fvarnames <- "aps"
-    fvarnames <- "quv_direction"
-    levs_out <- "int1000-100hPa"
+    fvarnames <- "aps"
+    #fvarnames <- "quv_direction"
+    #levs_out <- "int1000-100hPa"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
     #fvarnames <- "wisoevap"
@@ -370,8 +370,8 @@ if (F) { # old hist
     #season_names <- "annual"
     #season_names <- "yearsum"
     #season_names <- "seassum"
-    froms <- "0001" # Hol-Tx10 links: beginning counting from 1
-    #froms <- "0004" # Hol-T links: beginning of chunk 1
+    #froms <- "0001" # Hol-Tx10 links: beginning counting from 1
+    froms <- "0004" # Hol-T links: beginning of chunk 1
     #froms <- "0100"
     #froms <- "0800" # Hol-7 raw: beginning
     #froms <- "0985" # Hol-T links: 6k mean beginning
@@ -390,8 +390,8 @@ if (F) { # old hist
     #tos <- "3601" # Hol-Tx10 raw: end
     #tos <- "5903" # Hol-T links: end of chunk 2
     #tos <- "6821"
-    #tos <- "7000" # Hol-T links: end of chunk 3
-    tos <- "7001" # Hol-Tx10 links: end counting from 1 
+    tos <- "7000" # Hol-T links: end of chunk 3
+    #tos <- "7001" # Hol-Tx10 links: end counting from 1 
     if (grepl("Hol-Tx10_", prefixes[1])) {
         if (modes[1] == "timmean") {
             if (froms[1] == "2901" && tos[1] == "3601") {

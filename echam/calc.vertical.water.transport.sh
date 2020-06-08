@@ -11,6 +11,17 @@
 # *.qtot_u.nc : vertically integrated water vapor transport - u component
 # *.qtot_v.nc : vertically integrated water vapor transport - v component
 
+# optional preparation step 1/2: get u,v components from divergence and vorticity
+# 1: [if sd & svo in lon,lat coords]: cdo gp2sp sd_gauss sd_spec; cdo gp2sp svo_gauss svo_spec
+# 2: cdo merge sd_spec svo_spec sd_svo_spec
+# 3: cdo dv2uv sd_svo_spec uv_gauss
+# 4: [if split uv_gauss into 2 files for u,v]: cdo -select,name=u uv_gauss u_gauss
+
+# optional preparation step 2/2: interpolate from model to pressure levels
+# 1: cdo merge aps,u [for u,v,q] 
+# 2: cdo ml2pl,100000,85000,70000,50000,25000,10000 fout tmp && mv tmp fout [for u,v,q]
+
+# run script with ./calc.vertical.water.transport.sh
 
 #fin_aps=$1
 #fin_q=$2
@@ -20,17 +31,35 @@
 #FILE_OUT1=$pout/qtot_u.nc
 #FILE_OUT2=$pout/qtot_v.nc
 
-# hol-tx10:
-fin_aps=/isibhv/projects/paleo_work/cdanek/post/echam5/select/aps/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_select_aps_global_Jan-Dec_0001-7001.nc
-fin_q=/isibhv/projects/paleo_work/cdanek/post/echam5/select/q/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_q_global_Jan-Dec_0001-7001.nc
-fin_u=/isibhv/projects/paleo_work/cdanek/post/echam5/select/u/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_u_global_Jan-Dec_0001-7001.nc
-fin_v=/isibhv/projects/paleo_work/cdanek/post/echam5/select/v/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_v_global_Jan-Dec_0001-7001.nc
-pout_qu=/isibhv/projects/paleo_work/cdanek/post/echam5/select/qu
-pout_qv=/isibhv/projects/paleo_work/cdanek/post/echam5/select/qv
-pout_quv=/isibhv/projects/paleo_work/cdanek/post/echam5/select/quv
-fout_qu=$pout_qu/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_qu_int1000-100hPa_global_Jan-Dec_0001-7001.nc
-fout_qv=$pout_qv/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_qv_int1000-100hPa_global_Jan-Dec_0001-7001.nc
-fout_quv=$pout_quv/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_quv_int1000-100hPa_global_Jan-Dec_0001-7001.nc
+# hol-tx10 on paleosrv
+if false; then
+    fin_aps=/isibhv/projects/paleo_work/cdanek/post/echam5/select/aps/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_select_aps_global_Jan-Dec_0001-7001.nc
+    fin_q=/isibhv/projects/paleo_work/cdanek/post/echam5/select/q/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_q_global_Jan-Dec_0001-7001.nc
+    fin_u=/isibhv/projects/paleo_work/cdanek/post/echam5/select/u/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_u_global_Jan-Dec_0001-7001.nc
+    fin_v=/isibhv/projects/paleo_work/cdanek/post/echam5/select/v/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_v_global_Jan-Dec_0001-7001.nc
+    pout_qu=/isibhv/projects/paleo_work/cdanek/post/echam5/select/qu
+    pout_qv=/isibhv/projects/paleo_work/cdanek/post/echam5/select/qv
+    pout_quv=/isibhv/projects/paleo_work/cdanek/post/echam5/select/quv
+    fout_qu=$pout_qu/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_qu_int1000-100hPa_global_Jan-Dec_0001-7001.nc
+    fout_qv=$pout_qv/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_qv_int1000-100hPa_global_Jan-Dec_0001-7001.nc
+    fout_quv=$pout_quv/cosmos-aso-wiso_Hol-Tx10_main_mm_echam5_plev_select_quv_int1000-100hPa_global_Jan-Dec_0001-7001.nc
+fi
+
+# hol-t on stan
+if true; then
+    fin_aps=/ace/user/cdanek/post/echam5/select/aps/cosmos-aso-wiso_Hol-T_main_mm_echam5_select_aps_global_Jan-Dec_0004-7000.nc
+    fin_q=/ace/user/cdanek/post/echam5/select/q/cosmos-aso-wiso_Hol-T_main_mm_plev_echam5_select_q_global_Jan-Dec_0004-7000.nc
+    fin_u=/ace/user/cdanek/post/echam5/select/u/cosmos-aso-wiso_Hol-T_main_mm_plev_echam5_select_u_global_Jan-Dec_0004-7000.nc
+    fin_v=/ace/user/cdanek/post/echam5/select/v/cosmos-aso-wiso_Hol-T_main_mm_plev_echam5_select_v_global_Jan-Dec_0004-7000.nc
+    pout_qu=/ace/user/cdanek/post/echam5/select/qu
+    pout_qv=/ace/user/cdanek/post/echam5/select/qv
+    pout_quv=/ace/user/cdanek/post/echam5/select/quv
+    fout_qu=$pout_qu/cosmos-aso-wiso_Hol-T_main_mm_plev_echam5_select_qu_int1000-100hPa_global_Jan-Dec_0004-7000.nc
+    fout_qv=$pout_qv/cosmos-aso-wiso_Hol-T_main_mm_plev_echam5_select_qv_int1000-100hPa_global_Jan-Dec_0004-7000.nc
+    fout_quv=$pout_quv/cosmos-aso-wiso_Hol-T_main_mm_plev_echam5_select_quv_int1000-100hPa_global_Jan-Dec_0004-7000.nc
+fi
+
+# start
 
 mkdir $pout_qu $pout_qv $pout_quv
 cd $pout_quv

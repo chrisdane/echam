@@ -165,7 +165,12 @@ if (exists("season_names")) {
 }
 if (!exists("levs_out")) levs_out <- rep(NA, t=nsettings)
 lev_fnames <- levs_out
-lev_fnames[which(!is.na(levs_out))] <- paste0("_", levs_out[which(!is.na(levs_out))])
+if (any(!is.na(levs_out))) {
+    lev_fnames[which(!is.na(levs_out))] <- paste0("_", levs_out[which(!is.na(levs_out))])
+}
+if (any(is.na(levs_out))) {
+    lev_fnames[which(is.na(levs_out))] <- ""
+}
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
 
 # check for new times if wanted
@@ -904,9 +909,7 @@ for (i in 1:nsettings) {
 
                     if (clean) { 
                         for (fi in cmdout_files) {
-                            if (file.exists(fi)) {
-                                system(paste0("rm -v ", fi))
-                            }
+                            if (file.exists(fi)) system(paste0("rm -v ", fi))
                         }
                     }
                    
@@ -1379,8 +1382,10 @@ for (i in 1:nsettings) {
                         system(cmd)
                         cdo_timestamps <- scan(cdo_showtimestamp_file, what="char", quiet=T)
                         if (length(cdo_timestamps) == 0) stop("sth went wrong")
+                        if (clean) system(paste0("rm -v ", cdo_showtimestamp_file))
                         message("\n`cdo showtimestamp` yields ", length(cdo_timestamps), " dates:")
                         ht(cdo_timestamps, n=25)
+                        
 
                         if (cdo_ntime != length(cdo_timestamps)) {
                             message("\nwarning: length(`cdo ntime`) = ", cdo_ntime, 
@@ -1906,9 +1911,9 @@ for (i in 1:nsettings) {
                                         inds_chunki <- cmd_nco_ncap2_chunk_inds[nco_ncap2_chunki]:cmd_nco_ncap2_chunk_inds[nco_ncap2_chunki+1]
                                     }
                                     ncofile_vec[nco_ncap2_chunki] <- gsub(".nc", 
-                                                                              paste0("_nco_ncap2_chunk_", nco_ncap2_chunki, 
-                                                                                     "_of_", nchunks_nco_ncap2, ".nc"), 
-                                                                              nco_fout_vec[chunki])
+                                                                          paste0("_nco_ncap2_chunk_", nco_ncap2_chunki, 
+                                                                                 "_of_", nchunks_nco_ncap2, ".nc"), 
+                                                                          nco_fout_vec[chunki])
                                     cmd_seltimestep_list[[nco_ncap2_chunki]] <- paste0(cdoprefix, " seltimestep,", 
                                                                                        inds_chunki[1], "/", inds_chunki[length(inds_chunki)], " ",
                                                                                        selfile_vec[chunki], " ", ncofile_vec[nco_ncap2_chunki]) 
@@ -1946,14 +1951,18 @@ for (i in 1:nsettings) {
                                     if (!file.exists(ncofile_vec[nco_ncap2_chunki])) { # output file exists?
                                         stop("ncofile_vec[", nco_ncap2_chunki, "] = ", ncofile_vec[nco_ncap2_chunki], 
                                              " does not exist but it should")
+                                    } else {
+                                        if (clean) {
+                                            message("todo: rm \"", ncofile_vec[nco_ncap2_chunki], "\" here?")
+                                        }
                                     }
-                                    
+
                                     if (clean) system(paste0("rm -v ", nco_ncap2_txt))
 
                                 } # for nco_ncap_chunki
 
                                 # cat nco ncap2 chunks together
-                                message("\n", "cat ", nchunks_nco_ncap2, " nco ncap2 chunks of cdo chunk ", 
+                                message("\ncat ", nchunks_nco_ncap2, " nco ncap2 chunks of cdo chunk ", 
                                         chunki, "/", nchunks, " together:")
                                 #if (new_date_list[[i]]$nc_time_units == "day as %Y%m%d.%f") { 
                                 if (F) {
@@ -1994,12 +2003,6 @@ for (i in 1:nsettings) {
                     selfile_vec_old <- selfile_vec
                     selfile_vec <- nco_fout_vec
                
-                    if (clean) {
-                        if (file.exists(cdo_showtimestamp_file)) {
-                            system(paste0("rm -v ", cdo_showtimestamp_file))
-                        }
-                    }
-
                     # run cdo calculation after applying new dates to cdo selection result
                     for (chunki in seq_len(nchunks)) { # for possible chunks if argument is too long
                   
@@ -2052,9 +2055,7 @@ for (i in 1:nsettings) {
                             
                         # clean
                         if (clean) {
-                            if (cdo_run_from_script) {
-                                system(paste0("rm -v ", scriptname))
-                            }
+                            if (cdo_run_from_script) system(paste0("rm -v ", scriptname))
                             system(paste0("rm -v ", selfile_vec_old[chunki]))
                             system(paste0("rm -v ", selfile_vec[chunki]))
                         } # if clean
@@ -2077,7 +2078,7 @@ for (i in 1:nsettings) {
         
         # cat chunks together (if needed) and remove temporary files
         if (nchunks > 1) {
-            message("\n", "cat ", nchunks, " > 1 -> cdo chunks together ...")
+            message("\ncat ", nchunks, " cdo chunks together ...")
             if (F) {
                 # destroys non-default time formats not known by cdo
                 # also, makes "day as %Y%m%d.%f" --> "days since YYYY-MM-DD"
@@ -2091,7 +2092,7 @@ for (i in 1:nsettings) {
         # or rename of necessary 
         } else {
             if (fout_vec != fout) {
-                message("\nnchunks = 1 -> rename temporary file to fout ...")
+                message("\nrename temporary file to fout ...")
                 cmd_rename <- paste0("mv -v ", fout_vec, " ", fout)
                 system(cmd_rename)
             }
