@@ -75,9 +75,12 @@ if (F) { # TOA imbalance gregory et al. 2004 stuff
 } else if (F) {
     varnamex <- "temp2"
     varnamey <- "wisoaprt_d"
-} else if (T) {
+} else if (F) {
     varnamex <- "quv"
     varnamey <- "quv_direction"
+} else if (T) {
+    varnamex <- "quv_direction_datasan"
+    varnamey <- "wisoaprt_d_datas"
 }
 add_1to1_line_scatter <- F
 
@@ -259,9 +262,10 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (F) { # Hol-T with vs without orbital acceleration
+} else if (T) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_Hol-T", "cosmos-aso-wiso_Hol-Tx10")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
+    #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")
     prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "cosmos-aso-wiso_Hol-Tx10_wiso_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_timeser_ext", "cosmos-aso-wiso_Hol-Tx10_timeser_ext")
@@ -276,7 +280,7 @@ if (F) { # awi-esm-1-1-lr hist
     #names_short <- c("ch", "st")
     #names_short <- c("ch", "ch_w_st")
     #names_legend <- names_short
-    names_legend <- c("COSMOS transient", "COSMOS transient x10")
+    #names_legend <- c("COSMOS transient", "COSMOS transient x10")
     fromsf <- c("0004", "0001")
     #fromsf <- c("0004", "0004")
     #tosf <- c("7000", "7000")
@@ -291,12 +295,12 @@ if (F) { # awi-esm-1-1-lr hist
     #types <- c("o", "o")
     #varnames_in <- c("temp2", "temp2")
     #varnames_in <- c("aprt", "aprt")
-    varnames_in <- c("tsurf", "tsurf")
+    #varnames_in <- c("tsurf", "tsurf")
     #varnames_in <- c("srad0d", "srad0d")
     #varnames_in <- c("albedo", "albedo")
     #varnames_in <- c("wisoaprt_d", "wisoaprt_d")
-    #varnames_in <- c("wisoaprt_d_post", "wisoaprt_d_post")
-    #levs <- c(2, 2)
+    varnames_in <- c("wisoaprt_d_post", "wisoaprt_d_post")
+    levs <- c(2, 2)
     #varnames_in <- c("tsurfaprt", "tsurfaprt")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
@@ -321,9 +325,14 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("c145_ICEVOL_SO", "c145_ICEVOL_SO")
     #varnames_in <- rep("amoc", t=2)
     #codes <- rep(101, t=2)
-    modes <- rep("select", t=2)
+    #varnames_in <- c("quv", "quv")
+    #varnames_in <- c("quv_direction", "quv_direction")
+    #levsf <- c("_int1000-100hPa", "_int1000-100hPa")
+    #varnames_out_samedims <- "quv"
+    #names_legend_samedims <- c("qu", "qv")
+    #modes <- rep("select", t=2)
     #modes <- rep("seasmean", t=2)
-    #modes <- rep("yearsum", t=2)
+    modes <- rep("yearsum", t=2)
     #modes <- rep("seassum", t=2)
     #areas <- rep("moc45to60N", t=2)
     #levs <- rep("-285to-2180m", t=2)
@@ -336,19 +345,19 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("LSeaSouthmld", "LSeaSouthmld")
     #areas <- c("GINmld", "GINmld")
     #areas <- c("weddelmld", "weddelmld")
-    #areas <- c("ladoga_remapnn", "ladoga_remapnn")
+    areas <- c("ladoga_remapnn", "ladoga_remapnn")
     #areas <- c("shuchye_remapnn", "shuchye_remapnn")
     #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapnn")
     #areas <- c("taymyr_remapnn", "taymyr_remapnn")
     #areas <- c("emanda_remapnn", "emanda_remapnn")
     #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
     #areas <- c("two-yurts_remapnn", "two-yurts_remapnn")
-    areas <- c("kotokel_remapnn", "kotokel_remapnn")
+    #areas <- c("kotokel_remapnn", "kotokel_remapnn")
     #areas <- c("moc45to60N", "moc30to60N", "moc50N", "moc45to60N", "moc30to60N", "moc26.5N")
     #levs <- c("-285to-2180m", "-285to-2180m", "-0to-5420m", "-0to-5420m", "-0to-5420m", "-0to-5420m")
-    seasonsf <- rep("annual", t=2)
+    #seasonsf <- rep("annual", t=2)
     #seasonsf <- rep("seasmean", t=2)
-    #seasonsf <- rep("yearsum", t=2)
+    seasonsf <- rep("yearsum", t=2)
     #seasonsf <- rep("seassum", t=2)
     #seasonsp <- rep("DJF", t=2)
     #seasonsp <- rep("MAM", t=2)
@@ -360,17 +369,9 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- rep("Sep", t=2)
     #seasonsp <- rep("Dec", t=2)
     #n_mas <- c(1, 1)
-    #n_mas <- c(5*3, 3)
-    #n_mas <- c(5*10, 10)
-    #n_mas <- c(5*30, 30)
-    #n_mas <- c(5*60, 60)
-    #n_mas <- c(5*100, 100)
-    #n_mas <- c(120, 120)
-    #n_mas <- c(5*120, 120)
-    n_mas <- c(3*150, 150)
-    #n_mas <- c(5*360, 360)
-    #n_mas <- c(1200, 1200)
-    #n_mas <- c(5*1200, 1200)
+    #n_mas <- c(250*12, 50*12) # jan-dec
+    #n_mas <- c(120*12, 20*12) # seasons
+    n_mas <- c(50*12, 10*12)
     #remove_mean_froms <- c(-179, 0)
     #remove_mean_tos <- c(-179, 0)
 
@@ -934,7 +935,7 @@ if (F) { # awi-esm-1-1-lr hist
     cols_samedims <- c(1:4, 1:4)
     ltys_samedims <- c(rep(2, t=4), rep(1, t=4))
 
-} else if (T) { # compare pi/mh cold/warm atmosphere restart problem
+} else if (F) { # compare pi/mh cold/warm atmosphere restart problem
     models <- rep("echam6", t=8)
     prefixes <- c("awi-esm-1-1-lr_pi477_ollie", # temp2 2700 to 3249 -> 2051 to 2600
                   "awi-esm-1-1-lr_piControl_g3bid", # temp2 2701 to 2999 -> 2051 to 2349
