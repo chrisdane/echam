@@ -1173,7 +1173,7 @@ for (i in 1:nsettings) {
                     
                     } else { # cdo selection (and possible calculation) command(s) not too long
                         message("--> this is not longer than `cdo_nchar_max_arglist` = ", cdo_nchar_max_arglist, 
-                                " and does not yield the error \"Argument list too long\"")
+                                " and hence does not yield the error \"Argument list too long\"")
                         cmd_select_list <- cmd_calc_list <- chunk_inds_list <- vector("list", l=1)
                         cmd_select_list[[1]] <- list(cmd=cmd_select_tmp, n=length(files))
                         cmd_calc_list[[1]] <- list(cmd=cmd_calc)
@@ -1980,7 +1980,7 @@ for (i in 1:nsettings) {
                             } else if (nchar_cmd_ncap2 <= nco_nchar_max_arglist) {
                               
                                 message("--> this is not longer than `nco_nchar_max_arglist` = ", nco_nchar_max_arglist, 
-                                        " and does not yield the error \"Argument list too long\"")
+                                        " and hence does not yield the error \"Argument list too long\"")
                                 # do not select time steps in nco ncap2 chunks but just make a copy and rename
                                 system(cmd_cp_and_mv)
                                 #system(paste0("cdo -r copy ", nco_fout_vec[chunki], " ~/tmp && mv ~/tmp ", nco_fout_vec[chunki])) 

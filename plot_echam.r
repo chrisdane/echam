@@ -2,7 +2,7 @@
 
 #options(warn = 2) # stop on warnings
 
-if (F) {
+if (T) {
     message("\nrm(list=ls())")
     rm(list=ls())
     #fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
@@ -3607,19 +3607,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # modify time axis labels YYYY-MM-DD depending on range covered:
                 tunit <- "time"
-                if (tlab_diff_secs > 365*24*60*60) { # do not show days if range of tlim is above 1 year
-                    message("duration of time dim is longer than 1 year --> use year only as time labels ...")
+                if (tlab_diff_secs >= 360*24*60*60) { # do not show days if range of tlim is above 1 year
+                    message("duration of time dim is longer than 1 year --> ",
+                            "use year only as time labels and set `tunit` from \"time\" to \"year\" ...")
                     tlablt <- tlablt$year + 1900 # YYYY; this destroys POSIX object
                     tunit <- "year"
                 } else { # decrease label size due to long labels
-                    message("change time label angle ...")
+                    message("duration of time dim is shorter than 1 year --> ",
+                            "change time label angle ...")
                     tlabsrt <- 45
                 }
                 message("final tlablt = ", paste(tlablt, collapse=", "))
 
                 # if all dates < 0, use "abs(dates) BP" instead
-                if (tunit == "Year" && all(tlablt <= 0)) {
-                    message("all times are < 0 --> use `abs(times)` for time labels instead ...")
+                if (tunit == "year" && all(tlablt <= 0)) {
+                    message("all times are <= 0 --> use `abs(times)` for time labels instead ...")
                     neg_inds <- which(tlablt < 0)
                     tlablt[neg_inds] <- abs(tlablt[neg_inds])
                     if (!is.na(time_ref)) {
@@ -4705,8 +4707,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\nadd default stuff to datas legend here1 ...")
                 le <- list()
-                le$pos <- "topleft" 
-                #le$pos <- "left"
+                #le$pos <- "topleft" 
+                le$pos <- "left"
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 

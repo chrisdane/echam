@@ -23,7 +23,6 @@ if (T) {
     fromsf <- matrix(c("2800", "0004", "0001"), nruns, 3, byrow=T) # hol-7 last 101 years, hol-tx10, hol-t
     tosf <- matrix(c("2900", "7000", "7001"), nruns, 3, byrow=T) # hol-7, hol-tx10, hol-t
     new_origins <- matrix(c(-7101, -6996, -7000), nruns, 3, byrow=T) # hol-7 last 101 years, hol-tx10, hol-t
-    time_frequencies <- matrix(rep("annual", t=3), nruns, 3, byrow=T)
     time_ref <- 1950 # any string, e.g. "BP", or number
     #seasonsf <- replicate(rep(rep(c("yearsum", rep("seassum", t=nseas-1)), t=nvars), t=nareas), n=3)
     seasonsf <- replicate(rep(rep(rep("Jan-Dec", t=nseas), t=nvars), t=nareas), n=3)
