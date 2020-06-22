@@ -461,7 +461,7 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " last 30 years mean minus piControl")))))
     }
 
-} else if (T) { # Hol-7 vs Hol-T with vs without orbital acceleration
+} else if (F) { # Hol-7 vs Hol-T with vs without orbital acceleration
     prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_wiso_mm", t=3)
     #prefixes <- c("cosmos-aso-wiso_Hol-7_wiso_mm", 
     #              "cosmos-aso-wiso_Hol-T_wiso_mm", 
@@ -875,21 +875,35 @@ if (F) { # awi-esm-1-1-lr hist
     varnames_in <- rep("aprt", t=6)
     areas <- c("ladoga_remapnn", "shuchye_remapnn", "levinson-lessing_remapnn", "taymyr_remapnn", "emanda_remapnn", "elgygytgyn_remapnn")
 
-} else if (F) { # compare Hol-T* time series
-    prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_fort_75", t=6)
-    models <- rep("mpiom1", t=6)
-    names_short <- rep("Hol-Tx10", t=6)
-    fromsf <- rep("0001", t=6) # beginning of chunk 1
-    tosf <- rep("7001", t=6) # end of chunk 3
-    new_origins <- rep(-7000, t=6)
+} else if (T) { # compare Hol-T* time series
+    #prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_fort_75", t=6)
+    prefixes <- c(rep("cosmos-aso-wiso_Hol-T_wiso_mm", t=3), rep("cosmos-aso-wiso_Hol-Tx10_wiso_mm", t=3))
+    models <- rep("echam5", t=6)
+    #models <- rep("mpiom1", t=6)
+    names_short <- c(rep("Hol-T", t=3), rep("Hol-Tx10", t=3))
+    names_legend <- names_short
+    fromsf <- c(rep("0004", t=3), rep("0001", t=3))
+    tosf <- c(rep("7000", t=3), rep("7001", t=3))
+    new_origins <- c(rep(-6996, t=3), rep(-7000, t=3))
     time_ref <- 1950 # any string, e.g. "BP", or number
+    seasonsp <- rep("JJA", t=6)
     #n_mas <- rep(30, t=6)
-    n_mas <- rep(120, t=6)
-    varnames_in <- rep("amoc", t=6)
-    codes <- rep(101, t=6)
-    areas <- c("moc45to60N", "moc30to60N", "moc50N", "moc45to60N", "moc30to60N", "moc26.5N")
-    levs <- c("-285to-2180m", "-285to-2180m", "-0to-5420m", "-0to-5420m", "-0to-5420m", "-0to-5420m")
-    names_legend <- paste0(areas, " ", levs)
+    #n_mas <- rep(120, t=6)
+    n_mas <- c(rep(10*12, t=3), rep(5*12, t=3))
+    #n_mas <- c(rep(100*12, t=3), rep(20*12, t=3))
+    modes <- rep("select", t=6)
+    #varnames_in <- rep("amoc", t=6)
+    #codes <- rep(101, t=6)
+    #areas <- c("moc45to60N", "moc30to60N", "moc50N", "moc45to60N", "moc30to60N", "moc26.5N")
+    #levs <- c("-285to-2180m", "-285to-2180m", "-0to-5420m", "-0to-5420m", "-0to-5420m", "-0to-5420m")
+    #names_legend <- paste0(areas, " ", levs)
+    varnames_in <- rep(c("aprt", "aprl", "aprc"), t=2)
+    areas <- rep("ladoga_remapnn", t=6)
+    varnames_out_samedims <- "aprt"
+    names_legend_samedims <- c("Hol-T aprt (total)", "Hol-T aprl (large-scale)", "Hol-T aprc (convection)",
+                               "Hol-Tx10 aprt (total)", "Hol-Tx10 aprl (large-scale)", "Hol-Tx10 aprc (convection)")
+    ltys_samedims <- c(rep(1, t=3), rep(2, t=3))
+    cols_samedims <- rep(c("black", "#E41A1C", "#377EB8"), t=2)
 
 # ==================================================
 # 7 settings
