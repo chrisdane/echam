@@ -164,7 +164,7 @@ if (scale_ts) plotname_suffix <- "_scale_ts"
 datas <- vector("list", l=nsettings)
 names(datas) <- names_short
 data_infos <- dims <- dims_per_setting_in <- datas
-
+    
 # load special data
 message("\n", "start reading special data sets ...")
 
@@ -845,8 +845,8 @@ if (F) {
         message("\ndisable here if you do not want to read hanno meyer et al. PLOT data from ", f)
         message("run read_meyer_etal_function() ...")
         #tmp <- read_meyer_etal_function(xlsx_file=f)
-        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
-        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
+        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
+        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake")
@@ -854,8 +854,8 @@ if (F) {
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Kotokel", verbose=F)
         meyer_etal <- list(data=tmp,
                            type="o", 
-                           #col="#377EB8", # myblue
-                           col="#1B9E77", # mygreen
+                           col="#377EB8", # myblue
+                           #col="#1B9E77", # mygreen
                            lty=1, lwd=1, pch=1, cex=1)
         if (F) { # plot meyer et al data
             for (i in seq_along(meyer_etal$data)) {
@@ -1263,6 +1263,10 @@ for (i in 1:nsettings) {
         # find seasons inds if wanted (`seasonsp` is defined and different from `seasonsf`)
         if (seasonsp[i] != seasonsf[i]) {
             
+            if (seasonsp[i] == "" || is.na(seasonsp[i])) {
+                stop("seasonsp must not equal \"\" or NA")
+            }
+
             # special case:  
             if (seasonsp[i] == "annual" && seasonsf[i] == "Jan-Dec") {
 
@@ -1522,6 +1526,13 @@ for (i in 1:nsettings) {
         # get infos of variable
         names(var_infos)[vi] <- names(vars)[vi]
         var_infos[[vi]] <- ncatt_get(ncin, vars_per_file[vi])
+
+        # special: if evap, take abs values
+        if (regexpr("echam", models[i]) != -1 && vars_per_file[vi] == "evap") {
+            message("special: use -1*evap instead of evap")
+            vars[[vi]] <- -1*vars[[vi]]
+            var_infos[[vi]]$long_name <- "evaporation*-1" 
+        }
 
         # get dims of variable
         dimids <- ncin$var[[vars_per_file[vi]]]$dimids # get dims of data
@@ -1985,6 +1996,12 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (‰)"))
             if (scale_ts) {
                 data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (Index)"))
+            } else {
+                if (!is.na(remove_mean_froms[i])) {
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O (‰) anomaly wrt ", fromto)),
+                                                                   list(fromto=paste(unique(remove_mean_froms[i], remove_mean_tos[i]),
+                                                                                     collapse="-"))))
+                }
             }
 
         } else if (varname == "wisoevap_d") {
@@ -2214,7 +2231,7 @@ if (!is.na(remove_setting)) {
 
 
 # remove some temporal mean if defined
-if (any(!is.na(remove_mean_froms))) {
+if (any(!is.na(remove_mean_froms)) || any(!is.na(remove_mean_tos))) {
     message("\nremove temporal means between")
     for (i in 1:nsettings) {
         message(i, "/", nsettings, ": ", names_short[i], " ...")
@@ -2342,7 +2359,7 @@ if (!exists("datasma")) {
 
 
 # calculate monthly and annual means
-if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) { 
+if (F && any(sapply(lapply(lapply(dims, names), "==", "time"), any))) { 
 
     message("\nsome settings have \"time\" dim --> calc monthly climatology and annual means ...")
     datasmon <- datasan <- datas # lazy declaration
@@ -4636,8 +4653,24 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # add linear regression trend if wanted
             if (add_linear_trend) {
-                message("add_linear_trend not yet here")
-            }
+                message("\ncalc and add linear trend against time ...")
+                for (i in seq_along(z)) {
+                    lm <- lm(z[[i]] ~ d$time[[i]])
+                    lm_summary <- summary(lm)
+                    print(lm_summary)
+                    # plot regression line within data limits only
+                    if (F) {
+                        message("draw linear regression line within regression limits only ...")
+                        lines(d$time[[i]], lm$fitted.values, 
+                              col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                    # or plot line through whole plot with regression coefficients
+                    } else if (T) {
+                        message("draw linear regression line through whole plot ...")
+                        abline(a=lm$coefficients[1], b=lm$coefficients[2],
+                               col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                    }
+                }
+            } # add_linear_trend
             
             ## add obs, etc.
             if (F && varname == "temp2") {
@@ -4707,15 +4740,17 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\nadd default stuff to datas legend here1 ...")
                 le <- list()
-                #le$pos <- "topleft" 
-                le$pos <- "left"
+                le$pos <- "topleft" 
+                #le$pos <- "left"
                 #le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
+                #le$pos <- c(tatn[1], yat[length(yat)-1])
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), yat[length(yat)])
+                le$ncol <- length(z)
                 #le$ncol <- length(z)/2
-                le$ncol <- 1
+                #le$ncol <- 1
                 #le$ncol <- 2
                 #le$ncol <- length(z)
                 #le$ncol <- ceiling(length(z)/4) 
@@ -6359,7 +6394,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                     # add linear trend
                     if (add_linear_trend) {
-                        message("\n", "add linear trend ...")
+                        message("\nadd linear trend ...")
                         lms_lin <- vector("list", l=length(varx))
                         lm_text <- c()
                         for (i in seq_along(varx)) {
