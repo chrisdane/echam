@@ -4445,7 +4445,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # if exists("noaa_ghcdn")
 
             # increase ylim for legend if many settings
-            if (length(z) > 6) {
+            if (F && length(z) > 6) {
                 message("\ninrease ylim for ts legend ...")
                 ylim[2] <- ylim[2] + 0*diff(ylim)
             }
@@ -4740,18 +4740,18 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\nadd default stuff to datas legend here1 ...")
                 le <- list()
-                le$pos <- "topleft" 
+                #le$pos <- "topleft" 
                 #le$pos <- "left"
-                #le$pos <- "bottomleft" 
+                le$pos <- "bottomleft" 
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
                 #le$pos <- c(tatn[1], yat[length(yat)-1])
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), yat[length(yat)])
-                le$ncol <- length(z)
+                #le$ncol <- length(z)
                 #le$ncol <- length(z)/2
                 #le$ncol <- 1
-                #le$ncol <- 2
+                le$ncol <- 2
                 #le$ncol <- length(z)
                 #le$ncol <- ceiling(length(z)/4) 
                 le$text <- names_legend_p
@@ -4767,8 +4767,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 }
                 le$cex <- 1
-                #le$cex <- 0.85
-                le$cex <- 0.7
+                le$cex <- 0.85
+                #le$cex <- 0.7
                 #le$cex <- 0.75
                 #le$cex <- 0.66
                 #le$cex <- 0.5
