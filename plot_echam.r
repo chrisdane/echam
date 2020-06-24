@@ -2,7 +2,7 @@
 
 #options(warn = 2) # stop on warnings
 
-if (T) {
+if (F) {
     message("\nrm(list=ls())")
     rm(list=ls())
     #fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
@@ -32,16 +32,67 @@ if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
     stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
 }
 
-# user input via namelist.plot.r
+## check user input via namelist.plot.r
 message("\nload and check namelist.plot.r ...")
 source("namelist.plot.r")
 
-# check user input and defaults
+# must-have objects set by user
+objs <- c("prefixes", "models", "names_short", "fromsf", "tosf", "varnames_in", "modes")
+for (obj in objs) if (!exists(obj)) stop("provide `", obj, "` in namelist.plot.r")
 nsettings <- length(prefixes)
-if (!exists("names_short")) stop("must provide `names_short`")
-if (!exists("modes")) stop("must provide `modes`")
+if (exists("varnames_uv")) {
+    if (!all(sapply(varnames_uv, length) == 2)) {
+        stop("provided `varnames_uv` must have 2 entries per given variable")
+    }
+}
+if (center_ts && scale_ts) {
+    stop("both `center_ts` and `scale_ts` are true. choose one: center = x-mu; scale = (x-mu)/sd.")
+}
+
+## possible objects set by user: set defaults if not set by user 
+# defaults: general stuff
+if (!exists("postpaths")) { # default from post_echam.r
+    postpaths <- rep(paste0(host$workpath, "/post"), t=nsettings)
+}
+if (!exists("plotpath")) { # default from post_echam.r
+    plotpath <- paste0(host$workpath, "/plots/", paste(unique(models), collapse="_vs_"))
+}
 if (!exists("names_legend")) names_legend <- rep(names_short, t=nsettings)
+
+# defaults: code stuff
 if (!exists("codes")) codes <- rep("", t=nsettings)
+codesf <- codes
+codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
+
+# defaults: time stuff
+if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
+if (!exists("fromsp")) fromsp <- rep(NA, t=nsettings)
+if (!exists("tosp")) tosp <- rep(NA, t=nsettings)
+froms_plot <- tos_plot <- rep(NA, t=nsettings)
+if (!exists("seasonsp")) seasonsp <- seasonsf
+if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effect
+if (all(n_mas == 1)) {
+    if (add_unsmoothed == F) {
+        message("\nall `n_mas` = 1, change `add_unsmoothed` from F to T ...")
+        add_unsmoothed <- T
+    }
+    if (add_smoothed == T) {
+        message("\nall `n_mas` = 1, change `add_smoothed` from T to F ...")
+        add_smoothed <- F
+    }
+}
+if (!exists("new_origins")) new_origins <- rep(NA, t=nsettings)
+if (!exists("time_ref")) time_ref <- NA # only one
+if (!exists("remove_setting")) remove_setting <- NA
+if (!exists("remove_mean_froms")) remove_mean_froms <- rep(NA, t=nsettings) 
+if (!exists("remove_mean_tos")) remove_mean_tos <- rep(NA, t=nsettings) 
+if (!is.na(remove_setting) && 
+    (any(!is.na(remove_mean_froms)) || any(!is.na(remove_mean_tos)))) {
+    stop("both `remove_setting` and `remove_mean_froms` have non-NA values. ",
+         "choose either `remove_setting` OR `remove_mean_froms` (and `remove_mean_tos`)")
+}
+
+# defaults: level stuff
 if (!exists("levs") && !exists("levsf")) {
     levs <- levsf <- rep("", t=nsettings)
 } else if (exists("levs") && !exists("levsf")) {
@@ -51,34 +102,23 @@ if (!exists("levs") && !exists("levsf")) {
     levs <- levsf
     levs[levsf != ""] <- gsub("_", "", levsf[levsf != ""])
 }
-if (!exists("depths")) depths <- rep("", t=nsettings)
-codesf <- codes
-codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
-if (!exists("fromsp")) fromsp <- rep(NA, t=nsettings)
-if (!exists("tosp")) tosp <- rep(NA, t=nsettings)
-froms_plot <- tos_plot <- rep(NA, t=nsettings)
-if (!exists("new_origins")) new_origins <- rep(NA, t=nsettings)
-if (!exists("time_ref")) time_ref <- NA # only one
-if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
-if (!exists("seasonsp")) seasonsp <- seasonsf
-season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1:12])
-if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effect
-if (all(n_mas == 1)) {
-    if (add_unsmoothed == F) {
-        message("\n", "all `n_mas` = 1, change `add_unsmoothed` from F to T ...")
-        add_unsmoothed <- T
-    }
-    if (add_smoothed == T) {
-        message("\n", "all `n_mas` = 1, change `add_smoothed` from T to F ...")
-        add_smoothed <- F
-    }
+
+# defaults: depth stuff
+if (!exists("depths") && !exists("depthsf")) {
+    depths <- depthsf <- rep("", t=nsettings)
+} else if (exists("depths") && !exists("depthsf")) {
+    depthsf <- depths
+    depthsf[depths != ""] <- paste0("_", depths[depths != ""], "m")
+} else if (!exists("depths") && exists("depthsf")) {
+    depths <- depthsf
+    depths[depthsf != ""] <- gsub("_", "", depthsf[depthsf != ""])
 }
-depthsf <- rep("", t=nsettings)
-depthsf[depths != ""] <- paste0("_", depths[depths != ""], "m")
 if (!exists("depth_fromsf")) depth_fromsf <- rep(NA, t=nsettings)
 if (!exists("depth_tosf")) depth_tosf <- rep(NA, t=nsettings)
 if (!exists("depth_fromsp")) depth_fromsp <- depth_fromsf
 if (!exists("depth_tosp")) depth_tosp <- depth_tosf
+
+# defaults: area stuff
 if (!exists("areas")) areas <- rep("global", t=nsettings)
 if (!exists("regboxes")) {
     regboxes <- vector("list", l=nsettings)
@@ -91,28 +131,22 @@ if (any(!is.na(sapply(regboxes, "[[", "regbox")))) { # run namelist.area.r to ge
     source("namelist.area.r")
     areas_out[which(!is.na(sapply(regboxes, "[[", "regbox")))] <- sapply(regboxes, "[[", "regbox")
 }
+
+# defaults: regular interp stuff
 if (!exists("reg_dxs")) reg_dxs <- rep("", t=nsettings)
 if (!exists("reg_dys")) reg_dys <- rep("", t=nsettings)
 reg_dxsf <- reg_dxs
 reg_dxsf[reg_dxs != ""] <- paste0("_regular_dx", reg_dxs[reg_dxs != ""])
 reg_dysf <- reg_dys
 reg_dysf[reg_dys != ""] <- paste0("_dy", reg_dys[reg_dys != ""])
-if (!exists("remove_setting")) remove_setting <- NA
-if (!exists("remove_mean_froms")) remove_mean_froms <- rep(NA, t=nsettings) 
-if (!exists("remove_mean_tos")) remove_mean_tos <- rep(NA, t=nsettings) 
-if (!is.na(remove_setting)
-    && any(!is.na(remove_mean_froms))) {
-    stop("both `remove_setting` and `remove_mean_froms` have non-NA values. choose 1")
-}
+
+# defaults: plot stuff
 if (!exists("types")) types <- rep("l", t=nsettings) # default: lines plots and not points
 if (!exists("ltys")) ltys <- rep(1, t=nsettings)
-if (!exists("pchs")) pchs <- rep(1, t=nsettings)
-if (!exists("lwds")) lwds <- rep(1, t=nsettings)
-# mycols my nicer colors than default:
-if (nsettings == 1) {
+if (nsettings == 1) { # mycols my colors nicer than R defaults
     cols_vec <- "black"
 } else if (nsettings == 2) {
-    cols_vec <- c("black", "#E41A1C") # black, red
+    cols_vec <- c("black", "#E41A1C") # black, myred
 } else if (nsettings >= 3) {
     # my default: (black, red, blue) instead of R default (black, red, blue)
     cols_vec <- c("black", "#E41A1C", "#377EB8")
@@ -127,46 +161,39 @@ if (nsettings == 1) {
 }
 if (!exists("cols")) {
     cols <- cols_vec
-} else {
-    if (class(cols) == "integer") { # user provided color numbers
+} else if (!exists("cols")) {
+    if (is.integer(cols)) { # user provided color numbers
         cols <- cols_vec[cols]
     }
 }
-if (exists("cols_samedims")) {
-    if (class(cols_samedims) == "integer") { # user provided color numbers
-        cols_samedims <- cols_vec[cols_samedims]
-    }
-}
-if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
-if (!exists("postpaths")) { # default from post_echam.r
-    postpaths <- rep(paste0(host$workpath, "/post"), t=nsettings)
-}
-if (!exists("plotpath")) { # default from post_echam.r
-    plotpath <- paste0(host$workpath, "/plots/", paste(unique(models), collapse="_vs_"))
-}
-if (exists("varnames_uv")) {
-    if (!all(sapply(varnames_uv, length) == 2)) {
-        stop("provided `varnames_uv` must have 2 entries per given variable")
-    }
-}
-base <- 10
-power <- 0 # default: 0 --> 10^0 = 1e0 = 1 --> nothing happens
 cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha_rgb)
 if (F) {
     message("\nuse transparent cols ...")
     cols_save <- cols
     cols <- cols_rgb
 } 
-plotname_suffix <- "" # default
+if (!exists("lwds")) lwds <- rep(1, t=nsettings)
+if (!exists("pchs")) pchs <- rep(1, t=nsettings)
+if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
+if (exists("cols_samedims")) {
+    if (class(cols_samedims) == "integer") { # user provided color numbers
+        cols_samedims <- cols_vec[cols_samedims]
+    }
+}
+plotname_suffix <- "" # default: nothing
+if (center_ts) plotname_suffix <- "_center_ts"
 if (scale_ts) plotname_suffix <- "_scale_ts"
 
-# allocate
+
+## allocate
 datas <- vector("list", l=nsettings)
 names(datas) <- names_short
 data_infos <- dims <- dims_per_setting_in <- datas
+season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1:12])
     
-# load special data
-message("\n", "start reading special data sets ...")
+
+## load special data
+message("\nstart reading special data sets ...")
 
 # cmip6 co2 hist
 f <- ""
@@ -845,8 +872,9 @@ if (F) {
         message("\ndisable here if you do not want to read hanno meyer et al. PLOT data from ", f)
         message("run read_meyer_etal_function() ...")
         #tmp <- read_meyer_etal_function(xlsx_file=f)
-        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
-        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
+        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake")
@@ -854,22 +882,26 @@ if (F) {
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Kotokel", verbose=F)
         meyer_etal <- list(data=tmp,
                            type="o", 
-                           col="#377EB8", # myblue
+                           col="#E41A1C", # myred
+                           #col="#377EB8", # myblue
                            #col="#1B9E77", # mygreen
                            lty=1, lwd=1, pch=1, cex=1)
         if (F) { # plot meyer et al data
             for (i in seq_along(meyer_etal$data)) {
                 plotname <- gsub(" ", "_", names(meyer_etal$data)[i])
                 plotname <- gsub("[[:punct:]]", "_", plotname)
+                plotname <- paste0(plotname, "_", paste(range(meyer_etal$data[[i]]$data$timelt$year+1900), collapse="_to_"))
                 plotname <- paste0(dirname(f), "/", plotname, ".png")
                 message("save ", plotname, " ...")
                 png(plotname, width=p$ts_width, height=p$ts_height, res=p$dpi)
+                par(mar=c(5.1, 5.1, 4.1, 2.1))
                 plot(meyer_etal$data[[i]]$data$time, meyer_etal$data[[i]]$data$d18o_corr_perm,
                      t="o", xaxt="n", yaxt="n",
-                     xlab="year from 1950", ylab="d18O diatom [permil]") 
-                title(paste0("sheet = \"", names(meyer_etal$data)[i], "\""))
+                     xlab="year from 1950", ylab=NA)
+                title(names(meyer_etal$data)[i])
                 axis.POSIXct(1, at=pretty(meyer_etal$data[[i]]$data$time, n=20))
                 axis(2, at=pretty(meyer_etal$data[[i]]$data$d18o_corr_perm, n=8), las=2)
+                mtext(side=2, line=3, expression(paste(delta^{18}, "O diatom (‰)")))
                 dev.off()
             } # for all excel sheets
             #stop("asd")
@@ -1269,6 +1301,7 @@ for (i in 1:nsettings) {
 
             # special case:  
             if (seasonsp[i] == "annual" && seasonsf[i] == "Jan-Dec") {
+                # nothing do to
 
             # all other season cases:
             } else { # seasonsp != "annual" && seasonsf != "Jan-Dec"
@@ -1279,7 +1312,7 @@ for (i in 1:nsettings) {
                     season_inds <- regexpr(seasonsp[i], season_check$string)
                     if (any(season_inds != -1)) { # if season like "DJF", "JJA"
                         season_inds <- season_check$inds[season_inds:(season_inds+attributes(season_inds)$match.length-1)]
-                    } else { # else (e.g. "Jan", "Jul")
+                    } else { # else if season like "Jan", "Jul"
                         season_inds <- regexpr(seasonsp[i], season_check$names)
                         if (length(which(season_inds != -1)) == 1) {
                             season_inds <- which(season_inds != -1)
@@ -2263,8 +2296,8 @@ if (any(!is.na(remove_mean_froms)) || any(!is.na(remove_mean_tos))) {
                         dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                         timedimind <- which(dims_of_var == "time")
                         if (length(timedimind) == 1) {
-                            message("      found ", length(time_inds), " time points between ", 
-                                    min(dims[[i]]$time[time_inds]), " and ", max(dims[[i]]$time[time_inds]))
+                            message("      found ", length(time_inds), " time points from ", 
+                                    min(dims[[i]]$time[time_inds]), " to ", max(dims[[i]]$time[time_inds]))
                             apply_dims <- 1:length(dims_of_var)
                             mu <- rep(",", t=length(dims_of_var))
                             mu[timedimind] <- paste0("time_inds")
@@ -3758,11 +3791,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # finished add special data to z
 
             # colorbar values
+            message("\ndefine color levels here if wanted ...")
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             message("zlim = ", appendLF=F)
             zlim <- range(z, na.rm=T)
             dput(zlim)
-            nlevels <- NULL 
+            nlevels <- zlevels <- NULL 
             if (zname == "quv") {
                 message("special zlim")
                 nlevels <- 200
@@ -3771,8 +3805,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #zlim <- c(12.1, 474.4) # aug; era5: 0.077091708779335, 531.362243652344
                 #zlim <- c(8.33, 422.71) # nov; era5: 0.108525462448597, 300.630645751953
                 zlim <- c(0.00584759470075369, 531.362243652344)
-            } # if quv
-            ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, verbose=F)
+            } else if (zname == "lm_temp2_as_time_slope") {
+                zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2])
+            }
+            ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, verbose=F)
 
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
@@ -4312,13 +4348,22 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } 
             # if add_data_right_yaxis_ts finished prepare right axis data
 
-            if (scale_ts) {
-                message("\n`scale_ts` = T --> scale ts before plot ...")
-                for (i in seq_along(z)) {
-                    z[[i]] <- scale(z[[i]])
-                    if (exists("zma")) zma[[i]] <- scale(zma[[i]])
+            if (center_ts || scale_ts) {
+                if (center_ts) {
+                    message("\n`center_ts` = T --> center ts before plot ...")
+                } else if (scale_ts) {
+                    message("\n`scale_ts` = T --> scale ts before plot ...")
                 }
-            }
+                for (i in seq_along(z)) {
+                    if (center_ts) {
+                        z[[i]] <- scale(z[[i]], scale=F)
+                        if (exists("zma")) zma[[i]] <- scale(zma[[i]], scale=F)
+                    } else if (scale_ts) {
+                        z[[i]] <- scale(z[[i]])
+                        if (exists("zma")) zma[[i]] <- scale(zma[[i]])
+                    }
+                }
+            } # if center_ts or scale_ts
 
             # ylims of model data
             if (add_unsmoothed) {
@@ -4368,6 +4413,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 all(grepl("ladoga", areas))) {
                 message("\nadd kostrova et al. 2019 d18o data ...")
                 message("ylim before: ", ylim[1], ", ", ylim[2])
+                if (center_ts) kostrova_etal_2019$d18o <- scale(kostrova_etal_2019$d18o, scale=F)
                 if (scale_ts) kostrova_etal_2019$d18o <- scale(kostrova_etal_2019$d18o)
                 ylim <- range(ylim, kostrova_etal_2019$d18o)
                 message("ylim after: ", ylim[1], ", ", ylim[2])
@@ -4395,6 +4441,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     add_meyer_etal_xlsx <- F
                 }
                 if (add_meyer_etal_xlsx) {
+                    if (center_ts) meyer_etal_tmp$data$d18o_corr_perm <- scale(meyer_etal_tmp$data$d18o_corr_perm, scale=F)
                     if (scale_ts) meyer_etal_tmp$data$d18o_corr_perm <- scale(meyer_etal_tmp$data$d18o_corr_perm)
                     message("ylim before: ", ylim[1], ", ", ylim[2])
                     ylim <- range(ylim, meyer_etal_tmp$data$d18o_corr_perm, na.rm=T)
@@ -4433,6 +4480,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } else if (varname == "aprt") {
                         noaay <- noaa_ghcdn_tmp$ts$precip
                     }
+                    if (center_ts) noaay <- scale(noaay, scale=F)
                     if (scale_ts) noaay <- scale(noaay)
                     if (exists("zma")) {
                         if (length(unique(n_mas)) != 1) stop("different n_ma present. dont know which to use for noaa ghcdn station data")
@@ -4483,7 +4531,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
             }
             if (nchar(plotname) > nchar_max_foutname) {
-                stop("asd")
+                warning("plotname = ", plotname, "\nnchar(plotname) = ", nchar(plotname), 
+                        " > nchar_max_foutname = ", nchar_max_foutname, " -> cut too long plotname ...")
+                plotname <- substr(plotname, 1, nchar_max_foutname)
             }
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             if (p$plot_type == "png") {
@@ -4740,9 +4790,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\nadd default stuff to datas legend here1 ...")
                 le <- list()
-                #le$pos <- "topleft" 
+                le$pos <- "topleft" 
                 #le$pos <- "left"
-                le$pos <- "bottomleft" 
+                #le$pos <- "bottomleft"
                 #le$pos <- "topright"
                 #le$pos <- "bottomright" 
                 #le$pos <- c(tatn[1], yat[length(yat)-1])
@@ -4751,8 +4801,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #le$ncol <- length(z)
                 #le$ncol <- length(z)/2
                 #le$ncol <- 1
-                le$ncol <- 2
-                #le$ncol <- length(z)
+                #le$ncol <- 2
+                le$ncol <- length(z)
                 #le$ncol <- ceiling(length(z)/4) 
                 le$text <- names_legend_p
                 le$col <- cols_p
@@ -4767,7 +4817,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 }
                 le$cex <- 1
-                le$cex <- 0.85
+                #le$cex <- 0.85
                 #le$cex <- 0.7
                 #le$cex <- 0.75
                 #le$cex <- 0.66
@@ -4795,9 +4845,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 if (add_meyer_etal_xlsx) {
                     message("\nadd meyer et al. xlsx to datas legend ...")
-                    if (all(grepl("ladoga", areas))) le$pos <- "bottom"
+                    if (all(grepl("ladoga", areas))) le$pos <- "top"
                     if (all(grepl("shuchye", areas))) le$pos <- "top"
+                    if (all(grepl("emanda", areas))) le$pos <- "topright"
                     if (all(grepl("kotokel", areas))) le$pos <- "top"
+                    if (all(grepl("elgygytgyn", areas))) le$pos <- "top"
+                    if (all(grepl("two-yurts", areas))) le$pos <- "top"
+                    if (all(grepl("kotokel", areas))) le$pos <- "bottom"
                     le$text <- c(le$text, meyer_etal_tmp$text)
                     le$col <- c(le$col, meyer_etal$col)
                     le$lty <- c(le$lty, meyer_etal$lty)
@@ -6394,11 +6448,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                     # add linear trend
                     if (add_linear_trend) {
-                        message("\nadd linear trend ...")
+                        message("\nadd linear trend in scatterplot varx vs vary ...")
                         lms_lin <- vector("list", l=length(varx))
                         lm_text <- c()
                         for (i in seq_along(varx)) {
-                            message("setting ", i, "/", length(varx), ": ", names_short_p[i])
+                            message("\nsetting ", i, "/", length(varx), ": ", names_short_p[i])
                             lms_lin[[i]] <- lm(vary[[i]] ~ varx[[i]])
                             lm_summary <- summary(lms_lin[[i]])
                             print(lm_summary)
@@ -6420,14 +6474,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 lines(varx[[i]], lms_lin[[i]]$fitted.values, 
                                       col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
                             # or plot line through whole plot with regression coefficients
-                            } else if (F || (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i]))) {
+                            } else if (T || (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i]))) {
                                 message("draw linear regression line through whole plot ...")
                                 abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
                                        col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
                             }
                             # add linear regression coefficients to legend
-                            if (F) {
-                                message("add linear regression coeficients to legend ...")
+                            if (T) {
+                                message("add linear regression coefficients to legend ...")
                                 first_part <- names_legend_p[i]
                                 last_part <- "" # default
                                 last_part <- eval(substitute(expression(paste("(", alpha, "=", slope, ", p", p, ", r=", r, ")")),
@@ -6436,7 +6490,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 if (is.expression(last_part)) {
                                     new <- bquote(.(do.call(substitute, as.list(first_part))) ~ 
                                                   .(do.call(substitute, as.list(last_part))))
-                                    names_legend[i] <- eval(substitute(expression(new), list(new=new)))
+                                    names_legend_p[i] <- eval(substitute(expression(new), list(new=new)))
                                 }
                             }
                             # special stuff 
@@ -6584,7 +6638,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } # if add_legend
 
                     box()
-                    message("save v1 vs v2 plot ", plotname, " ...")
+                    message("save v1 vs v2 plot\n   \"", plotname, "\"\n...")
                     dev.off()
                     if (p$plot_type == "pdf") {
                         if("extrafont" %in% (.packages())){
@@ -6739,7 +6793,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 } # if add_legend
 
                                 box()
-                                message("save v1 vs v2 plot colored by time/season/.. ", plotname, " ...")
+                                message("save v1 vs v2 plot colored by time or season or ...\n   \"", plotname, "\"\n...")
                                 dev.off()
                                 if (p$plot_type == "pdf") {
                                     if("extrafont" %in% (.packages())){

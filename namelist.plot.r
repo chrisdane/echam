@@ -34,8 +34,9 @@ add_zeroline <- T
 add_unsmoothed <- F
 add_smoothed <- T
 add_sd <- F
-add_linear_trend <- F
+add_linear_trend <- T
 add_nonlinear_trend <- F
+center_ts <- F
 scale_ts <- F
 ts_highlight_seasons <- list(bool=F, suffix="") # default
 if (F) {
@@ -65,23 +66,16 @@ scatter_s1_vs_s1_varname <- "tsurf"
 #scatter_s1_vs_s1_varname <- "aprt"
 #scatter_s1_vs_s1_varname <- "wisoaprt_d"
 plot_scatter_v1_vs_v2 <- T # uses `datas`
-varnamex <- varnamey <- "abc"
-if (F) { # TOA imbalance gregory et al. 2004 stuff 
-    varnamex <- "temp2"
-    varnamey <- "toa_imbalance"
-} else if (F) { # temp2 vs precipitation weighted temp2
-    varnamex <- "temp2"
-    varnamey <- "ptemp"
-} else if (F) {
-    varnamex <- "temp2"
-    varnamey <- "wisoaprt_d"
-} else if (F) {
-    varnamex <- "quv"
-    varnamey <- "quv_direction"
-} else if (T) {
-    varnamex <- "quv_direction_datasan"
-    varnamey <- "wisoaprt_d_datas"
-}
+varnamex <- varnamey <- "abc" # default
+#varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
+#varnamex <- "tsurf_datas"
+#varnamex <- "tsurfaprt_datas"
+#varnamex <- "quv_datas"
+#varnamex <- "quv_direction_datasan"
+varnamex <- "aprt_datas"
+#varnamey <- "toa_imbalance_datas"
+#varnamey <- "quv_direction_datas"
+varnamey <- "wisoaprt_d_datas"
 add_1to1_line_scatter <- F
 
 # time vs depth:
@@ -100,6 +94,19 @@ add_grid <- F
 squeeze <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
 nchar_max_foutname <- 255
 
+# clear work space if non-clean restart of plot_echam.r (i.e. without rm of everything)
+objs <- c("postpaths", "plotpath", 
+          "names_legend", 
+          "codes", 
+          "seasonsf", "fromsp", "tosp", "seasonsp", "n_mas", "new_origins", "time_ref",
+          "remove_setting", "remove_mean_froms", "remove_mean_tos",
+          "levs", "levsf", 
+          "depths", "depthsf", "depth_fromsf", "depth_tosf", "depth_fromsp", "depth_tosp",
+          "areas", "regboxes",
+          "reg_dxs", "reg_dys", 
+          "types", "ltys", "cols", "lwds", "pchs", "text_cols", "cols_samedims")
+suppressWarnings(rm(list=objs))
+
 # <-- namelist.plot.r general part end --> # keep this line for plot_loop_echam.r
 
 ## setting specific part
@@ -114,22 +121,23 @@ if (F) { # awi-esm-1-1-lr hist
     fromsf <- 1850
     tosf <- 2014
     varnames_in <- "temp2"
+    modes <- "fldmean"
     n_mas <- 1
     cols <- "#E41A1C"
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
-    prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
     models <- "echam5"
-    names_short <- "Hol-Tx10"
-    #names_short <- "Hol-T"
+    #names_short <- "Hol-Tx10"
+    names_short <- "Hol-T"
     #names_short <- "Hol-T_st"
     #names_legend <- names_short
     #names_legend <- "Hol-Tx10 DJF"
@@ -138,9 +146,10 @@ if (F) { # awi-esm-1-1-lr hist
     #names_legend <- "Hol-Tx10 SON"
     #names_legend <- "global"
     #names_legend <- "60-90N"
-    names_legend <- "Hol-Tx10 Ladoga"
+    #names_legend <- "Hol-Tx10 Ladoga"
     #names_legend <- "Hol-T Ladoga"
     #names_legend <- "cosmos-aso-wiso Ladoga"
+    names_legend <- "COSMOS transient"
     #names_legend <- "Hol-Tx10 Shuchye"
     #names_legend <- "Hol-T Shuchye"
     #names_legend <- "Hol-Tx10 Levinson-Lessing"
@@ -151,29 +160,32 @@ if (F) { # awi-esm-1-1-lr hist
     #names_legend <- "Hol-T Emanda"
     #names_legend <- "Hol-Tx10 Elgygytgyn"
     #names_legend <- "Hol-T Elgygytgyn"
-    fromsf <- "0001" # Hol-Tx10
-    #fromsf <- "0004" # Hol-T; beginning of chunk 1
+    #fromsf <- "0001" # Hol-Tx10
+    fromsf <- "0004" # Hol-T; beginning of chunk 1
     #fromsf <- "0100"
     #tosf <- "0129"
     #tosf <- "5903" # Hol-T; end of chunk 2
     #tosf <- "6173" # 
     #tosf <- "6821" # 
-    #tosf <- "7000" # Hol-T; end of chunk 3
-    tosf <- "7001" # Hol-Tx10
+    tosf <- "7000" # Hol-T; end of chunk 3
+    #tosf <- "7001" # Hol-Tx10
     new_origins <- -7000 # Hol-Tx10
     #new_origins <- -5050 # Hol-Tx10 plus 1950
     #new_origins <- -6996 # Hol-T; model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
     time_ref <- 1950 # any string, e.g. "BP", or number
     #n_mas <- 30
     #n_mas <- 5*12
+    n_mas <- 100
     #n_mas <- 150
     #n_mas <- 20/3*12
     #n_mas <- 10*12
-    n_mas <- 20*12
+    #n_mas <- 20*12
+    #n_mas <- 30*12
     #n_mas <- 100*12
     #remove_mean_froms <- -827
     #remove_mean_tos <- -827
-    #seasonsf <- "annual"
+    seasonsf <- "annual"
+    #seasonsf <- "yearsum"
     #seasonsp <- "Feb" # cdo's default season timestamps: DJF->Feb, MAM->May, JJA->Aug, SON->Nov
     #seasonsp <- "May"
     #seasonsp <- "Jun"
@@ -189,13 +201,15 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "temp2"
     #varnames_in <- "tsurf"
     #varnames_in <- "aprt"
-    varnames_in <- "aprs"
+    #varnames_in <- "aprs"
     #varnames_in <- "wisoaprt_d"
+    #varnames_in <- "wisoaprt_d_post"
     #levs <- 2
     #varnames_in <- "temp2aprt"
     #varnames_in <- "tsurfaprt"
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
+    varnames_in <- "lm_temp2_as_time"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
     #varnames_in <- "quv"
@@ -206,14 +220,17 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_uv <- list(quv=c(u="qu", v="qv")) # for quiver
     modes <- "select"
     #modes <- "yseasmean"
+    #modes <- "yearsum"
     #areas <- "sibiria"
     #areas <- "60-90N"
-    areas <- "ladoga_remapnn"
+    #areas <- "ladoga_remapnn"
     #areas <- "shuchye_remapnn"
     #areas <- "levinson-lessing_remapnn"
     #areas <- "taymyr_remapnn"
     #areas <- "emanda_remapnn"
     #areas <- "elgygytgyn_remapnn"
+    #areas <- "two-yurts_remapnn"
+    #areas <- "kotokel_remapnn"
     #regboxes <- list(list(regbox="northeast_europe"))
 
 # =====================================
@@ -888,21 +905,23 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsf <- c("Jan-Dec", "annual", "Jan-Dec", "annual")
     #seasonsf <- rep("yearsum", t=5)
     #seasonsf <- rep("seassum", t=5)
+    #seasonsf <- c("yearmean", rep("seasmean", t=4))
     seasonsf <- c("yearsum", rep("seassum", t=4))
     #seasonsp <- rep("Jul", t=5)
     #seasonsp <- rep("Jan", t=5)
+    #seasonsp <- c("annual", "DJF", "MAM", "JJA", "SON")
+    #seasonsp <- c("yearmean", "DJF", "MAM", "JJA", "SON")
     seasonsp <- c("yearsum", "DJF", "MAM", "JJA", "SON")
-    cols <- c("black", DJF="blue", MAM="darkgreen", JJA="red", SON="brown")
-    remove_mean_froms <- rep(-6996, t=5)
-    remove_mean_tos <- rep(-6996, t=5)
+    #remove_mean_froms <- rep(-6996, t=5)
+    #remove_mean_tos <- rep(-6996, t=5)
     #new_origins <- rep(-6996, t=5)
     #new_origins <- rep(-7000, t=5)
     #new_origins <- c(-6996, -6996, -7000, -7000)
     new_origins <- rep(-6996, t=5)
     time_ref <- 1950 # any string, e.g. "BP", or number
     #n_mas <- rep(30, t=5)
-    #n_mas <- c(4*30, rep(30, t=4))
-    n_mas <- rep(30, t=5)
+    n_mas <- c(4*30, rep(30, t=4))
+    #n_mas <- rep(30, t=5)
     #n_mas <- c(4*90, rep(90, t=5))
     #n_mas <- rep(120, t=5)
     #n_mas <- c(100*12, 10*10, 10*12, 10)
@@ -913,25 +932,32 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("aprl", t=5)
     #varnames_in <- rep("aprc", t=5)
     #varnames_in <- rep("aprs", t=5)
-    #varnames_in <- rep("aprs", t=5)
     #varnames_in <- rep("evap", t=5)
     #varnames_in <- rep("pe", t=5)
     #varnames_in <- rep("quv", t=5)
     #varnames_in <- rep("quv_direction", t=5)
     #levsf <- rep("_int1000-100hPa", t=5)
-    #varnames_in <- c("wisoaprt_d", "wisoaprt_d", "wisoaprt_d", "wisoaprt_d_post")
     varnames_in <- rep("wisoaprt_d_post", t=5)
     levs <- rep(2, t=5)
     #modes <- rep("select", t=5)
     #modes <- c("select", "fldsum", "select", "fldsum") 
     #modes <- rep("yearsum", t=5)
     #modes <- rep("seassum", t=5)
+    #modes <- c("yearmean", rep("seasmean", t=4))
     modes <- c("yearsum", rep("seassum", t=4))
     #varnames_out_samedims <- "SICOMO"
     #names_legend_samedims <- names_legend
+    cols <- c("black", DJF="blue", MAM="darkgreen", JJA="red", SON="brown")
     #cols_samedims <- 1:5
     #ltys_samedims <- rep(1, t=5)
-    areas <- rep("ladoga_remapnn", t=5)
+    #areas <- rep("ladoga_remapnn", t=5)
+    #areas <- rep("shuchye_remapnn", t=5)
+    #areas <- rep("levinson-lessing_remapnn", t=5)
+    #areas <- rep("taymyr_remapnn", t=5)
+    #areas <- rep("emanda_remapnn", t=5)
+    #areas <- rep("elgygytgyn_remapnn", t=5)
+    #areas <- rep("two-yurts_remapnn", t=5)
+    areas <- rep("kotokel_remapnn", t=5)
 
 # ==================================================
 # 6 settings
@@ -1042,7 +1068,7 @@ if (F) { # awi-esm-1-1-lr hist
     cols_samedims <- c(1:4, 1:4)
     ltys_samedims <- c(rep(2, t=4), rep(1, t=4))
 
-} else if (T) { # compare pi/mh cold/warm atmosphere restart problem
+} else if (F) { # compare pi/mh cold/warm atmosphere restart problem
     models <- rep("echam6", t=8)
     prefixes <- c("awi-esm-1-1-lr_pi477_ollie", # temp2 2700 to 3249 -> 2051 to 2600
                   "awi-esm-1-1-lr_piControl_g3bid", # temp2 2701 to 2999 -> 2051 to 2349
