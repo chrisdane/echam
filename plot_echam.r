@@ -2,7 +2,7 @@
 
 #options(warn = 2) # stop on warnings
 
-if (F) {
+if (T) {
     message("\nrm(list=ls())")
     rm(list=ls())
     #fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
@@ -862,7 +862,7 @@ if (F) { # compare berger and laskar orb
 } # comapre berger and laskar orb
 
 # hanno meyer et al. PLOT excel sheet
-if (F) {
+if (T) {
     f <- ""
     if (host$machine_tag == "paleosrv") {
         f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
@@ -2052,6 +2052,10 @@ for (i in 1:nsettings) {
         } else if (varname == "lm_temp2_as_time_slope") {
             message("special label")
             data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
+        
+        } else if (varname == "lm_aprt_as_time_slope") {
+            message("special label")
+            data_infos[[i]][[vi]]$label <- "total precip trend [mm/a/7k years]"
        
         } else if (varname == "SICOMO") {
             data_infos[[i]][[vi]]$offset$operator <- "/"
@@ -3806,7 +3810,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #zlim <- c(8.33, 422.71) # nov; era5: 0.108525462448597, 300.630645751953
                 zlim <- c(0.00584759470075369, 531.362243652344)
             } else if (zname == "lm_temp2_as_time_slope") {
-                zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2])
+                zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2]) # deg C / 7k yrs
+            } else if (zname == "lm_aprt_as_time_slope") {
+                zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=25), zlim[2]) # mm/a / 7k yrs
             }
             ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, verbose=F)
 
@@ -4445,8 +4451,29 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     if (scale_ts) meyer_etal_tmp$data$d18o_corr_perm <- scale(meyer_etal_tmp$data$d18o_corr_perm)
                     message("ylim before: ", ylim[1], ", ", ylim[2])
                     ylim <- range(ylim, meyer_etal_tmp$data$d18o_corr_perm, na.rm=T)
+                    # ylims Hol-T* and meyer et al. xlsx d18o lakes
+                    if (center_ts) { # center 100 ma:
+                        # ladoga: c(-3.30543235329369, 1.8024062688112) 
+                        # shuchye: c(-3.31588729672117, 5.07708695323018)
+                        # emanda: c(-1.69386684350292, 0.902706467116598)
+                        # elgygytgyn: c(-0.859484244878168, 0.837003798075255)
+                        # two-yurts: c(-2.05770537576561, 1.94485402526289)
+                        # kotokel: c(-4.32039527896077, 2.06724117367673)
+                        message("special ylim")
+                        ylim <- c(-4.32039527896077, 5.07708695323018)
+                    }
+                    if (scale_ts) { # scale 100 ma:
+                        # ladoga: c(-3.13848489372256, 2.39463647435767)
+                        # shuchye: c(-2.9182066212798, 2.76195127757506)
+                        # emanda: c(-2.25538438194173, 2.32214230603398)
+                        # elgygytgyn: c(-2.7605870099359, 2.78092077040362)
+                        # two-yurts: c(-2.80403178195902, 3.42531704223437)
+                        # kotokel: c(-2.71374683773164, 1.89264166330445)
+                        message("special ylim")
+                        ylim <- c(-3.13848489372256, 3.42531704223437)
+                    }
                     message("ylim after: ", ylim[1], ", ", ylim[2])
-                }
+                } # if add_meyer_etal_xlsx
             } else {  
                 add_meyer_etal_xlsx <- F
             } # if add meyer et al xlsx

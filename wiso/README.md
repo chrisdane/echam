@@ -21,4 +21,8 @@ https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALY
 cdo -s -f nc -chvar,wisoaprt,wisoaprt_d     -chcode,50,10 -mulc,1000. -subc,1. -div -div -yearsum wisoaprt   -yearsum aprt   $SMOW_FAC_file wisoaprt_d.yearmean
 --> post-processed annual (if yearsum) wisoaprt_d
 ```
+precipitation-weighted temperature:
+```
+cdo -s -f nc -chvar,temp2,ptemp -chcode,167,170  -div -mul -yearsum temp2 -yearsum aprt -yearsum aprt ptemp.yearmean
+```
 

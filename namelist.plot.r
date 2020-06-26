@@ -34,10 +34,10 @@ add_zeroline <- T
 add_unsmoothed <- F
 add_smoothed <- T
 add_sd <- F
-add_linear_trend <- T
+add_linear_trend <- F
 add_nonlinear_trend <- F
 center_ts <- F
-scale_ts <- F
+scale_ts <- T
 ts_highlight_seasons <- list(bool=F, suffix="") # default
 if (F) {
     ts_highlight_seasons <- list(bool=T,
@@ -132,8 +132,8 @@ if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T"
-    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
     models <- "echam5"
     #names_short <- "Hol-Tx10"
@@ -184,8 +184,8 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- 100*12
     #remove_mean_froms <- -827
     #remove_mean_tos <- -827
-    seasonsf <- "annual"
-    #seasonsf <- "yearsum"
+    #seasonsf <- "annual"
+    seasonsf <- "yearsum"
     #seasonsp <- "Feb" # cdo's default season timestamps: DJF->Feb, MAM->May, JJA->Aug, SON->Nov
     #seasonsp <- "May"
     #seasonsp <- "Jun"
@@ -203,13 +203,14 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "aprt"
     #varnames_in <- "aprs"
     #varnames_in <- "wisoaprt_d"
-    #varnames_in <- "wisoaprt_d_post"
-    #levs <- 2
+    varnames_in <- "wisoaprt_d_post"
+    levs <- 2
     #varnames_in <- "temp2aprt"
     #varnames_in <- "tsurfaprt"
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
-    varnames_in <- "lm_temp2_as_time"
+    #varnames_in <- "lm_temp2_as_time"
+    #varnames_in <- "lm_aprt_as_time"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp"
     #varnames_in <- "quv"
@@ -218,12 +219,12 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_out_samedims <- "quv"
     #names_legend_samedims <- c("qu", "qv", "quv")
     #varnames_uv <- list(quv=c(u="qu", v="qv")) # for quiver
-    modes <- "select"
+    #modes <- "select"
     #modes <- "yseasmean"
-    #modes <- "yearsum"
+    modes <- "yearsum"
     #areas <- "sibiria"
     #areas <- "60-90N"
-    #areas <- "ladoga_remapnn"
+    areas <- "ladoga_remapnn"
     #areas <- "shuchye_remapnn"
     #areas <- "levinson-lessing_remapnn"
     #areas <- "taymyr_remapnn"

@@ -136,7 +136,7 @@ if (F) { # old hist
     #modes <- "fldmean"
     new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
-} else if (T) { # hu/xiaoxu
+} else if (F) { # hu/xiaoxu
     models <- "echam6"
     #models <- "fesom"
     #datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
