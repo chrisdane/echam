@@ -862,7 +862,7 @@ if (F) { # compare berger and laskar orb
 } # comapre berger and laskar orb
 
 # hanno meyer et al. PLOT excel sheet
-if (T) {
+if (F) {
     f <- ""
     if (host$machine_tag == "paleosrv") {
         f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
@@ -1140,10 +1140,11 @@ for (i in 1:nsettings) {
     rm(dimtmp)
 
     # drop time dim if not longer than 1
-    # todo: why not checking for all length-1-dims here?
+    # todo: check for all dims of length 1
     if (any(names(dims[[i]]) == "time")) {
         if (length(dims[[i]]$time) == 1) {
-            message("\n", "detected time dim but its length is 1. drop this dim ...")
+            message("\ndetected time dim but its length is 1. drop this dim ...")
+            message("time: ", dims[[i]]$time)
             dims[[i]]$time <- NULL
         }
     }

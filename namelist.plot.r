@@ -127,7 +127,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
@@ -889,8 +889,9 @@ if (F) { # awi-esm-1-1-lr hist
 
 # ==================================================
 ## 5 settings 
-} else if (F) { # compare Hol-T* seasons and annual
-    prefixes <- rep("cosmos-aso-wiso_Hol-T_wiso_mm", t=5)
+} else if (T) { # compare Hol-T* seasons and annual
+    prefixes <- rep("cosmos-aso-wiso_Hol-T_main_mm", t=5)
+    #prefixes <- rep("cosmos-aso-wiso_Hol-T_wiso_mm", t=5)
     #prefixes <- rep("cosmos-aso-wiso_Hol-T_main_mm_plev", t=5)
     models <- rep("echam5", t=5)
     names_short <- rep("Hol-T", t=5)
@@ -906,13 +907,14 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsf <- c("Jan-Dec", "annual", "Jan-Dec", "annual")
     #seasonsf <- rep("yearsum", t=5)
     #seasonsf <- rep("seassum", t=5)
+    seasonsf <- c("annual", "DJF", "MAM", "JJA", "SON")
     #seasonsf <- c("yearmean", rep("seasmean", t=4))
-    seasonsf <- c("yearsum", rep("seassum", t=4))
+    #seasonsf <- c("yearsum", rep("seassum", t=4))
     #seasonsp <- rep("Jul", t=5)
     #seasonsp <- rep("Jan", t=5)
     #seasonsp <- c("annual", "DJF", "MAM", "JJA", "SON")
     #seasonsp <- c("yearmean", "DJF", "MAM", "JJA", "SON")
-    seasonsp <- c("yearsum", "DJF", "MAM", "JJA", "SON")
+    #seasonsp <- c("yearsum", "DJF", "MAM", "JJA", "SON")
     #remove_mean_froms <- rep(-6996, t=5)
     #remove_mean_tos <- rep(-6996, t=5)
     #new_origins <- rep(-6996, t=5)
@@ -938,14 +940,16 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("quv", t=5)
     #varnames_in <- rep("quv_direction", t=5)
     #levsf <- rep("_int1000-100hPa", t=5)
-    varnames_in <- rep("wisoaprt_d_post", t=5)
-    levs <- rep(2, t=5)
+    #varnames_in <- rep("wisoaprt_d_post", t=5)
+    #levs <- rep(2, t=5)
+    varnames_in <- rep("lm_aps_as_time_slope", t=5)
     #modes <- rep("select", t=5)
     #modes <- c("select", "fldsum", "select", "fldsum") 
     #modes <- rep("yearsum", t=5)
     #modes <- rep("seassum", t=5)
     #modes <- c("yearmean", rep("seasmean", t=4))
-    modes <- c("yearsum", rep("seassum", t=4))
+    #modes <- c("yearsum", rep("seassum", t=4))
+    modes <- c("select", rep("seasmean", t=4))
     #varnames_out_samedims <- "SICOMO"
     #names_legend_samedims <- names_legend
     cols <- c("black", DJF="blue", MAM="darkgreen", JJA="red", SON="brown")
@@ -958,7 +962,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("emanda_remapnn", t=5)
     #areas <- rep("elgygytgyn_remapnn", t=5)
     #areas <- rep("two-yurts_remapnn", t=5)
-    areas <- rep("kotokel_remapnn", t=5)
+    #areas <- rep("kotokel_remapnn", t=5)
 
 # ==================================================
 # 6 settings
