@@ -194,7 +194,7 @@ if (F) { # old hist
         new_date_list[[1]]$years <- new_date_list[[1]]$years[-(229:240)] # if starting from 3105
     }
 
-} else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
+} else if (T) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     models <- "echam5"
     #models <- "mpiom1"
     # hol-7 on stan:
@@ -209,10 +209,10 @@ if (F) { # old hist
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" # links w correct timestamps
     #datapaths <- "/ace/user/stschuet/Hol-T_echam5_wiso_links"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
+    fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-7_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
-    fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_link_<YYYY><MM>" # steffens links
     #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc" # daily
@@ -228,11 +228,11 @@ if (F) { # old hist
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-7_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
-    prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_echam5_wiso" # steffens files
     #prefixes <- "cosmos-aso-wiso_Hol-7_timeser_ext"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_timeser_ext"
@@ -257,7 +257,7 @@ if (F) { # old hist
     #fvarnames <- "aprt"
     #fvarnames <- "aprl"
     #fvarnames <- "aprc"
-    fvarnames <- "aprs"
+    #fvarnames <- "aprs"
     #fvarnames <- "evap"
     #fvarnames <- "pe"
     #fvarnames <- "ws"
@@ -266,6 +266,7 @@ if (F) { # old hist
     #fvarnames <- "svo" # spectral vorticity
     #fvarnames <- "q"
     #fvarnames <- "aps"
+    fvarnames <- "lm_aps_as_time"
     #fvarnames <- "quv_direction"
     #levs_out <- "int1000-100hPa"
     #fvarnames <- "wisoaprt"
@@ -377,7 +378,7 @@ if (F) { # old hist
     #modes <- "seassum"
     #modes <- "timsum"
     #modes <- "zonmean"
-    #season_names <- "annual"
+    season_names <- "annual"
     #season_names <- "yearsum"
     #season_names <- "seassum"
     #froms <- "0001" # Hol-Tx10 links: beginning counting from 1

@@ -856,7 +856,7 @@ for (i in 1:nsettings) {
                                         eval(parse(text=paste0("replacement <- ", pattern)))
                                     }
                                 } else { # case 2/2: no variable named `pattern` exists in current work space
-                                    if (pattern == "nco_ncatted") { # case 2a: special case
+                                    if (pattern == "nco_ncatted") { # special case 2a
                                         message("   detected special pattern \"<", pattern, ">\" --> run system(\"which ncatted\") ...")
                                         replacement <- system("which ncatted", intern=T)
                                     } else { # case 2b: assume an input file is needed
@@ -909,7 +909,10 @@ for (i in 1:nsettings) {
 
                     if (clean) { 
                         for (fi in cmdout_files) {
-                            if (file.exists(fi)) system(paste0("rm -v ", fi))
+                            if (file.exists(fi)) {
+                                if (verbose > 0) message("run `rm -v ", fi, "`")
+                                system(paste0("rm -v ", fi))
+                            }
                         }
                     }
                    
@@ -924,8 +927,9 @@ for (i in 1:nsettings) {
                     stop("dont know how to proceed")
 
                 } # if special case if requested variable is one of the wiso delta variables or not
-                
-            # else if requested variable was found in first found file
+               
+
+            # else if requested variable was found in first found file (the default)
             } else { 
                 
                 # continue with default case -> cdo cmd and not any of `cdo_known_cmds`
