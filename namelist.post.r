@@ -250,6 +250,8 @@ if (F) { # old hist
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
+    #fvarnames <- "u10"
+    fvarnames <- "v10"
     #fvarnames <- "wind10"
     #fvarnames <- "srad0"
     #fvarnames <- "srad0d"
@@ -266,7 +268,7 @@ if (F) { # old hist
     #fvarnames <- "st" # spectral temperature
     #fvarnames <- "sd" # spectral divergence
     #fvarnames <- "svo" # spectral vorticity
-    fvarnames <- "geosp"
+    #fvarnames <- "geosp"
     #fvarnames <- "q"
     #fvarnames <- "aps"
     #fvarnames <- "lm_aps_as_time"
