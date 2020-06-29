@@ -1025,7 +1025,7 @@ if (F) {
 } # if NOAA station data
 
 # ERA5 time series data
-if (T) {
+if (F) {
     fs <- ""
     if (host$machine_tag == "paleosrv") {
         fs <- "/isibhv/projects/paleo_work/cdanek/data/ERA5/post"
@@ -2051,8 +2051,14 @@ for (i in 1:nsettings) {
             }
         
         } else if (varname == "lm_temp2_as_time_slope") {
-            message("special label")
-            data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
+            #data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
+            data_infos[[i]][[vi]]$label <- "2m temperature PI - 7ka"
+            if (F) {
+                message("special: *-1")
+                data_infos[[i]][[vi]]$offset$operator <- "*"
+                data_infos[[i]][[vi]]$offset$value <- -1
+                data_infos[[i]][[vi]]$label <- "2m temperature 7ka - PI"
+            }
         
         } else if (varname == "lm_aprt_as_time_slope") {
             message("special label")
