@@ -262,11 +262,14 @@ if (F) { # old hist
     #fvarnames <- "pe"
     #fvarnames <- "ws"
     #fvarnames <- "albedo"
+    #fvarnames <- "t"
+    #fvarnames <- "st" # spectral temperature
     #fvarnames <- "sd" # spectral divergence
     #fvarnames <- "svo" # spectral vorticity
+    fvarnames <- "geosp"
     #fvarnames <- "q"
     #fvarnames <- "aps"
-    fvarnames <- "lm_aps_as_time"
+    #fvarnames <- "lm_aps_as_time"
     #fvarnames <- "quv_direction"
     #levs_out <- "int1000-100hPa"
     #fvarnames <- "wisoaprt"
@@ -378,7 +381,7 @@ if (F) { # old hist
     #modes <- "seassum"
     #modes <- "timsum"
     #modes <- "zonmean"
-    season_names <- "annual"
+    #season_names <- "annual"
     #season_names <- "yearsum"
     #season_names <- "seassum"
     #froms <- "0001" # Hol-Tx10 links: beginning counting from 1
