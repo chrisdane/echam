@@ -37,7 +37,7 @@ add_sd <- F
 add_linear_trend <- F
 add_nonlinear_trend <- F
 center_ts <- F
-scale_ts <- T
+scale_ts <- F
 ts_highlight_seasons <- list(bool=F, suffix="") # default
 if (F) {
     ts_highlight_seasons <- list(bool=T,
@@ -943,6 +943,7 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("wisoaprt_d_post", t=5)
     #levs <- rep(2, t=5)
     varnames_in <- rep("lm_aps_as_time_slope", t=5)
+    #varnames_in <- rep("lm_psl_as_time_slope", t=5)
     #modes <- rep("select", t=5)
     #modes <- c("select", "fldsum", "select", "fldsum") 
     #modes <- rep("yearsum", t=5)
