@@ -42,7 +42,7 @@ for (obj in objs) if (!exists(obj)) stop("provide `", obj, "` in namelist.plot.r
 nsettings <- length(prefixes)
 if (exists("varnames_uv")) {
     if (!all(sapply(varnames_uv, length) == 2)) {
-        stop("provided `varnames_uv` must have 2 entries per given variable")
+        stop("provided `varnames_uv` must have 2 entries (name of u- and v-components) of given variable")
     }
 }
 if (center_ts && scale_ts) {
@@ -1917,7 +1917,7 @@ message("\n****************** reading model data finished **********************
 
 varnames_unique <- unique(as.vector(unlist(sapply(datas, names))))
 if (exists("varnames_uv")) {
-    varnames_uv_unique <- unique(unlist(sapply(varnames_uv, "[")))
+    varnames_uv_unique <- unique(as.vector(sapply(varnames_uv, unique)))
 }
 
 # save data before applying offset, multiplication factors, etc. for later
@@ -2725,6 +2725,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (exists("varnames_uv")) {
             zuv_samevars <- vector("list", l=length(varnames_uv_unique))
             names(zuv_samevars) <- varnames_uv_unique
+            cnt_uv <- 0
         }
         if (exists("datasma")) zma_samevars <- z_samevars
         dinds_samevars <- vinds_samevars <- z_samevars
@@ -2733,7 +2734,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             z <- dinds <- vinds <- list()
             if (exists("varnames_uv")) zuv <- z
             if (exists("datasma")) zma <- z
-            cnt <- cnt_uv <- 0
+            cnt <- 0
             tmp <- list()
             for (i in seq_len(nsettings)) {
                 varind <- which(names(datas[[i]]) == varname)
@@ -2744,9 +2745,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     dinds[[cnt]] <- i
                     vinds[[cnt]] <- varind
                     if (exists("varnames_uv") && varname %in% varnames_uv[[i]]) {
-                        cnt_uv <- cnt_uv + 1
-                        zuv[[cnt_uv]] <- datas[[i]][[varind]]
-                        names(zuv)[cnt_uv] <- names_short[i]
+                        message("i ", i, ", vi ", vi, ", varind ", varind, ", varname ", varname)
+                        zuv[[length(zuv)+1]] <- datas[[i]][[varind]]
+                        names(zuv)[length(zuv)] <- names_short[i]
                     }
                     if (exists("datasma")) {
                         zma[[cnt]] <- datasma[[i]][[varind]]
@@ -2759,7 +2760,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             z_samevars[[vi]] <- z
             dinds_samevars[[vi]] <- dinds
             vinds_samevars[[vi]] <- vinds
-            if (exists("varnames_uv") && length(zuv) != 0) zuv_samevars[[vi]] <- zuv
+            if (exists("varnames_uv") && length(zuv) != 0) {
+                cnt_uv <- cnt_uv + 1
+                message("vi ", vi, ", cnt_uv ", cnt_uv)
+                zuv_samevars[[cnt_uv]] <- zuv
+            }
             if (exists("datasma")) zma_samevars[[vi]] <- zma
         } # vi in varnames_unique
         # dimensinons in same order as data 
@@ -3270,7 +3275,7 @@ if ("samevars" %in% plot_groups && "samedims" %in% plot_groups) {
         } # if varnames_out_samedims is missing or not
 
         if (!exists("names_legend_samedims")) {
-            stop("provide `names_legend_samedims`")
+            names_legend_samedims <- seq_along(z_samedims)
         }
 
     } # if z_samevars == z_samedims or not
@@ -3725,10 +3730,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
             quiver_list <- NULL
             if (exists("varnames_uv")) {
                 if (plot_groups[plot_groupi] == "samevars") {
+                    message("\nzuv_samevars:")
+                    cat(capture.output(str(zuv_samevars)), sep="\n")
                     if (zname %in% names(varnames_uv)) { # if current variable is defined by u,v-components
                         znameu <- varnames_uv[[zname]]["u"]
                         znamev <- varnames_uv[[zname]]["v"]
-                        message("prepare u,v-components for quivers: take variables \"", znameu, "\" and \"", znamev, "\"")  
+                        message("prepare u,v-components for quivers: take variables \"", znameu, 
+                                "\" and \"", znamev, "\" as u and v components ")  
                         quiver_list <- list(u=zuv_samevars[[znameu]], v=zuv_samevars[[znamev]])
                         quiver_list$nx_fac <- rep(0.5, t=length(quiver_list$u))
                         quiver_list$ny_fac <- rep(1, t=length(quiver_list$u))
@@ -3833,6 +3841,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       "_", froms_plot_p, "_to_", tos_plot_p, "_", 
                                       areas_p, collapse="_vs_"), 
                                plotname_suffix, ".", p$plot_type)
+            if (nchar(plotname) > nchar_max_foutname) {
+                plotname <- substr(plotname, 1, nchar_max_foutname)
+            }
             message("plot ", plotname, " ...")
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             if (p$plot_type == "png") {

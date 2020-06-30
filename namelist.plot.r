@@ -945,8 +945,12 @@ if (F) { # awi-esm-1-1-lr hist
     #levs <- rep(2, t=5)
     #varnames_in <- rep("lm_aps_as_time_slope", t=5)
     #varnames_in <- rep("lm_psl_as_time_slope", t=5)
-    varnames_in <- rep("lm_temp2_as_time_slope", t=5)
+    #varnames_in <- rep("lm_temp2_as_time_slope", t=5)
     #varnames_in <- rep("lm_aprt_as_time_slope", t=5)
+    varnames_in <- rep("lm_wind10_as_time_slope", t=5)
+    varnames_uv <- rep(list("lm_wind10_as_time_slope"=c(u="lm_u10_as_time_slope", v="lm_v10_as_time_slope")), t=5) # for quiver
+    varnames_out_samedims <- "lm_wind10_as_time_slope"
+    #names_legend_samedims <- 
     #modes <- rep("select", t=5)
     #modes <- c("select", "fldsum", "select", "fldsum") 
     #modes <- rep("yearsum", t=5)
