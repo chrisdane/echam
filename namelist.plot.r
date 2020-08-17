@@ -127,13 +127,13 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
-    prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
     models <- "echam5"
     #names_short <- "Hol-Tx10"
@@ -184,8 +184,10 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- 100*12
     #remove_mean_froms <- -827
     #remove_mean_tos <- -827
-    #seasonsf <- "annual"
-    seasonsf <- "yearsum"
+    remove_mean_froms <- -7000
+    remove_mean_tos <- -7000
+    seasonsf <- "annual"
+    #seasonsf <- "yearsum"
     #seasonsp <- "Feb" # cdo's default season timestamps: DJF->Feb, MAM->May, JJA->Aug, SON->Nov
     #seasonsp <- "May"
     #seasonsp <- "Jun"
@@ -200,11 +202,12 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- "SON"
     #varnames_in <- "temp2"
     #varnames_in <- "tsurf"
+    varnames_in <- "tslm1"
     #varnames_in <- "aprt"
     #varnames_in <- "aprs"
     #varnames_in <- "wisoaprt_d"
-    varnames_in <- "wisoaprt_d_post"
-    levs <- 2
+    #varnames_in <- "wisoaprt_d_post"
+    #levs <- 2
     #varnames_in <- "temp2aprt"
     #varnames_in <- "tsurfaprt"
     #varnames_in <- "ptemp"
@@ -221,10 +224,11 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_uv <- list(quv=c(u="qu", v="qv")) # for quiver
     #modes <- "select"
     #modes <- "yseasmean"
-    modes <- "yearsum"
+    #modes <- "yearsum"
+    modes <- "zonmean"
     #areas <- "sibiria"
     #areas <- "60-90N"
-    areas <- "ladoga_remapnn"
+    #areas <- "ladoga_remapnn"
     #areas <- "shuchye_remapnn"
     #areas <- "levinson-lessing_remapnn"
     #areas <- "taymyr_remapnn"
@@ -889,7 +893,7 @@ if (F) { # awi-esm-1-1-lr hist
 
 # ==================================================
 ## 5 settings 
-} else if (T) { # compare Hol-T* seasons and annual
+} else if (F) { # compare Hol-T* seasons and annual
     prefixes <- rep("cosmos-aso-wiso_Hol-T_main_mm", t=5)
     #prefixes <- rep("cosmos-aso-wiso_Hol-T_wiso_mm", t=5)
     #prefixes <- rep("cosmos-aso-wiso_Hol-T_main_mm_plev", t=5)

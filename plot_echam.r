@@ -5,7 +5,7 @@
 if (T) {
     message("\nrm(list=ls())")
     rm(list=ls())
-    #fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
+    fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
     # set back to default: `[` <- fctbackup 
 } else {
     message("\ndo not clear work space ...")
@@ -2586,6 +2586,11 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                     apply_dims <- 1:length(dim(datas[[i]][[vi]]))
                     if (length(apply_dims) == 1) { # var has only time dim
                         datasltm[[i]][[vi]] <- mean(datas[[i]][[vi]], na.rm=T)
+                        # make 1D array if only vector
+                        if (is.null(dim(datasltm[[i]][[vi]]))) {
+                            stop("update")
+                            datasltm[[i]][[vi]] <- array(datasltm[[i]][[vi]])
+                        }
                         attributes(datasltm[[i]][[vi]]) <- list(dim=1, dims="ltm_range")
                     } else {
                         apply_dims <- apply_dims[-timedimind]
@@ -2595,6 +2600,10 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                                       "mean, na.rm=T)")
                         #message(cmd)
                         eval(parse(text=cmd))
+                        # make 1D array if only vector
+                        if (is.null(dim(datasltm[[i]][[vi]]))) {
+                            datasltm[[i]][[vi]] <- array(datasltm[[i]][[vi]])
+                        }
                         attributes(datasltm[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims[-timedimind]
                     }
                 } else { # time dim is of length 1 
@@ -3953,7 +3962,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             message("\n", zname, " ", mode_p, " plot time vs lat ...")
 
             if (add_smoothed) {
-                message("\n", "`add_smoothed` = T --> replace z with zma ...")
+                message("\n", "`add_smoothed` = T --> use zma and not z ...")
                 z <- zma
             }
             
@@ -3974,7 +3983,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
             message("get global zlim ... ", appendLF=F)
             zlim <- range(z, na.rm=T)
             message("min/max = ", zlim[1], " / ", zlim[2])
-            nlevels <- 20
+            zlevels <- NULL
+            pos_cols <- NULL
+            neg_cols <- NULL
+            nlevels <- 11
             if (varname == "srad0d" && F) {
                 message("special zlevels")
                 # levels/colors as marcott et al. 2013 Fig. 2 A December
@@ -3983,6 +3995,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 if (max(zlevels) < zlim[2]) zlevels <- c(zlevels, zlim[2])
                 pos_cols <- c("#fbe4f3", "#f7b9de", "#f591cb", "#ec1168")
                 neg_cols <- c("#5b58b0", "#5b58b0", "#c6b7df", "#edeaf7", "#fafbfb")
+                nlevels <- 20
             } else if (varname == "srad0d" && F) {
                 message("special zlevels")
                 # levels/colors as marcott et al. 2013 Fig. 2 B June
@@ -3991,11 +4004,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 if (max(zlevels) < zlim[2]) zlevels <- c(zlevels, zlim[2])
                 pos_cols <- c("#fbd3eb", "#f693cc", "#f584c6", "#ef47a8", "#ec0f64")
                 neg_cols <- "#5b5cb2"
-            } else {
-                zlevels <- NULL
-                pos_cols <- NULL
-                neg_cols <- NULL
-                nlevels <- 11
+                nlevels <- 20
+            } else if (varname == "tslm1") {
+                message("special zlim")
+                zlim <- c(-0.429356994628906, 2.67736038208008)
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim, nlevels=nlevels,
@@ -4005,8 +4017,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
             plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                varname, "_",  
                                paste0(names_short_p, "_", areas_p, "_", seasonsp_p, "_", 
-                                      froms_plot_p, "_to_", tos_plot_p, 
-                                      collapse="_vs_"), 
+                                      froms_plot_p, "_to_", tos_plot_p,
+                                      collapse="_vs_"),
+                               ifelse(add_smoothed, paste0("_ma", paste(unique(n_mas), collapse="_")), ""),
                                ".", p$plot_type)
             message("plot ", plotname, " ...")
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
@@ -4014,7 +4027,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             nm <- image.plot.nxm(x=d$time, y=d$lat, z=z
-                                 , n=1, m=2 # special
+                                 #, n=1, m=2 # special
                                  , ip=ip, dry=T)
             
             if (p$plot_type == "png") {
@@ -4028,15 +4041,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # plot
             image.plot.nxm(x=d$time, y=d$lat, z=z
-                           , n=1, m=2 # special
-                           , ip=ip, verbose=F,
-                           add_contour=F,
+                           #, n=1, m=2 # special
+                           , ip=ip, verbose=T,
+                           #contour_only=T,
+                           add_contour=T,
                            #xlim=tlimct, 
                            x_at=tatn, x_labels=tlablt, 
                            xlab=tunit, ylab="Latitude [°]",
                            zlab=data_info$label, znames=names_legend_p)
         
-            message("\n", "save plot ", plotname, " ...")
+            message("\nsave plot ", plotname, " ...")
             dev.off()
             if (p$plot_type == "pdf") {
                 if("extrafont" %in% (.packages())){
