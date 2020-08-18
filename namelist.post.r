@@ -136,7 +136,7 @@ if (F) { # old hist
     #modes <- "fldmean"
     new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
-} else if (T) { # cold MH issue; hu/xiaoxu
+} else if (F) { # cold MH issue; hu/xiaoxu
     models <- "echam6"
     #models <- "fesom"
     #datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
@@ -199,9 +199,9 @@ if (F) { # old hist
         new_date_list[[1]]$years <- new_date_list[[1]]$years[-(229:240)] # if starting from 3105
     }
 
-} else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
-    models <- "echam5"
-    #models <- "mpiom1"
+} else if (T) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
+    #models <- "echam5"
+    models <- "mpiom1"
     # hol-7 on stan:
     #datapaths <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-7/outdata/echam5"
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom"
@@ -210,11 +210,11 @@ if (F) { # old hist
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5" # links with dt=10 yrs timestamps
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom" # links with dt=10 yrs timestamps
     # hol-t on stan:
-    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5" # links w correct timestamps
-    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" # links w correct timestamps
+    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5" # links w correct timestamps
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" # links w correct timestamps
     #datapaths <- "/ace/user/stschuet/Hol-T_echam5_wiso_links"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
-    fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-7_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
@@ -223,7 +223,7 @@ if (F) { # old hist
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc" # daily
     #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc" # monthly
     #fpatterns <- "fort.75.<YYYY>0101_<YYYY>1231_monmean" # monthly
-    #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_2_remapcon2_r120x101.nc" # THO
+    fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_2_remapcon2_r120x101.nc" # THO
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_5_remapcon2_r120x101.nc" # SAO
     #fpatterns <- "Hol-7_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc" # zmld
     #fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"

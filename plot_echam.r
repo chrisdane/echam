@@ -1981,7 +1981,9 @@ for (i in 1:nsettings) {
         if (any(varname == c("temp2", "tas"))) {
             data_infos[[i]][[vi]]$label <- "2m temperature [°C]"
             if (!is.na(remove_mean_froms[i])) {
-                data_infos[[i]][[vi]]$label <- "2m temperature anomaly [°C]"
+                data_infos[[i]][[vi]]$label <- paste0("2m temperature anomaly wrt ", 
+                                                      paste(unique(remove_mean_froms[i], remove_mean_tos[i]), collapse="-"),
+                                                      " [°C]")
             }
             if (!is.na(remove_setting)) {
                 data_infos[[i]][[vi]]$label <- paste0("2m temperature\nanomaly wrt ", remove_setting)
@@ -4006,7 +4008,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 nlevels <- 20
             } else if (varname == "tslm1") {
                 message("special zlim")
-                zlim <- c(-0.429356994628906, 2.67736038208008)
+                #zlim <- c(-0.429356994628906, 2.67736038208008) # annual
+                zlim <- c(-2.46028671264648, 2.82926086425781) # jun
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim, nlevels=nlevels,

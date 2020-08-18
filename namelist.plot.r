@@ -127,7 +127,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
@@ -186,7 +186,8 @@ if (F) { # awi-esm-1-1-lr hist
     #remove_mean_tos <- -827
     remove_mean_froms <- -7000
     remove_mean_tos <- -7000
-    seasonsf <- "annual"
+    #seasonsf <- "annual"
+    seasonsf <- "Jun"
     #seasonsf <- "yearsum"
     #seasonsp <- "Feb" # cdo's default season timestamps: DJF->Feb, MAM->May, JJA->Aug, SON->Nov
     #seasonsp <- "May"
@@ -1085,7 +1086,7 @@ if (F) { # awi-esm-1-1-lr hist
     cols_samedims <- c(1:4, 1:4)
     ltys_samedims <- c(rep(2, t=4), rep(1, t=4))
 
-} else if (T) { # compare pi/mh cold/warm atmosphere restart problem
+} else if (F) { # compare pi/mh cold/warm atmosphere restart problem
     models <- rep("echam6", t=8)
     prefixes <- c("awi-esm-1-1-lr_pi477_ollie", # temp2 2700 to 3249 -> 2051 to 2600
                   "awi-esm-1-1-lr_piControl_g3bid", # temp2 2701 to 2999 -> 2051 to 2349
