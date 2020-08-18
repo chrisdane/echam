@@ -127,7 +127,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
@@ -1085,7 +1085,7 @@ if (F) { # awi-esm-1-1-lr hist
     cols_samedims <- c(1:4, 1:4)
     ltys_samedims <- c(rep(2, t=4), rep(1, t=4))
 
-} else if (F) { # compare pi/mh cold/warm atmosphere restart problem
+} else if (T) { # compare pi/mh cold/warm atmosphere restart problem
     models <- rep("echam6", t=8)
     prefixes <- c("awi-esm-1-1-lr_pi477_ollie", # temp2 2700 to 3249 -> 2051 to 2600
                   "awi-esm-1-1-lr_piControl_g3bid", # temp2 2701 to 2999 -> 2051 to 2349
@@ -1094,19 +1094,20 @@ if (F) { # awi-esm-1-1-lr hist
                   "awi-esm-1-1-lr_mh_new_mistral", # temp2 2624 to 3001 -> 2701 to 3078
                   "awi-esm-1-1-lr_midHolocene", # tas 3106 to 3205 -> 3183 to 3282 
                   "awi-esm-1-1-lr_mh_cold_mistral", # temp2 3123 to 3266 -> 3200 to 3343
-                  "awi-esm-1-1-lr_mh_cmip") # temp2 1955 to 2105 -> old: 2450 to 2600; new: 3100 to 3250
-    names_short <- c("pi477", "piControl_spinup", "piControl", "mh477", "mh_new", "midHolocene", "mh_cold", "mh_cmip")
-    fromsf <-      c(2700, 2701, 1842, 2623, 2624, 3106, 3123, 1955)
-    tosf <-        c(3249, 2999, 1941, 2657, 3001, 3205, 3266, 2105)
-    new_origins <- c(NA,   NA,   3000, 2700, 2701, 3183, 3200, 3100)
+                  "awi-esm-1-1-lr_mat_0013") # temp2 1855 to 1968; new: 3100 to 3250
+    names_short <- c("pi477", "piControl_spinup", "piControl", "mh477", "mh_new", "midHolocene", "mh_cold", "mat_0013")
+    fromsf <-      c(2700, 2701, 1842, 2623, 2624, 3106, 3123, 1855)
+    tosf <-        c(3249, 2999, 1941, 2657, 3001, 3205, 3266, 1968)
+    new_origins <- c(NA,   NA,   3000, 2700, 2701, 3183, 3200, 3000)
     #fromsp <- c(546, rep(NA, t=3))
     #tosp <- c(NA, rep(555, t=3))
     n_mas <- rep(36, t=8)
+    codes <- c("", "", "", "", "", "", "", 167)
     varnames_in <- c("temp2", "temp2", "tas", "temp2", "temp2", "tas", "temp2", "temp2")
     modes <- rep("fldmean", t=8)
     varnames_out_samedims <- "temp2"
     names_legend_samedims <- c("1) pi477", "2) piControl_spinup", "3) piControl", "4) mh477", 
-                               "5) mh_new", "6) midHolocene", "7) mh_cold", "8) mh_cmip")
+                               "5) mh_new", "6) midHolocene", "7) mh_cold", "8) mat_0013")
     cols_samedims <- 1:8
     ltys_samedims <- rep(1, t=8)
 

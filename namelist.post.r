@@ -136,7 +136,7 @@ if (F) { # old hist
     #modes <- "fldmean"
     new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
 
-} else if (F) { # hu/xiaoxu
+} else if (T) { # cold MH issue; hu/xiaoxu
     models <- "echam6"
     #models <- "fesom"
     #datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
@@ -145,9 +145,9 @@ if (F) { # old hist
     #fpatterns <- "MM_<YYYY>01.01_echam.nc"
     #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_new/outdata/echam" # 2624 to 3001
     #fpatterns <- "MMnew_echam6_echam_<YYYY>01.nc"
-    datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/echam" # 3105 to 3166 
+    #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/echam" # 3105 to 3166 
     #fpatterns <- "mh_cold_echam6_BOT_mm_<YYYY><MM>.nc" # 3105 to 3264 but strange and 3124 is missing
-    fpatterns <- "mh_cold_echam6_echammon_<YYYY><MM>.grb" # 3123 to 3266
+    #fpatterns <- "mh_cold_echam6_echammon_<YYYY><MM>.grb" # 3123 to 3266
     #datapaths <- "/work/ab0246/a270073/out/awi-esm-1-1-lr/mh_cold"
     #fpatterns <- "mh_cold_echam6_BOT_mm_temp2_<YYYY_from>-<YYYY_to>_with_time.nc"
     #fpatterns <- "mh_cold_echam6_BOT_mm_temp2_3105-3207.nc"
@@ -156,28 +156,33 @@ if (F) { # old hist
     #fpatterns <- "mh_cold_fesom_tosga_<YYYY>0101.nc"
     #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cmip/outdata/echam" # mh branched from piControl: 1955-2105
     #fpatterns <- "mh_cmip_echam6_echammon_<YYYY><MM>.grb"
+    datapaths <- "/work/ab0246/a270077/model_acid_tests/mat_0013/outdata/echam" # 1855-1968
+    fpatterns <- "mat_0013_echam6_echammon_<YYYY><MM>.grb"
     #prefixes <- "awi-esm-1-1-lr_pi477_ollie"
     #prefixes <- "awi-esm-1-1-lr_lgm"
     #prefixes <- "awi-esm-1-1-lr_mh477_ollie"
     #prefixes <- "awi-esm-1-1-lr_mh_new_mistral"
-    prefixes <- "awi-esm-1-1-lr_mh_cold_mistral"
+    #prefixes <- "awi-esm-1-1-lr_mh_cold_mistral"
     #prefixes <- "awi-esm-1-1-lr_mh_cmip"
+    prefixes <- "awi-esm-1-1-lr_mat_0013"
     fvarnames <- "temp2"
-    #codes <- 167
+    codes <- 167
     #fvarnames <- "trad0"
     #fvarnames <- "tosga"
+    froms <- 1855
     #froms <- 1955
     #froms <- 2624
     #froms <- 2700 
     #froms <- 3105
-    froms <- 3123
+    #froms <- 3123
     #froms <- 3537 # last 30 years start from 3843
+    tos <- 1968
     #tos <- 2105
     #tos <- 2657
     #tos <- 3001
     #tos <- 3207
     #tos <- 3249
-    tos <- 3266
+    #tos <- 3266
     #tos <- 3872
     #season_inds <- list(c(12, 1, 2)) # DJF
     #season_inds <- list(c(3, 4, 5)) # MAM
@@ -194,7 +199,7 @@ if (F) { # old hist
         new_date_list[[1]]$years <- new_date_list[[1]]$years[-(229:240)] # if starting from 3105
     }
 
-} else if (T) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
+} else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     models <- "echam5"
     #models <- "mpiom1"
     # hol-7 on stan:

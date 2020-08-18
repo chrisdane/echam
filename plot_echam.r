@@ -2588,7 +2588,6 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                         datasltm[[i]][[vi]] <- mean(datas[[i]][[vi]], na.rm=T)
                         # make 1D array if only vector
                         if (is.null(dim(datasltm[[i]][[vi]]))) {
-                            stop("update")
                             datasltm[[i]][[vi]] <- array(datasltm[[i]][[vi]])
                         }
                         attributes(datasltm[[i]][[vi]]) <- list(dim=1, dims="ltm_range")
@@ -4151,7 +4150,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # prepare right axis data if necessary
             if (add_data_right_yaxis_ts) {
-                message("\n", "prepare data right yaxis ..")
+                message("\nprepare data right yaxis ..")
                 message("update data_right datas for plot groups: samevars and samedims")
                 data_right <- list(data=list())
                 if (exists("add_co2_hist") && add_co2_hist) {
@@ -4849,20 +4848,20 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\nadd default stuff to datas legend here1 ...")
                 le <- list()
-                le$pos <- "topleft" 
+                #le$pos <- "topleft" 
                 #le$pos <- "left"
                 #le$pos <- "bottomleft"
-                #le$pos <- "topright"
+                le$pos <- "topright"
                 #le$pos <- "bottomright" 
                 #le$pos <- c(tatn[1], yat[length(yat)-1])
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), yat[length(yat)])
+                #le$ncol <- ceiling(length(z)/4) 
                 #le$ncol <- length(z)
                 #le$ncol <- length(z)/2
                 #le$ncol <- 1
-                #le$ncol <- 2
-                le$ncol <- length(z)
-                #le$ncol <- ceiling(length(z)/4) 
+                le$ncol <- 2
+                #le$ncol <- length(z)
                 le$text <- names_legend_p
                 le$col <- cols_p
                 le$lty <- ltys_p
@@ -4875,12 +4874,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch[i] <- NA
                     }
                 }
-                le$cex <- 1
+                #le$cex <- 1
                 #le$cex <- 0.85
                 #le$cex <- 0.7
                 #le$cex <- 0.75
                 #le$cex <- 0.66
-                #le$cex <- 0.5
+                le$cex <- 0.5
                 # add stuf to legend here
                 if (F && varname == "temp2") {
                     message("\nadd non hadcrut4 to ", mode_p, " datas legend ...")
