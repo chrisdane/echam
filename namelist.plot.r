@@ -128,14 +128,16 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_tos <- 1990
 
 } else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+    #models <- "echam5"
+    models <- "mpiom1"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T"
-    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
-    models <- "echam5"
+    prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101"
     #names_short <- "Hol-Tx10"
     names_short <- "Hol-T"
     #names_short <- "Hol-T_st"
@@ -204,7 +206,7 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- "SON"
     #varnames_in <- "temp2"
     #varnames_in <- "tsurf"
-    varnames_in <- "tslm1"
+    #varnames_in <- "tslm1"
     #varnames_in <- "aprt"
     #varnames_in <- "aprs"
     #varnames_in <- "wisoaprt_d"
@@ -224,6 +226,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_out_samedims <- "quv"
     #names_legend_samedims <- c("qu", "qv", "quv")
     #varnames_uv <- list(quv=c(u="qu", v="qv")) # for quiver
+    varnames_in <- "THO"
+    levs <- 6
     #modes <- "select"
     #modes <- "yseasmean"
     #modes <- "yearsum"

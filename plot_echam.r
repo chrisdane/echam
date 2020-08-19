@@ -1890,21 +1890,21 @@ for (i in 1:nsettings) {
         vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
         vars_with_timedim_and_latdim_inds <- intersect(vars_with_timedim_inds, vars_with_latdim_inds)
         if (length(vars_with_timedim_and_latdim_inds) > 0) {
-            message("\n", "detected variables with time and lat dims. check if ndims=2 and permute (lat x time) to (time x lat) ...") 
-            for (vi in 1:length(vars_with_timedim_and_latdim_inds)) {
+            message("\ndetected variables with time and lat dims. check if ndims=2 and permute (lat x time) to (time x lat) if necessary ...") 
+            for (vi in seq_along(vars_with_timedim_and_latdim_inds)) {
                 var_with_timedim_and_latdim <- vars_with_timedim_and_latdim_inds[vi]
-                if (length(attributes(datas[[i]][[vi]])$dims) == 2) {
-                    if (attributes(datas[[i]][[vi]])$dims[1] == "lat" &&
-                        attributes(datas[[i]][[vi]])$dims[2] == "time") {
+                dims_of_var <- attributes(datas[[i]][[var_with_timedim_and_latdim]])$dims # e.g. "lat", "depth", "time"
+                if (length(dims_of_var) == 2) {
+                    if (dims_of_var[1] == "lat" && dims_of_var[2] == "time") {
                         message("   aperm(datas[[", i, "]][[", var_with_timedim_and_latdim, "]], c(2, 1)) ...")
                         datas[[i]][[var_with_timedim_and_latdim]] <- aperm(datas[[i]][[var_with_timedim_and_latdim]], c(2, 1)) # permutate
                         attributes(datas[[i]][[var_with_timedim_and_latdim]]) <- list(dim=dim(datas[[i]][[var_with_timedim_and_latdim]]),
-                                                             dims=dims_of_var[c(2 ,1)])
+                                                             dims=dims_of_var[c(2, 1)])
                     } else {
-                        # dims are already time x lat; nothing to do
+                        # ndims=2 AND dims are already time x lat; nothing to do
                     }
                 } else {
-                    message("ndim(datas[[", i, "]][[", vi, "]]) = ", length(attributes(datas[[i]][[vi]])$dims), ". skip.")
+                    message("ndim(datas[[", i, "]][[", vi, "]]) = ", length(attributes(datas[[i]][[vi]])$dims), " != 2. skip.")
                 }
             }
             # update dims per setting
@@ -2327,7 +2327,7 @@ if (any(!is.na(remove_mean_froms)) || any(!is.na(remove_mean_tos))) {
                                              "], c(", paste(apply_dims, collapse=","), "), mean, na.rm=T)")
                                 message("      ", mu)
                                 eval(parse(text=mu))
-                                message("      min/max mu = ", min(mu), " / ", max(mu), " ", data_infos[[i]][[vi]]$units)
+                                message("      min/max mu = ", min(mu, na.rm=T), " / ", max(mu, na.rm=T))
                                 if (length(dims_of_var) == 2) {
                                     datas[[i]][[vi]] <- datas[[i]][[vi]] - t(array(mu, dim=dim(t(datas[[i]][[vi]]))))
                                 } else {
@@ -4006,11 +4006,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 pos_cols <- c("#fbd3eb", "#f693cc", "#f584c6", "#ef47a8", "#ec0f64")
                 neg_cols <- "#5b5cb2"
                 nlevels <- 20
-            } else if (any(varname == c("temp2", "tslm1"))) {
+            } else if (any(varname == c("temp2", "tslm1", "THO"))) {
                 message("special zlim")
-                #zlim <- c(-0.429356994628906, 2.67736038208008) # annual
+                #zlim <- c(-0.566165227890015, 2.67736038208008) # annual
                 #zlim <- c(-2.46028671264648, 2.82926086425781) # jun
-                zlim <- c(-0.509613037109375, 6.65275375366211) # dec
+                zlim <- c(-0.738620281219482, 6.65275375366211) # dec
+                message("min, max = ", zlim[1], ", ", zlim[2])
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim, nlevels=nlevels,
