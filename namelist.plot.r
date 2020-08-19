@@ -128,16 +128,17 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_tos <- 1990
 
 } else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
-    #models <- "echam5"
-    models <- "mpiom1"
+    models <- "echam5"
+    #models <- "mpiom1"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
-    prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area"
     #names_short <- "Hol-Tx10"
     names_short <- "Hol-T"
     #names_short <- "Hol-T_st"
@@ -171,9 +172,9 @@ if (F) { # awi-esm-1-1-lr hist
     #tosf <- "6821" # 
     tosf <- "7000" # Hol-T; end of chunk 3
     #tosf <- "7001" # Hol-Tx10
-    new_origins <- -7000 # Hol-Tx10
+    #new_origins <- -7000 # Hol-Tx10
     #new_origins <- -5050 # Hol-Tx10 plus 1950
-    #new_origins <- -6996 # Hol-T; model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
+    new_origins <- -6996 # Hol-T; model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
     time_ref <- 1950 # any string, e.g. "BP", or number
     #n_mas <- 30
     #n_mas <- 5*12
@@ -186,13 +187,17 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- 100*12
     #remove_mean_froms <- -827
     #remove_mean_tos <- -827
-    remove_mean_froms <- -7000
-    remove_mean_tos <- -7000
+    remove_mean_froms <- -6996
+    remove_mean_tos <- -6996
+    #remove_mean_froms <- -7000
+    #remove_mean_tos <- -7000
     #seasonsf <- "annual"
+    #seasonsf <- "Jun"
     #seasonsf <- "Jun"
     seasonsf <- "Dec"
     #seasonsf <- "yearsum"
     #seasonsp <- "Feb" # cdo's default season timestamps: DJF->Feb, MAM->May, JJA->Aug, SON->Nov
+    #seasonsp <- "Mar"
     #seasonsp <- "May"
     #seasonsp <- "Jun"
     #seasonsp <- "Jul"
@@ -216,6 +221,7 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "tsurfaprt"
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
+    varnames_in <- "srad0d"
     #varnames_in <- "lm_temp2_as_time"
     #varnames_in <- "lm_aprt_as_time"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2"
@@ -226,12 +232,15 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_out_samedims <- "quv"
     #names_legend_samedims <- c("qu", "qv", "quv")
     #varnames_uv <- list(quv=c(u="qu", v="qv")) # for quiver
-    varnames_in <- "THO"
-    levs <- 6
+    #varnames_in <- "THO"
+    #levs <- 6
+    #varnames_in <- "SICOMO"
     #modes <- "select"
     #modes <- "yseasmean"
     #modes <- "yearsum"
     modes <- "zonmean"
+    #modes <- "fldsum"
+    #areas <- "northern_hemisphere"
     #areas <- "sibiria"
     #areas <- "60-90N"
     #areas <- "ladoga_remapnn"
@@ -491,7 +500,8 @@ if (F) { # awi-esm-1-1-lr hist
     }
 
 } else if (F) { # Hol-7 vs Hol-T with vs without orbital acceleration
-    prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_wiso_mm", t=3)
+    #prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_wiso_mm", t=3)
+    prefixes <- rep("cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area", t=3)
     #prefixes <- c("cosmos-aso-wiso_Hol-7_wiso_mm", 
     #              "cosmos-aso-wiso_Hol-T_wiso_mm", 
     #              "cosmos-aso-wiso_Hol-Tx10_wiso_mm") 
@@ -510,23 +520,28 @@ if (F) { # awi-esm-1-1-lr hist
     #prefixes <- c("cosmos-aso-wiso_Hol-7_grb_code_183_remapcon2_r120x101", # zmld
     #              "cosmos-aso-wiso_Hol-T_grb_code_183_remapcon2_r120x101",
     #              "cosmos-aso-wiso_Hol-Tx10_grb_code_183_remapcon2_r120x101")
-    models <- rep("echam5", t=3)
-    #models <- rep("mpiom1", t=3)
-    names_short <- rep("Hol-Tx10", t=3)
+    #models <- rep("echam5", t=3)
+    models <- rep("mpiom1", t=3)
+    #names_short <- rep("Hol-Tx10", t=3)
+    names_short <- rep("Hol-T", t=3)
     #names_short <- c("Hol-7", "Hol-T", "Hol-Tx10")
     #names_short <- c("ch", "st", "me_w_st")
-    names_legend <- names_short
+    #names_legend <- names_short
     #names_legend <- c("7k ctrl", "7k transient", "7k transient x10")
     #names_legend <- c("COSMOS 7k", "COSMOS transient", "COSMOS transient x10")
-    fromsf <- rep("0001", t=3) # hol-tx10
+    names_legend <- c("Annual", "Mar", "Sep")
+    #fromsf <- rep("0001", t=3) # hol-tx10
+    fromsf <- rep("0004", t=3) # hol-t
     #fromsf <- c("0800", "0004", "0001") # hol-7 complete, hol-tx10, hol-t
     #fromsf <- c("2791", "0004", "0001") # hol-7 last 110 years, hol-tx10, hol-t
     #fromsf <- c("2800", "0004", "0001") # hol-7 last 101 years, hol-tx10, hol-t
     #fromsf <- c("0004", "0004", "0004") # ch, st, ch_w_st
     #tosf <- c("2900", "7000", "7001") # hol-7, hol-tx10, hol-t
     #tosf <- c("7000", "7000", "7000") # ch, st, ch_w_st
-    tosf <- rep("7001", t=3) # hol-tx10
-    new_origins <- rep(-7000, t=3)
+    #tosf <- rep("7001", t=3) # hol-tx10
+    tosf <- rep("7000", t=3) # hol-t
+    #new_origins <- rep(-7000, t=3)
+    new_origins <- rep(-6996, t=3)
     #new_origins <- c(-9101, -6996, -7000) # hol-7 complete, hol-tx10, hol-t
     #new_origins <- c(-7110, -6996, -7000) # hol-7 last 110 years, hol-tx10, hol-t
     #new_origins <- c(-7101, -6996, -7000) # hol-7 last 101 years, hol-tx10, hol-t
@@ -535,6 +550,7 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsf <- rep("annual", t=3)
     #seasonsf <- rep("yearsum", t=3)
     #seasonsf <- rep("seassum", t=3) # cdo default: date is middle of season
+    seasonsf <- c("annual", NA, NA)
     #seasonsp <- rep("DJF", t=3)
     #seasonsp <- rep("MAM", t=3)
     #seasonsp <- rep("JJA", t=3)
@@ -544,10 +560,12 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- rep("Mar", t=3)
     #seasonsp <- rep("Jun", t=3)
     #seasonsp <- rep("Sep", t=3)
+    seasonsp <- c(NA, "Mar", "Sep")
+    cols <- c(1, 3, 2)
     #varnames_in <- rep("aprt", t=3)
-    varnames_in <- c("aprt", "aprl", "aprc")
-    varnames_out_samedims <- "aprt"
-    names_legend_samedims <- c("aprt (total)", "aprl (large-scale)", "aprc (convection)")
+    #varnames_in <- c("aprt", "aprl", "aprc")
+    #varnames_out_samedims <- "aprt"
+    #names_legend_samedims <- c("aprt (total)", "aprl (large-scale)", "aprc (convection)")
     #varnames_in <- rep("evap", t=3)
     #varnames_in <- rep("pe", t=3)
     #varnames_in <- rep("ws", t=3)
@@ -558,21 +576,21 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("c204_ICEARE_GLO", t=3)
     #varnames_in <- rep("c64_ICEARE_ARC", t=3)
     #varnames_in <- rep("c144_ICEARE_SO", t=3)
-    #varnames_in <- rep("SICOMO", t=3)
+    varnames_in <- rep("SICOMO", t=3)
     #varnames_in <- rep("zmld", t=3)
     #varnames_in <- rep("amoc", t=3)
     #codes <- rep(101, t=3)
-    modes <- rep("select", t=3)
+    #modes <- rep("select", t=3)
     #modes <- rep("fldmean", t=3)
-    #modes <- rep("fldsum", t=3)
+    modes <- rep("fldsum", t=3)
     #modes <- rep("yearsum", t=3)
     #modes <- rep("seassum", t=3)
     #areas <- rep("moc26.5N", t=3)
     #levs <- rep("-0to-5420m", t=3)
-    #areas <- rep("northern_hemisphere", t=3)
+    areas <- rep("northern_hemisphere", t=3)
     #areas <- rep("southern_hemisphere", t=3)
     #areas <- rep("weddelmld", t=3)
-    areas <- rep("ladoga_remapnn", t=3)
+    #areas <- rep("ladoga_remapnn", t=3)
     #areas <- rep("shuchye_remapnn", t=3)
     #areas <- rep("levinson-lessing_remapnn", t=3)
     #areas <- rep("taymyr_remapnn", t=3)
@@ -581,7 +599,8 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("two-yurts_remapnn", t=3)
     #areas <- rep("kotokel_remapnn", t=3)
     #levs <- rep(2, t=3)
-    n_mas <- rep(150, t=3)
+    n_mas <- rep(100, t=3)
+    #n_mas <- rep(150, t=3)
     #n_mas <- c(30, 3*30, 30)
     #n_mas <- c(90, 3*90, 90)
     #n_mas <- rep(120, t=3)
@@ -589,6 +608,8 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- c(1000, 3*500, 500) # Hol-7 mean
     #n_mas <- c(1000, 6*500, 3*500) # Hol-7 mean
     #n_mas <- c(1200, 12000, 1200)
+    #remove_mean_froms <- rep(-6996, t=3)
+    #remove_mean_tos <- rep(-6996, t=3)
     #fromsp <- c(-7010, -6996, -7000) # zoom: 7k control/7k transient transition 
     #tosp <- c(-7001, -6980, -6980)
     #fromsp <- c(-7030, -6996, -7000) # zoom: 7k control/7k transient transition 

@@ -5,8 +5,9 @@
 if (T) {
     message("\nrm(list=ls())")
     rm(list=ls())
-    fctbackup <- `[`; `[` <- function(...) { fctbackup(..., drop=F) }
-    # set back to default: `[` <- fctbackup 
+    # make squeeze default:
+    fctbackup <- `[`
+    `[` <- function(...) { fctbackup(..., drop=F) } # set back to default: `[` <- fctbackup 
 } else {
     message("\ndo not clear work space ...")
 }
@@ -66,10 +67,12 @@ codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
 
 # defaults: time stuff
 if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
+if (any(is.na(seasonsf))) seasonsf[is.na(seasonsf)] <- "Jan-Dec"
 if (!exists("fromsp")) fromsp <- rep(NA, t=nsettings)
 if (!exists("tosp")) tosp <- rep(NA, t=nsettings)
 froms_plot <- tos_plot <- rep(NA, t=nsettings)
 if (!exists("seasonsp")) seasonsp <- seasonsf
+if (any(is.na(seasonsp))) seasonsp[is.na(seasonsp)] <- seasonsf[is.na(seasonsp)]
 if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effect
 if (all(n_mas == 1)) {
     if (add_unsmoothed == F) {
@@ -148,8 +151,7 @@ if (nsettings == 1) { # mycols my colors nicer than R defaults
 } else if (nsettings == 2) {
     cols_vec <- c("black", "#E41A1C") # black, myred
 } else if (nsettings >= 3) {
-    # my default: (black, red, blue) instead of R default (black, red, blue)
-    cols_vec <- c("black", "#E41A1C", "#377EB8")
+    cols_vec <- c("black", "#E41A1C", "#377EB8") # my default: (black, myred, myblue) instead of R default (black, red, blue)
     if (nsettings > 3) {
         if (F) {
             cols_vec <- c(cols_vec, 4:nsettings)
@@ -161,8 +163,10 @@ if (nsettings == 1) { # mycols my colors nicer than R defaults
 }
 if (!exists("cols")) {
     cols <- cols_vec
-} else if (!exists("cols")) {
-    if (is.integer(cols)) { # user provided color numbers
+} else if (exists("cols")) {
+    #message("provided `cols`: ", paste(cols, collapse=", "))
+    if (is.numeric(cols)) {
+        cols <- as.integer(cols)
         cols <- cols_vec[cols]
     }
 }
@@ -1682,6 +1686,7 @@ for (i in 1:nsettings) {
                     cmd[timedimind] <- paste0("dims[[", i, "]]$time_inds")
                     cmd <- paste0("datas[[", i, "]][[", var_with_timedim_ind, "]] <- ",
                                   "datas[[", i, "]][[", var_with_timedim_ind, "]][", paste0(cmd, collapse=""))
+                    message("todo: remove the squeeze condition here ...")
                     if (squeeze) {
                         cmd <- paste0(cmd, ",drop=T]")
                     } else {
@@ -2405,7 +2410,7 @@ if (!exists("datasma")) {
 
 
 # calculate monthly and annual means
-if (F && any(sapply(lapply(lapply(dims, names), "==", "time"), any))) { 
+if (T && any(sapply(lapply(lapply(dims, names), "==", "time"), any))) { 
 
     message("\nsome settings have \"time\" dim --> calc monthly climatology and annual means ...")
     datasmon <- datasan <- datas # lazy declaration
@@ -2569,14 +2574,16 @@ if (F && any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
         rm(datasan)
     }
 
-} # if any setting has time dim
+} else { # if any setting has time dim
+    message("\ndo not calculate monthly and annual means ...")
+}
 # finished calculating monthly means if applicable
 
 ## calculate temporal mean (long term mean; ltm)
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
     datasltm <- datas
     for (i in seq_len(nsettings)) {
-        if (i == 1) message("\n", "some settings have \"time\" dim --> calc temporal means ...")
+        if (i == 1) message("\n", "some settings have \"time\" dim --> calc long time means ...")
         ltm_range <- paste0(dims[[i]]$time[1], " to ", dims[[i]]$time[length(dims[[i]]$time)])
         message(i, "/", nsettings, ": ", names_short[i], " (", ltm_range, ") ...")
         for (vi in 1:length(datas[[i]])) {
@@ -4006,11 +4013,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 pos_cols <- c("#fbd3eb", "#f693cc", "#f584c6", "#ef47a8", "#ec0f64")
                 neg_cols <- "#5b5cb2"
                 nlevels <- 20
-            } else if (any(varname == c("temp2", "tslm1", "THO"))) {
+            } else if (F && any(varname == c("temp2", "tslm1", "THO"))) {
                 message("special zlim")
                 #zlim <- c(-0.566165227890015, 2.67736038208008) # annual
                 #zlim <- c(-2.46028671264648, 2.82926086425781) # jun
-                zlim <- c(-0.738620281219482, 6.65275375366211) # dec
+                #zlim <- c(-0.738620281219482, 6.65275375366211) # dec
                 message("min, max = ", zlim[1], ", ", zlim[2])
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
@@ -4856,17 +4863,18 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #le$pos <- "topleft" 
                 #le$pos <- "left"
                 #le$pos <- "bottomleft"
-                le$pos <- "topright"
-                #le$pos <- "bottomright" 
+                #le$pos <- "topright"
+                le$pos <- "bottomright" 
                 #le$pos <- c(tatn[1], yat[length(yat)-1])
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), yat[length(yat)])
                 #le$ncol <- ceiling(length(z)/4) 
                 #le$ncol <- length(z)
                 #le$ncol <- length(z)/2
-                #le$ncol <- 1
-                le$ncol <- 2
+                le$ncol <- 1
+                #le$ncol <- 2
                 #le$ncol <- length(z)
+                if (le$ncol > length(z)) stop("defined more legend columns than data") 
                 le$text <- names_legend_p
                 le$col <- cols_p
                 le$lty <- ltys_p
@@ -4879,12 +4887,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch[i] <- NA
                     }
                 }
-                #le$cex <- 1
+                le$cex <- 1
                 #le$cex <- 0.85
                 #le$cex <- 0.7
                 #le$cex <- 0.75
                 #le$cex <- 0.66
-                le$cex <- 0.5
+                #le$cex <- 0.5
                 # add stuf to legend here
                 if (F && varname == "temp2") {
                     message("\nadd non hadcrut4 to ", mode_p, " datas legend ...")
