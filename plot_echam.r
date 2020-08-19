@@ -3983,7 +3983,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             message("get global zlim ... ", appendLF=F)
             zlim <- range(z, na.rm=T)
-            message("min/max = ", zlim[1], " / ", zlim[2])
+            message("min, max = ", zlim[1], ", ", zlim[2])
             zlevels <- NULL
             pos_cols <- NULL
             neg_cols <- NULL
@@ -4006,10 +4006,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 pos_cols <- c("#fbd3eb", "#f693cc", "#f584c6", "#ef47a8", "#ec0f64")
                 neg_cols <- "#5b5cb2"
                 nlevels <- 20
-            } else if (varname == "tslm1") {
+            } else if (any(varname == c("temp2", "tslm1"))) {
                 message("special zlim")
                 #zlim <- c(-0.429356994628906, 2.67736038208008) # annual
-                zlim <- c(-2.46028671264648, 2.82926086425781) # jun
+                #zlim <- c(-2.46028671264648, 2.82926086425781) # jun
+                zlim <- c(-0.509613037109375, 6.65275375366211) # dec
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim, nlevels=nlevels,

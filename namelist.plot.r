@@ -187,7 +187,8 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- -7000
     remove_mean_tos <- -7000
     #seasonsf <- "annual"
-    seasonsf <- "Jun"
+    #seasonsf <- "Jun"
+    seasonsf <- "Dec"
     #seasonsf <- "yearsum"
     #seasonsp <- "Feb" # cdo's default season timestamps: DJF->Feb, MAM->May, JJA->Aug, SON->Nov
     #seasonsp <- "May"
