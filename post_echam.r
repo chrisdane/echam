@@ -163,13 +163,13 @@ if (exists("season_names")) {
         }
     }
 }
-if (!exists("levs_out")) levs_out <- rep(NA, t=nsettings)
-lev_fnames <- levs_out
-if (any(!is.na(levs_out))) {
-    lev_fnames[which(!is.na(levs_out))] <- paste0("_", levs_out[which(!is.na(levs_out))])
+if (!exists("sellevels")) sellevels <- rep(NA, t=nsettings)
+if (!exists("lev_fnames")) lev_fnames <- rep("", t=nsettings)
+if (any(!is.na(sellevels))) {
+    lev_fnames[which(!is.na(sellevels))] <- paste0("_sellevel_", sellevels[which(!is.na(sellevels))])
 }
-if (any(is.na(levs_out))) {
-    lev_fnames[which(is.na(levs_out))] <- ""
+if (any(is.na(sellevels))) {
+    lev_fnames[which(is.na(sellevels))] <- ""
 }
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
 
@@ -273,7 +273,7 @@ for (i in 1:nsettings) {
     message("season_name = ", season_names[i])
     message("season_inds = ", paste0(season_inds[[i]], collapse=","))
     message("area_out = ", areas_out[i])
-    if (!is.na(levs_out[i])) message("lev_out = ", levs_out[i])
+    if (!is.na(sellevels[i])) message("lev_out = ", sellevels[i])
     if (!is.null(new_date_list[[i]])) {
         if (!is.null(new_date_list[[i]]$years)) {
             message("new_date_list[[", i, "]]$years = ")
@@ -937,7 +937,8 @@ for (i in 1:nsettings) {
                 if (clean) system(paste0("rm -v ", varcheck_file))
             
                 # construct necessary cdo commands
-                message("\nconstruct cdo command chain ...")
+                message("\nconstruct cdo command chain (cdo version = ", 
+                        paste(cdo_version, collapse="."), ") ...")
 
                 ## cat/mergetime/etc.
                 if (modes[i] == "timmean") {
@@ -969,8 +970,8 @@ for (i in 1:nsettings) {
 
                 ## sellevel
                 cdosellevel <- "" # default: none
-                if (!is.na(levs_out[i])) {
-                    cdosellevel <- paste0("-sellevel,", paste0(levs_out[i], collapse=","))
+                if (!is.na(sellevels[i])) {
+                    cdosellevel <- paste0("-sellevel,", paste0(sellevels[i], collapse=","))
                 }
                 
                 ## sellonlatbox
@@ -1001,10 +1002,10 @@ for (i in 1:nsettings) {
                 # ...
 
                 ## construct cdo command
-                # cdo version must be >= 1.9.4 to chain commands
-                #   `-select,name=` 
+                # cdo version must be >= 1.9.4 to chain commands like
+                #   `-select,name=`, `-sellevel`, `-selmon`
                 # and 
-                #   `-f <type> copy`, `-fldmean`, `-selmon`, `-sellevel`, etc.
+                #   `-f <type> copy`, `-fldmean`, etc.
 
                 # separate cdo selection and calculation commands if 
                 if (!is.null(new_date_list[[i]]) || # set new time values to result of selection (before calculation)
@@ -1015,12 +1016,12 @@ for (i in 1:nsettings) {
                     
                     cdo_chain <- "separate"
                     message(ifelse(!is.null(new_date_list[[i]]), 
-                                         paste0("`new_date_list[[", i, "]]` is not NULL"),
-                                         paste0("cdo version ", paste(cdo_version, collapse="."), " < 1.9.4")),
+                                   paste0("`new_date_list[[", i, "]]` is not NULL"),
+                                   paste0("cdo version ", paste(cdo_version, collapse="."), " < 1.9.4")),
                             " --> have to run separate cdo selection\n",
                             ifelse(!is.null(new_date_list[[i]]),
-                                   "   `[[-t <model>] -f <type> [copy]] -sellevel,<lev> -select,name=<varname>`\n",
-                                   "   `[[-t <model>] -f <type> [copy]] -selmon,<mon> -sellevel,<lev> -select,name=<varname>`\n"),
+                                   "   `[[-t <model>] -f <type> [copy]] -sellevel,<lev> -select,name=<varname>`, etc.\n",
+                                   "   `[[-t <model>] -f <type> [copy]] -selmon,<mon> -sellevel,<lev> -select,name=<varname>`, etc.\n"),
                             "and calculation\n",
                             ifelse(!is.null(new_date_list[[i]]),
                                    "   `-fldmean`, `-selmon`, etc.\n",
@@ -1030,9 +1031,9 @@ for (i in 1:nsettings) {
                     ## 1st cmd: selection
                     cmd_select <- cdoselect # always needed: `-select,name=<varname>`
 
-                    # only allowed chaining here: `-f <type copy>`
+                    # allowed chaining with early cdo version: `-f <type copy>`
                     if (cdoconvert != "") {
-                        cmd_select <- paste0(cdo_convert, " ", cmd_select)
+                        cmd_select <- paste0(cdoconvert, " ", cmd_select)
                     }
                     
                     # check for further selection commands if wanted
@@ -1062,7 +1063,7 @@ for (i in 1:nsettings) {
                         cmd_calc <- paste0(cmd_calc, " ", cdoselarea)
                     }
                     
-                    # check for `-sellevel`
+                    # check for `-sellev`
                     if (cdosellevel != "") {
                         cmd_calc <- paste0(cmd_calc, " ", cdosellevel)
                     }
@@ -1196,7 +1197,7 @@ for (i in 1:nsettings) {
                             cdo_version[1] == 1 && cdo_version[2] >= 9 && cdo_version[3] >= 4)) { 
                     
                     cdo_chain <- "alltogether"
-                    message("\n", "cdo version ", paste(cdo_version, collapse="."), " >= 1.9.4",
+                    message("\ncdo version ", paste(cdo_version, collapse="."), " >= 1.9.4",
                             " AND `new_date_list[[", i, "]]` is NULL\n",
                             "--> can run a single cdo selection and calculation command as e.g.\n",
                             "   `[[-t <model>] -f <type> [copy]] -fldmean -sellevel,<lev> -select,name=<varname>`\n",
@@ -1955,10 +1956,6 @@ for (i in 1:nsettings) {
                                     if (!file.exists(ncofile_vec[nco_ncap2_chunki])) { # output file exists?
                                         stop("ncofile_vec[", nco_ncap2_chunki, "] = ", ncofile_vec[nco_ncap2_chunki], 
                                              " does not exist but it should")
-                                    } else {
-                                        if (clean) {
-                                            message("todo: rm \"", ncofile_vec[nco_ncap2_chunki], "\" here?")
-                                        }
                                     }
 
                                     if (clean) system(paste0("rm -v ", nco_ncap2_txt))
@@ -1980,6 +1977,12 @@ for (i in 1:nsettings) {
                                 }
                                 message("run `", cmd_cat, "` ...")
                                 system(cmd_cat)
+                                
+                                if (clean) {
+                                    cmd <- paste0("rm -v ", paste(ncofile_vec, collapse=" "))
+                                    message("run `", cmd, "` ... (not enabled yet)")
+                                    #system(cmd)
+                                }
 
                             } else if (nchar_cmd_ncap2 <= nco_nchar_max_arglist) {
                               

@@ -1,4 +1,7 @@
-# helper functions for echam repo
+# load and/or define helper functions for echam repo
+
+# load myfunctions
+source("~/scripts/r/functions/myfunctions.r")
 
 # host options
 get_host <- function() {

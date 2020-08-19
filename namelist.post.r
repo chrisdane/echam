@@ -233,7 +233,7 @@ if (F) { # old hist
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
-    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-7_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
@@ -245,7 +245,7 @@ if (F) { # old hist
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_fort_75"
     #prefixes <- "cosmos-aso-wiso_Hol-7_fort_75_monmean"
     #prefixes <- "cosmos-aso-wiso_Hol-T_fort_75_monmean"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101" # THO
+    prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101" # THO
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_5_remapcon2_r120x101" # SAO
     #prefixes <- "cosmos-aso-wiso_Hol-7_grb_code_183_remapcon2_r120x101" # zmld
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_grb_code_183_remapcon2_r120x101"
@@ -255,7 +255,7 @@ if (F) { # old hist
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
-    fvarnames <- "tslm1"
+    #fvarnames <- "tslm1"
     #fvarnames <- "u10"
     #fvarnames <- "v10"
     #fvarnames <- "wind10"
@@ -279,7 +279,7 @@ if (F) { # old hist
     #fvarnames <- "aps"
     #fvarnames <- "lm_aps_as_time"
     #fvarnames <- "quv_direction"
-    #levs_out <- "int1000-100hPa"
+    #lev_fnames <- "int1000-100hPa"
     #fvarnames <- "wisoaprt"
     #fvarnames <- "wisoaprt_d"
     #fvarnames <- "wisoevap"
@@ -287,7 +287,7 @@ if (F) { # old hist
     #fvarnames <- "wisoaprt_d_post"
     #fvarnames <- "wisoevap_d_post"
     #fvarnames <- "wisope_d_post"
-    #levs_out <- "sellevel_2"
+    #sellevels <- "2"
     #fvarnames <- "aprt_times_temp2"
     #fvarnames <- "aprt_times_tsurf"
     #fvarnames <- "temp2aprt"
@@ -342,9 +342,9 @@ if (F) { # old hist
     #fvarnames <- "c85_ICEVOL_LAB" # Seaice_Volume_Labrador_Sea [m3]
     #fvarnames <- "c144_ICEARE_SO" # Seaice_Area_Southern_Ocean [m2]
     #fvarnames <- "c145_ICEVOL_SO" # Seaice_Volume_Southern_Ocean [m3]
-    #fvarnames <- "THO"
+    fvarnames <- "THO"
     #fvarnames <- "SAO"
-    #levs_out <- "sellevel_6
+    sellevels <- "6"
     #fvarnames <- "zmld"
     #fvarnames <- "SICOMO"
     #areas_out_list <- list(list(name="NA45to90N",

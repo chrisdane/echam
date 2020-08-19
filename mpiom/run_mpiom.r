@@ -1,4 +1,4 @@
-# r
+# mpiom section of echam repo
 
 source("../helper_functions.r")
 source("mpiom_functions.r")
@@ -13,24 +13,25 @@ if (T) {
         files <- list.files("/scratch/simulation_database/incoming/Hol-Tx10/output",
                             pattern=glob2rx("Hol-Tx10_mpiom_*.grb"), full.names=T)
         outpath <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom"
-    } else if (F) { # Hol-T chunk 1 & 2 from paul on stan
+    } else if (T) { # Hol-T chunk 1 & 2 from paul on stan
         files <- list.files("/ace/user/pgierz/cosmos-aso-wiso/Hol-T/outdata_finished/mpiom",
                             pattern=glob2rx("Hol-T_mpiom_*.grb"), full.names=T)
         # from 4407 to 6699 
         #files <- files[3608:length(files)]
         # from 3884 to 3913: 6k mean
-        files <- files[3085:3114]
+        #files <- files[3085:3114]
         outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom_of_paul"
-    } else if (T) { # Hol-T2 (chunk 3) on stan
+    } else if (F) { # Hol-T2 (chunk 3) on stan
         files <- list.files("/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T2/outdata/mpiom", 
                             pattern=glob2rx("Hol-T2_mpiom_*.grb"), full.names=T)
         # from 3970 to 3999: PI mean
-        files <- files[1068:1097]
+        #files <- files[1068:1097]
         outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T2/outdata/mpiom"
     }
     mpiom_remap2lonlat(files=files, 
-                       #cdo_select="select,code=2", # THO
-                       cdo_select="select,code=5", # SAO
+                       #todo: select var and e.g. depth
+                       cdo_select="select,code=2", # THO
+                       #cdo_select="select,code=5", # SAO
                        #cdo_select="select,code=183", # zmld
                        #cdo_select="select,code=27", # PSIUWE hor. bar. streamfunction
                        #cdo_select="select,code=15", # SICOMO ice compactness
