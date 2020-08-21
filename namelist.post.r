@@ -200,8 +200,9 @@ if (F) { # old hist
     }
 
 } else if (T) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
-    models <- "echam5"
+    #models <- "echam5"
     #models <- "mpiom1"
+    models <- "jsbach"
     # hol-7 on stan:
     #datapaths <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-7/outdata/echam5"
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-7/outdata/mpiom"
@@ -210,11 +211,12 @@ if (F) { # old hist
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/echam5" # links with dt=10 yrs timestamps
     #datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-Tx10/outdata/mpiom" # links with dt=10 yrs timestamps
     # hol-t on stan:
-    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5" # links w correct timestamps
+    #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/echam5" # links w correct timestamps
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" # links w correct timestamps
+    datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/jsbach" # links w correct timestamps
     #datapaths <- "/ace/user/stschuet/Hol-T_echam5_wiso_links"
     #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
-    fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
+    #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-7_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
     #fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
@@ -231,9 +233,10 @@ if (F) { # old hist
     #fpatterns <- "Hol-7_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc" # sicmom
     #fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
     #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
+    fpatterns <- "Hol-T_jsbach_veg_mm_<YYYY><MM>.grb" 
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
-    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-7_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
@@ -253,6 +256,7 @@ if (F) { # old hist
     #prefixes <- "cosmos-aso-wiso_Hol-7_grb_code_15_remapcon2_r120x101" # sicomo
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_grb_code_15_remapcon2_r120x101"
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101"
+    prefixes <- "cosmos-aso-wiso_Hol-T_veg_mm"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
     #fvarnames <- "tslm1"
@@ -260,7 +264,7 @@ if (F) { # old hist
     #fvarnames <- "v10"
     #fvarnames <- "wind10"
     #fvarnames <- "srad0"
-    fvarnames <- "srad0d"
+    #fvarnames <- "srad0d"
     #fvarnames <- "trad0"
     #fvarnames <- "aprt"
     #fvarnames <- "aprl"
@@ -379,6 +383,8 @@ if (F) { # old hist
                                                                  )
                                               ) # setting 1
                                           )
+    fvarnames <- "act_fpc"
+    codes <- 31
     modes <- "select"
     #modes <- "timmean"
     #modes <- "yearmean"
