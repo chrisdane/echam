@@ -1552,10 +1552,10 @@ for (i in 1:nsettings) {
         }
         
         if (vars_per_file[vi] == paste0("var", codes[i])) {
-            message("variable name of nc file \"", vars_per_file[i], 
-                    "\" equals \"var`codes[", i, "]` = \"var", codes[i], 
+            message("variable name of variable \"", vars_per_file[vi], 
+                    "\" equals \"var`codes[", i, "]`\" = \"var", codes[i], 
                     "\". use `varnames_in[", i, "]` = \"", varnames_in[i], "\" from now on ...")
-            names(vars)[i] <- varnames_in[i]
+            names(vars)[vi] <- varnames_in[i]
         } else {
             names(vars)[vi] <- vars_per_file[vi]
         }
@@ -2058,8 +2058,8 @@ for (i in 1:nsettings) {
             }
         
         } else if (varname == "lm_temp2_as_time_slope") {
-            #data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
-            data_infos[[i]][[vi]]$label <- "2m temperature PI - 7ka"
+            data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
+            #data_infos[[i]][[vi]]$label <- "2m temperature PI - 7ka"
             if (F) {
                 message("special: *-1")
                 data_infos[[i]][[vi]]$offset$operator <- "*"
@@ -2067,10 +2067,29 @@ for (i in 1:nsettings) {
                 data_infos[[i]][[vi]]$label <- "2m temperature 7ka - PI"
             }
         
+        } else if (varname == "lm_THO_as_time_slope") {
+            if (all(levs == 6)) {
+                data_infos[[i]][[vi]]$label <- "SST trend [K/7k years]"
+            } else {
+                data_infos[[i]][[vi]]$label <- "potential temperature trend [K/7k years]"
+            }
+        
+        } else if (varname == "lm_SICOMO_as_time_slope") {
+            data_infos[[i]][[vi]]$label <- "sea ice fraction trend [fraction/7k years]"
+
         } else if (varname == "lm_aprt_as_time_slope") {
-            message("special label")
             data_infos[[i]][[vi]]$label <- "total precip trend [mm/a/7k years]"
        
+        } else if (varname == "lm_act_fpc_as_time_slope") {
+            if (all(levs == "sum1-4lev")) {
+                data_infos[[i]][[vi]]$label <- "Forest trend [fraction/7k years]"
+            } else {
+                data_infos[[i]][[vi]]$label <- "fractional plant cover trend [fraction/7k years]"
+            }
+        
+        } else if (varname == "lm_albedo_as_time_slope") {
+            data_infos[[i]][[vi]]$label <- "Albedo trend [fraction/7k years]"
+
         } else if (varname == "SICOMO") {
             data_infos[[i]][[vi]]$offset$operator <- "/"
             data_infos[[i]][[vi]]$offset$power <- 6+6 # 1x10^6: m2 --> km2
@@ -2282,78 +2301,79 @@ if (!is.na(remove_setting)) {
 
 
 # remove some temporal mean if defined
-if (any(!is.na(remove_mean_froms)) || any(!is.na(remove_mean_tos))) {
-    message("\nremove temporal means between")
-    for (i in 1:nsettings) {
-        message(i, "/", nsettings, ": ", names_short[i], " ...")
-        if (!is.na(remove_mean_froms[i])) {
-            message("   `remove_mean_froms[", i, "]` = ", remove_mean_froms[i], "\n",
-                    "   `remove_mean_tos[", i, "]` = ", remove_mean_tos[i])
-            if (any(names(dims[[i]]) == "time")) {
-                if (remove_mean_froms[i] < 0) {
-                    remove_fromslt <- as.POSIXlt(paste0("0-01-01 00:00:00"), tz="UTC")
-                    remove_fromslt <- seq.POSIXt(remove_fromslt, by="-1 year", l=abs(remove_mean_froms[i]) + 1)
-                    remove_fromslt <- remove_fromslt[length(remove_fromslt)]
-                } else {
-                    remove_fromslt <- as.POSIXlt(paste0(remove_mean_froms[i], "-01-01 00:00:00"), tz="UTC")
-                }
-                if (remove_mean_tos[i] < 0) {
-                    remove_toslt <- as.POSIXlt(paste0("0-12-31 00:00:00"), tz="UTC")
-                    remove_toslt <- seq.POSIXt(remove_toslt, by="-1 year", l=abs(remove_mean_tos[i]) + 1)
-                    remove_toslt <- remove_toslt[length(remove_toslt)]
-                } else {
-                    remove_toslt <- as.POSIXlt(paste0(remove_mean_tos[i], "-12-31 23:59:59"), tz="UTC")
-                }
-                time_inds <- which(dims[[i]]$time >= remove_fromslt & dims[[i]]$time <= remove_toslt)
-                if (length(time_inds) == 0) {
-                    stop("no data found between these given dates.")
-                } else {
-                    for (vi in 1:length(datas[[i]])) {
-                        message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi]) 
-                        # check if variable has time dim
-                        dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
-                        timedimind <- which(dims_of_var == "time")
-                        if (length(timedimind) == 1) {
-                            message("      found ", length(time_inds), " time points from ", 
-                                    min(dims[[i]]$time[time_inds]), " to ", max(dims[[i]]$time[time_inds]))
-                            apply_dims <- 1:length(dims_of_var)
-                            mu <- rep(",", t=length(dims_of_var))
-                            mu[timedimind] <- paste0("time_inds")
-                            if (length(apply_dims) == 1) { # data is vector
-                                mu <- paste0("mu <- mean(datas[[", i, "]][[", vi, "]][", 
-                                             paste0(mu, collapse=""), "], na.rm=T)")
-                                message("      ", mu)
-                                eval(parse(text=mu))
-                                message("      mu = ", mu, " ", data_infos[[i]][[vi]]$units)
-                                datas[[i]][[vi]] <- datas[[i]][[vi]] - mu 
-                            } else { # data is array
-                                apply_dims <- apply_dims[-timedimind]
-                                mu <- paste0("mu <- apply(datas[[", i, "]][[", vi, "]][", paste0(mu, collapse=""), 
-                                             "], c(", paste(apply_dims, collapse=","), "), mean, na.rm=T)")
-                                message("      ", mu)
-                                eval(parse(text=mu))
-                                message("      min/max mu = ", min(mu, na.rm=T), " / ", max(mu, na.rm=T))
-                                if (length(dims_of_var) == 2) {
-                                    datas[[i]][[vi]] <- datas[[i]][[vi]] - t(array(mu, dim=dim(t(datas[[i]][[vi]]))))
-                                } else {
-                                    stop("note defineeddd yettt")
-                                }
-                            } # if data is vector or array
-                        } else {
-                            message("   variable ", vi, " \"", names(datas[[i]])[vi], "\" has no time dim.")
-                        } # remove temporal mean if variable has time dim
-                    } # for vi all variables per setting
-                } # if temporal mean can be removed
-            } else { # if any variable has time dim or not
-                stop("`remove_mean_froms[", i, "]` = \"", remove_mean_froms[i], 
-                     "\" but data has not \"time\" dim.")
-            } # if any variable has time dim or not
-        } # if remove_mean_froms[i] is not NA
-    } # for i nsettings
-} else {
-    message("\n`remove_mean_froms` all NA --> do not remove temporal means ...")
-} # finished removing a temporal mean
-
+if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
+    if (any(!is.na(remove_mean_froms)) || any(!is.na(remove_mean_tos))) {
+        message("\nremove temporal means between")
+        for (i in 1:nsettings) {
+            message(i, "/", nsettings, ": ", names_short[i], " ...")
+            if (!is.na(remove_mean_froms[i])) {
+                message("   `remove_mean_froms[", i, "]` = ", remove_mean_froms[i], "\n",
+                        "   `remove_mean_tos[", i, "]` = ", remove_mean_tos[i])
+                if (any(names(dims[[i]]) == "time")) {
+                    if (remove_mean_froms[i] < 0) {
+                        remove_fromslt <- as.POSIXlt(paste0("0-01-01 00:00:00"), tz="UTC")
+                        remove_fromslt <- seq.POSIXt(remove_fromslt, by="-1 year", l=abs(remove_mean_froms[i]) + 1)
+                        remove_fromslt <- remove_fromslt[length(remove_fromslt)]
+                    } else {
+                        remove_fromslt <- as.POSIXlt(paste0(remove_mean_froms[i], "-01-01 00:00:00"), tz="UTC")
+                    }
+                    if (remove_mean_tos[i] < 0) {
+                        remove_toslt <- as.POSIXlt(paste0("0-12-31 00:00:00"), tz="UTC")
+                        remove_toslt <- seq.POSIXt(remove_toslt, by="-1 year", l=abs(remove_mean_tos[i]) + 1)
+                        remove_toslt <- remove_toslt[length(remove_toslt)]
+                    } else {
+                        remove_toslt <- as.POSIXlt(paste0(remove_mean_tos[i], "-12-31 23:59:59"), tz="UTC")
+                    }
+                    time_inds <- which(dims[[i]]$time >= remove_fromslt & dims[[i]]$time <= remove_toslt)
+                    if (length(time_inds) == 0) {
+                        stop("no data found between these given dates.")
+                    } else {
+                        for (vi in 1:length(datas[[i]])) {
+                            message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi]) 
+                            # check if variable has time dim
+                            dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
+                            timedimind <- which(dims_of_var == "time")
+                            if (length(timedimind) == 1) {
+                                message("      found ", length(time_inds), " time points from ", 
+                                        min(dims[[i]]$time[time_inds]), " to ", max(dims[[i]]$time[time_inds]))
+                                apply_dims <- 1:length(dims_of_var)
+                                mu <- rep(",", t=length(dims_of_var))
+                                mu[timedimind] <- paste0("time_inds")
+                                if (length(apply_dims) == 1) { # data is vector
+                                    mu <- paste0("mu <- mean(datas[[", i, "]][[", vi, "]][", 
+                                                 paste0(mu, collapse=""), "], na.rm=T)")
+                                    message("      ", mu)
+                                    eval(parse(text=mu))
+                                    message("      mu = ", mu, " ", data_infos[[i]][[vi]]$units)
+                                    datas[[i]][[vi]] <- datas[[i]][[vi]] - mu 
+                                } else { # data is array
+                                    apply_dims <- apply_dims[-timedimind]
+                                    mu <- paste0("mu <- apply(datas[[", i, "]][[", vi, "]][", paste0(mu, collapse=""), 
+                                                 "], c(", paste(apply_dims, collapse=","), "), mean, na.rm=T)")
+                                    message("      ", mu)
+                                    eval(parse(text=mu))
+                                    message("      min/max mu = ", min(mu, na.rm=T), " / ", max(mu, na.rm=T))
+                                    if (length(dims_of_var) == 2) {
+                                        datas[[i]][[vi]] <- datas[[i]][[vi]] - t(array(mu, dim=dim(t(datas[[i]][[vi]]))))
+                                    } else {
+                                        stop("note defineeddd yettt")
+                                    }
+                                } # if data is vector or array
+                            } else {
+                                message("   variable ", vi, " \"", names(datas[[i]])[vi], "\" has no time dim.")
+                            } # remove temporal mean if variable has time dim
+                        } # for vi all variables per setting
+                    } # if temporal mean can be removed
+                } else { # if any variable has time dim or not
+                    stop("`remove_mean_froms[", i, "]` = \"", remove_mean_froms[i], 
+                         "\" but data has not \"time\" dim.")
+                } # if any variable has time dim or not
+            } # if remove_mean_froms[i] is not NA
+        } # for i nsettings
+    } else {
+        message("\n`remove_mean_froms` all NA --> do not remove temporal means ...")
+    } # finished removing a temporal mean
+} # if any data has time dim
 
 # apply moving average in time --> datasma
 n_mas_fname <- rep("", t=nsettings) # default

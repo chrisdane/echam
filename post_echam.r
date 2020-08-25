@@ -394,7 +394,7 @@ for (i in 1:nsettings) {
         #cmd <- paste0("find ", datapaths[i], " -type ", ftypes[i], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
         cmd <- paste0("find ", datapaths[i], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
         # --> `find` does not have this limit 
-        message("\n", "run `", cmd, "` ...")
+        message("\nrun `", cmd, "` ...")
         ticcmd <- Sys.time()
         files <- system(cmd, intern=T)
         toccmd <- Sys.time()
@@ -415,7 +415,7 @@ for (i in 1:nsettings) {
 
         # show found files
         if (verbose > 0) {
-            message("\n", "found ", length(files), " file", 
+            message("\nfound ", length(files), " file", 
                     ifelse(length(files) > 1, "s", ""), ":")
             if (length(files) > 1) {
                 ht(df, n=30)
@@ -485,7 +485,7 @@ for (i in 1:nsettings) {
        
         # show years, months, etc. of found files
         if (verbose > 0) {
-            message("\n", "found years/months/etc. based on ", length(files), " file", 
+            message("\nfound years/months/etc. based on ", length(files), " file", 
                     ifelse(length(files) > 1, "s", ""), ":")
             if (length(files) > 1) {
                 ht(df)
@@ -494,7 +494,7 @@ for (i in 1:nsettings) {
             }
         }
             
-        # special treatment: if only YYYY_to and YYYY_from were provided, but not YYYY, derive `years_filenames` now
+        # special treatment: if only YYYY_from and YYYY_to were provided, but not YYYY, derive `years_filenames` now
         if (!exists("years_filenames")) {
             if (exists("years_filenames_from") && exists("years_filenames_to")) {
                 message("\nderive input years based on \"<YYYY_from>\" and \"<YYYY_to>\" in a consecutive order ...") 
@@ -512,7 +512,7 @@ for (i in 1:nsettings) {
 
         # todo: same as above with months_filenames
 
-        # check if found inpu years are strange: dt not constant
+        # check if found input years are strange: dt not constant
         if (length(unique(diff(unique(years_filenames)))) != 1) {
             warning("found years have non-constant dt. evaulate further with e.g. `diff(unique(years_filenames))`")
         }
@@ -702,7 +702,7 @@ for (i in 1:nsettings) {
         if ((!all(years_filenames == cummax(years_filenames)) && !all(years_filenames == cummin(years_filenames))) # not monotonically increasing/decreasing
             #|| years_filenames[1] != as.numeric(froms[i]) || years_filenames[length(years_filenames)] != as.numeric(tos[i]) # or files are not in wanted order
             ) { 
-            message("\n", "years obtained from filenames are not monotonically increasing or decreasing\n",
+            message("\nyears obtained from filenames are not monotonically increasing or decreasing\n",
                     " --> sort according to `froms[", i, "]` = \"", froms[i], 
                     "\" to `tos[", i, "]` = \"", tos[i], "\" ...")
             #years_filenames_ordered_inds <- sort(years_unique, index.return=T)$ix 
