@@ -410,8 +410,7 @@ for (i in 1:nsettings) {
         }
 
         # separate into dirname and basename
-        basenames <- basename(files)
-        df <- data.frame(basenames, stringsAsFactors=F)
+        df <- data.frame(files, stringsAsFactors=F)
 
         # show found files
         if (verbose > 0) {
@@ -433,7 +432,7 @@ for (i in 1:nsettings) {
                 pattern_inds <- which(sapply(sub_list, "[[", "pattern") == special_patterns_in_filenames[pati])
                 pattern_list <- vector("list", l=length(pattern_inds))
                 for (patj in seq_along(pattern_inds)) {
-                    pattern_list[[patj]] <- substr(basenames, 
+                    pattern_list[[patj]] <- substr(files, 
                                                    sub_list[[pattern_inds[patj]]]$replacement_inds[1],
                                                    sub_list[[pattern_inds[patj]]]$replacement_inds[2])
                 }
@@ -552,7 +551,6 @@ for (i in 1:nsettings) {
                 }
                 message("remove them ...")
                 files <- files[-wrong_file_inds]
-                basenames <- basenames[-wrong_file_inds]
                 df <- df[-wrong_file_inds,]
                 years_filenames <- years_filenames[-wrong_file_inds]
                 if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[-wrong_file_inds]
@@ -597,7 +595,7 @@ for (i in 1:nsettings) {
             to_ind <- to_ind[length(to_ind)]
             years_wanted <- years_filenames[from_ind:to_ind]
             message("--> found filename years from inds ", from_ind, " to ", to_ind, 
-                    " (from total 1 to ", length(files), "): ",
+                    " (from total 1 to ", length(years_filenames), "): ",
                     min(years_wanted), " to ", max(years_wanted))
         }
         outside_years_inds <- which(years_filenames %in% years_wanted == F)
@@ -608,7 +606,7 @@ for (i in 1:nsettings) {
 
             # remove _files_ of years outside of wanted range if one year per file
             if (length(files) == length(years_filenames)) { 
-                message("\n   case a) length(files) = ", length(files), " == length(years_filenames) = ", 
+                message("   case a) length(files) = ", length(files), " == length(years_filenames) = ", 
                         length(years_filenames), "\n",
                         "      --> assume that data of one year is saved in one file\n",
                         "      --> remove ", length(outside_years_inds), " file",
@@ -616,13 +614,12 @@ for (i in 1:nsettings) {
                         " outside of wanted years defined by froms[", i, "] = ", 
                         froms[i], " to tos[", i, "] = ", tos[i], " ...")
                 files <- files[-outside_years_inds]
-                basenames <- basenames[-outside_years_inds]
                 df <- df[-outside_years_inds,]
                 years_filenames <- years_filenames[-outside_years_inds]
                 if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[-outside_years_inds]
                 if (verbose > 0) {
-                    message("\n", "      --> remaining ", length(files), " file", 
-                            ifelse(length(files) > 1, "s", ""), ":")
+                    message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
+                            " remaining:")
                     if (length(files) > 1) {
                         ht(df)
                     } else {
@@ -633,17 +630,47 @@ for (i in 1:nsettings) {
             # else remove _timepoints_ of years outside of wanted range if more than one year per file
             } else if (length(files) != length(years_filenames)) {
                 if (length(files) == 1) {
-                    message("\n   case b) length(files) = ", length(files), " != length(years_filenames) = ", 
-                            length(years_filenames), "\n",
+                    # case b1) only 1 input file with all available years
+                    message("   case b1) length(files) = ", length(files), " != length(years_filenames) = ", 
+                            length(years_filenames), " AND length(files) == 1\n",
                             "      --> assume that data of more than one year is saved in one file\n",
                             "      --> remove ", length(outside_years_inds), " timestep",
                             ifelse(length(outside_years_inds) > 1, "s", ""),
                             " outside of wanted years defined by froms[", i, "] = ", 
                             froms[i], " to tos[", i, "] = ", tos[i], " ...")
-                    cdoselyear <- paste0("-selyear,", froms[i], "/", tos[i])
                 } else {
-                    stop("not implemented yet")
-                }
+                    # case b2) more than one input files with multiple years
+                    message("   case b2) length(files) = ", length(files), " != length(years_filenames) = ", 
+                            length(years_filenames), " AND length(files) != 1\n",
+                            "      --> assume that data of more than one year is saved in more than one file\n",
+                            "      --> remove ", length(outside_years_inds), " timestep",
+                            ifelse(length(outside_years_inds) > 1, "s", ""),
+                            " outside of wanted years defined by froms[", i, "] = ", 
+                            froms[i], " to tos[", i, "] = ", tos[i], " ...")
+                    if (!any(names(df) == "YYYY_from") || !any(names(df) == "YYYY_to")) {
+                        stop("this should not happen")
+                    }
+                    inds <- rep(F, t=length(files))
+                    for (fi in seq_along(files)) {
+                        years_to_check <- df$YYYY_from[fi]:df$YYYY_to[fi]
+                        if (any(years_to_check %in% years_wanted)) {
+                            inds[fi] <- T
+                        }
+                    }
+                    files <- files[inds]
+                    df <- df[inds,]
+                    years_filenames <- years_filenames[-outside_years_inds]
+                    if (verbose > 0) {
+                        message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
+                                " remaining:")
+                        if (length(files) > 1) {
+                            ht(df)
+                        } else {
+                            print(df)
+                        }
+                    } 
+                } # case b1 or case b2
+                cdoselyear <- paste0("-selyear,", froms[i], "/", tos[i]) # for case b1 and b2
                 message("      --> `cdoselyear` = \"", cdoselyear, "\"")
             
             } # if (length(files) == length(years_filenames)) or not
@@ -663,7 +690,6 @@ for (i in 1:nsettings) {
                 }
                 message("remove ", length(file_season_inds), " files out of these months. files:")
                 files <- files[file_season_inds]
-                basenames <- basenames[file_season_inds]
                 df <- df[file_season_inds,]
                 years_filenames <- years_filenames[-outside_years_inds]
                 months_filenames <- months_filenames[-outside_years_inds]
@@ -718,7 +744,6 @@ for (i in 1:nsettings) {
             }
             # update:
             files <- files[years_filenames_ordered_inds]
-            basenames <- basenames[years_filenames_ordered_inds]
             df <- df[years_filenames_ordered_inds,]
             years_filenames <- years_filenames[years_filenames_ordered_inds]
             if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[years_filenames_ordered_inds]
@@ -744,7 +769,6 @@ for (i in 1:nsettings) {
                     } # for yi years_unique
                     # update:
                     files <- files[months_filenames_ordered_inds]
-                    basenames <- basenames[months_filenames_ordered_inds]
                     df <- df[months_filenames_ordered_inds,]
                     years_filenames <- years_filenames[months_filenames_ordered_inds]
                     months_filenames <- months_filenames[months_filenames_ordered_inds]
@@ -757,8 +781,8 @@ for (i in 1:nsettings) {
 
         # get format of input files
         message("\nget input file format from first found file ...")
-        cmd <- paste0("cdo showformat ", datapaths[i], "/", basenames[1])
-        convert_to_nc <- cdo_get_filetype(paste0(datapaths[i], "/", basenames[1]))
+        cmd <- paste0("cdo showformat ", datapaths[i], "/", files[1])
+        convert_to_nc <- cdo_get_filetype(paste0(datapaths[i], "/", files[1]))
         filetype <- gsub(" ", "_", convert_to_nc$file_type) # "NetCDF4 classic zip" -> "NetCDF4_classic_zip"
         convert_to_nc <- convert_to_nc$convert_to_nc
 
@@ -1208,8 +1232,8 @@ for (i in 1:nsettings) {
                                   #" ", cmdcat, 
                                   " ", cdocalc, " ", 
                                   cdosellevel, " ", cdoselarea, " ", 
-                                  cdoselect, " ", 
                                   cdoselmon, " ", cdoselyear, " ",  
+                                  cdoselect, " ", 
                                   " <files> ", fout)
                     if (F) {
                         cmd <- paste0(cmd, " || echo error")

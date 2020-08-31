@@ -199,7 +199,7 @@ if (F) { # old hist
         new_date_list[[1]]$years <- new_date_list[[1]]$years[-(229:240)] # if starting from 3105
     }
 
-} else if (T) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
+} else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
     #models <- "echam5"
     #models <- "mpiom1"
     models <- "jsbach"
@@ -512,6 +512,16 @@ if (F) { # old hist
     modes <- "select"
     froms <- "2650"
     tos <- "2749"
+
+} else if (T) { # esgf
+    datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/lgm/r1i1p1f1/Omon/tob/gn/v20200212"
+    models <- "fesom"
+    fpatterns <- "tob_Omon_AWI-ESM-1-1-LR_lgm_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    prefixes <- "awi-esm-1-1-lr_lgm"
+    fvarnames <- "tob"
+    modes <- "select"
+    froms <- "3901"
+    tos <- "3912"
 
 # ======================================================
 # 2 settings
