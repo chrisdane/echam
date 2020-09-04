@@ -2,12 +2,13 @@
 *
 
 # except
+!README.md
 !echam/
 !jsbach/
 !mpiom/
 !wiso/
-!README.md
 !helper_functions.r
+!load_special_data.r
 !namelist.loop.plot.r
 !namelist.plot.r
 !namelist.post.r
