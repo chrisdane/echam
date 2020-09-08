@@ -54,13 +54,15 @@ if (F) {
 }
 add_first_data_point <- F
 ts_plot_each_setting_in_subplot <- F
-add_data_right_yaxis_ts <- F
+add_data_right_yaxis_ts <- T
 add_cor_data_left_and_right_ts <- T
-add_data_upper_xaxis_ts <- T
+add_data_upper_xaxis_ts <- F
+#add_title <- F
 add_data_right_yaxis_ts_mon <- F
 add_data_right_yaxis_ts_an <- F
 add_cor_data_left_and_right_ts_an <- T
 add_legend_right_yaxis <- F
+add_legend_upper_xaxis <- F
 plot_scatter_s1_vs_s2 <- F
 #scatter_s1_vs_s1_varname <- "temp2"
 scatter_s1_vs_s1_varname <- "tsurf"
@@ -128,7 +130,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     #models <- "echam5"
     models <- "mpiom1"
     #models <- "jsbach"
@@ -317,22 +319,23 @@ if (F) { # awi-esm-1-1-lr hist
 } else if (F) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_Hol-T", "cosmos-aso-wiso_Hol-Tx10")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
-    prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")
+    #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "cosmos-aso-wiso_Hol-Tx10_wiso_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_timeser_ext", "cosmos-aso-wiso_Hol-Tx10_timeser_ext")
-    #prefixes <- c("cosmos-aso-wiso_Hol-T_fort_75_monmean", "cosmos-aso-wiso_Hol-Tx10_fort_75_monmean")
+    prefixes <- c("cosmos-aso-wiso_Hol-T_fort_75_monmean", "cosmos-aso-wiso_Hol-Tx10_fort_75_monmean")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_grb_code_183_remapcon2_r120x101",
     #              "cosmos-aso-wiso_Hol-Tx10_grb_code_183_remapcon2_r120x101")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "Hol-T_stschuett_echam5_wiso") # me vs st annual
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "Hol-T_echam5_wiso") # me vs me_w_st
-    models <- c("echam5", "echam5")
-    #models <- c("mpiom1", "mpiom1")
+    #models <- c("echam5", "echam5")
+    models <- c("mpiom1", "mpiom1")
     names_short <- c("Hol-T", "Hol-Tx10")
     #names_short <- c("ch", "st")
     #names_short <- c("ch", "ch_w_st")
     #names_legend <- names_short
     #names_legend <- c("COSMOS transient", "COSMOS transient x10")
+    names_legend <- c("transient", "transient x10")
     fromsf <- c("0004", "0001")
     #fromsf <- c("0004", "0004")
     #tosf <- c("7000", "7000")
@@ -373,8 +376,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("c85_ICEVOL_LAB", "c85_ICEVOL_LAB")
     #varnames_in <- c("c145_ICEVOL_SO", "c145_ICEVOL_SO")
     #varnames_in <- c("c145_ICEVOL_SO", "c145_ICEVOL_SO")
-    #varnames_in <- rep("amoc", t=2)
-    #codes <- rep(101, t=2)
+    varnames_in <- rep("amoc", t=2)
+    codes <- rep(101, t=2)
     #varnames_in <- c("quv", "quv")
     #varnames_in <- c("quv_direction", "quv_direction")
     #levsf <- c("_int1000-100hPa", "_int1000-100hPa")
@@ -388,14 +391,14 @@ if (F) { # awi-esm-1-1-lr hist
     #levs <- rep("-285to-2180m", t=2)
     #areas <- rep("moc30to60N", t=2)
     #levs <- rep("-285to-2180m", t=2)
-    #areas <- rep("moc26.5N", t=2)
+    areas <- rep("moc26.5N", t=2)
     #areas <- rep("moc50N", t=2)
-    #levs <- rep("-0to-5420m", t=2)
+    levs <- rep("-0to-5420m", t=2)
     #varnames_in <- c("zmld", "zmld")
     #areas <- c("LSeaSouthmld", "LSeaSouthmld")
     #areas <- c("GINmld", "GINmld")
     #areas <- c("weddelmld", "weddelmld")
-    areas <- c("ladoga_remapnn", "ladoga_remapnn")
+    #areas <- c("ladoga_remapnn", "ladoga_remapnn")
     #areas <- c("shuchye_remapnn", "shuchye_remapnn")
     #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapnn")
     #areas <- c("taymyr_remapnn", "taymyr_remapnn")
@@ -403,8 +406,6 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
     #areas <- c("two-yurts_remapnn", "two-yurts_remapnn")
     #areas <- c("kotokel_remapnn", "kotokel_remapnn")
-    #areas <- c("moc45to60N", "moc30to60N", "moc50N", "moc45to60N", "moc30to60N", "moc26.5N")
-    #levs <- c("-285to-2180m", "-285to-2180m", "-0to-5420m", "-0to-5420m", "-0to-5420m", "-0to-5420m")
     #seasonsf <- rep("annual", t=2)
     #seasonsf <- rep("seasmean", t=2)
     #seasonsf <- rep("yearsum", t=2)
@@ -419,9 +420,9 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- rep("Sep", t=2)
     #seasonsp <- rep("Dec", t=2)
     #n_mas <- c(1, 1)
-    n_mas <- c(250*12, 50*12) # jan-dec
+    n_mas <- c(30*12, 10*12)
+    #n_mas <- c(250*12, 50*12) # jan-dec
     #n_mas <- c(120*12, 20*12) # seasons
-    #n_mas <- c(50*12, 10*12)
     #remove_mean_froms <- c(-179, 0)
     #remove_mean_tos <- c(-179, 0)
 
@@ -515,18 +516,18 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " last 30 years mean minus piControl")))))
     }
 
-} else if (F) { # Hol-7 vs Hol-T with vs without orbital acceleration
+} else if (t) { # Hol-7 vs Hol-T with vs without orbital acceleration
     #prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_wiso_mm", t=3)
     #prefixes <- rep("cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area", t=3)
-    #prefixes <- c("cosmos-aso-wiso_Hol-7_wiso_mm", 
-    #              "cosmos-aso-wiso_Hol-T_wiso_mm", 
-    #              "cosmos-aso-wiso_Hol-Tx10_wiso_mm") 
+    prefixes <- c("cosmos-aso-wiso_Hol-7_wiso_mm", 
+                  "cosmos-aso-wiso_Hol-T_wiso_mm", 
+                  "cosmos-aso-wiso_Hol-Tx10_wiso_mm") 
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", 
     #              "Hol-T_stschuett_echam5_wiso",
     #              "Hol-T_echam5_wiso")
-    prefixes <- c("cosmos-aso-wiso_Hol-7_fort_75_monmean",
-                  "cosmos-aso-wiso_Hol-T_fort_75_monmean",
-                  "cosmos-aso-wiso_Hol-Tx10_fort_75_monmean")
+    #prefixes <- c("cosmos-aso-wiso_Hol-7_fort_75_monmean",
+    #              "cosmos-aso-wiso_Hol-T_fort_75_monmean",
+    #              "cosmos-aso-wiso_Hol-Tx10_fort_75_monmean")
     #prefixes <- c("cosmos-aso-wiso_Hol-7_timeser_ext",
     #              "cosmos-aso-wiso_Hol-T_timeser_ext",
     #              "cosmos-aso-wiso_Hol-Tx10_timeser_ext")
@@ -537,8 +538,8 @@ if (F) { # awi-esm-1-1-lr hist
     #              "cosmos-aso-wiso_Hol-T_grb_code_183_remapcon2_r120x101",
     #              "cosmos-aso-wiso_Hol-Tx10_grb_code_183_remapcon2_r120x101")
     #prefixes <- rep("cosmos-aso-wiso_mpiom1_Hol-T_grb_code_15_remapcon2_r120x101", t=3) # sicmomo
-    #models <- rep("echam5", t=3)
-    models <- rep("mpiom1", t=3)
+    models <- rep("echam5", t=3)
+    #models <- rep("mpiom1", t=3)
     #names_short <- rep("Hol-Tx10", t=3)
     #names_short <- rep("Hol-T", t=3)
     names_short <- c("Hol-7", "Hol-T", "Hol-Tx10")

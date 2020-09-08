@@ -58,7 +58,7 @@ if (!exists("postpaths")) { # default from post_echam.r
 if (!exists("plotpath")) { # default from post_echam.r
     plotpath <- paste0(host$workpath, "/plots/", paste(unique(models), collapse="_vs_"))
 }
-if (!exists("names_legend")) names_legend <- rep(names_short, t=nsettings)
+if (!exists("names_legend")) names_legend <- names_short
 
 # defaults: code stuff
 if (!exists("codes")) codes <- rep("", t=nsettings)
@@ -188,6 +188,13 @@ plotname_suffix <- "" # default: nothing
 if (center_ts) plotname_suffix <- "_center_ts"
 if (scale_ts) plotname_suffix <- "_scale_ts"
 
+if (any(add_linear_trend)) {
+    if (length(add_linear_trend) != nsettings) {
+        message("\n`add_linear_trend`=T but of length ", length(add_linear_trend), 
+                " and nsettings = ", nsettings, " --> repeat ", nsettings, " times ...") 
+        add_linear_trend <- rep(add_linear_trend, t=nsettings)
+    }
+}
 
 ## allocate
 datas <- vector("list", l=nsettings)
@@ -3492,10 +3499,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add obs to ylim_right
                 if (T && varname == "siarean") {
-                    message("\n", "add nsidc annual to right ylim ...")
+                    message("add nsidc annual to right ylim ...")
                     ylim_right <- range(ylim_right, nsidc_siareas_annual$siareas, na.rm=T)
                 } # if add nsidc
-                message("\n", "ylim_right=", appendLF=F)
+                message("ylim_right=", appendLF=F)
                 dput(ylim_right)
                 ylim_right[is.infinite(ylim_right)] <- 0
                 if (!exists("yat_right")) {
@@ -3507,8 +3514,130 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # if add_data_right_yaxis_ts finished prepare right axis data
 
             if (add_data_upper_xaxis_ts) {
+                message("\nprepare data upper xaxis ..")
+                message("update data_upper datas for plot groups: samevars and samedims")
+                data_upper <- list(data=list())
+                tlimlt_upper <- vector("list", l=length(data_upper))
+       
+                if (varname == "amoc" && any(names_short == "Hol-Tx10")) {
+                    message("\nadd Hol-Tx10 ts in model years wout stretching on upper xaxis")
+                    data_upper <- list(data=vector("list", l=1))
+                    names(data_upper$data) <- "Hol-Tx10"
+                    ind <- which(names_short == "Hol-Tx10")
+                    x <- dims[[ind]]$timelt
+                    yrs_unique <- unique(x$year + 1900)
+                    yrs_new <- rep(NA, t=length(x))
+                    for (i in seq_along(yrs_unique)) { # model years from 1 to n
+                        inds <- which(x$year + 1900 == yrs_unique[i])
+                        yrs_new[inds] <- rep(i, t=length(inds))
+                    }
+                    x$year <- yrs_new - 1900
+                    data_upper$data[[1]] <- list(x=x,
+                                                 y=z[[ind]],
+                                                 ind=ind,
+                                                 text=paste0(names_legend[ind], "(model years)"), 
+                                                 #col=cols[ind], 
+                                                 col="#377EB8",
+                                                 lty=2, lwd=1, pch=NA)
+                    data_upper$label <- "Model year of accelerated run"
+                    data_upper$suffix <- "_with_upper_xaxis"
+                    tlimlt_upper[[1]] <- range(data_upper$data[[1]]$x)
+                } # if amoc and Hol-Tx10 
+                
+                # check
+                if (length(data_upper$data) == 0) {
+                    warning("you provided `add_data_upper_xaxis_ts=T` but did not ",
+                            "define which data should be plotted on upper xaxis.\n",
+                            " --> set `add_data_upper_xaxis_ts=F` and continue ...")
+                    add_data_upper_xaxis_ts <- F
+                    data_upper <- list(suffix="") # default
+                
+                } else {
 
-            }
+                    tlim_upper <- range(lapply(tlimlt_upper, as.numeric)) # seconds by default 
+                    tlimlt_upper <- as.POSIXlt(tlim_upper, origin="1970-01-01", tz="UTC")
+                    tlimlt_upper <- range(tlimlt_upper)
+                    
+                    # upper time labels
+                    tlablt_upper <- as.POSIXlt(pretty(tlimlt_upper, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
+
+                    # remove lables which are possibly out of limits due to pretty
+                    tlab_diff_secs <- as.numeric(diff(range(tlablt_upper)), units="secs") # duration of time labels
+                    if (any(tlablt_upper < tlimlt_upper[1])) {
+                        # check if the too early autmatic time labels are negligible
+                        overshoot_diff <- abs(as.numeric(tlablt_upper[tlablt_upper < tlimlt_upper[1]], units="secs") - tlim_upper[1])
+                        overshoot_rel <- overshoot_diff/tlab_diff_secs*100
+                        if (any(overshoot_rel > 1)) { # todo: only change pretty labels if overshoot is > 1% of total time label range  
+                            message("remove some automatic labels < ", tlimlt[1], " ...")
+                            print(tlablt_upper[which(tlablt_upper < tlimlt_upper[1])[overshoot_rel > 1]])
+                            tlablt_upper <- tlablt_upper[-which(tlablt_upper < tlimlt_upper[1])[overshoot_rel > 1]]
+                        }
+                    }
+                    if (any(tlablt_upper > tlimlt_upper[2])) {
+                        # check if the too late automatic time labels are negligible
+                        overshoot_diff <- abs(as.numeric(tlablt_upper[tlablt_upper > tlimlt_upper[2]], units="secs") - tlim_upper[2])
+                        overshoot_rel <- overshoot_diff/tlab_diff_secs*100
+                        if (any(overshoot_rel > 1)) { # todo: only change pretty labels if overshoot is > 1% of total time label range  
+                            message("remove some automatic labels > ", tlimlt_upper[2], " ...")
+                            print(tlablt_upper[which(tlablt_upper > tlimlt_upper[2])[overshoot_rel > 1]])
+                            tlablt_upper <- tlablt_upper[-which(tlablt_upper > tlimlt_upper[2])[overshoot_rel > 1]]
+                        }
+                    }
+                    tatn_upper <- as.numeric(tlablt_upper)
+                    
+                    # modify time axis labels YYYY-MM-DD depending on range covered:
+                    if (tlab_diff_secs >= 360*24*60*60) { # do not show days if range of tlim is above 1 year
+                        message("duration of time dim is longer than 1 year --> ",
+                                "use year only as time labels and set `tunit` from \"time\" to \"year\" ...")
+                        tlablt_upper <- tlablt_upper$year + 1900 # YYYY; this destroys POSIX object
+                    } else { # decrease label size due to long labels
+                        message("duration of time dim is shorter than 1 year --> ",
+                                "change time label angle ...")
+                        tlabsrt_upper <- 45
+                    }
+                    message("tlablt_upper= ", paste(tlablt_upper, collapse=", "))
+
+                } # if length(data_upper$data) == 0
+
+            } else { # add_data_upper_xaxis_ts=F
+                data_upper <- list(suffix="") # default
+            } # if add_data_upper_xaxis_ts
+
+            # after check
+            if (add_data_upper_xaxis_ts) {
+                
+                nsettings_upper <- length(data_upper$data)
+
+                if (add_smoothed) {
+                    for (i in seq_len(nsettings_upper)) {
+                        data_upper$data[[i]]$yma <- filter(data_upper$data[[i]]$y, 
+                                                           rep(1/n_mas[data_upper$data[[i]]$ind], 
+                                                               t=n_mas[data_upper$data[[i]]$ind]))
+                    }
+                }
+
+                if (!exists("ylim_upper")) { # possibly set by user
+                    message("use automatic data upper xaxis limits ...")
+                    ylim_upper <- vector("list", l=length(data_upper$data))
+                    ylim_upper_ma <- ylim_upper
+                    for (i in seq_len(nsettings_upper)) {
+                        ylim_upper[[i]] <- range(data_upper$data[[i]]$y, na.rm=T)
+                        if (add_smoothed) {
+                            ylim_upper_ma[[i]] <- range(data_upper$data[[i]]$yma, na.rm=T)
+                        }
+                    } # i in data_upper
+                    if ((add_unsmoothed && add_smoothed) ||
+                        (add_unsmoothed && !add_smoothed)) {
+                        ylim_upper <- range(ylim_upper)
+                    } else if (!add_unsmoothed && add_smoothed) {
+                        ylim_upper <- range(ylim_upper_ma)
+                    }
+                } # if ylim_upper does not already exist
+                
+                message("ylim_upper=", appendLF=F)
+                dput(ylim_upper)
+                ylim_upper[is.infinite(ylim_upper)] <- 0
+            } 
             # if add_data_upper_xaxis_ts finished prepare upper axis data
             
             if (center_ts || scale_ts) {
@@ -3551,6 +3680,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim <- range(ylimma)
             }
             ylim[is.infinite(ylim)] <- 0
+
+            if (add_data_upper_xaxis_ts) {
+                ylim <- range(ylim, ylim_upper)
+            } # change ylim according to ylim_upper
 
             # ylim of obs, etc.
             if (F && varname == "temp2") {
@@ -3682,7 +3815,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim[2] <- ylim[2] + 0*diff(ylim)
             }
             
-            message("\n", "ylim=", appendLF=F)
+            message("\nfinal ylim=", appendLF=F)
             dput(ylim)
             yat <- pretty(ylim, n=8)
             ylab <- format(yat, trim=T)
@@ -3694,7 +3827,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       froms_plot_p, "_to_", tos_plot_p, 
                                       n_mas_fname_p, "_", 
                                       areas_p, collapse="_vs_"), 
-                               data_right$suffix, ts_highlight_seasons$suffix,
+                               data_right$suffix, data_upper$suffix, 
+                               ts_highlight_seasons$suffix,
                                plotname_suffix,
                                ".", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
@@ -3702,14 +3836,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, n_mas_fname_p, "_", areas_p, collapse="_vs_"), 
-                                       data_right$suffix, ts_highlight_seasons$suffix,
+                                       data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
                                        plotname_suffix,
                                        ".", p$plot_type)
                 } else if (plot_groups[plot_groupi] == "samedims") {
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, "_", varnames_in_p, collapse="_vs_"), 
-                                       data_right$suffix, ts_highlight_seasons$suffix,
+                                       data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
                                        plotname_suffix,
                                        ".", p$plot_type)
                 }
@@ -3734,7 +3868,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # set plot margins
             mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
             mar[4] <- 1 # decrease right margin
-            if (!add_title) mar[3] <- 1 # decrease upper margin
+            if (!add_title && !add_data_upper_xaxis_ts) mar[3] <- 1 # decrease upper margin
             if (F) {
                 if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
             }
@@ -3757,7 +3891,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             axis(2, at=yat, labels=ylab, las=2)
 
             # add time label on x-axis
-            mtext(side=1, tunit, line=3, cex=0.9)
+            mtext(side=1, tunit, line=2, cex=0.9)
 
             # add variable label on y-axis
             mtext(side=2, data_info$label, line=4.5, cex=0.9)
@@ -4091,7 +4225,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             box()
 
             if (add_data_right_yaxis_ts) {
-                message("\n", "`add_data_right_yaxis_ts` = T --> add data right yaxis ...")
+
+                message("\n`add_data_right_yaxis_ts` = T --> add data right yaxis ...")
                 par(new=T)
                 plot(data_right$data[[1]]$x, data_right$data[[1]]$y, #log="y", 
                      t="n", xlim=tlim, ylim=ylim_right, 
@@ -4207,7 +4342,97 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             } # if add_data_right_yaxis_ts
 
-            message("\n", "save plot ", plotname, " ...")
+            if (add_data_upper_xaxis_ts) {
+
+                message("\n`add_data_upper_xaxis_ts` = T --> add data upper xaxis ...")
+                par(new=T)
+                plot(data_upper$data[[1]]$x, data_upper$data[[1]]$y, #log="y", 
+                     t="n", xlim=tlim_upper, ylim=ylim, 
+                     xlab=NA, ylab=NA, axes=F)
+                if (tlabsrt == 0) { # add horizontal labels (the default)
+                    axis(3, at=tatn_upper, labels=tlablt_upper, cex.axis=tlabcex)
+                } else { # add non-horizontal labels with angle
+                    axis(3, at=tatn_upper, labels=NA)
+                    # character height in user coordinates
+                    text(x=tatn_upper, y=par("usr")[4] + strheight("1"), labels=tlablt_upper, 
+                         xpd=T, srt=tlabsrt_upper, adj=c(1, 1), cex=tlabcex)
+                }
+
+                # add time label on upper x-axis
+                mtext(side=3, data_upper$label, line=2, cex=0.9)
+
+                # add unsmoothed upper data before smoothed
+                if (add_unsmoothed) {
+                    for (i in seq_along(data_upper$data)) {
+                        message(i, "/", length(data_upper$data), ": ", names(data_upper$data)[i], " unsmoothed ...")
+                        if (length(data_upper$data[[i]]$x) == 1 && data_upper$data[[i]]$x == "const") {
+                            abline(h=data_upper$data[[i]]$y, 
+                                   col=data_upper$data[[i]]$col, lty=data_upper$data[[i]]$lty,
+                                   lwd=data_upper$data[[i]]$lwd)
+                        } else {
+                            lines(data_upper$data[[i]]$x, data_upper$data[[i]]$y, 
+                                  col=data_upper$data[[i]]$col, lty=data_upper$data[[i]]$lty,
+                                  lwd=data_upper$data[[i]]$lwd, pch=data_upper$data[[i]]$pch)
+                        }
+                    }
+                }
+
+                # add smoothed data after unsmoothed
+                if (add_smoothed) {
+                    for (i in seq_along(data_upper$data)) {
+                        message(i, "/", length(data_upper$data), ": ", names(data_upper$data)[i], " smoothed ...")
+                        if (length(data_upper$data[[i]]$x) == 1 && data_upper$data[[i]]$x == "const") {
+                            abline(h=data_upper$data[[i]]$yma, 
+                                   col=data_upper$data[[i]]$col, lty=data_upper$data[[i]]$lty,
+                                   lwd=data_upper$data[[i]]$lwd)
+                        } else {
+                            lines(data_upper$data[[i]]$x, data_upper$data[[i]]$yma, 
+                                  col=data_upper$data[[i]]$col, lty=data_upper$data[[i]]$lty,
+                                  lwd=data_upper$data[[i]]$lwd, pch=data_upper$data[[i]]$pch)
+                        }
+                    }
+                }
+
+                if (add_legend_upper_xaxis) {
+                    message("\nadd default stuff to ", mode_p, " upper xaxis data legend ...")
+                    le <- list()
+                    le$pos <- "topleft" 
+                    le$ncol <- 1
+                    le$text <- sapply(data_upper$data, "[[", "text")
+                    le$col <- sapply(data_upper$data, "[[", "col")
+                    le$lty <- sapply(data_upper$data, "[[", "lty")
+                    le$lwd <- sapply(data_upper$data, "[[", "lwd")
+                    le$pch <- sapply(data_upper$data, "[[", "pch")
+                    for (i in seq_along(data_upper$data)) {
+                        if (types[i] == "p") {
+                            le$lty[i] <- NA
+                        } else if (types[i] == "l") {
+                            le$pch[i] <- NA
+                        }
+                    }
+                    le$cex <- 1
+                    le$cex <- 0.85
+                    # add stuf to legend here
+                    if (F) {
+                        message("\nadd non default stuff to ", mode_p, " legend ...")
+                    }
+                    # reorder reading direction from R's default top->bottom to left->upper
+                    le <- reorder_legend(le)
+                    if (length(le$pos) == 1) {
+                        legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
+                               pch=le$pch, col=le$col, ncol=le$ncol,
+                               x.intersp=0.2, cex=le$cex, bty="n")
+                    } else if (length(le$pos) == 2) {
+                        legend(x=le$pos[1], y=le$pos[2],
+                               legend=le$text, lty=le$lty, lwd=le$lwd,
+                               pch=le$pch, col=le$col, ncol=le$ncol,
+                               x.intersp=0.2, cex=le$cex, bty="n")
+                    }
+                } # if add_legend
+
+            } # if add_data_upper_xaxis_ts
+
+            message("\nsave plot ", plotname, " ...")
             dev.off()
             if (p$plot_type == "pdf") {
                 if("extrafont" %in% (.packages())){

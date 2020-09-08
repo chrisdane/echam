@@ -43,9 +43,11 @@ message("set add_co2_4co2=T if you want to add to plot")
 f <- ""
 if (host$machine_tag == "stan") {
     f <- "/ace/user/pgierz/cosmos-aso-wiso/Hol-T/scripts/Koehler_GHG_forcing_0.001ka_resolution.dat"
+} else if (host$machine_tag == "paleosrv") {
+    f <- "/isibhv/projects/paleo_work/cdanek/data/koehler_etal_2017/Koehler_GHG_forcing_0.001ka_resolution.dat"
 }
 if (file.exists(f)) {
-    message("\n", "read koehler et al. 2017 ghg forcing from ", f, " from paul ...")
+    message("\nread koehler et al. 2017 ghg forcing from ", f, " from paul ...")
     koehler_etal_2017_paul <- read.table(f, col.names=c("year_before_1950", "CO2", "CH4", "N2O"))
     years <- koehler_etal_2017_paul$year_before_1950 # kyr before 1950 in reverse order --> 6.999, 6.998, 6997, ...
     years <- -1*years*1000 # --> -6999, -6998, -6997, ...
@@ -57,9 +59,27 @@ if (file.exists(f)) {
     timelt <- seq.POSIXt(timelt, l=nyears_to_origin, b="-1 year")[nyears_to_origin]
     timelt <- seq.POSIXt(timelt, l=length(years), b=paste0(diff(years)[1], " year"))
     timelt <- as.POSIXlt(timelt)
+    # convert concentration (ppm, ppb, ...) to radiative forcing (W m-2) after joos and spahni 2008 table 3
+    co2_Wm2_fac <- 5.35 # W m-2
+    co2_0_ppm <- 278 # ppm
+    ch4_Wm2_fac <- 0.036
+    ch4_0_ppb <- 742
+    n2o_Wm2_fac <- 0.12
+    n2o_0_ppb <- 272
+    overlap_function <- function(m, n) {
+        0.47*log(1 + 2.01*1e-5*(m*n)^0.75 + 5.31*1e-5*m*(m*n)^1.52)
+    }
+    co2_wm2 <- co2_Wm2_fac*log(koehler_etal_2017_paul$CO2/co2_0_ppm)
+    ch4_wm2 <- ch4_Wm2_fac*(sqrt(koehler_etal_2017_paul$CH4) - sqrt(ch4_0_ppb)) -
+        (overlap_function(m=koehler_etal_2017_paul$CH4, n=n2o_0_ppb) - 
+         overlap_function(m=ch4_0_ppb, n=n2o_0_ppb))
+    n2o_wm2 <- n2o_Wm2_fac*(sqrt(koehler_etal_2017_paul$N2O) - sqrt(n2o_0_ppb)) -
+        (overlap_function(m=ch4_0_ppb, n=koehler_etal_2017_paul$N2O) - 
+         overlap_function(m=ch4_0_ppb, n=n2o_0_ppb))
     koehler_etal_2017_paul <- list(co2=koehler_etal_2017_paul$CO2,
                                    ch4=koehler_etal_2017_paul$CH4,
                                    n2o=koehler_etal_2017_paul$N2O,
+                                   co2_wm2=co2_wm2, ch4_wm2=ch4_wm2, n2o_wm2=n2o_wm2,
                                    time=timelt, timen=as.numeric(timelt),
                                    text="Köhler et al. 2017 (paul)", 
                                    col="red", lty=2, lwd=0.5, pch=NA)
