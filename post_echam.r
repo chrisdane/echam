@@ -782,23 +782,29 @@ for (i in 1:nsettings) {
         # get format of input files
         message("\nget input file format from first found file ...")
         cmd <- paste0("cdo showformat ", datapaths[i], "/", files[1])
-        convert_to_nc <- cdo_get_filetype(paste0(datapaths[i], "/", files[1]))
-        filetype <- gsub(" ", "_", convert_to_nc$file_type) # "NetCDF4 classic zip" -> "NetCDF4_classic_zip"
-        convert_to_nc <- convert_to_nc$convert_to_nc
+        input_file_type <- cdo_get_filetype(paste0(datapaths[i], "/", files[1]))
+        convert_to_nc <- F # default: no conversion to nc needed or wanted
+        if (input_file_type$file_type == "non-nc") { # if conversion to nc is needed
+            if (cdo_convert_grb2nc) { # if conversion to nc is wanted
+                convert_to_nc <- T # convert to nc if needed and wanted
+            } else {
+                message("`cdo_convert_grb2nc`=F --> do not convert postprocessing result to nc although input is non-nc")
+            }
+        }
 
         # construct cdo command (chained cdo commands will be executed from right to left)
         # prefix
         cdoprefix <- paste0(cdo, " ", cdo_silent)
 
         # convert to nc if grb
-        cdoconvert <- "" # default
+        cdoconvert <- "" # default: no conversion
         if (convert_to_nc) {
             if (any(models[i] == c("echam4", "echam5", "echam6", "mpiom1", "ecmwf", "remo", 
                                    "cosmo002", "cosmo201", "cosmo202", "cosmo203", "cosmo205", "cosmo250"))) {
                 cdoconvert <- paste0(cdoconvert, " -t ", models[i])
             }
             cdoconvert <- paste0(cdoconvert, " -f nc")
-        } # if grb
+        } # convert if wanted and input is grb
        
 
         ## run special functions instead of the default process or any entry of `cdo_known_cmds`
@@ -816,7 +822,7 @@ for (i in 1:nsettings) {
                 message("\"", fvarnames[i], "\"", appendLF=F)
             }
             message(" is present in first found file ...")
-            varcheck_file <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", filetype)
+            varcheck_file <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", files[1])
             cmd <- paste0(cdoprefix, " ", cdoconvert, " ", cdoselect, " ", datapaths[i], "/", files[1], " ", varcheck_file)
             message("run `", cmd, "`")
             check <- system(cmd, intern=T)
