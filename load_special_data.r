@@ -1,5 +1,8 @@
 # r
 
+# needs: make_posixlt_origin_function()
+
+
 # cmip6 co2 hist
 f <- ""
 if (host$machine_tag == "mistral") {
@@ -50,7 +53,7 @@ if (file.exists(f)) {
     message("\nread koehler et al. 2017 ghg forcing from ", f, " from paul ...")
     koehler_etal_2017_paul <- read.table(f, col.names=c("year_before_1950", "CO2", "CH4", "N2O"))
     years <- koehler_etal_2017_paul$year_before_1950 # kyr before 1950 in reverse order --> 6.999, 6.998, 6997, ...
-    years <- -1*years*1000 # --> -6999, -6998, -6997, ...
+    years <- -1000*years # --> -6999, -6998, -6997, ...
     # as.POSIXlt("-0001-01-01") --> negative year gives error 
     # "not in a standard unambiguous format"
     # --> but shifting works
@@ -59,15 +62,20 @@ if (file.exists(f)) {
     timelt <- seq.POSIXt(timelt, l=nyears_to_origin, b="-1 year")[nyears_to_origin]
     timelt <- seq.POSIXt(timelt, l=length(years), b=paste0(diff(years)[1], " year"))
     timelt <- as.POSIXlt(timelt)
-    # convert concentration (ppm, ppb, ...) to radiative forcing (W m-2) after joos and spahni 2008 table 3
+    ## convert concentration (ppm, ppb, ...) to radiative forcing (W m-2) relative to preindustrial reference concentrations `<gas>_0_<unit>`
+    message("convert concentration (ppm, ppb, ...) to radiative forcing (W m-2) relative to reference concentrations ...")
+    # after joos and spahni 2008 table 3
     co2_Wm2_fac <- 5.35 # W m-2
     co2_0_ppm <- 278 # ppm
-    ch4_Wm2_fac <- 0.036
-    ch4_0_ppb <- 742
-    n2o_Wm2_fac <- 0.12
-    n2o_0_ppb <- 272
+    #co2_0_ppm <- koehler_etal_2017_paul$CO2[which(timelt$year+1900==0)] 
+    ch4_Wm2_fac <- 0.036 # W m-2
+    ch4_0_ppb <- 742 # ppb
+    #ch4_0_ppb <- koehler_etal_2017_paul$CH4[which(timelt$year+1900==0)]
+    n2o_Wm2_fac <- 0.12 # W m-2
+    n2o_0_ppb <- 272 # pp
+    #n2o_0_ppb <- koehler_etal_2017_paul$N2O[which(timelt$year+1900==0)]
     overlap_function <- function(m, n) {
-        0.47*log(1 + 2.01*1e-5*(m*n)^0.75 + 5.31*1e-5*m*(m*n)^1.52)
+        0.47*log(1 + 2.01*1e-5*(m*n)^0.75 + 5.31*1e-15*m*(m*n)^1.52)
     }
     co2_wm2 <- co2_Wm2_fac*log(koehler_etal_2017_paul$CO2/co2_0_ppm)
     ch4_wm2 <- ch4_Wm2_fac*(sqrt(koehler_etal_2017_paul$CH4) - sqrt(ch4_0_ppb)) -
@@ -79,11 +87,13 @@ if (file.exists(f)) {
     koehler_etal_2017_paul <- list(co2=koehler_etal_2017_paul$CO2,
                                    ch4=koehler_etal_2017_paul$CH4,
                                    n2o=koehler_etal_2017_paul$N2O,
-                                   co2_wm2=co2_wm2, ch4_wm2=ch4_wm2, n2o_wm2=n2o_wm2,
+                                   co2_wm2=co2_wm2, ch4_wm2=ch4_wm2, n2o_wm2=n2o_wm2, 
+                                   ghg_wm2=co2_wm2 + ch4_wm2 + n2o_wm2,
                                    time=timelt, timen=as.numeric(timelt),
-                                   text="Köhler et al. 2017 (paul)", 
-                                   col="red", lty=2, lwd=0.5, pch=NA)
-    add_koehler_etal_2017_paul <- F
+                                   #text="Köhler et al. 2017 (paul)", 
+                                   text="GHG forcing anomaly (Köhler et al. 2017)", 
+                                   col="red", lty=2, lwd=1, pch=NA)
+    add_koehler_etal_2017_paul <- T
     message("set add_koehler_etal_2017_paul=", !add_koehler_etal_2017_paul, 
             " if you ", ifelse(add_koehler_etal_2017_paul, 
                                "dont want (or set add_data_right_yaxis_ts=F)", 
@@ -697,8 +707,8 @@ if (F) {
         message("\ndisable here if you do not want to read hanno meyer et al. PLOT data from ", f)
         message("run read_meyer_etal_function() ...")
         #tmp <- read_meyer_etal_function(xlsx_file=f)
-        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
-        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
+        #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
+        tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
         #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
@@ -707,8 +717,8 @@ if (F) {
         #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Kotokel", verbose=F)
         meyer_etal <- list(data=tmp,
                            type="o", 
-                           col="#E41A1C", # myred
-                           #col="#377EB8", # myblue
+                           #col="#E41A1C", # myred
+                           col="#377EB8", # myblue
                            #col="#1B9E77", # mygreen
                            lty=1, lwd=1, pch=1, cex=1)
         if (F) { # plot meyer et al data
@@ -1850,4 +1860,4 @@ objs <- c("f", "time", "years", "timelt", "nyears_to_origin", "origin",
           "cnt", "lon", "lat", "lon_orig", "lat_orig")
 suppressWarnings(rm(list=objs))
 
-message("... finished reading special data sets")
+message("... finished reading special data sets via load_special_data.r")

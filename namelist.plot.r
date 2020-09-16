@@ -16,8 +16,8 @@ message("\nthese variables will be ignored:\n",
 add_title <- T
 add_legend <- T
 message("\nrun myfunctions.r:setDefaultPlotOptions() ...")
-p <- setDefaultPlotOptions(plot_type="png", 
-                           #plot_type="pdf",
+p <- setDefaultPlotOptions(#plot_type="png", 
+                           plot_type="pdf",
                            #family_png="Droid Sans Mono", 
                            #family_pdf="Droid Sans Mono"
                            )
@@ -34,9 +34,9 @@ add_zeroline <- T
 add_unsmoothed <- F
 add_smoothed <- T
 add_sd <- F
-add_linear_trend <- T
+add_linear_trend <- F
 add_nonlinear_trend <- F
-center_ts <- F
+center_ts <- F # either center_ts or scale_ts or none but not both
 scale_ts <- F
 ts_highlight_seasons <- list(bool=F, suffix="") # default
 if (F) {
@@ -55,13 +55,13 @@ if (F) {
 add_first_data_point <- F
 ts_plot_each_setting_in_subplot <- F
 add_data_right_yaxis_ts <- T
-add_cor_data_left_and_right_ts <- T
+add_cor_data_left_and_right_ts <- F
 add_data_upper_xaxis_ts <- F
 #add_title <- F
 add_data_right_yaxis_ts_mon <- F
 add_data_right_yaxis_ts_an <- F
-add_cor_data_left_and_right_ts_an <- T
-add_legend_right_yaxis <- F
+add_cor_data_left_and_right_ts_an <- F
+add_legend_right_yaxis <- T
 add_legend_upper_xaxis <- F
 plot_scatter_s1_vs_s2 <- F
 #scatter_s1_vs_s1_varname <- "temp2"
@@ -89,7 +89,7 @@ plot_redfit <- F
 
 # map plot options
 proj <- "rectangular" #"rectangular"
-add_land <- T
+addland <- T
 reorder_lon_from_0360_to_180180 <- T
 add_grid <- F
 
@@ -320,22 +320,23 @@ if (F) { # awi-esm-1-1-lr hist
     #prefixes <- c("cosmos-aso-wiso_Hol-T", "cosmos-aso-wiso_Hol-Tx10")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")
-    #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "cosmos-aso-wiso_Hol-Tx10_wiso_mm")
+    prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "cosmos-aso-wiso_Hol-Tx10_wiso_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_timeser_ext", "cosmos-aso-wiso_Hol-Tx10_timeser_ext")
-    prefixes <- c("cosmos-aso-wiso_Hol-T_fort_75_monmean", "cosmos-aso-wiso_Hol-Tx10_fort_75_monmean")
+    #prefixes <- c("cosmos-aso-wiso_Hol-T_fort_75_monmean", "cosmos-aso-wiso_Hol-Tx10_fort_75_monmean")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_grb_code_183_remapcon2_r120x101",
     #              "cosmos-aso-wiso_Hol-Tx10_grb_code_183_remapcon2_r120x101")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "Hol-T_stschuett_echam5_wiso") # me vs st annual
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "Hol-T_echam5_wiso") # me vs me_w_st
-    #models <- c("echam5", "echam5")
-    models <- c("mpiom1", "mpiom1")
+    models <- c("echam5", "echam5")
+    #models <- c("mpiom1", "mpiom1")
     names_short <- c("Hol-T", "Hol-Tx10")
     #names_short <- c("ch", "st")
     #names_short <- c("ch", "ch_w_st")
     #names_legend <- names_short
+    names_legend <- c("COSMOS", "COSMOS x10")
     #names_legend <- c("COSMOS transient", "COSMOS transient x10")
-    names_legend <- c("transient", "transient x10")
+    #names_legend <- c("transient", "transient x10")
     fromsf <- c("0004", "0001")
     #fromsf <- c("0004", "0004")
     #tosf <- c("7000", "7000")
@@ -352,8 +353,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("srad0d", "srad0d")
     #varnames_in <- c("albedo", "albedo")
     #varnames_in <- c("wisoaprt_d", "wisoaprt_d")
-    #varnames_in <- c("wisoaprt_d_post", "wisoaprt_d_post")
-    #levs <- c(2, 2)
+    varnames_in <- c("wisoaprt_d_post", "wisoaprt_d_post")
+    levs <- c(2, 2)
     #varnames_in <- c("tsurfaprt", "tsurfaprt")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
@@ -376,25 +377,25 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("c85_ICEVOL_LAB", "c85_ICEVOL_LAB")
     #varnames_in <- c("c145_ICEVOL_SO", "c145_ICEVOL_SO")
     #varnames_in <- c("c145_ICEVOL_SO", "c145_ICEVOL_SO")
-    varnames_in <- rep("amoc", t=2)
-    codes <- rep(101, t=2)
+    #varnames_in <- rep("amoc", t=2)
+    #codes <- rep(101, t=2)
+    #varnames_in <- c("zmld", "zmld")
     #varnames_in <- c("quv", "quv")
     #varnames_in <- c("quv_direction", "quv_direction")
     #levsf <- c("_int1000-100hPa", "_int1000-100hPa")
     #varnames_out_samedims <- "quv"
     #names_legend_samedims <- c("qu", "qv")
-    modes <- rep("select", t=2)
+    #modes <- rep("select", t=2)
     #modes <- rep("seasmean", t=2)
-    #modes <- rep("yearsum", t=2)
+    modes <- rep("yearsum", t=2)
     #modes <- rep("seassum", t=2)
     #areas <- rep("moc45to60N", t=2)
     #levs <- rep("-285to-2180m", t=2)
     #areas <- rep("moc30to60N", t=2)
     #levs <- rep("-285to-2180m", t=2)
-    areas <- rep("moc26.5N", t=2)
+    #areas <- rep("moc26.5N", t=2)
     #areas <- rep("moc50N", t=2)
-    levs <- rep("-0to-5420m", t=2)
-    #varnames_in <- c("zmld", "zmld")
+    #levs <- rep("-0to-5420m", t=2)
     #areas <- c("LSeaSouthmld", "LSeaSouthmld")
     #areas <- c("GINmld", "GINmld")
     #areas <- c("weddelmld", "weddelmld")
@@ -403,12 +404,12 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapnn")
     #areas <- c("taymyr_remapnn", "taymyr_remapnn")
     #areas <- c("emanda_remapnn", "emanda_remapnn")
-    #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
-    #areas <- c("two-yurts_remapnn", "two-yurts_remapnn")
     #areas <- c("kotokel_remapnn", "kotokel_remapnn")
+    #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
+    areas <- c("two-yurts_remapnn", "two-yurts_remapnn")
     #seasonsf <- rep("annual", t=2)
     #seasonsf <- rep("seasmean", t=2)
-    #seasonsf <- rep("yearsum", t=2)
+    seasonsf <- rep("yearsum", t=2)
     #seasonsf <- rep("seassum", t=2)
     #seasonsp <- rep("DJF", t=2)
     #seasonsp <- rep("MAM", t=2)
@@ -420,7 +421,12 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- rep("Sep", t=2)
     #seasonsp <- rep("Dec", t=2)
     #n_mas <- c(1, 1)
-    n_mas <- c(30*12, 10*12)
+    #n_mas <- c(30, 10)
+    #n_mas <- c(90, 30)
+    #n_mas <- c(175, 30)
+    #n_mas <- c(200, 20)
+    n_mas <- c(250, 50)
+    #n_mas <- c(30*12, 10*12)
     #n_mas <- c(250*12, 50*12) # jan-dec
     #n_mas <- c(120*12, 20*12) # seasons
     #remove_mean_froms <- c(-179, 0)
@@ -516,8 +522,9 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " last 30 years mean minus piControl")))))
     }
 
-} else if (t) { # Hol-7 vs Hol-T with vs without orbital acceleration
+} else if (T) { # Hol-7 vs Hol-T with vs without orbital acceleration
     #prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_wiso_mm", t=3)
+    #prefixes <- rep("cosmos-aso-wiso_Hol-T_main_mm", t=3)
     #prefixes <- rep("cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area", t=3)
     prefixes <- c("cosmos-aso-wiso_Hol-7_wiso_mm", 
                   "cosmos-aso-wiso_Hol-T_wiso_mm", 
@@ -548,27 +555,28 @@ if (F) { # awi-esm-1-1-lr hist
     names_legend <- c("7k ctrl", "transient", "transient x10")
     #names_legend <- c("COSMOS 7k", "COSMOS transient", "COSMOS transient x10")
     #names_legend <- c("Mar", "Sep", "Annual")
+    #names_legend <- c("Dec", "Jun", "Annual")
     #cols <- c(3, 2, 1)
     #fromsf <- rep("0001", t=3) # hol-tx10
     #fromsf <- rep("0004", t=3) # hol-t
-    fromsf <- c("0800", "0004", "0001") # hol-7 complete, hol-t, hol-tx10
+    #fromsf <- c("0800", "0004", "0001") # hol-7 complete, hol-t, hol-tx10
     #fromsf <- c("2791", "0004", "0001") # hol-7 last 110 years, hol-tx10, hol-t
-    #fromsf <- c("2800", "0004", "0001") # hol-7 last 101 years, hol-tx10, hol-t
+    fromsf <- c("2800", "0004", "0001") # hol-7 last 101 years, hol-tx10, hol-t
     #fromsf <- c("0004", "0004", "0004") # ch, st, ch_w_st
     tosf <- c("2900", "7000", "7001") # hol-7, hol-t, hol-tx10
     #tosf <- c("7000", "7000", "7000") # ch, st, ch_w_st
     #tosf <- rep("7001", t=3) # hol-tx10
     #tosf <- rep("7000", t=3) # hol-t
-    #new_origins <- rep(-7000, t=3)
-    #new_origins <- rep(-6996, t=3)
-    new_origins <- c(-9101, -6996, -7000) # hol-7 complete, hol-t, hol-tx10
+    #new_origins <- rep(-7000, t=3) # hol-tx10
+    #new_origins <- rep(-6996, t=3) # hol-t
+    #new_origins <- c(-9101, -6996, -7000) # hol-7 complete, hol-t, hol-tx10
     #new_origins <- c(-7110, -6996, -7000) # hol-7 last 110 years, hol-t, hol-tx10
-    #new_origins <- c(-7101, -6996, -7000) # hol-7 last 101 years, hol-t, hol-tx10
+    new_origins <- c(-7101, -6996, -7000) # hol-7 last 101 years, hol-t, hol-tx10
     #new_origins <- c(-6996, -6996, -6996) # ch, st, ch_w_st
     time_ref <- 1950 # any string, e.g. "BP", or number
     #remove_mean_froms <- rep(-6996, t=3)
     #remove_mean_tos <- rep(-6996, t=3)
-    add_linear_trend <- c(F, T, T) # for amoc
+    add_linear_trend <- c(F, T, T)
     #fromsp <- c(-7200, NA, NA)
     #fromsp <- c(-7010, -6996, -7000) # zoom: 7k control/7k transient transition 
     #tosp <- c(-7001, -6980, -6980)
@@ -579,6 +587,8 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsf <- rep("seassum", t=3) # cdo default: date is middle of season
     #seasonsf <- c("annual", NA, NA)
     #seasonsf <- c("Mar", "Sep", "annual")
+    #seasonsf <- c(NA, NA, "annual")
+    #seasonsf <- c("Dec", "Jun", "annual")
     #seasonsp <- rep("DJF", t=3)
     #seasonsp <- rep("MAM", t=3)
     #seasonsp <- rep("JJA", t=3)
@@ -589,6 +599,8 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- rep("Jun", t=3)
     #seasonsp <- rep("Sep", t=3)
     #seasonsp <- c(NA, "Mar", "Sep")
+    #seasonsp <- c("Dec", "Jun", NA)
+    varnames_in <- rep("temp2", t=3)
     #varnames_in <- rep("aprt", t=3)
     #varnames_in <- c("aprt", "aprl", "aprc")
     #varnames_out_samedims <- "aprt"
@@ -606,15 +618,17 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("SICOMO", t=3)
     #varnames_in <- rep("lm_SICOMO_as_time_slope", t=3)
     #varnames_in <- rep("zmld", t=3)
-    varnames_in <- rep("amoc", t=3)
-    codes <- rep(101, t=3)
-    modes <- rep("select", t=3)
-    #modes <- rep("fldmean", t=3)
+    #varnames_in <- rep("amoc", t=3)
+    #codes <- rep(101, t=3)
+    #varnames_in <- rep("srad0d", t=3)
+    #modes <- rep("select", t=3)
+    modes <- rep("fldmean", t=3)
     #modes <- rep("fldsum", t=3)
     #modes <- rep("yearsum", t=3)
     #modes <- rep("seassum", t=3)
-    areas <- rep("moc26.5N", t=3)
-    levs <- rep("-0to-5420m", t=3)
+    #modes <- rep("zonmean", t=3)
+    #areas <- rep("moc26.5N", t=3)
+    #levs <- rep("-0to-5420m", t=3)
     #areas <- rep("northern_hemisphere", t=3)
     #areas <- rep("southern_hemisphere", t=3)
     #areas <- rep("weddelmld", t=3)
@@ -630,8 +644,10 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- rep(100, t=3)
     #n_mas <- rep(150, t=3)
     #n_mas <- c(30, 3*30, 30)
-    n_mas <- c(90, 3*90, 90)
+    #n_mas <- c(90, 3*90, 90)
     #n_mas <- rep(120, t=3)
+    n_mas <- c(120, 360, 120)
+    #n_mas <- rep(360, t=3)
     #n_mas <- c(90, 3*150, 150) # compare seasons
     #n_mas <- c(1000, 3*500, 500) # Hol-7 mean
     #n_mas <- c(1000, 6*500, 3*500) # Hol-7 mean

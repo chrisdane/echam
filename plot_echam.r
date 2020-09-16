@@ -204,7 +204,7 @@ season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1
     
 
 ## load special data
-message("\nload special data sets via load-special_data.r ...")
+message("\nload special data sets via load_special_data.r ...")
 source("load_special_data.r")
 
 
@@ -1080,6 +1080,17 @@ for (i in 1:nsettings) {
 
         # add specific things
         if (any(varname == c("temp2", "tas"))) {
+            if (grepl("C", data_infos[[i]][[vi]]$units)) {
+                message("detected a \"C\" in the `units` attribute of ", varname, 
+                        " --> assume that data is already in deg C")
+                data_infos[[i]][[vi]]$units <- "°C"
+            } else {
+                message("did not detect a \"C\" in the `units` attribute of ", varname, 
+                        " --> assume that data is in K")
+                data_infos[[i]][[vi]]$units <- "°C"
+                data_infos[[i]][[vi]]$offset$operator <- "-"
+                data_infos[[i]][[vi]]$offset$value <- 273.15
+            }
             data_infos[[i]][[vi]]$label <- "2m temperature [°C]"
             if (!is.na(remove_mean_froms[i])) {
                 data_infos[[i]][[vi]]$label <- paste0("2m temperature anomaly wrt ", 
@@ -1092,16 +1103,6 @@ for (i in 1:nsettings) {
             if (F) { # anomaly:
                 message("*** special label ***")
                 data_infos[[i]][[vi]]$label <- "2m temperature anomaly [°C]"
-            } else {
-                if (grepl("C", data_infos[[i]][[vi]]$units)) {
-                    message("detected a \"C\" in the `units` attribute of ", varname, 
-                            " --> assume that data is already in deg C")
-                } else {
-                    message("did not detect a \"C\" in the `units` attribute of ", varname, 
-                            " --> assume that data is in K")
-                    data_infos[[i]][[vi]]$offset$operator <- "-"
-                    data_infos[[i]][[vi]]$offset$value <- 273.15
-                }
             }
         } else if (varname == "toa_imbalance") {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("TOA imbalance [W m"^paste(-2), "]"))))
@@ -1132,7 +1133,12 @@ for (i in 1:nsettings) {
         } else if (varname == "wisoaprt_d") {
             data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (‰)"))
             if (scale_ts) {
-                data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (Index)"))
+                if (T) {
+                    message("special diatom label")
+                    data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O diatom/precip (Index)"))
+                } else {
+                    data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (Index)"))
+                }
             } else {
                 if (!is.na(remove_mean_froms[i])) {
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O (‰) anomaly wrt ", fromto)),
@@ -2777,6 +2783,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # time labels
                 tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
+                if (T) {
+                    message("my special tlablt")
+                    tlablt <- make_posixlt_origin_function(seq(-7000, 0, b=1000)) 
+                }
                 monat <- monlim[1]:monlim[2]
                 monlab <- substr(month.abb[monat], 1, 1) # Jan -> J
 
@@ -2818,9 +2828,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 message("final tlablt = ", paste(tlablt, collapse=", "))
 
-                # if all dates < 0, use "abs(dates) BP" instead
+                # if all dates < 0 AD, use "abs(dates) BP" instead
                 if (tunit == "year" && all(tlablt <= 0)) {
-                    message("all times are <= 0 --> use `abs(times)` for time labels instead ...")
+                    message("all times are <= 0 AD --> use `abs(times)` for time labels instead ...")
                     neg_inds <- which(tlablt < 0)
                     tlablt[neg_inds] <- abs(tlablt[neg_inds])
                     if (!is.na(time_ref)) {
@@ -2989,13 +2999,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
 
             # map plot
-            add_land <- "world"
-            if (mode_p == "area") add_land <- F # fesom
+            addland <- "world"
+            if (mode_p == "area") addland <- F # fesom
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, verbose=T,
                            xlab="Longitude [°]", ylab="Latitude [°]", 
                            zlab=data_info$label, znames=names_legend_p,
-                           add_land=add_land, add_contour=F,
+                           addland=addland, add_contour=F,
                            quiver_list=quiver_list)
             
             message("\nsave plot ", plotname, " ...")
@@ -3049,15 +3059,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                     # map plot
                     data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]][[varname]]
-                    add_land <- "world"
+                    addland <- "world"
                     if (mode_p == "area") { # fesom
-                        add_land <- F
+                        addland <- F
                     }
                     image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, verbose=T,
                                    xlab="Longitude [°]", ylab="Latitude [°]", 
                                    zlab=data_info$label, 
                                    znames=paste0(names_short_p[2], " minus ", names_short_p[1]),
-                                   add_land=add_land)
+                                   addland=addland)
                     
                     message("\nsave plot ", plotname, " ...")
                     dev.off()
@@ -3155,26 +3165,52 @@ for (plot_groupi in seq_len(nplot_groups)) {
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             nm <- image.plot.nxm(x=d$time, y=d$lat, z=z
                                  #, n=1, m=2 # special
-                                 , ip=ip, dry=T)
+                                 #, n=1, m=3 # special
+                                 , n=2, m=2 # special
+                                 , ip=ip, dry=T
+                                 #, verbose=T
+                                 )
             
             if (p$plot_type == "png") {
                 png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
                     res=p$dpi, family=p$family_png)
             } else if (p$plot_type == "pdf") {
-                pdf(plotname, width=nm$ncol*p$inch, 
-                    height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
-                    family=p$family_pdf)
+                pdf(plotname, width=p$inch, height=p$inch/(p$map_width/p$map_height),
+                    family=p$family_pdf, pointsize=6)
             }
 
             # plot
-            image.plot.nxm(x=d$time, y=d$lat, z=z
+            addland_cmdlist <- NULL
+            if (T) { # special: add PLOT locations
+                message("special: add PLOT locations to time vs lat plot ...")
+                f <- "~/scripts/r/PLOT/lakes/lake_coords.txt"
+                if (file.exists(f)) {
+                    lakes_table <- read.table(f, header=T, stringsAsFactors=F)
+                    lakes <- c("ladoga", "shuchye", "emanda", "kotokel", "elgygytgyn", "two-yurts")
+                    for (lakei in seq_along(lakes)) {
+                        cmd <- "text("
+                        cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
+                        cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
+                        cmd <- paste0(cmd, ", labels=\"", LETTERS[lakei], "\", cex=1.5")
+                        cmd <- paste0(cmd, ")")
+                        addland_cmdlist[[lakei]] <- cmd 
+                    }
+                } else {
+                    message("cannot add. f = ", f, " does not exist")
+                }
+            }
+            nm <- image.plot.nxm(x=d$time, y=d$lat, z=z
                            #, n=1, m=2 # special
+                           #, n=1, m=3 # special
+                           , n=2, m=2 # special
                            , ip=ip, verbose=T,
-                           #contour_only=T,
+                           individual_zlim=T,
+                           contour_only=T, contour_posneg_redblue=T,
                            add_contour=T,
+                           , addland="world", map_ylim="ylim", addland_cmdlist=addland_cmdlist # special
                            #xlim=tlimct, 
-                           x_at=tatn, x_labels=tlablt, 
-                           xlab=tunit, ylab="Latitude [°]",
+                           , x_at=tatn, x_labels=tlablt, xlab=tunit, 
+                           ylab="Latitude [°]",
                            zlab=data_info$label, znames=names_legend_p)
         
             message("\nsave plot ", plotname, " ...")
@@ -3323,6 +3359,18 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     data_right$label <- "Obliquity"
                     data_right$suffix <- "_with_orb_berger_obliq"
                 }
+                if (exists("koehler_etal_2017_paul") && add_koehler_etal_2017_paul) {
+                    data_right$data$koehler_etal_2017 <- list(x=koehler_etal_2017_paul$time, 
+                                                              y=koehler_etal_2017_paul$ghg_wm2,
+                                                              #col=koehler_etal_2017_paul$col, 
+                                                              col=1,
+                                                              #lty=koehler_etal_2017_paul$lty, 
+                                                              lty=2,
+                                                              lwd=koehler_etal_2017_paul$lwd, pch=koehler_etal_2017_paul$pch,
+                                                              text=koehler_etal_2017_paul$text)
+                    data_right$label <- eval(substitute(expression(paste("GHG forcing anomaly [W m"^-2, "]"))))
+                    data_right$suffix <- "_with_ghg_koehler_etal_2017"
+                }
                 if (F) {
                     if (F) { # CO2 of hist, 1pct and 4CO2
                     } else if (F) { # volcanic aerosols
@@ -3373,7 +3421,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                                 " " %*% " ", 10^6, "]"))))
                     data_right$suffix <- "_with_siareas"
                 } # siarean
-                if (any(varname == c("temp2", "temp2aprt", "tsurf", "tsurfaprt", "ptemp"))) {
+                if (F && any(zname == c("temp2", "temp2aprt", "tsurf", "tsurfaprt", "ptemp"))) {
+                    message("add d18o to right yaxis")
                     data_right <- list(data=vector("list", l=length(z)))
                     names(data_right$data) <- names_short
                     for (i in seq_along(data_right$data)) {
@@ -3417,30 +3466,36 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 for (i in seq_along(data_right$data)) {
                     
-                    # shift data_right time as main data if necessary
-                    if (!is.null(dims[[i]]$time_shift_by)) {
-                        message("shift data_right years by ", dims[[i]]$time_shift_by, " years ...")
-                        data_right$data[[i]]$timelt$year <- data_right$data[[i]]$timelt$year + dims[[i]]$time_shift_by
-                    } # shift_by
+                    if (!is.null(data_right$data[[i]]$timelt)) {
 
-                    # cut data_right time as main data if necessary
-                    if (!is.null(dims[[i]]$time_inds)) {
-                        if (!is.null(dims[[i]]$season_inds)) {
-                            months_in_right <- unclass(data_right$data[[i]]$timelt)$mon + 1
-                            month_inds_right <- months_in_right %in% season_inds
-                            time_inds_right <- which(month_inds_right)
-                        } else {
-                            #time_inds_right <- 
-                            stop("not implemented yet")
-                        }
-                        message("cut right data of length ", length(data_right$data[[i]]$y), " by ", 
-                                length(time_inds_right), " time_inds_right:")
-                        ht(time_inds_right)
-                        data_right$data[[i]]$timelt <- data_right$data[[i]]$timelt[time_inds_right]
-                        data_right$data[[i]]$y <- data_right$data[[i]]$y[time_inds_right]
-                    } # if time_inds
-                    data_right$data[[i]]$x <- as.POSIXct(data_right$data[[i]]$timelt)
-                }
+                        # shift data_right time as main data if necessary
+                        if (!is.null(dims[[i]]$time_shift_by)) {
+                            message("shift data_right years by ", dims[[i]]$time_shift_by, " years ...")
+                            data_right$data[[i]]$timelt$year <- data_right$data[[i]]$timelt$year + dims[[i]]$time_shift_by
+                        } # shift_by
+
+                        # cut data_right time as main data if necessary
+                        if (!is.null(dims[[i]]$time_inds)) {
+                            if (!is.null(dims[[i]]$season_inds)) {
+                                months_in_right <- unclass(data_right$data[[i]]$timelt)$mon + 1
+                                month_inds_right <- months_in_right %in% season_inds
+                                time_inds_right <- which(month_inds_right)
+                            } else {
+                                #time_inds_right <- 
+                                stop("not implemented yet")
+                            }
+                            message("cut right data of length ", length(data_right$data[[i]]$y), " by ", 
+                                    length(time_inds_right), " time_inds_right:")
+                            ht(time_inds_right)
+                            data_right$data[[i]]$timelt <- data_right$data[[i]]$timelt[time_inds_right]
+                            data_right$data[[i]]$y <- data_right$data[[i]]$y[time_inds_right]
+                        } # if time_inds
+                        
+                        data_right$data[[i]]$x <- as.POSIXct(data_right$data[[i]]$timelt)
+
+                    } # if !is.null(data_right$data[[i]]$timelt)
+
+                } # for i data_right
                 # finished variable specific stuff for add_data_right_yaxis_ts
                 
                 # check
@@ -3463,7 +3518,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 if (add_smoothed) {
                     for (i in seq_len(nsettings_right)) {
-                        data_right$data[[i]]$yma <- filter(data_right$data[[i]]$y, rep(1/n_mas[i], t=n_mas[i]))
+                        if (F) { # todo: how to do this check autmatically?
+                            message("apply run mean with n_mas[", i, "] = ", n_mas[i], " to data_right ...")
+                            data_right$data[[i]]$yma <- filter(data_right$data[[i]]$y, rep(1/n_mas[i], t=n_mas[i]))
+                        } else {
+                            data_right$data[[i]]$yma <- data_right$data[[i]]$y
+                        }
                     }
                 }
 
@@ -3687,7 +3747,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # ylim of obs, etc.
             if (F && varname == "temp2") {
-                message("\n", "add hadcrut4_sat_anom, gistempv4_sat_anom to ylim ...")
+                message("\nadd hadcrut4_sat_anom, gistempv4_sat_anom to ylim ...")
                 ylim <- range(ylim,
                               hadcrut4_sat_anom_annual$hadcrut4_sat_anom_lower_uncert,
                               hadcrut4_sat_anom_annual$hadcrut4_sat_anom_upper_uncert,
@@ -3696,12 +3756,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # if add som obs to ylim
 
             if (F && varname == "moc_max_26.25deg") {
-                message("\n", "add rapid$moc_annual to ylim ...")
+                message("\nadd rapid$moc_annual to ylim ...")
                 ylim <- range(ylim, moc_rapid$moc_annual, na.rm=T)
             } # if add moc ts
             
             if (T && varname == "siarean") {
-                message("\n", "add nsidc annual to ylim ...")
+                message("\nadd nsidc annual to ylim ...")
                 ylim <- range(ylim, nsidc_siarean_annual$siarean, na.rm=T)
             } # if add nsidc
 
@@ -3739,10 +3799,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 if (add_meyer_etal_xlsx) {
                     if (center_ts) meyer_etal_tmp$data$d18o_corr_perm <- scale(meyer_etal_tmp$data$d18o_corr_perm, scale=F)
                     if (scale_ts) meyer_etal_tmp$data$d18o_corr_perm <- scale(meyer_etal_tmp$data$d18o_corr_perm)
-                    message("ylim before: ", ylim[1], ", ", ylim[2])
+                    message("ylim before: c(", ylim[1], ", ", ylim[2], ")")
+                    message("ylim meyer_etal: c(", range(meyer_etal_tmp$data$d18o_corr_perm)[1], 
+                            ", ", range(meyer_etal_tmp$data$d18o_corr_perm)[2], ")")
                     ylim <- range(ylim, meyer_etal_tmp$data$d18o_corr_perm, na.rm=T)
                     # ylims Hol-T* and meyer et al. xlsx d18o lakes
-                    if (center_ts) { # center 100 ma:
+                    if (center_ts) {
                         # ladoga: c(-3.30543235329369, 1.8024062688112) 
                         # shuchye: c(-3.31588729672117, 5.07708695323018)
                         # emanda: c(-1.69386684350292, 0.902706467116598)
@@ -3752,17 +3814,25 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         message("special ylim")
                         ylim <- c(-4.32039527896077, 5.07708695323018)
                     }
-                    if (scale_ts) { # scale 100 ma:
-                        # ladoga: c(-3.13848489372256, 2.39463647435767)
-                        # shuchye: c(-2.9182066212798, 2.76195127757506)
-                        # emanda: c(-2.25538438194173, 2.32214230603398)
-                        # elgygytgyn: c(-2.7605870099359, 2.78092077040362)
-                        # two-yurts: c(-2.80403178195902, 3.42531704223437)
-                        # kotokel: c(-2.71374683773164, 1.89264166330445)
+                    if (scale_ts) {
+                        ## meyer et al. 10k BP 
+                        # ladoga: c(-2.71845068304792, 1.12244344859212)
+                        # shuchye: c(-2.06540423594796, 2.95748401109693)
+                        # emanda: c(-1.98885622964664, 2.40795779371568)
+                        # kotokel: c(-3.08014665995613, 1.35190103264372)
+                        # elgygytgyn: c(-1.47405790466153, 1.61041540752816)
+                        # two-jurts: c(-2.1518519172735, 2.0338372598759)
+                        # hol-t, hol-tx10; n_mas 250, 50
+                        # ladoga: c(-2.85126486366215, 2.32484231975009)
+                        # shuchye: c(-2.85992909997141, 2.44526416112507)
+                        # emanda: c(-2.06748945256795, 2.55525657817665)
+                        # kotokel: c(-2.60277676884169, 2.96409565621687)
+                        # elgygytgyn: c(-2.37444352133196, 3.04432535587108)
+                        # two-jurts: c(-2.70199788713988, 3.21519386227393) 
                         message("special ylim")
-                        ylim <- c(-3.13848489372256, 3.42531704223437)
+                        ylim <- c(-3.08014665995613,3.215193862273933)
                     }
-                    message("ylim after: ", ylim[1], ", ", ylim[2])
+                    message("ylim after: c(", ylim[1], ", ", ylim[2], ")")
                 } # if add_meyer_etal_xlsx
             } else {  
                 add_meyer_etal_xlsx <- F
@@ -3859,9 +3929,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     width=p$ts_width, 
                     height=p$ts_height,
                     #height=p$ts_width,
+                    #width=p$map_width, 
+                    #height=p$map_height,
                     res=p$dpi, family=p$family_png)
             } else if (p$plot_type == "pdf") {
-                pdf(plotname, width=p$inch, height=p$inch*p$ts_height/p$ts_width,
+                #message("special plot size")
+                pdf(plotname, width=p$inch, 
+                    height=p$inch*p$ts_height/p$ts_width,
+                    #height=p$inch*p$map_height/p$map_width,
                     family=p$family_pdf)
             }
 
@@ -4031,8 +4106,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         lm_summary <- summary(lm)
                         print(lm_summary)
                         lm_labels[i] <- ifelse(diff(range(lm$fitted.values)) > 0, "+", "-")
-                        lm_labels[i] <- paste0(lm_labels[i], round(diff(range(lm$fitted.values)), 4),
-                                               " ", data_info$units)
+                        lm_labels[i] <- paste0(lm_labels[i], 
+                                               #round(diff(range(lm$fitted.values)), 4)
+                                               round(diff(range(lm$fitted.values)), 2)
+                                               , " ", data_info$units
+                                               )
                         message("--> ", lm_labels[i], " from ", 
                                 min(d$time[[i]]), " to ", max(d$time[[i]]), " (", 
                                 length(unique(dims[[i]]$timelt$year+1900)), " years)")
@@ -4119,11 +4197,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\nadd default stuff to datas legend here1 ...")
                 le <- list()
-                #le$pos <- "topleft" 
+                le$pos <- "topleft" 
                 #le$pos <- "left"
                 #le$pos <- "bottomleft"
                 #le$pos <- "topright"
-                le$pos <- "bottomright" 
+                #le$pos <- "bottomright" 
                 #le$pos <- c(tatn[1], yat[length(yat)-1])
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
                 #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), yat[length(yat)])
@@ -4234,9 +4312,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # add right axes in same color as the right data if 
                 # all colors of the right data are the same
-                if (length(unique(sapply(data_right$data, "[", "col"))) == 1) {
+                if (F && length(unique(sapply(data_right$data, "[", "col"))) == 1) {
+                    message("length of data_right = 1 --> use color \"", data_right$data[[1]]$col, "\" to distinguis from left xaxis")
                     right_axis_col <- data_right$data[[1]]$col
                 } else {
+                    message("length of data_right != 1 --> use color \"black\" for right xaxis")
                     right_axis_col <- "black" # default
                 }
                 axis(4, at=yat_right, labels=ylab_right, las=2, 
@@ -4284,9 +4364,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 if (add_legend_right_yaxis) {
-                    message("\n", "add default stuff to ", mode_p, " right_data legend ...")
+                    message("\nadd default stuff to right_data legend here1 ...")
                     le <- list()
-                    le$pos <- "topright" 
+                    #le$pos <- "topright" 
+                    le$pos <- "bottomright" 
                     le$ncol <- 1
                     le$text <- sapply(data_right$data, "[[", "text")
                     le$col <- sapply(data_right$data, "[[", "col")
@@ -4304,7 +4385,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le$cex <- 0.85
                     # add stuf to legend here
                     if (F) {
-                        message("\n", "add non default stuff to ", mode_p, " legend ...")
+                        message("\nadd non default stuff to ", mode_p, " legend ...")
                     }
                     # reorder reading direction from R's default top->bottom to left->right
                     le <- reorder_legend(le)
