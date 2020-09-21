@@ -780,16 +780,29 @@ for (i in 1:nsettings) {
         # todo: if links, check for broken links
 
         # get format of input files
+        convert_to_nc <- F # default: no conversion to nc needed or wanted
         message("\nget input file format from first found file ...")
         cmd <- paste0("cdo showformat ", datapaths[i], "/", files[1])
         input_file_type <- cdo_get_filetype(paste0(datapaths[i], "/", files[1]))
-        convert_to_nc <- F # default: no conversion to nc needed or wanted
-        if (input_file_type$file_type == "non-nc") { # if conversion to nc is needed
-            if (cdo_convert_grb2nc) { # if conversion to nc is wanted
-                convert_to_nc <- T # convert to nc if needed and wanted
-            } else {
-                message("`cdo_convert_grb2nc`=F --> do not convert postprocessing result to nc although input is non-nc")
+        if ((input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) ||
+            !is.null(new_date_list[[i]])) { # conversion to nc is needed and/or wanted
+            # being overly verbose here:
+            if ((input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) &&
+                !is.null(new_date_list[[i]])) {
+                message("--> input is non-nc and `cdo_convert_grb2nc`=T and new_date_list[[", i, 
+                        "]] is not null --> convert non-nc postprocessing result to nc since its wanted and new dates are wanted")
+            } else if ((input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) &&
+                       is.null(new_date_list[[i]])) {
+                message("--> input is non-nc and `cdo_convert_grb2nc`=T --> convert non-nc postprocessing result to nc")
+            } else if (!(input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) &&
+                       !is.null(new_date_list[[i]])) {
+                message("--> input is ", input_file_type$file_type, " and `cdo_convert_grb2nc`=", cdo_convert_grb2nc,
+                        " but new_date_list[[", i, "]] is not null --> convert postprocessing result to nc to apply new dates")
             }
+            convert_to_nc <- T
+        } else { # conversion is not needded and/or wanted
+            message("--> input is ", input_file_type$file_type, " and `cdo_convert_grb2nc`=", cdo_convert_grb2nc, 
+                    " and no new dates are wanted --> conversion of postprocessing result to nc not needed and/or wanted")
         }
 
         # construct cdo command (chained cdo commands will be executed from right to left)
@@ -1949,12 +1962,13 @@ for (i in 1:nsettings) {
                                                                           paste0("_nco_ncap2_chunk_", nco_ncap2_chunki, 
                                                                                  "_of_", nchunks_nco_ncap2, ".nc"), 
                                                                           nco_fout_vec[chunki])
-                                    cmd_seltimestep_list[[nco_ncap2_chunki]] <- paste0(cdoprefix, " seltimestep,", 
-                                                                                       inds_chunki[1], "/", inds_chunki[length(inds_chunki)], " ",
-                                                                                       selfile_vec[chunki], " ", ncofile_vec[nco_ncap2_chunki]) 
-                                    message("run `", cmd_seltimestep_list[[nco_ncap2_chunki]], "`")
+                                    cmd_seltimestep_list[[nco_ncap2_chunki]] <- paste0(cdoprefix, " seltimestep,", inds_chunki[1], "/",
+                                                                                       inds_chunki[length(inds_chunki)], " ",
+                                                                                       selfile_vec[chunki], " ", 
+                                                                                       ncofile_vec[nco_ncap2_chunki]) 
+                                    message("run 1: `", cmd_seltimestep_list[[nco_ncap2_chunki]], "`")
                                     cmd_nco_ncap2_chunki <- gsub(nco_fout_vec[chunki], ncofile_vec[nco_ncap2_chunki], cmd_ncap2)
-                                    message("    `", cmd_nco_ncap2_chunki, "`")
+                                    message("    2: `", cmd_nco_ncap2_chunki, "`")
                                     cmd_nco_ncap2_chunki <- gsub("<dates_out_ncap>", 
                                                                  paste(dates_out_list[[chunki]]$dates_ncap[inds_chunki], collapse=","),
                                                                  cmd_nco_ncap2_chunki)
@@ -1970,25 +1984,26 @@ for (i in 1:nsettings) {
                                 } # for nco_ncap2_chunki
 
                                 # run cdo seltimestep and nco ncap2
+                                nco_ncap2_txt <- rep(NA, t=nchunks_nco_ncap2)
                                 for (nco_ncap2_chunki in seq_len(nchunks_nco_ncap2)) {
 
                                     message("\nnco ncap2 chunk ", nco_ncap2_chunki, "/", nchunks_nco_ncap2, 
                                             " of cdo chunk ", chunki, "/", nchunks, " cmd source:")
-                                    nco_ncap2_txt <- paste0(dirname(selfile_vec[chunki]), "/tmp_nco_ncap2_", Sys.getpid(), "_chunk_", 
-                                                            nco_ncap2_chunki, "_of_", nchunks_nco_ncap2, "_of_cdo_chunk_", 
-                                                            chunki, "_of_", nchunks, ".txt")
-                                    writeLines(c(cmd_seltimestep_list[[nco_ncap2_chunki]], nco_ncap2_list[[nco_ncap2_chunki]]$cmd), 
-                                               con=nco_ncap2_txt)
-                                    cmd_source <- paste0(". ", nco_ncap2_txt)
+                                    nco_ncap2_txt[nco_ncap2_chunki] <- paste0(dirname(selfile_vec[chunki]), "/tmp_", Sys.getpid(), 
+                                                            "_nco_ncap2_chunk_", nco_ncap2_chunki, "_of_", 
+                                                            nchunks_nco_ncap2, "_of_cdo_chunk_", chunki, "_of_", 
+                                                            nchunks, ".txt")
+                                    writeLines(c(cmd_seltimestep_list[[nco_ncap2_chunki]],  # selection cmd
+                                                 nco_ncap2_list[[nco_ncap2_chunki]]$cmd),  # ncap cmd
+                                               con=nco_ncap2_txt[nco_ncap2_chunki])
+                                    cmd_source <- paste0(". ", nco_ncap2_txt[nco_ncap2_chunki])
                                     message("run `", cmd_source, "` ...")
                                     system(cmd_source)
 
-                                    if (!file.exists(ncofile_vec[nco_ncap2_chunki])) { # output file exists?
+                                    if (!file.exists(ncofile_vec[nco_ncap2_chunki])) { # selection for ncap chunki file exists?
                                         stop("ncofile_vec[", nco_ncap2_chunki, "] = ", ncofile_vec[nco_ncap2_chunki], 
                                              " does not exist but it should")
                                     }
-
-                                    if (clean) system(paste0("rm -v ", nco_ncap2_txt))
 
                                 } # for nco_ncap_chunki
 
@@ -2003,16 +2018,24 @@ for (i in 1:nsettings) {
                                                       " ", nco_fout_vec[chunki])
                                 } else { # keeps non-default time formats
                                     cmd_cat <- paste0(nco_ncrcat, " -O ", paste(ncofile_vec, collapse=" "), 
-                                                      " ", nco_fout_vec[chunki])
+                                                      " ", nco_fout_vec[chunki], " || error")
                                 }
                                 message("run `", cmd_cat, "` ...")
                                 system(cmd_cat)
                                 
                                 if (clean) {
-                                    cmd <- paste0("rm -v ", paste(ncofile_vec, collapse=" "))
-                                    message("run `", cmd, "` ... (not enabled yet)")
-                                    #system(cmd)
-                                }
+                                    if (file.exists(nco_fout_vec[chunki])) {
+                                        cmd <- paste0("rm -v ", paste(ncofile_vec, collapse=" "))
+                                        message("run `", cmd, "` ... (not enabled for safety)")
+                                        #system(cmd)
+                                        cmd <- paste0("rm -v ", paste(nco_ncap2_txt, collapse=" "))
+                                        message("run `", cmd, "` ... (not enabled for safety)")
+                                        #system(cmd)
+                                    } else {
+                                        message("`clean`=T but `nco_four_vec[chunki=", chunki, "]`=\"", nco_fout_vec[chunki], 
+                                                "\" does not exist. do not clean tmp files.")
+                                    }
+                                } # clean
 
                             } else if (nchar_cmd_ncap2 <= nco_nchar_max_arglist) {
                               

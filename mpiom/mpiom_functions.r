@@ -1,12 +1,14 @@
 # r
 
-
-mpiom_remap2lonlat <- function(files, cdo_select="", outpath, 
+mpiom_remap2lonlat <- function(files, cdo_select="", outpath, fout_rename_pattern, 
                                mpiom_model_grid="mpiom_GR30_model_grid_standard.nc", 
                                reg_res=c(nlon=120, nlat=101),
                                remap_method="remapcon2", 
-                               cdo="cdo", verbose=T) {
+                               cdo="cdo", convert2nc=T, verbose=T) {
     
+    # todo: cdo_get_filetype() dependence from `functions` repo
+    library(stringr)
+
     if (missing(files) || !is.character(files)) {
         stop("provide `files=\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\"` or\n",
              "`files=c(\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\", \"/path/to/expd_mpiom_ZZZZ10101_ZZZZ1231.nc\")`")
@@ -31,17 +33,33 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath,
         }
     }
 
+    if (fout_rename_pattern == "") {
+        stop("`fout_rename_pattern` is empty string. dont know how to rename input file")
+    }
+
     for (fi in seq_along(files)) {
         
         if (verbose) message("\nfile ", fi, "/", length(files), ": ", files[fi])
         
         # get format of input files
-        convert2nc <- cdo_get_filetype(files[fi])$convert_to_nc
+        if (convert2nc) { # if conversion to nc is wanted
+            convert2nc <- cdo_get_filetype(files[fi])$file_type
+            if (convert2nc == "non-nc") {
+                convert2nc <- T
+            } else {
+                convert2nc <- F
+            }
+        }
 
-        fout <- paste0(outpath, "/", tools::file_path_sans_ext(basename(files[fi])))
+        # output filename
+        #fout <- paste0(outpath, "/", tools::file_path_sans_ext(basename(files[fi])))
+        fout <- basename(files[fi])
 
         cmd <- paste0(cdo, " -P 8")
-        if (convert2nc) cmd <- paste0(cmd, " -t mpiom1 -f nc copy")
+        if (convert2nc) {
+            cmd <- paste0(cmd, " -t mpiom1 -f nc copy")
+            if (tools::file_ext(fout) != "nc") fout <- paste0(fout, ".nc")
+        }
         cmd <- paste0(cmd ," -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
                       " -setgrid,", mpiom_model_grid)
         
@@ -64,11 +82,19 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath,
             tmp <- stringr::str_replace_all(cdo_select, "[[:punct:]]", "_")
             tmp <- stringr::str_replace_all(tmp, "=", "_")
             fout <- paste0(fout, "_", tmp)
-        } # if variable selection before remapping
+            # edit output filename
+            fout <- gsub(fout_rename_pattern, 
+                         paste0(fout_rename_pattern, "_", tmp, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"]),
+                         fout)
+        } else {
+            # edit output filename
+            fout <- gsub(fout_rename_pattern, 
+                         paste0(fout_rename_pattern, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"]),
+                         fout)
+        } # cdo_select or not
 
-        # update fout
-        fout <- paste0(fout, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"], ".nc")
-        
+        # run command with final output filename
+        fout <- paste0(outpath, "/", fout)
         cmd <- paste0(cmd, " ", files[fi], " ", fout)
         if (verbose) message("run `", cmd, "` ...")
         #cdo -P 4 -t mpiom1 -f nc copy -remapcon2,r360x180 -setgrid,../mpiom_GR30_model_grid_standard.nc -select,code=183 Hol-Tx10_mpiom_32900101_32901231.grb zmld_curvilinear_setgrid_remapcon2_r360x180.nc 
@@ -77,6 +103,7 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath,
         # fix negative values due to interpolation
         if (cdo_select != "") {
             if (any(cdo_select == c("select,code=183", "select,code=15"))) {
+                message("special: set negative values to zero!")
                 if (cdo_select == "select,code=183") {
                     cmd <- paste0("ncap2 -O -s \"where(zmld<0) zmld=0\" ", fout, " ", fout)
                 } else if (cdo_select == "select,code=15") {

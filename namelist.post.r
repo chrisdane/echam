@@ -4,7 +4,7 @@ verbose <- 1 # 0,1
 clean <- T # remove tmp files
 cdo_silent <- "" # "-s" for silent or ""
 cdo_select_no_history <- "" # "--no_history" or ""
-cdo_convert_grb2nc <- F # should post processing result be converted to nc?
+cdo_convert_grb2nc <- F # should post processing result be converted to nc (will be set to T if new dates are wanted)?
 cdo_force <- T # redo cdo command although output file already exists 
 cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
 cdo_set_rel_time <- T # conversion from absolute to relative time
@@ -250,7 +250,7 @@ if (F) { # old hist
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_fort_75"
     #prefixes <- "cosmos-aso-wiso_Hol-7_fort_75_monmean"
     #prefixes <- "cosmos-aso-wiso_Hol-T_fort_75_monmean"
-    prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2" # THO
+    prefixes <- "cosmos-aso-wiso_Hol-T_grb"
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101" # THO
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_5_remapcon2_r120x101" # SAO
     #prefixes <- "cosmos-aso-wiso_Hol-7_grb_code_183_remapcon2_r120x101" # zmld
