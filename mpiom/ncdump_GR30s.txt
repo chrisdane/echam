@@ -1,0 +1,26 @@
+netcdf mpiom_GR30_model_grid_standard {
+dimensions:
+	grid_size = 12120 ;
+	grid_xsize = 120 ;
+	grid_ysize = 101 ;
+	grid_corners = 4 ;
+	grid_rank = 2 ;
+variables:
+	int grid_dims(grid_rank) ;
+	float grid_center_lat(grid_ysize, grid_xsize) ;
+		grid_center_lat:units = "degrees" ;
+		grid_center_lat:bounds = "grid_corner_lat" ;
+	float grid_center_lon(grid_ysize, grid_xsize) ;
+		grid_center_lon:units = "degrees" ;
+		grid_center_lon:bounds = "grid_corner_lon" ;
+	int grid_imask(grid_ysize, grid_xsize) ;
+		grid_imask:units = "unitless" ;
+		grid_imask:coordinates = "grid_center_lon grid_center_lat" ;
+	float grid_corner_lat(grid_ysize, grid_xsize, grid_corners) ;
+		grid_corner_lat:units = "degrees" ;
+	float grid_corner_lon(grid_ysize, grid_xsize, grid_corners) ;
+		grid_corner_lon:units = "degrees" ;
+
+// global attributes:
+		:title = "GR30s" ;
+}

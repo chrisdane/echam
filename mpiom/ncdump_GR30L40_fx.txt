@@ -1,12 +1,12 @@
 netcdf GR30L40_fx {
 dimensions:
-	x = 122 ;
+	x = 122 ; at v-vector point
 	y = 101 ;
-	x_2 = 122 ;
+	x_2 = 122 ; at pressure point
 	y_2 = 101 ;
-	x_3 = 122 ;
+	x_3 = 122 ; at u-vector point
 	y_3 = 101 ;
-	x_4 = 122 ;
+	x_4 = 122 ; at psi point
 	y_4 = 101 ;
 	depth = 1 ;
 	depth_2 = 40 ;
