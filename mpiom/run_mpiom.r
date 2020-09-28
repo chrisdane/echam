@@ -31,11 +31,14 @@ if (T) {
         #files <- files[1068:1097]
         outpath <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T2/outdata/mpiom"
         stop("implement fout_rename_pattern")
-    } else if (T) { # already post processed files
+    } else if (T) { # already post-processed files
+        #files <- "/isibhv/projects/paleo_work/cdanek/post/mpiom1/select/lm_THO_as_time_slope/cosmos-aso-wiso_Hol-Tx10_grb_mpiom1_select_selcode_2_lm_THO_as_time_slope_sellevel_6_global_annual_0001-7001.nc"
+        files <- paste0("/isibhv/projects/paleo_work/cdanek/post/mpiom1/seasmean/lm_THO_as_time_slope/cosmos-aso-wiso_Hol-Tx10_grb_mpiom1_seasmean_selcode_2_lm_THO_as_time_slope_sellevel_6_global_", c("DJF", "MAM", "JJA", "SON"), "_0001-7001.nc")
         #files <- "/ace/user/cdanek/post/mpiom1/select/lm_THO_as_time/cosmos-aso-wiso_Hol-T_grb_mpiom1_select_selcode_2_lm_THO_as_time_slope_sellevel_6_global_annual_0004-7000.nc"
-        files <- paste0("/ace/user/cdanek/post/mpiom1/seasmean/lm_THO_as_time_slope/cosmos-aso-wiso_Hol-T_grb_mpiom1_seasmean_selcode_2_lm_THO_as_time_slope_sellevel_6_global_", c("DJF", "MAM", "JJA", "SON"), "_0004-7000.nc")
+        #files <- paste0("/ace/user/cdanek/post/mpiom1/seasmean/lm_THO_as_time_slope/cosmos-aso-wiso_Hol-T_grb_mpiom1_seasmean_selcode_2_lm_THO_as_time_slope_sellevel_6_global_", c("DJF", "MAM", "JJA", "SON"), "_0004-7000.nc")
         outpath <- dirname(files[1])
-        fout_rename_pattern <- "cosmos-aso-wiso_Hol-T" 
+        fout_rename_pattern <- "cosmos-aso-wiso_Hol-Tx10" 
+        #fout_rename_pattern <- "cosmos-aso-wiso_Hol-T" 
     }
     # files=             outpath=           reg_res=           cdo=      convert2nc=            
     # cdo_select=        mpiom_model_grid=  remap_method=      verbose=     
@@ -46,8 +49,8 @@ if (T) {
                        #cdo_select="select,code=183", # zmld
                        #cdo_select="select,code=27", # PSIUWE hor. bar. streamfunction
                        #cdo_select="select,code=15", # SICOMO ice compactness
-                       reg_res=c(nlon=360, nlat=180),
-                       #reg_res=c(nlon=3600, nlat=1800),
+                       #reg_res=c(nlon=360, nlat=180),
+                       reg_res=c(nlon=3600, nlat=1800),
                        outpath=outpath,
                        fout_rename_pattern=fout_rename_pattern) 
 }

@@ -797,7 +797,8 @@ for (i in 1:nsettings) {
             } else if (!(input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) &&
                        !is.null(new_date_list[[i]])) {
                 message("--> input is ", input_file_type$file_type, " and `cdo_convert_grb2nc`=", cdo_convert_grb2nc,
-                        " but new_date_list[[", i, "]] is not null --> convert postprocessing result to nc to apply new dates")
+                        " but new_date_list[[", i, "]] is not null --> ", 
+                        "convert postprocessing result to nc to apply new dates with nco ncap2")
             }
             convert_to_nc <- T
         } else { # conversion is not needded and/or wanted

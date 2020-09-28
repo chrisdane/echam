@@ -477,6 +477,30 @@ for (i in 1:nsettings) {
     # finfished time dim stuff
     #stop("asd")
 
+    # load fractional land sea mask
+    if (any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
+        if (!exists("slf")) slf <- vector("list", l=nsettings)
+        f <- NULL
+        if (any(models[i] == c("echam5", "mpiom1"))) {
+            if (length(dims[[i]]$lon) == 96 && length(dims[[i]]$lat) == 48) {
+                f <- "echam/T31GR30_SLF.nc"
+            } else {
+                message("not yet here1")
+            }
+        } else {
+            message("not yet here2")
+        }
+        if (!is.null(f)) {
+            slf[[i]]$f <- f
+            message("\nload \"", f, "\" ...")
+            f <- nc_open(f)
+            slf[[i]]$lon <- f$dim$lon$vals
+            slf[[i]]$lat <- f$dim$lat$vals
+            slf[[i]]$slf <- ncvar_get(f, "SLF")
+            slf[[i]]$slf[slf[[i]]$slf > 0] <- 1
+        }
+    } # if load slf
+    
     # reorder lon dim values to (-180,...,180) if wanted and necessary
     if (any(names(dims[[i]]) == "lon")) {
         if (reorder_lon_from_0360_to_180180) {
@@ -543,21 +567,25 @@ for (i in 1:nsettings) {
     if (!is.na(regboxes[[i]]$regbox)) {
         message("\n`regboxes[[", i, "]]$regbox` = \"", regboxes[[i]]$regbox, "\" is not NA")
         # 2 cases: case 1: rectangular box
-        #          case 2: list of x,y pairs indicating contour of arbitrary polygon
+        #          case 2: list of x,y pairs indicating contour of arbitrary polygon per setting
         # case 1: lons
         if (!is.null(regboxes[[i]]$lons) && length(regboxes[[i]]$lons) == 2 && any(names(dims[[i]]) == "lon")) {
             message("   `regboxes[[", i, "]]$lons` of length 2 are given -> find lon inds between min/max(regboxes[[", i, "]]$lons) = ", 
                     min(regboxes[[i]]$lon), "/", max(regboxes[[i]]$lon), " deg lon ...")
             lon_inds <- which(dims[[i]]$lon >= regboxes[[i]]$lons[1] & dims[[i]]$lon <= regboxes[[i]]$lons[2])
-            if (length(lon_inds) > 0 && length(lon_inds) != length(dims[[i]]$lon)) { 
-                message("      found lon subset of length ", length(lon_inds), " out of ", 
-                        length(dims[[i]]$lon), " total lon points ...")
-                message("      before range(dims[[i]]$lon) = ", appendLF=F)
-                print(range(dims[[i]]$lon))
-                dims[[i]]$lon <- dims[[i]]$lon[lon_inds]
-                message("      after range(dims[[i]]$lon) = ", appendLF=F)
-                print(range(dims[[i]]$lon))
-                dims[[i]]$lon_inds <- lon_inds
+            if (length(lon_inds) > 0) {
+                if (length(lon_inds) != length(dims[[i]]$lon)) { 
+                    message("      found lon subset of length ", length(lon_inds), " out of ", 
+                            length(dims[[i]]$lon), " total lon points ...")
+                    message("      before range(dims[[i]]$lon) = ", appendLF=F)
+                    print(range(dims[[i]]$lon))
+                    dims[[i]]$lon <- dims[[i]]$lon[lon_inds]
+                    message("      after range(dims[[i]]$lon) = ", appendLF=F)
+                    print(range(dims[[i]]$lon))
+                    dims[[i]]$lon_inds <- lon_inds
+                } else {
+                    message("      use all ", length(dims[[i]]$lon), " lon points ...")
+                }
             } else {
                 if (length(lon_inds) == 0) {
                     stop("lon subset is of length 0")
@@ -570,15 +598,19 @@ for (i in 1:nsettings) {
             message("   `regboxes[[", i, "]]$lats` of length 2 are given -> find lat inds between min/max(regboxes[[", i, "]]$lats) = ", 
                     min(regboxes[[i]]$lat), "/", max(regboxes[[i]]$lat), " deg lat ...")
             lat_inds <- which(dims[[i]]$lat >= regboxes[[i]]$lats[1] & dims[[i]]$lat <= regboxes[[i]]$lats[2])
-            if (length(lat_inds) > 0 && length(lat_inds) != length(dims[[i]]$lat)) { 
-                message("      found lat subset of length ", length(lat_inds), " out of ", 
-                        length(dims[[i]]$lat), " total lat points ...")
-                message("      before range(dims[[i]]$lat) = ", appendLF=F)
-                print(range(dims[[i]]$lat))
-                dims[[i]]$lat <- dims[[i]]$lat[lat_inds]
-                message("      after range(dims[[i]]$lat) = ", appendLF=F)
-                print(range(dims[[i]]$lat))
-                dims[[i]]$lat_inds <- lat_inds
+            if (length(lat_inds) > 0) {
+                if (length(lat_inds) != length(dims[[i]]$lat)) { 
+                    message("      found lat subset of length ", length(lat_inds), " out of ", 
+                            length(dims[[i]]$lat), " total lat points ...")
+                    message("      before range(dims[[i]]$lat) = ", appendLF=F)
+                    print(range(dims[[i]]$lat))
+                    dims[[i]]$lat <- dims[[i]]$lat[lat_inds]
+                    message("      after range(dims[[i]]$lat) = ", appendLF=F)
+                    print(range(dims[[i]]$lat))
+                    dims[[i]]$lat_inds <- lat_inds
+                } else {
+                    message("      use all ", length(dims[[i]]$lat), " lat points ...")
+                }
             } else {
                 if (length(lat_inds) == 0) {
                     stop("lat subset is of length 0")
@@ -1168,6 +1200,9 @@ for (i in 1:nsettings) {
                 data_infos[[i]][[vi]]$offset$value <- -1
                 data_infos[[i]][[vi]]$label <- "2m temperature 7ka - PI"
             }
+        
+        } else if (varname == "lm_tsurf_as_time_slope") {
+            data_infos[[i]][[vi]]$label <- "surface temperature trend [K/7k years]"
         
         } else if (varname == "lm_THO_as_time_slope") {
             if (all(levs == 6)) {
@@ -2858,6 +2893,28 @@ for (plot_groupi in seq_len(nplot_groups)) {
         cat(capture.output(str(z)), sep="\n")
         message("d:")
         cat(capture.output(str(d)), sep="\n")
+           
+
+        # define special stuff
+        PLOT_coords_addland_cmdlist <- NULL
+        if (T) { # special: add PLOT locations
+            message("special: add PLOT locations to time vs lat plot ...")
+            f <- "~/scripts/r/PLOT/lakes/lake_coords.txt"
+            if (file.exists(f)) {
+                lakes_table <- read.table(f, header=T, stringsAsFactors=F)
+                lakes <- c("ladoga", "shuchye", "emanda", "kotokel", "elgygytgyn", "two-yurts")
+                for (lakei in seq_along(lakes)) {
+                    cmd <- "text("
+                    cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
+                    cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
+                    cmd <- paste0(cmd, ", labels=\"", LETTERS[lakei], "\", cex=1.5")
+                    cmd <- paste0(cmd, ")")
+                    PLOT_coords_addland_cmdlist[[lakei]] <- cmd 
+                }
+            } else {
+                message("cannot add. f = ", f, " does not exist")
+            }
+        }
 
 
         ## plot `datas` (`datas` always exists; no exists() check necessary)
@@ -2870,7 +2927,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             message("\n", zname, " ", mode_p, " plot lon vs lat ...")
 
-            quiver_list <- NULL
+            # make lat regular for `image(..., useRaster=T)` usage
+            if (!all(sapply(lapply(lapply(d$lat, diff), unique), length) == 1)) {
+                message("\nmake constant dlat for `image(..., useRaster=T)` usage ...")
+                for (i in seq_along(d$lat)) {
+                    d$lat[[i]] <- array(seq(min(d$lat[[i]]), max(d$lat[[i]]), l=length(d$lat[[i]])))
+                }
+            }
+
+            quiver_list <- addland_cmdlist <- NULL
             if (exists("varnames_uv")) {
                 if (plot_groups[plot_groupi] == "samevars") {
                     message("\nzuv_samevars:")
@@ -2955,10 +3020,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # colorbar values
             message("\ndefine color levels here if wanted ...")
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
-            message("zlim = ", appendLF=F)
+            message("get global min/max ... ", appendLF=F)
             zlim <- range(z, na.rm=T)
+            message(" = ", appendLF=F)
             dput(zlim)
-            nlevels <- zlevels <- NULL 
+            nlevels <- zlevels <- y_at <- palname <- NULL 
             if (zname == "quv") {
                 message("special zlim")
                 nlevels <- 200
@@ -2969,14 +3035,34 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 zlim <- c(0.00584759470075369, 531.362243652344)
             } else if (zname == "lm_temp2_as_time_slope") {
                 zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2]) # deg C / 7k yrs
+            } else if (zname == "lm_THO_as_time_slope") {
+                # lm_tho: 360x180: 5 season: c(-4.00305379614524, 3.54971842687043)
+                # lm_tho: 3600x1800: 5 season: c(-4.03669006075327, 3.55691367873545)
+            } else if (zname == "lm_tsurf_as_time_slope") {
+                # lm_tsurf: 5 season: -9.440916  6.903386
+                # lm_tsurf: 3600x1800: 5 season: c(-9.46404887704723, 6.91053024191786)
+                message("special zlim")
+                #zlim <- c(-4.03669006075327, 3.55691367873545)
+                zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2]) # deg C / 7k yrs
+                palname <- "colormaps_jaisnd"
+                addland_cmdlist <- PLOT_coords_addland_cmdlist
             } else if (zname == "lm_aprt_as_time_slope") {
                 zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=25), zlim[2]) # mm/a / 7k yrs
             }
-            ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, verbose=F)
+            ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, palname=palname, verbose=F)
+            stop("asd")
+           
 
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
-            nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, dry=T)
+            if (T && all(areas_p == "N30-90")) {
+                message("special nrow ncol")
+                n <- length(z); m <- 1
+                nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, n=n, m=m, ip=ip, dry=T)
+                y_at <- pretty(d$lat[[1]], n=5)
+            }  else {
+                nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, dry=T)
+            }
 
             plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                varname, "_", 
@@ -2985,37 +3071,67 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       areas_p, collapse="_vs_"), 
                                plotname_suffix, ".", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
-                plotname <- substr(plotname, 1, nchar_max_foutname)
+                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                   varname, "_", 
+                                   paste(unique(names_short_p), collapse="_"), "_",
+                                   paste(unique(seasonsp_p), collapse="_"), "_", 
+                                   paste(unique(froms_plot_p), collapse="_"), "_", 
+                                   paste(unique(tos_plot_p), collapse="_"), "_", 
+                                   paste(unique(areas_p), collapse="_"), 
+                                   plotname_suffix, ".", p$plot_type)
             }
             message("plot ", plotname, " ...")
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
+            
+            # this is the lon vs lat plot: respecting aspect ratio based on dlon and dlat make sense here 
+            asp_dlon_over_dlat <- sapply(lapply(d$lon, range), diff)/sapply(lapply(d$lat, range), diff) # per subplot
+            asp_dlon_over_dlat <- max(asp_dlon_over_dlat) # use maximum aspect ratio for all subplots
+            if (respect_asp) {
+                if (asp_dlon_over_dlat > respect_asp_thr) {
+                    message("`respect-asp`=T and dlon/dlat aspect ratio ", asp_dlon_over_dlat, 
+                            " > `respect_asp_thr` = ", respect_asp_thr, " --> set dlon/dlat aspect ratio to ", 
+                            respect_asp_thr, " ...")
+                    asp_dlon_over_dlat <- respect_asp_thr
+                }
+                width_per_subplot <- p$map_width
+                height_per_subplot <- width_per_subplot/asp_dlon_over_dlat
+            } else {
+                width_per_subplot <- p$map_width
+                height_per_subplot <- p$map_height
+            }
             if (p$plot_type == "png") {
-                png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
+                png(plotname, width=nm$ncol*width_per_subplot, height=nm$nrow*height_per_subplot,
                     res=p$dpi, family=p$family_png)
             } else if (p$plot_type == "pdf") {
-                pdf(plotname, width=nm$ncol*p$inch, 
-                    height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
-                    family=p$family_pdf)
+                pdf(plotname, width=nm$ncol*p$inch, height=nm$nrow*p$inch/(width_per_subplot/height_per_subplot),
+                    family=p$family_pdf, pointsize=6)
             }
 
             # map plot
-            addland <- "world"
+            addland <- "world"; map_xlim <- "xlim"; map_ylim <- "ylim" # default
             if (mode_p == "area") addland <- F # fesom
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
-            image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, verbose=T,
+            image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, 
+                           n=nm$nrow, m=nm$ncol, verbose=T,
+                           y_at=y_at,
                            xlab="Longitude [°]", ylab="Latitude [°]", 
-                           zlab=data_info$label, znames=names_legend_p,
-                           addland=addland, add_contour=F,
+                           zlab=data_info$label, 
+                           znames=paste0(letters[seq_along(z)], ") ", names_legend_p),
+                           addland=addland, map_xlim=map_xlim, map_ylim=map_ylim,
+                           addland_cmdlist=addland_cmdlist,
+                           add_contour=F,
                            quiver_list=quiver_list)
             
             message("\nsave plot ", plotname, " ...")
             dev.off()
-            if (p$plot_type == "pdf") {
+            if (F && p$plot_type == "pdf") {
                 if("extrafont" %in% (.packages())){
                     extrafont::embed_fonts(plotname, outfile=plotname)
                 } else {
                     grDevices::embedFonts(plotname, outfile=plotname)
                 }
+            } else {
+                message("\ntodo: embedding blurs colors why?")
             }
        
             # anomaly lon,lat plot of 2 settings 
@@ -3180,25 +3296,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
 
             # plot
-            addland_cmdlist <- NULL
-            if (T) { # special: add PLOT locations
-                message("special: add PLOT locations to time vs lat plot ...")
-                f <- "~/scripts/r/PLOT/lakes/lake_coords.txt"
-                if (file.exists(f)) {
-                    lakes_table <- read.table(f, header=T, stringsAsFactors=F)
-                    lakes <- c("ladoga", "shuchye", "emanda", "kotokel", "elgygytgyn", "two-yurts")
-                    for (lakei in seq_along(lakes)) {
-                        cmd <- "text("
-                        cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
-                        cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
-                        cmd <- paste0(cmd, ", labels=\"", LETTERS[lakei], "\", cex=1.5")
-                        cmd <- paste0(cmd, ")")
-                        addland_cmdlist[[lakei]] <- cmd 
-                    }
-                } else {
-                    message("cannot add. f = ", f, " does not exist")
-                }
-            }
             nm <- image.plot.nxm(x=d$time, y=d$lat, z=z
                            #, n=1, m=2 # special
                            #, n=1, m=3 # special
