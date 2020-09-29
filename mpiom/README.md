@@ -1,7 +1,5 @@
 # mpiom
 
-renamed `GR30s.nc` to `mpiom_GR30_model_grid_standard.nc`
-
 renamed `bek.nc` to `mpiom_r360x180_bek.nc`
 
 renamed `SAO_3D_COSMOS_standard.nc` to `mpiom_r360x180L40_geographic_grid.nc`

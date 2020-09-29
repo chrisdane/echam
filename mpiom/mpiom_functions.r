@@ -1,9 +1,9 @@
 # r
 
 mpiom_remap2lonlat <- function(files, cdo_select="", outpath, fout_rename_pattern, 
-                               mpiom_model_grid="mpiom_GR30_model_grid_standard.nc", 
-                               reg_res=c(nlon=120, nlat=101),
-                               remap_method="remapcon2", 
+                               mpiom_model_grid="GR30s.nc",
+                               reg_res=c(nlon=360, nlat=180),
+                               remap_method="remapcon2",
                                cdo="cdo", convert2nc=T, verbose=T) {
     
     # todo: cdo_get_filetype() dependence from `functions` repo
@@ -97,7 +97,7 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath, fout_rename_patter
         fout <- paste0(outpath, "/", fout)
         cmd <- paste0(cmd, " ", files[fi], " ", fout)
         if (verbose) message("run `", cmd, "` ...")
-        #cdo -P 4 -t mpiom1 -f nc copy -remapcon2,r360x180 -setgrid,../mpiom_GR30_model_grid_standard.nc -select,code=183 Hol-Tx10_mpiom_32900101_32901231.grb zmld_curvilinear_setgrid_remapcon2_r360x180.nc 
+        #cdo -P 4 -t mpiom1 -f nc copy -remapcon2,r360x180 -setgrid,../GR30.nc -select,code=183 Hol-Tx10_mpiom_32900101_32901231.grb zmld_curvilinear_setgrid_remapcon2_r360x180.nc 
         system(cmd)
         
         # fix negative values due to interpolation
@@ -694,4 +694,189 @@ mpiom_moc_extract_ts <- function(fin, outpath,
     } # for i sellonlatbox
 
 } # mpiom_moc_extract_ts
+
+
+mpiom_get_lsm_segments <- function(f_data="mpiom_GR30_curvilinear_120x101_data.nc", 
+                                   f_grid="GR30s.nc",
+                                   f_out) {
+
+    if (missing(f_data)) stop("`f_data` is missing")
+    if (missing(f_grid)) stop("`f_grid` is missing")
+    if (!file.exists(f_data)) stop("`f_data` = ", f_data, " does not exist")
+    if (!file.exists(f_grid)) stop("`f_grid` = ", f_grid, " does not exist")
+    if (file.access(f_data, mode=4) == -1) stop("`f_data` = ", f_data, " not readable")
+    if (file.access(f_grid, mode=4) == -1) stop("`f_grid` = ", f_grid, " not readable")
+
+    if (missing(f_out)) {
+        f_out <- c(paste0("mpiom_", tools::file_path_sans_ext(f_grid), "_land_sea_mask_segments_lon360.txt"),
+                  paste0("mpiom_", tools::file_path_sans_ext(f_grid), "_land_sea_mask_segments_lon180.txt"))
+    } else {
+        if (length(f_out) != 2) stop("`f_out` must be of length 2. one for 0,360 and one for -180,180 lons")
+    }
+
+    # get data
+    message("read `f_data` = ", f_data, " ...")
+    nc_data <- nc_open(f_data)
+    data <- ncvar_get(nc_data, "lm_THO_as_time_slope")
+    nx <- dim(data)[1]; ny <- dim(data)[2]
+
+    # get 4 lon,lat coords per curvilinear box
+    message("read `f_grid` = ", f_grid, " ...")
+    nc_grid <- nc_open(f_grid)
+    lon_centers <- ncvar_get(nc_grid, "grid_center_lon")
+    lat_centers <- ncvar_get(nc_grid, "grid_center_lat")
+    lon_corners <- ncvar_get(nc_grid, "grid_corner_lon")
+    lat_corners <- ncvar_get(nc_grid, "grid_corner_lat")
+
+    if (dim(lon_centers)[1] != nx ||
+        dim(lon_centers)[2] != ny) {
+        stop("dimensions of data ", nx, ",", ny, 
+             " do not fit to dimensions of lon/lat_centers ", 
+             dim(lon_centers)[1], ",", dim(lon_centers)[2])
+    }
+
+    # for all land (NA) points
+    x0 <- y0 <- x1 <- y1 <- c()
+    cnt <- 0
+    land_xy <- which(is.na(data), arr.ind=T)
+    message("find land-sea-mask segments for ", length(land_xy[,"row"]), " land points ...") 
+    for (i in seq_along(land_xy[,"row"])) { 
+        
+        # find neighbour points
+        x2check <- y2check <- c()
+        if (land_xy[i,"row"] > 1) {
+            x2check <- c(x2check, land_xy[i,"row"] - 1) 
+        }
+        if (land_xy[i,"row"] < nx) {
+            x2check <- c(x2check, land_xy[i,"row"] + 1) 
+        }
+        if (land_xy[i,"col"] > 1) {
+            y2check <- c(y2check, land_xy[i,"col"] - 1)
+        }
+        if (land_xy[i,"col"] < ny) {
+            y2check <- c(y2check, land_xy[i,"col"] + 1)
+        }
+        check_xy <- rbind(cbind(x2check, rep(land_xy[i,"col"], t=length(x2check))),
+                          cbind(rep(land_xy[i,"row"], t=length(y2check)), y2check))
+        dimnames(check_xy)[1] <- list(NULL)
+        colnames(check_xy) <- c("row", "col")
+
+        lonlat_center_land <- c(lon_centers[land_xy[i,"row"],land_xy[i,"col"]],
+                                lat_centers[land_xy[i,"row"],land_xy[i,"col"]])
+        
+        # check direct neighbour points (max 4: left, right, below or above) if any is ocean
+        for (j in seq_along(check_xy[,"row"])) { 
+            
+            # check every point adjacent to land (=NA) if it is an ocean point (=not NA)
+            if (!is.na(data[check_xy[j,"row"],check_xy[j,"col"]])) { 
+
+                cnt <- cnt + 1 # otal number of boundary segments
+                lonlat_center_oce <- c(lon_centers[check_xy[j,"row"],check_xy[j,"col"]],
+                                       lat_centers[check_xy[j,"row"],check_xy[j,"col"]])
+                message("seg ", cnt, " between land ", 
+                        land_xy[i,"row"], ",", land_xy[i,"col"], 
+                        " (", paste(lonlat_center_land, collapse="°,"), "°) and ocean ", 
+                        check_xy[j,"row"], ",", check_xy[j,"col"], 
+                        " (", paste(lonlat_center_oce, collapse="°,"), "°)")
+
+                # get points that both neighbouring land and oce cells use
+                lon_intersect <- intersect(lon_corners[,land_xy[i,"row"],land_xy[i,"col"]], 
+                                           lon_corners[,check_xy[j,"row"],check_xy[j,"col"]])
+                if (length(lon_intersect) != 2) stop("there must be 2 lon_intersect")
+                lat_intersect <- intersect(lat_corners[,land_xy[i,"row"],land_xy[i,"col"]], 
+                                           lat_corners[,check_xy[j,"row"],check_xy[j,"col"]]) 
+                if (length(lat_intersect) != 2) stop("there must be 2 lat_intersect")
+                x0 <- c(x0, lon_intersect[1])
+                y0 <- c(y0, lat_intersect[1])
+                x1 <- c(x1, lon_intersect[2])
+                y1 <- c(y1, lat_intersect[2])
+
+                # check
+                if (T) {
+                    if (cnt == 1) {
+                        plotname <- paste0("segs.pdf")
+                        pdf(plotname)
+                    }
+                    xlim=range(lonlat_center_land[1], lonlat_center_oce[1],
+                               lon_corners[,land_xy[i,"row"],land_xy[i,"col"]],
+                               lon_corners[,check_xy[j,"row"],check_xy[j,"col"]],
+                               lon_intersect)
+                    ylim=range(lonlat_center_land[2], lonlat_center_oce[2],
+                               lat_corners[,land_xy[i,"row"],land_xy[i,"col"]],
+                               lat_corners[,check_xy[j,"row"],check_xy[j,"col"]],
+                               lat_intersect)
+                    plot(0, t="n", xlab="lon", ylab="lat", 
+                         xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
+                    axis(1, at=pretty(xlim, n=15))
+                    axis(2, at=pretty(ylim, n=15), las=2)
+                    text(lon_corners[,check_xy[j,"row"],check_xy[j,"col"]],
+                         lat_corners[,check_xy[j,"row"],check_xy[j,"col"]], 1:4, col="blue")
+                    text(lon_corners[,land_xy[i,"row"],land_xy[i,"col"]],
+                         lat_corners[,land_xy[i,"row"],land_xy[i,"col"]], 1:4)
+                    text(lonlat_center_oce[1], lonlat_center_oce[2], "O", col="blue", pch=4)
+                    text(lonlat_center_land[1], lonlat_center_land[2], "NA")
+                    segments(lon_intersect[1], lat_intersect[1], lon_intersect[2], lat_intersect[2])
+                }
+
+                # save x0, y0, x1, y1 for drawing land-sea-mask with `segments()`
+                #segment_li[[cnt]] <- 
+
+            } # if neighbour is ocean
+        } # for j check_xy coords
+    } # for i land_xy
+
+    # save segments in 0,360 and -180,180 deg longitude
+    x0180 <- x0
+    x0180[x0180 > 180] <- x0180[x0180 > 180] - 360
+    y0180 <- y0
+    x1180 <- x1
+    x1180[x1180 > 180] <- x1180[x1180 > 180] - 360
+    y1180 <- y1
+
+    # remove cyclic segements
+    cycl_thr <- summary(abs(x0 - x1))[3]*100 # thr = 100*median(dx)
+    cycl_inds <- which(abs(x0 - x1) > cycl_thr)
+    if (length(cycl_inds) > 0) {
+        message("remove ", length(cycl_inds), " cyclic segments whose abs(dx) > 100*median(dx) = ", 
+                cycl_thr, "° lon from 0,360 lons ...")
+        x0 <- x0[-cycl_inds]
+        y0 <- y0[-cycl_inds]
+        x1 <- x1[-cycl_inds]
+        y1 <- y1[-cycl_inds]
+    }
+    cycl_thr <- summary(abs(x0180 - x1180))[3]*100 # thr = 100*median(dx)
+    cycl_inds180 <- which(abs(x0180 - x1180) > cycl_thr)
+    if (length(cycl_inds180) > 0) {
+        message("remove ", length(cycl_inds180), " cyclic segments whose abs(dx) > 100*median(dx) = ", 
+                cycl_thr, "° lon from -180,180 lons ...")
+        x0180 <- x0180[-cycl_inds180]
+        y0180 <- y0180[-cycl_inds180]
+        x1180 <- x1180[-cycl_inds180]
+        y1180 <- y1180[-cycl_inds180]
+    }
+
+    if (!is.null(dev.list())) {
+        plot(0, xlim=range(x0,x1), ylim=range(y0,y1), t="n")
+        maps::map("world2", add=T, interior=F, lwd=0.5)
+        segments(x0, y0, x1, y1)
+
+        plot(0, xlim=range(x0180,x1180), ylim=range(y0180,y1180), t="n")
+        maps::map("world", add=T, interior=F, lwd=0.5)
+        segments(x0180, y0180, x1180, y1180)
+        
+        message("save ", plotname, " ...")
+        dev.off()
+    }
+
+    # save segments as ascii
+    message("save ", f_out[1], " ...")
+    write.table(data.frame(x0=x0, y0=y0, x1=x1, y1=y1), 
+                file=f_out[1], row.names=F)
+    message("save ", f_out[2], " ...")
+    write.table(data.frame(x0=x0180, y0=y0180, x1=x1180, y1=y1180), 
+                file=f_out[2], row.names=F)
+
+    message("finished")
+
+} # mpiom_get_lsm_segments
 

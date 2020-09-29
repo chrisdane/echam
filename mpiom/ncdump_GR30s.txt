@@ -1,4 +1,4 @@
-netcdf mpiom_GR30_model_grid_standard {
+netcdf GR30s {
 dimensions:
 	grid_size = 12120 ;
 	grid_xsize = 120 ;
