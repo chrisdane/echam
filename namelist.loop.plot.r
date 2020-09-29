@@ -37,7 +37,7 @@ if (T) {
                          rep("levinson-lessing_remapnn", t=nseas*nvars),
                          rep("emanda_remapnn", t=nseas*nvars),
                          rep("elgygytgyn_remapnn", t=nseas*nvars),
-                         rep("two-yurts_remapnn", t=nseas*nvars),
+                         rep("two-jurts_remapnn", t=nseas*nvars),
                          rep("kotokel_remapnn", t=nseas*nvars)), n=3)
     #n_mas <- matrix(c(90, 3*150, 150), nruns, 3, byrow=T) # seasons
     n_mas <- matrix(c(1000, 6*500, 3*500, rep(c(90, 3*150, 150), t=nseas-1)), nruns, 3, byrow=T) # annual and seasons

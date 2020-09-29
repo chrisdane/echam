@@ -29,12 +29,15 @@ get_host <- function() {
         homepath <- "~/scripts/r"
         workpath <- homepath
     }
+    repopath <- system("git rev-parse --show-toplevel", intern=T)
     message("hostname    = \"", hostname, "\"\n",
             "machine_tag = \"", machine_tag, "\"\n",
             "homepath    = \"", homepath, "\"\n",
             "workpath    = \"", workpath, "\"\n",
+            "repopath    = \"", repopath, "\"\n",
             "******* get_host() ******")
     return(host=list(hostname=hostname, hostname_f=system("hostname -f", intern=T), 
-                     machine_tag=machine_tag, homepath=homepath, workpath=workpath))
+                     machine_tag=machine_tag, homepath=homepath, workpath=workpath,
+                     repopath=repopath))
 } # get_host()
 

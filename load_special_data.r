@@ -1,7 +1,21 @@
 # r
 
-# needs: make_posixlt_origin_function()
+# todo: solve dependencies from other repos: make_posixlt_origin_function()
+#source(paste0(hompath, "/functions/myfunctions.r"))
 
+# mpiom land sea mask segments
+if (T) {
+    f <- paste0(host$repopath, "/mpiom/mpiom_GR30s_land_sea_mask_segments_lon180.txt")
+    if (file.exists(f)) {
+        message("\nread mpiom land sea mask segments from ", f, " ...")
+        mpiom_GR30_lsm_seg <- read.table(f, header=T)
+        add_mpiom_GR30_lsm_seg <- T
+        message("set add_mpiom_GR30_lsm_seg=T if you want to add to lon,lat plot")
+    } else {
+        message("file ", f, " does not exist. run the function mpiom_get_lsm_segments() via ", 
+                host$repopath, "/mpiom/run_mpiom.r to generate the land sea mask segments ...")
+    }
+}
 
 # cmip6 co2 hist
 f <- ""
@@ -9,7 +23,7 @@ if (host$machine_tag == "mistral") {
     f <- "/pool/data/ECHAM6/input/r0007/greenhouse_historical.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read hist CO2 from ", f, " ...")
+    message("\nread hist CO2 from ", f, " ...")
     co2_hist_ncin <- nc_open(f)
     time <- co2_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
@@ -25,7 +39,7 @@ if (host$machine_tag == "mistral") {
     f <- "/pool/data/ECHAM6/input/r0008/greenhouse_1pctCO2.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read 1pct CO2 from ", f, " ...")
+    message("\nread 1pct CO2 from ", f, " ...")
     co2_1pct_ncin <- nc_open(f)
     time <- co2_1pct_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
@@ -38,7 +52,7 @@ if (file.exists(f)) {
 # cmip6 4CO2 
 co2_4co2 <- list(co2_ppm=1137.2679,
                  text="", col="#1B9E77", lty=2, lwd=0.5, pch=NA)
-message("\n", "set 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
+message("\nset 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
 add_co2_4co2 <- F
 message("set add_co2_4co2=T if you want to add to plot")
 
@@ -63,7 +77,7 @@ if (file.exists(f)) {
     timelt <- seq.POSIXt(timelt, l=length(years), b=paste0(diff(years)[1], " year"))
     timelt <- as.POSIXlt(timelt)
     ## convert concentration (ppm, ppb, ...) to radiative forcing (W m-2) relative to preindustrial reference concentrations `<gas>_0_<unit>`
-    message("convert concentration (ppm, ppb, ...) to radiative forcing (W m-2) relative to reference concentrations ...")
+    message("convert concentration (ppm, ppb, ...) to radiative forcing (W m-2) relative to reference concentrations after joos and spahni 2008 their table 3 ...")
     # after joos and spahni 2008 table 3
     co2_Wm2_fac <- 5.35 # W m-2
     co2_0_ppm <- 278 # ppm
@@ -110,7 +124,7 @@ if (host$machine_tag == "stan") {
 if (file.exists(f)) {
     from <- 6999
     to <- 0
-    message("\n", "read koehler et al. 2017 ghg forcing from ", f, " from ", from, " to ", to, " ...")
+    message("\nread koehler et al. 2017 ghg forcing from ", f, " from ", from, " to ", to, " ...")
     koehler_etal_2017_co2 <- read_koehler_etal_2017(f=f, from=from, to=to)
     # reverse time order from 0-6999 to 6999-0
     koehler_etal_2017_co2 <- koehler_etal_2017_co2[dim(koehler_etal_2017_co2)[1]:1,]
@@ -142,7 +156,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_monthly_1850-2014.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read historical monthly total solar irradiance from ", f, " ...")
+    message("\nread historical monthly total solar irradiance from ", f, " ...")
     tsi_hist_ncin <- nc_open(f)
     time <- tsi_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*86400, origin="1850-01-01", tz="UTC")
@@ -160,7 +174,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_annual_1850-2014.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read historical monthly total solar irradiance from ", f, " ...")
+    message("\nread historical monthly total solar irradiance from ", f, " ...")
     tsi_hist_ncin <- nc_open(f)
     time <- tsi_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*86400, origin="1850-01-01", tz="UTC")
@@ -178,7 +192,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.monthly_ns_avg.txt.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read hadcrut4 global monthly SAT anomalies wrt to 1961-1990 from ", f, " ...")
+    message("\nread hadcrut4 global monthly SAT anomalies wrt to 1961-1990 from ", f, " ...")
     hadcrut4_ncin <- nc_open(f)
     time <- hadcrut4_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -196,7 +210,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.annual_ns_avg.txt.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read hadcrut4 global annual SAT anomalies wrt to 1961-1990 from ", f, " ...")
+    message("\nread hadcrut4 global annual SAT anomalies wrt to 1961-1990 from ", f, " ...")
     hadcrut4_ncin <- nc_open(f)
     time <- hadcrut4_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -218,7 +232,7 @@ if (F) {
         source("/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/read_marcott_etal_2013_function.r")
     }
     if (file.exists(f)) {
-        message("\n", "disable here if you do not want to read marcott et al. 2013 temperature anomalies wrt to 1961-1990 from ", f, " ...")
+        message("\ndisable here if you do not want to read marcott et al. 2013 temperature anomalies wrt to 1961-1990 from ", f, " ...")
         marcott_etal_2013 <- read_marcott_etal_2013_function(f)
         time <- marcott_etal_2013$year_before_1950 # -50 -30 -10  10 ... 11210 11230 11250 11270 11290
         time <- rev(-1*time) # -11290 -11270 -11250 -11230 -11210 -11190 -11170 ... -70 -50 -30 -10  10  30  50
@@ -245,7 +259,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/GISTEMPv4/GISTEMPv4_global_SAT_anomaly_wrt_1951-1980_GLB.Ts+dSST.csv.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read gistempv4 global annual SAT anomalies wrt to 1951-1980 from ", f, " ...")
+    message("\nread gistempv4 global annual SAT anomalies wrt to 1951-1980 from ", f, " ...")
     gistempv4_ncin <- nc_open(f)
     time <- gistempv4_ncin$dim$time$vals # YYYY
     timelt <- as.POSIXlt(as.Date(paste0(time, "-06-30")), tz="UTC") # use mid-year
@@ -262,7 +276,7 @@ if (host$machine_tag == "mistral") {
     f_err <- "/work/ba0941/a270073/data/RAPID/moc_error.mat"
 }
 if (file.exists(f)) {
-    message("\n", "read rapid moc from ", f, " ...")
+    message("\nread rapid moc from ", f, " ...")
     rapid_ncin <- nc_open(f)
     time <- rapid_ncin$dim$time$vals # "days since 2004-4-1 00:00:00" 
     timelt <- as.POSIXlt(time*86400, origin="2004-04-01T00:00:00Z", tz="UTC") # use mid-year
@@ -299,7 +313,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_monthly_v3.0.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read northern nsidc sea ice index from ", f, " ...")
+    message("\nread northern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -317,7 +331,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_monthly_v3.0.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read southern nsidc sea ice index from ", f, " ...")
+    message("\nread southern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -335,7 +349,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_annual_v3.0.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read northern nsidc sea ice index from ", f, " ...")
+    message("\nread northern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -358,7 +372,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_annual_v3.0.nc"
 }
 if (file.exists(f)) {
-    message("\n", "read southern nsidc sea ice index from ", f, " ...")
+    message("\nread southern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -382,8 +396,8 @@ if (F) {
         f <- "/scratch/simulation_database/incoming/Hol-Tx10/script/HOL_ORB_forcing_0.01ka_resolution_combined.dat"
     }
     if (file.exists(f)) {
-        message("\n", "disable here if you do not want to read pauls accelerated berger orbital parameters from ", f, " ...")
-        orb_berger_acc <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
+        message("\ndisable here if you do not want to read pauls accelerated berger orbital parameters from ", f, " ...")
+        orb_berger_acc <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precessionobliquity"))
         years <- orb_berger_acc$year_before_1950 # kyr before 1950 --> 7.00 6.99 6.98 6.97 ... 0.03 0.02 0.01 0.00
         years <- -1*years*1000 # --> -7000 -6990 -6980 -6970 -6960 ... -40 -30 -20 -10   0
         timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
@@ -424,8 +438,8 @@ if (F) {
         f <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
     }
     if (file.exists(f)) {
-        message("\n", "disable here if you do not want to read pauls transient berger orbital parameters from ", f, " ...")
-        orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
+        message("\ndisable here if you do not want to read pauls transient berger orbital parameters from ", f, " ...")
+        orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precessionobliquity"))
         years <- orb_berger$year_before_1950 # kyr before 1950 --> 6.999, 6.998, 6997, ...
         years <- -1*years*1000 # --> -6999, -6998, -6997, ...
         timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
@@ -464,7 +478,7 @@ if (F) {
         f <- "/home/ace/cdanek/scripts/fortran/berger_1978/berger_1978_years_-800_to_0_kyears_before_1950.txt"
     }
     if (file.exists(f)) {
-        message("\n", "disable here if you do not want to read my berger orbital parameters from ", f, " ...")
+        message("\ndisable here if you do not want to read my berger orbital parameters from ", f, " ...")
         my_orb_berger <- read.table(f, header=T)
         # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: calendar_day_of_perihelion 5: angle_of_perihelion_deg_from_vernal_equinox
         years <- my_orb_berger$kyear_from_1950 # kyr before 1950 in reverse order --> -800, -799, -798, ...
@@ -542,7 +556,7 @@ if (F) {
         f <- "/home/csys/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
     }
     if (file.exists(f)) {
-        message("\n", "disable here if you do not want to read laskar orbital parameters from ", f, " ...")
+        message("\ndisable here if you do not want to read laskar orbital parameters from ", f, " ...")
         my_orb_laskar <- read.table(f, header=T)
         # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: angle_of_perihelion_deg_from_vernal_equinox
         years <- my_orb_laskar$kyear_from_2000 # kyr before 2000 in reverse order --> -800, -799, -798, ..., -3, -2, -1,  0
@@ -695,6 +709,25 @@ if (F) { # compare berger and laskar orb
 } else {
     message("\nenable here if you want to compare berger and laskar orbital parameter")
 } # comapre berger and laskar orb
+
+# PLOT coords as eval list
+if (T) {
+    f <- "~/scripts/r/PLOT/lakes/lake_coords.txt"
+    if (file.exists(f)) {
+        message("\nread PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
+        lakes_table <- read.table(f, header=T, stringsAsFactors=F)
+        PLOT_coords_cmd_list <- NULL
+        lakes <- c("ladoga", "shuchye", "emanda", "kotokel", "elgygytgyn", "two-jurts")
+        for (lakei in seq_along(lakes)) {
+            cmd <- "text("
+            cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
+            cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
+            cmd <- paste0(cmd, ", labels=\"", LETTERS[lakei], "\", cex=1")
+            cmd <- paste0(cmd, ") # ", lakes[lakei])
+            PLOT_coords_cmd_list[[lakei]] <- cmd 
+        }
+    } # if file.exists(f)
+} # of load PLOT coords
 
 # hanno meyer et al. PLOT excel sheet
 if (F) {
@@ -1769,7 +1802,7 @@ if (F) {
                 } else if (names(noaa_ghcdn)[i] == "RSM00030731_GORJACINSK_RS") {
                     noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(kotokel)=24 km")
                 } else if (names(noaa_ghcdn)[i] == "RSM00032389_KLJUCHI_RS") {
-                    noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(two-yurts)=72 km")
+                    noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(two-jurts)=72 km")
                 }
             } # special legend labels
         } # for i ghdcn csv files; one file per station
@@ -1838,7 +1871,7 @@ if (F) {
                         dat <- abind(dat[east_of_180_inds,,], dat[west_of_180_inds,,], along=1)
                     }
                     if (!is.null(lat_orig)) dat <- dat[,length(lat):1,]
-                    attributes(dat) <- list(dim=dim(dat), dims=c("lon", "lat", "time"))
+                    attributes(dat) <- list(dim=dim(dat), dims=c("lonlat", "time"))
                     tmp[[vi]] <- dat
                 }
                 tmp <- list(data=tmp, 
@@ -1853,11 +1886,11 @@ if (F) {
 } # if ERA5 spatial data
 
 # clean work space fom loading special data sets
-objs <- c("f", "time", "years", "timelt", "nyears_to_origin", "origin",
+objs <- c("f", "time", "years", "timelt", "nyears_to_originorigin",
           "pdoi", "tmp", "tmp2", "d", "ghcdn_csv", 
-          "Tavg_an", "Tmin_an", "Tmax_an", "precip_an", 
-          "Tavg_mon", "Tmin_mon", "Tmax_mon", "precip_an",
-          "cnt", "lon", "lat", "lon_orig", "lat_orig")
+          "Tavg_anTmin_anTmax_anprecip_an", 
+          "Tavg_monTmin_monTmax_monprecip_an",
+          "cnt", "lonlat", "lon_orig", "lat_orig")
 suppressWarnings(rm(list=objs))
 
 message("... finished reading special data sets via load_special_data.r")

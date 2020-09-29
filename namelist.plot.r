@@ -268,7 +268,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- "taymyr_remapnn"
     #areas <- "emanda_remapnn"
     #areas <- "elgygytgyn_remapnn"
-    #areas <- "two-yurts_remapnn"
+    #areas <- "two-jurts_remapnn"
     #areas <- "kotokel_remapnn"
     areas <- "moc26.5N"
     levs <- "-0to-5420m"
@@ -409,7 +409,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("emanda_remapnn", "emanda_remapnn")
     #areas <- c("kotokel_remapnn", "kotokel_remapnn")
     #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
-    areas <- c("two-yurts_remapnn", "two-yurts_remapnn")
+    areas <- c("two-jurts_remapnn", "two-jurts_remapnn")
     #seasonsf <- rep("annual", t=2)
     #seasonsf <- rep("seasmean", t=2)
     seasonsf <- rep("yearsum", t=2)
@@ -486,7 +486,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("taymyr_remapnn", t=2)
     #areas <- rep("emanda_remapnn", t=2)
     #areas <- rep("elgygytgyn_remapnn", t=2)
-    areas <- rep("two-yurts_remapnn", t=2)
+    areas <- rep("two-jurts_remapnn", t=2)
     #areas <- rep("kotokel_remapnn", t=2)
 
 # =====================================
@@ -641,7 +641,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("taymyr_remapnn", t=3)
     #areas <- rep("emanda_remapnn", t=3)
     #areas <- rep("elgygytgyn_remapnn", t=3)
-    #areas <- rep("two-yurts_remapnn", t=3)
+    #areas <- rep("two-jurts_remapnn", t=3)
     #areas <- rep("kotokel_remapnn", t=3)
     #levs <- rep(2, t=3)
     #n_mas <- rep(100, t=3)
@@ -1055,7 +1055,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("taymyr_remapnn", t=5)
     #areas <- rep("emanda_remapnn", t=5)
     #areas <- rep("elgygytgyn_remapnn", t=5)
-    #areas <- rep("two-yurts_remapnn", t=5)
+    #areas <- rep("two-jurts_remapnn", t=5)
     #areas <- rep("kotokel_remapnn", t=5)
     regboxes <- lapply(vector("list", l=5), append, list(regbox="N30-90"))
 

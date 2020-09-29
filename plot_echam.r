@@ -477,30 +477,6 @@ for (i in 1:nsettings) {
     # finfished time dim stuff
     #stop("asd")
 
-    # load fractional land sea mask
-    if (any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
-        if (!exists("slf")) slf <- vector("list", l=nsettings)
-        f <- NULL
-        if (any(models[i] == c("echam5", "mpiom1"))) {
-            if (length(dims[[i]]$lon) == 96 && length(dims[[i]]$lat) == 48) {
-                f <- "echam/T31GR30_SLF.nc"
-            } else {
-                message("not yet here1")
-            }
-        } else {
-            message("not yet here2")
-        }
-        if (!is.null(f)) {
-            slf[[i]]$f <- f
-            message("\nload \"", f, "\" ...")
-            f <- nc_open(f)
-            slf[[i]]$lon <- f$dim$lon$vals
-            slf[[i]]$lat <- f$dim$lat$vals
-            slf[[i]]$slf <- ncvar_get(f, "SLF")
-            slf[[i]]$slf[slf[[i]]$slf > 0] <- 1
-        }
-    } # if load slf
-    
     # reorder lon dim values to (-180,...,180) if wanted and necessary
     if (any(names(dims[[i]]) == "lon")) {
         if (reorder_lon_from_0360_to_180180) {
@@ -2895,28 +2871,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
         cat(capture.output(str(d)), sep="\n")
            
 
-        # define special stuff
-        PLOT_coords_addland_cmdlist <- NULL
-        if (T) { # special: add PLOT locations
-            message("special: add PLOT locations to time vs lat plot ...")
-            f <- "~/scripts/r/PLOT/lakes/lake_coords.txt"
-            if (file.exists(f)) {
-                lakes_table <- read.table(f, header=T, stringsAsFactors=F)
-                lakes <- c("ladoga", "shuchye", "emanda", "kotokel", "elgygytgyn", "two-yurts")
-                for (lakei in seq_along(lakes)) {
-                    cmd <- "text("
-                    cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
-                    cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
-                    cmd <- paste0(cmd, ", labels=\"", LETTERS[lakei], "\", cex=1.5")
-                    cmd <- paste0(cmd, ")")
-                    PLOT_coords_addland_cmdlist[[lakei]] <- cmd 
-                }
-            } else {
-                message("cannot add. f = ", f, " does not exist")
-            }
-        }
-
-
         ## plot `datas` (`datas` always exists; no exists() check necessary)
         message("\n", "****************** plot datas z_* ***************************")
         #stop("asd")
@@ -2929,16 +2883,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # make lat regular for `image(..., useRaster=T)` usage
             if (!all(sapply(lapply(lapply(d$lat, diff), unique), length) == 1)) {
-                message("\nmake constant dlat for `image(..., useRaster=T)` usage ...")
+                message("make constant dlat for `image(..., useRaster=T)` usage ...")
                 for (i in seq_along(d$lat)) {
                     d$lat[[i]] <- array(seq(min(d$lat[[i]]), max(d$lat[[i]]), l=length(d$lat[[i]])))
                 }
             }
+            
+            addland_list <- list(data="world", xlim="xlim", ylim="ylim") # default yes since lon,lat plot
+            if (mode_p == "area") addland_list <- NULL # fesom
 
-            quiver_list <- addland_cmdlist <- NULL
+            quiver_list <- NULL # default
             if (exists("varnames_uv")) {
                 if (plot_groups[plot_groupi] == "samevars") {
-                    message("\nzuv_samevars:")
+                    message("zuv_samevars:")
                     cat(capture.output(str(zuv_samevars)), sep="\n")
                     if (zname %in% names(varnames_uv)) { # if current variable is defined by u,v-components
                         znameu <- varnames_uv[[zname]]["u"]
@@ -3016,15 +2973,28 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if exists era5
             } # if quv quv_direction
             # finished add special data to z
+            
+            cmd_list <- segment_list <- NULL # default
+            if (exists("PLOT_coords_cmd_list")) {
+                message("special: add PLOT coords to plot ...")
+                cmd_list <- PLOT_coords_cmd_list
+            }
+            
+            if (add_mpiom_GR30_lsm_seg) {
+                message("special: add mpiom land sea mask segements to plot ...")
+                segment_list <- mpiom_GR30_lsm_seg
+                addland_list <- NULL
+            }
 
             # colorbar values
-            message("\ndefine color levels here if wanted ...")
+            message("define color levels here if wanted ...")
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             message("get global min/max ... ", appendLF=F)
             zlim <- range(z, na.rm=T)
             message(" = ", appendLF=F)
             dput(zlim)
-            nlevels <- zlevels <- y_at <- palname <- NULL 
+            nlevels <- zlevels <- y_at <- palname <- NULL
+
             if (zname == "quv") {
                 message("special zlim")
                 nlevels <- 200
@@ -3045,13 +3015,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #zlim <- c(-4.03669006075327, 3.55691367873545)
                 zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2]) # deg C / 7k yrs
                 palname <- "colormaps_jaisnd"
-                addland_cmdlist <- PLOT_coords_addland_cmdlist
             } else if (zname == "lm_aprt_as_time_slope") {
                 zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=25), zlim[2]) # mm/a / 7k yrs
             }
             ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, palname=palname, verbose=F)
-            stop("asd")
-           
+            #stop("asd")
 
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
@@ -3108,8 +3076,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
 
             # map plot
-            addland <- "world"; map_xlim <- "xlim"; map_ylim <- "ylim" # default
-            if (mode_p == "area") addland <- F # fesom
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, 
                            n=nm$nrow, m=nm$ncol, verbose=T,
@@ -3117,12 +3083,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            xlab="Longitude [°]", ylab="Latitude [°]", 
                            zlab=data_info$label, 
                            znames=paste0(letters[seq_along(z)], ") ", names_legend_p),
-                           addland=addland, map_xlim=map_xlim, map_ylim=map_ylim,
-                           addland_cmdlist=addland_cmdlist,
                            add_contour=F,
-                           quiver_list=quiver_list)
+                           quiver_list=quiver_list,
+                           addland_list=addland_list,
+                           segment_list=segment_list,
+                           cmd_list=cmd_list)
             
-            message("\nsave plot ", plotname, " ...")
+            message("save plot ", plotname, " ...")
             dev.off()
             if (F && p$plot_type == "pdf") {
                 if("extrafont" %in% (.packages())){
@@ -3131,7 +3098,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     grDevices::embedFonts(plotname, outfile=plotname)
                 }
             } else {
-                message("\ntodo: embedding blurs colors why?")
+                message("todo: embedding blurs colors why?")
             }
        
             # anomaly lon,lat plot of 2 settings 
@@ -3175,15 +3142,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                     # map plot
                     data_info <- data_infos[[which(sapply(data_infos, names) == varname)[1]]][[varname]]
-                    addland <- "world"
-                    if (mode_p == "area") { # fesom
-                        addland <- F
-                    }
+                    addland_list <- list(data="world", xlim="xlim", ylim="ylim")
+                    if (mode_p == "area") addland <- NULL # fesom
                     image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, verbose=T,
                                    xlab="Longitude [°]", ylab="Latitude [°]", 
                                    zlab=data_info$label, 
                                    znames=paste0(names_short_p[2], " minus ", names_short_p[1]),
-                                   addland=addland)
+                                   addland_list=addland_list)
                     
                     message("\nsave plot ", plotname, " ...")
                     dev.off()
@@ -3237,6 +3202,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             pos_cols <- NULL
             neg_cols <- NULL
             nlevels <- 11
+            addland_list <- NULL
             if (varname == "srad0d" && F) {
                 message("special zlevels")
                 # levels/colors as marcott et al. 2013 Fig. 2 A December
@@ -3261,6 +3227,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #zlim <- c(-2.46028671264648, 2.82926086425781) # jun
                 #zlim <- c(-0.738620281219482, 6.65275375366211) # dec
                 message("min, max = ", zlim[1], ", ", zlim[2])
+                addland_list <- list(data="world", ylim="ylim")
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim, nlevels=nlevels,
@@ -3304,7 +3271,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            individual_zlim=T,
                            contour_only=T, contour_posneg_redblue=T,
                            add_contour=T,
-                           , addland="world", map_ylim="ylim", addland_cmdlist=addland_cmdlist # special
+                           addland_list=addland_list,
                            #xlim=tlimct, 
                            , x_at=tatn, x_labels=tlablt, xlab=tunit, 
                            ylab="Latitude [°]",
@@ -3884,7 +3851,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     meyer_etal_tmp <- meyer_etal$data[["Lake Emanda unpubl."]]
                 } else if (all(grepl("elgygytgyn", areas))) {
                     meyer_etal_tmp <- meyer_etal$data[["El'gygytgyn Lake"]]
-                } else if (all(grepl("two-yurts", areas))) {
+                } else if (all(grepl("two-jurts", areas))) {
                     meyer_etal_tmp <- meyer_etal$data[["Two Jurts Lake"]]
                 } else if (all(grepl("kotokel", areas))) {
                     meyer_etal_tmp <- meyer_etal$data[["Lake Kotokel"]]
@@ -3906,7 +3873,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         # shuchye: c(-3.31588729672117, 5.07708695323018)
                         # emanda: c(-1.69386684350292, 0.902706467116598)
                         # elgygytgyn: c(-0.859484244878168, 0.837003798075255)
-                        # two-yurts: c(-2.05770537576561, 1.94485402526289)
+                        # two-jurts: c(-2.05770537576561, 1.94485402526289)
                         # kotokel: c(-4.32039527896077, 2.06724117367673)
                         message("special ylim")
                         ylim <- c(-4.32039527896077, 5.07708695323018)
@@ -3950,7 +3917,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         noaa_ghcdn_tmp <- noaa_ghcdn$RSM00024671_TOMPO_RS
                     } else if (all(grepl("elgygytgyn", areas))) {
                         noaa_ghcdn_tmp <- noaa_ghcdn$RSM00025248_ILIRNEJ_RS
-                    } else if (all(grepl("two-yurts", areas))) {
+                    } else if (all(grepl("two-jurts", areas))) {
                         noaa_ghcdn_tmp <- noaa_ghcdn$RSM00032389_KLJUCHI_RS
                     } else if (all(grepl("kotokel", areas))) {
                         noaa_ghcdn_tmp <- noaa_ghcdn$RSM00030731_GORJACINSK_RS
@@ -4359,7 +4326,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     if (all(grepl("emanda", areas))) le$pos <- "topright"
                     if (all(grepl("kotokel", areas))) le$pos <- "top"
                     if (all(grepl("elgygytgyn", areas))) le$pos <- "top"
-                    if (all(grepl("two-yurts", areas))) le$pos <- "top"
+                    if (all(grepl("two-jurts", areas))) le$pos <- "top"
                     if (all(grepl("kotokel", areas))) le$pos <- "bottom"
                     le$text <- c(le$text, meyer_etal_tmp$text)
                     le$col <- c(le$col, meyer_etal$col)
