@@ -696,6 +696,7 @@ mpiom_moc_extract_ts <- function(fin, outpath,
 } # mpiom_moc_extract_ts
 
 
+# get mpiom land-sea-mask outline
 mpiom_get_lsm_segments <- function(f_data="mpiom_GR30_curvilinear_120x101_data.nc", 
                                    f_grid="GR30s.nc",
                                    f_out) {
@@ -743,53 +744,106 @@ mpiom_get_lsm_segments <- function(f_data="mpiom_GR30_curvilinear_120x101_data.n
     for (i in seq_along(land_xy[,"row"])) { 
         
         # find neighbour points
-        x2check <- y2check <- c()
-        if (land_xy[i,"row"] > 1) {
-            x2check <- c(x2check, land_xy[i,"row"] - 1) 
-        }
-        if (land_xy[i,"row"] < nx) {
-            x2check <- c(x2check, land_xy[i,"row"] + 1) 
-        }
-        if (land_xy[i,"col"] > 1) {
-            y2check <- c(y2check, land_xy[i,"col"] - 1)
-        }
-        if (land_xy[i,"col"] < ny) {
-            y2check <- c(y2check, land_xy[i,"col"] + 1)
+        if (T) { # dont consider boundaries
+            x2check <- y2check <- c()
+            if (land_xy[i,"row"] > 1) x2check <- c(x2check, land_xy[i,"row"] - 1) 
+            if (land_xy[i,"row"] < nx) x2check <- c(x2check, land_xy[i,"row"] + 1) 
+            if (land_xy[i,"col"] > 1) y2check <- c(y2check, land_xy[i,"col"] - 1)
+            if (land_xy[i,"col"] < ny) y2check <- c(y2check, land_xy[i,"col"] + 1)
+        } else if (F) { # todo: consider also boundaries (see todo below)
+            x2check <- c(land_xy[i,"row"] - 1, land_xy[i,"row"] + 1)
+            y2check <- c(land_xy[i,"col"] - 1, land_xy[i,"col"] + 1)
         }
         check_xy <- rbind(cbind(x2check, rep(land_xy[i,"col"], t=length(x2check))),
                           cbind(rep(land_xy[i,"row"], t=length(y2check)), y2check))
         dimnames(check_xy)[1] <- list(NULL)
         colnames(check_xy) <- c("row", "col")
-
+    
         lonlat_center_land <- c(lon_centers[land_xy[i,"row"],land_xy[i,"col"]],
                                 lat_centers[land_xy[i,"row"],land_xy[i,"col"]])
         
-        # check direct neighbour points (max 4: left, right, below or above) if any is ocean
-        for (j in seq_along(check_xy[,"row"])) { 
+        # check 4 neighbour points: left, right, below and above if any is boundary (index=0) or ocean (=not NA)
+        for (j in seq_along(check_xy[,"row"])) {
             
-            # check every point adjacent to land (=NA) if it is an ocean point (=not NA)
-            if (!is.na(data[check_xy[j,"row"],check_xy[j,"col"]])) { 
-
-                cnt <- cnt + 1 # otal number of boundary segments
-                lonlat_center_oce <- c(lon_centers[check_xy[j,"row"],check_xy[j,"col"]],
-                                       lat_centers[check_xy[j,"row"],check_xy[j,"col"]])
+            if ((any(check_xy[j,] == 0) || check_xy[j,"row"] > nx || check_xy[j,"col"] > ny) || # neighbour is boundary 
+                !is.na(data[check_xy[j,"row"],check_xy[j,"col"]])) { # neighbour is ocean
+                
+                cnt <- cnt + 1 # total number of boundary segments
                 message("seg ", cnt, " between land ", 
                         land_xy[i,"row"], ",", land_xy[i,"col"], 
-                        " (", paste(lonlat_center_land, collapse="°,"), "°) and ocean ", 
-                        check_xy[j,"row"], ",", check_xy[j,"col"], 
-                        " (", paste(lonlat_center_oce, collapse="°,"), "°)")
+                        " (", paste(lonlat_center_land, collapse="°,"), "°) and ", appendLF=F) 
+                
+                lonlat_center_oce <- lon_intersect <- lat_intersect <- NULL
+                bnd <- oce <- F
 
-                # get points that both neighbouring land and oce cells use
-                lon_intersect <- intersect(lon_corners[,land_xy[i,"row"],land_xy[i,"col"]], 
-                                           lon_corners[,check_xy[j,"row"],check_xy[j,"col"]])
-                if (length(lon_intersect) != 2) stop("there must be 2 lon_intersect")
-                lat_intersect <- intersect(lat_corners[,land_xy[i,"row"],land_xy[i,"col"]], 
-                                           lat_corners[,check_xy[j,"row"],check_xy[j,"col"]]) 
-                if (length(lat_intersect) != 2) stop("there must be 2 lat_intersect")
-                x0 <- c(x0, lon_intersect[1])
-                y0 <- c(y0, lat_intersect[1])
-                x1 <- c(x1, lon_intersect[2])
-                y1 <- c(y1, lat_intersect[2])
+                # neighbour is boundary
+                # todo: wich of the 4 corner points of a land cell (NA) are the boundaries?
+                if (any(check_xy[j,] == 0) || check_xy[j,"row"] > nx || check_xy[j,"col"] > ny) { 
+                
+                    message("boundary ", check_xy[j,"row"], ",", check_xy[j,"col"]) 
+                    bnd <- T
+
+                    # get corner-points of land cell that are also boundary
+                    if (check_xy[j,"row"] == 0) { # left boundary
+                        lon_intersect <- lon_corners[3:4,1,check_xy[j,"col"]]
+                    } else if (check_xy[j,"row"] > nx) { # right boundary
+                        lon_intersect <- lon_corners[1:2,nx,check_xy[j,"col"]]
+                    } else { # use corner lons of land
+                        if (check_xy[j,"col"] == 0) { # lower boundary
+                            lon_intersect <- lon_corners[2:3,land_xy[i,"row"],land_xy[i,"col"]]
+                        } else if (check_xy[j,"col"] > ny) { # upper boundary 
+                            lon_intersect <- lon_corners[c(4,1),land_xy[i,"row"],land_xy[i,"col"]]
+                        }
+                    }
+                    if (check_xy[j,"col"] == 0) { # lower boundary
+                        lat_intersect <- lat_corners[2:3,check_xy[j,"row"],1]
+                    } else if (check_xy[j,"col"] > ny) { # upper boundary
+                        lat_intersect <- lat_corners[c(4,1),check_xy[j,"row"],ny]
+                    } else { # use corner lats of land
+                        if (check_xy[j,"row"] == 0) { # left boundary
+                            lat_intersect <- lat_corners[3:4,land_xy[i,"row"],land_xy[i,"col"]]
+                        } else if (check_xy[j,"row"] > nx) { # right boundary
+                            lat_intersect <- lat_corners[1:2,land_xy[i,"row"],land_xy[i,"col"]]
+                        }
+                    }
+                    #return(as.list(environment())) # for testing
+                    #lon_intersect <- NULL
+                    #lat_intersect <- NULL
+
+                    if (F) {
+                        inds=1:5
+                        dev.new()
+                        plot(0, t="n", xlim=range(r$x0[inds], r$x1[inds]), ylim=range(r$y0[inds], r$y1[inds]))
+                        segments(r$x0[inds], r$y0[inds], r$x1[inds], r$y1[inds], col=1:5)
+                        title("lower: 3:2")
+                    }
+                
+                # neighbour is ocean 
+                } else if (!is.na(data[check_xy[j,"row"],check_xy[j,"col"]])) { 
+                    
+                    lonlat_center_oce <- c(lon_centers[check_xy[j,"row"],check_xy[j,"col"]],
+                                           lat_centers[check_xy[j,"row"],check_xy[j,"col"]])
+                    message("ocean ", check_xy[j,"row"], ",", check_xy[j,"col"], 
+                            " (", paste(lonlat_center_oce, collapse="°,"), "°)")
+                    oce <- T
+
+                    # get corner-points used by both neighbouring land and oce cells
+                    lon_intersect <- intersect(lon_corners[,land_xy[i,"row"],land_xy[i,"col"]], 
+                                               lon_corners[,check_xy[j,"row"],check_xy[j,"col"]])
+                    if (length(lon_intersect) != 2) stop("there must be 2 lon_intersect")
+                    lat_intersect <- intersect(lat_corners[,land_xy[i,"row"],land_xy[i,"col"]], 
+                                               lat_corners[,check_xy[j,"row"],check_xy[j,"col"]]) 
+                    if (length(lat_intersect) != 2) stop("there must be 2 lat_intersect")
+                
+                } # if neighbour is boundary or ocean
+
+                # save
+                if (!is.null(lon_intersect) && !is.null(lat_intersect)) {
+                    x0 <- c(x0, lon_intersect[1])
+                    y0 <- c(y0, lat_intersect[1])
+                    x1 <- c(x1, lon_intersect[2])
+                    y1 <- c(y1, lat_intersect[2])
+                }
 
                 # check
                 if (T) {
@@ -797,33 +851,42 @@ mpiom_get_lsm_segments <- function(f_data="mpiom_GR30_curvilinear_120x101_data.n
                         plotname <- paste0("segs.pdf")
                         pdf(plotname)
                     }
-                    xlim=range(lonlat_center_land[1], lonlat_center_oce[1],
-                               lon_corners[,land_xy[i,"row"],land_xy[i,"col"]],
-                               lon_corners[,check_xy[j,"row"],check_xy[j,"col"]],
-                               lon_intersect)
-                    ylim=range(lonlat_center_land[2], lonlat_center_oce[2],
-                               lat_corners[,land_xy[i,"row"],land_xy[i,"col"]],
-                               lat_corners[,check_xy[j,"row"],check_xy[j,"col"]],
-                               lat_intersect)
+                    xlim <- range(lonlat_center_land[1],
+                                  lon_corners[,land_xy[i,"row"],land_xy[i,"col"]])
+                    if (oce) {
+                        xlim <- range(xlim, lonlat_center_oce[1], 
+                                      lon_corners[,check_xy[j,"row"],check_xy[j,"col"]])
+                    }
+                    ylim <- range(lonlat_center_land[2],
+                                  lat_corners[,land_xy[i,"row"],land_xy[i,"col"]])
+                    if (oce) {
+                        ylim <- range(ylim, lonlat_center_oce[2],
+                                      lat_corners[,check_xy[j,"row"],check_xy[j,"col"]])
+                    }
                     plot(0, t="n", xlab="lon", ylab="lat", 
-                         xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
+                         xlim=xlim, ylim=ylim, xaxt="n", yaxt="n") 
                     axis(1, at=pretty(xlim, n=15))
                     axis(2, at=pretty(ylim, n=15), las=2)
-                    text(lon_corners[,check_xy[j,"row"],check_xy[j,"col"]],
-                         lat_corners[,check_xy[j,"row"],check_xy[j,"col"]], 1:4, col="blue")
                     text(lon_corners[,land_xy[i,"row"],land_xy[i,"col"]],
-                         lat_corners[,land_xy[i,"row"],land_xy[i,"col"]], 1:4)
-                    text(lonlat_center_oce[1], lonlat_center_oce[2], "O", col="blue", pch=4)
-                    text(lonlat_center_land[1], lonlat_center_land[2], "NA")
-                    segments(lon_intersect[1], lat_intersect[1], lon_intersect[2], lat_intersect[2])
-                }
-
-                # save x0, y0, x1, y1 for drawing land-sea-mask with `segments()`
-                #segment_li[[cnt]] <- 
-
-            } # if neighbour is ocean
-        } # for j check_xy coords
-    } # for i land_xy
+                         lat_corners[,land_xy[i,"row"],land_xy[i,"col"]], 1:4, col="darkgreen")
+                    text(lonlat_center_land[1], lonlat_center_land[2], "land (NA)", col="darkgreen")
+                    if (bnd) {
+                        title(paste0("segment ", cnt, ": boundary point"))
+                    }
+                    if (oce) {
+                        title(paste0("segment ", cnt, ": ocean point"))
+                        text(lon_corners[,check_xy[j,"row"],check_xy[j,"col"]],
+                             lat_corners[,check_xy[j,"row"],check_xy[j,"col"]], 1:4, col="blue")
+                        text(lonlat_center_oce[1], lonlat_center_oce[2], "ocean (not NA)", col="blue", pch=4)
+                    }
+                    if (!is.null(lon_intersect) && !is.null(lat_intersect)) {
+                        segments(lon_intersect[1], lat_intersect[1], lon_intersect[2], lat_intersect[2])
+                    }
+                } # check
+                
+            } # if neighbour is ocean or boundary
+        } # for j check_xy 4 neighbours
+    } # for i land_xy NA points
 
     # save segments in 0,360 and -180,180 deg longitude
     x0180 <- x0
@@ -833,7 +896,7 @@ mpiom_get_lsm_segments <- function(f_data="mpiom_GR30_curvilinear_120x101_data.n
     x1180[x1180 > 180] <- x1180[x1180 > 180] - 360
     y1180 <- y1
 
-    # remove cyclic segements
+    # remove cyclic segments
     cycl_thr <- summary(abs(x0 - x1))[3]*100 # thr = 100*median(dx)
     cycl_inds <- which(abs(x0 - x1) > cycl_thr)
     if (length(cycl_inds) > 0) {
@@ -856,6 +919,10 @@ mpiom_get_lsm_segments <- function(f_data="mpiom_GR30_curvilinear_120x101_data.n
     }
 
     if (!is.null(dev.list())) {
+        image.plot(seq_len(nx), seq_len(ny), data,
+                   xlab=paste0("x index (nx=", nx, ")"), 
+                   ylab=paste0("y index (ny=", ny, ")"))
+
         plot(0, xlim=range(x0,x1), ylim=range(y0,y1), t="n")
         maps::map("world2", add=T, interior=F, lwd=0.5)
         segments(x0, y0, x1, y1)
@@ -877,6 +944,8 @@ mpiom_get_lsm_segments <- function(f_data="mpiom_GR30_curvilinear_120x101_data.n
                 file=f_out[2], row.names=F)
 
     message("finished")
+
+    return(as.list(environment())) # for testing
 
 } # mpiom_get_lsm_segments
 

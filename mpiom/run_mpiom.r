@@ -120,8 +120,8 @@ if (F) {
 
 # get land-sea-mask outline segments
 if (T) {
-    mpiom_get_lsm_segments(f_data="mpiom_GR30_curvilinear_120x101_data.nc", 
-                           f_grid="GR30s.nc")
+    r <- mpiom_get_lsm_segments(f_data="mpiom_GR30_curvilinear_120x101_data.nc", 
+                                f_grid="GR30s.nc")
 }
 
 message("\nfinished\n")
