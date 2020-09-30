@@ -4,7 +4,7 @@ source("../helper_functions.r")
 source("mpiom_functions.r")
 
 # remap mpiom to regular grid
-if (F) {
+if (T) {
     if (F) { # Hol-7 on stan
         files <- list.files("/ace/user/pgierz/cosmos-aso-wiso/Hol-7/outdata/mpiom",
                             pattern=glob2rx("Hol-7_mpiom_*.grb"), full.names=T)
@@ -119,7 +119,7 @@ if (F) {
 }
 
 # get land-sea-mask outline segments
-if (T) {
+if (F) {
     r <- mpiom_get_lsm_segments(f_data="mpiom_GR30_curvilinear_120x101_data.nc", 
                                 f_grid="GR30s.nc")
 }
