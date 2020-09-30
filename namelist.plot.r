@@ -1057,7 +1057,8 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("elgygytgyn_remapnn", t=5)
     #areas <- rep("two-jurts_remapnn", t=5)
     #areas <- rep("kotokel_remapnn", t=5)
-    regboxes <- lapply(vector("list", l=5), append, list(regbox="N30-90"))
+    #regboxes <- lapply(vector("list", l=5), append, list(regbox="N30-90"))
+    regboxes <- lapply(vector("list", l=5), append, list(regbox="siberiaNA"))
 
 # ==================================================
 # 6 settings

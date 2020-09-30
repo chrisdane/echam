@@ -3023,7 +3023,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
-            if (T && all(areas_p == "N30-90")) {
+            if (T && all(areas_p == "N30-90") || all(areas_p == "siberiaNA")) {
                 message("special nrow ncol")
                 n <- length(z); m <- 1
                 nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, n=n, m=m, ip=ip, dry=T)
