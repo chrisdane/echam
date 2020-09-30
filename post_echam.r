@@ -2262,7 +2262,7 @@ for (i in 1:nsettings) {
 }
 
 if (!interactive()) {
-    message("\n", "grep this log file for lines that begin with \"error\": grep -n \"^error\" <logfile>", 
-            "\n", "be happy if nothing is returned", "\n")
+    message("grep this log file for lines that begin with \"error\": grep -n \"^error\" <logfile>", 
+            "\nbe happy if nothing is returned\n")
 }
 

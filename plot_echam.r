@@ -201,7 +201,8 @@ datas <- vector("list", l=nsettings)
 names(datas) <- names_short
 data_infos <- dims <- dims_per_setting_in <- datas
 season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1:12])
-    
+contour_list <- image_list <- vector("list", l=nsettings) # default: do not load additional modeled lon,lat data
+
 
 ## load special data
 message("\nload special data sets via load_special_data.r ...")
@@ -210,9 +211,9 @@ source("load_special_data.r")
 
 # read data
 message("\nread model data ...")
-for (i in 1:nsettings) {
+for (i in seq_len(nsettings)) {
 
-    message("\n", "*********************************************")
+    message("\n*********************************************")
     message("setting ", i, "/", nsettings, ": ", names_short[i], " ...")
     inpath <- paste0(postpaths[i], "/", models[i], "/", modes[i], "/", varnames_in[i])
     
@@ -224,36 +225,39 @@ for (i in 1:nsettings) {
                     reg_dxsf[i], reg_dysf[i],
                     ".nc") 
 
-    message("\n", "open ", inpath, "/", fname, " ...")
+    message("\nopen ", inpath, "/", fname, " ...")
     ncin <- nc_open(paste0(inpath, "/", fname))
 
     # get dims of file
-    message("\n", "get dims ...")
+    message("\nget dims ...")
     dims_per_setting_in[[i]] <- names(ncin$dim)
     dimtmp <- vector("list", l=ncin$ndims)
     names(dimtmp) <- dims_per_setting_in[[i]]
-    for (di in 1:length(dimtmp)) {
+    for (di in seq_along(dimtmp)) {
         message(di, ": \"", dims_per_setting_in[[i]][di], "\", n=", length(ncin$dim[[di]]$vals))
         dimtmp[[di]] <- ncin$dim[[di]]$vals
     }
     dims[[i]] <- dimtmp
     rm(dimtmp)
 
-    # drop time dim if not longer than 1
-    # todo: check for all dims of length 1
-    if (any(names(dims[[i]]) == "time")) {
-        if (length(dims[[i]]$time) == 1) {
-            message("\ndetected time dim but its length is 1. drop this dim ...")
-            message("time: ", dims[[i]]$time)
-            dims[[i]]$time <- NULL
+    # drop dims of length 1
+    dropinds <- c()
+    for (di in seq_along(dims[[i]])) {
+        if (length(dims[[i]][[di]]) == 1) {
+            message("\nlength of detected ", names(dims[[i]])[di], " is 1 and its value is ",
+                    dims[[i]][[di]], " --> drop this dim ...")
+            dropinds <- c(dropinds, di)
         }
+    } # for di
+    if (length(dropinds) > 0) {
+        dims[[i]][[dropinds]] <- NULL
     }
 
     # time dim as posix object
     if (any(names(dims[[i]]) == "time")) {
 
         timein_units <- ncin$dim$time$units
-        message("\n", "detected time dim of length ", length(dims[[i]]$time), "; dims[[", i, "]]$time:")
+        message("\ndetected time dim of length ", length(dims[[i]]$time), "; dims[[", i, "]]$time:")
         ht(dims[[i]]$time)
         
         if (prefixes[i] == "Hol-T_stschuett_echam5_wiso") {
@@ -287,7 +291,7 @@ for (i in 1:nsettings) {
             #timein_ct <- as.POSIXct(timein*timein_fac, origin=timein_origin, tz="UTC")
             timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac, origin=timein_origin, tz="UTC")
 
-            # case 2: e.g. "day as %Y%m%d.%f"
+        # case 2: e.g. "day as %Y%m%d.%f"
         } else if (regexpr(" as ", timein_units) != -1) { 
             timein_unit <- substr(timein_units, 1, regexpr(" as ", timein_units) - 1)
             timein_format <- substr(timein_units, regexpr(" as ", timein_units) + 4, nchar(timein_units))
@@ -477,6 +481,54 @@ for (i in 1:nsettings) {
     # finfished time dim stuff
     #stop("asd")
 
+    # load additional modeled lon,lat data to add to plot
+    if (any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
+        
+        if (varnames_in[i] == "lm_tsurf_as_time_slope") {
+            contour_list[[i]] <- list(inpath=inpath,
+                                      prefix=prefixes[i], models=models[i],
+                                      modes=modes[i], codesf=codesf[i],
+                                      varnames_in="lm_SICOMO_as_time_slope",
+                                      levsf=levsf[i], depthsf=depthsf[i],
+                                      areas=areas[i], seasonsf=seasonsf[i],
+                                      fromsf=fromsf[i], tosf=tosf[i],
+                                      reg_dxsf=reg_dxsf[i], reg_dysf=reg_dysf[i])
+            contour_list[[i]]$inpath <- paste0(postpaths[i], "/", contour_list[[i]]$models, "/", 
+                                               contour_list[[i]]$modes, "/", contour_list[[i]]$varnames_in)
+        } # which variable
+
+        if (any(!is.null(c(contour_list[[i]], image_list[[i]])))) {
+
+            message("\n", appendLF=F)
+            if (!is.null(contour_list[[i]])) message("`contour_list[[", i, "]]`", appendLF=F)
+            if (!is.null(contour_list[[i]]) && !is.null(image_list[[i]])) message(" and ", appendLF=F)
+            if (!is.null(contour_list[[i]])) message("`image_list[[", i, "]]`", appendLF=F)
+            if (!is.null(contour_list[[i]]) && !is.null(image_list[[i]])) {
+                message(" are ", appendLF=F)
+            } else {
+                message(" is ", appendLF=F)
+            }
+            message("defined --> load additional modeled lon,lat data ...") 
+
+            if (!is.null(contour_list[[i]])) {
+                fname <- paste0(contour_list[[i]]$prefixes, "_", contour_list[[i]]$models, "_", 
+                                contour_list[[i]]$modes, contour_list[[i]]$codesf, "_", 
+                                contour_list[[i]]$varnames_in, contour_list[[i]]$levsf, 
+                                contour_list[[i]]$depthsf, "_", contour_list[[i]]$areas, "_", 
+                                contour_list[[i]]$seasonsf, "_", contour_list[[i]]$fromsf, "-", 
+                                contour_list[[i]]$tosf, contour_list[[i]]$reg_dxsf, 
+                                contour_list[[i]]$reg_dysf,
+                                ".nc") 
+                message("\nopen ", contour_list[[i]]$inpath, "/", fname, " ...")
+                ncin <- nc_open(paste0(contour_list[[i]]$inpath, "/", fname))
+                stop("asd")
+            } # if !is.null(contour_list[[i]])
+
+        } # any(!is.null(c(contour_list[[i]], image_list[[i]]))) defined by user
+
+    } # if file has lon and lat dims
+    # finished loading additional modeled lon,lat data
+
     # reorder lon dim values to (-180,...,180) if wanted and necessary
     if (any(names(dims[[i]]) == "lon")) {
         if (reorder_lon_from_0360_to_180180) {
@@ -527,7 +579,7 @@ for (i in 1:nsettings) {
             } # if reordering is necessary
         } # if reorder_lon_from_0360_to_180180
     } # reorder lon dim values if necessary
-    
+   
     # flip lat dim of data necessary (needs to be increasing for plot)
     if (any(names(dims[[i]]) == "lat")) {
         if (any(diff(dims[[i]]$lat) < 0)) {
@@ -2888,10 +2940,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     d$lat[[i]] <- array(seq(min(d$lat[[i]]), max(d$lat[[i]]), l=length(d$lat[[i]])))
                 }
             }
-            
-            addland_list <- list(data="world", xlim="xlim", ylim="ylim") # default yes since lon,lat plot
-            if (mode_p == "area") addland_list <- NULL # fesom
-
+           
+            # load further data to add to lon,lat plot 
             quiver_list <- NULL # default
             if (exists("varnames_uv")) {
                 if (plot_groups[plot_groupi] == "samevars") {
@@ -2980,6 +3030,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 cmd_list <- PLOT_coords_cmd_list
             }
             
+            addland_list <- list(data="world", xlim="xlim", ylim="ylim") # default yes since lon,lat plot
+            if (mode_p == "area") addland_list <- NULL # fesom
             if (add_mpiom_GR30_lsm_seg) {
                 message("special: add mpiom land sea mask segements to plot ...")
                 segment_list <- mpiom_GR30_lsm_seg
@@ -3083,7 +3135,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            xlab="Longitude [°]", ylab="Latitude [°]", 
                            zlab=data_info$label, 
                            znames=paste0(letters[seq_along(z)], ") ", names_legend_p),
-                           add_contour=T,
+                           add_contour=F,
                            quiver_list=quiver_list,
                            addland_list=addland_list,
                            segment_list=segment_list,
@@ -3091,14 +3143,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             message("save plot ", plotname, " ...")
             dev.off()
-            if (F && p$plot_type == "pdf") {
-                if("extrafont" %in% (.packages())){
+            if (p$plot_type == "pdf") {
+                if(F && "extrafont" %in% (.packages())){
+                    message("embed_fonts() blurrs colors why?")
                     extrafont::embed_fonts(plotname, outfile=plotname)
                 } else {
+                    message("plot is pdf --> run grDevices::embedFonts() ...")
                     grDevices::embedFonts(plotname, outfile=plotname)
                 }
-            } else {
-                message("todo: embedding blurs colors why?")
             }
        
             # anomaly lon,lat plot of 2 settings 
