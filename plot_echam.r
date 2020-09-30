@@ -3056,7 +3056,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             asp_dlon_over_dlat <- max(asp_dlon_over_dlat) # use maximum aspect ratio for all subplots
             if (respect_asp) {
                 if (asp_dlon_over_dlat > respect_asp_thr) {
-                    message("`respect-asp`=T and dlon/dlat aspect ratio ", asp_dlon_over_dlat, 
+                    message("`respect_asp`=T and dlon/dlat aspect ratio ", asp_dlon_over_dlat, 
                             " > `respect_asp_thr` = ", respect_asp_thr, " --> set dlon/dlat aspect ratio to ", 
                             respect_asp_thr, " ...")
                     asp_dlon_over_dlat <- respect_asp_thr
@@ -3083,7 +3083,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            xlab="Longitude [°]", ylab="Latitude [°]", 
                            zlab=data_info$label, 
                            znames=paste0(letters[seq_along(z)], ") ", names_legend_p),
-                           add_contour=F,
+                           add_contour=T,
                            quiver_list=quiver_list,
                            addland_list=addland_list,
                            segment_list=segment_list,
