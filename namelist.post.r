@@ -251,8 +251,8 @@ if (F) { # old hist
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_fort_75"
     #prefixes <- "cosmos-aso-wiso_Hol-7_fort_75_monmean"
     #prefixes <- "cosmos-aso-wiso_Hol-T_fort_75_monmean"
-    prefixes <- "cosmos-aso-wiso_Hol-Tx10_grb"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_grb"
+    #prefixes <- "cosmos-aso-wiso_Hol-Tx10_grb"
+    prefixes <- "cosmos-aso-wiso_Hol-T_grb"
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101" # THO
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_5_remapcon2_r120x101" # SAO
     #prefixes <- "cosmos-aso-wiso_Hol-7_grb_code_183_remapcon2_r120x101" # zmld
@@ -427,7 +427,7 @@ if (F) { # old hist
     #tos <- "6821"
     tos <- "7000" # Hol-T links: end of chunk 3
     #tos <- "7001" # Hol-Tx10 links: end counting from 1 
-    if (grepl("Hol-Tx10_", prefixes[1])) {
+    if (grepl("Hol-Tx10_", fpatterns[1])) {
         if (modes[1] == "timmean") {
             if (froms[1] == "2901" && tos[1] == "3601") {
                 new_date_list <- list(list(years=mean(c(1, 7001)), nc_time_origin=1))
@@ -455,8 +455,8 @@ if (F) { # old hist
                         new_date_list[[1]]$years <- new_date_list[[1]]$years[-c(447*12+11, 447*12+12)]
                     }
                 }
-                if (grepl("grb", prefixes[1])) {
-                    # 11 missing mpiom *.grb * files: 3028, 3065, 3153, 3162, 3165, 3316, 3331, 3334, 3348, 3368, 3498
+                if (grepl(".grb", fpatterns[1]) || grepl("grb", prefixes[1])) {
+                    # 11 missing Hol-Tx10 mpiom *.grb * files: 3028, 3065, 3153, 3162, 3165, 3316, 3331, 3334, 3348, 3368, 3498
                     missy <- c(3028, 3065, 3153, 3162, 3165, 3316, 3331, 3334, 3348, 3368, 3498)
                     message("remove missing years ", paste(missy, collapse=", "))
                     rminds <- c()
