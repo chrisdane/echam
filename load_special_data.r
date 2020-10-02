@@ -6,6 +6,7 @@
 # mpiom land sea mask segments
 if (T) {
     f <- paste0(host$repopath, "/mpiom/mpiom_GR30s_land_sea_mask_segments_lon180.txt")
+    #f <- paste0(host$repopath, "/mpiom/mpiom_GR30s_land_sea_mask_segments_lon360.txt")
     if (file.exists(f)) {
         message("\nread mpiom land sea mask segments from ", f, " ...")
         mpiom_GR30_lsm_seg <- read.table(f, header=T)
@@ -717,7 +718,7 @@ if (T) {
         message("\nread PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
         lakes_table <- read.table(f, header=T, stringsAsFactors=F)
         PLOT_coords_cmd_list <- NULL
-        lakes <- c("ladoga", "shuchye", "emanda", "kotokel", "elgygytgyn", "two-jurts")
+        lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-jurts", "elgygytgyn")
         for (lakei in seq_along(lakes)) {
             cmd <- "text("
             cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])

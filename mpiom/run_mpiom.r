@@ -33,12 +33,13 @@ if (T) {
         stop("implement fout_rename_pattern")
     } else if (T) { # already post-processed files
         #files <- "/isibhv/projects/paleo_work/cdanek/post/mpiom1/select/lm_THO_as_time_slope/cosmos-aso-wiso_Hol-Tx10_grb_mpiom1_select_selcode_2_lm_THO_as_time_slope_sellevel_6_global_annual_0001-7001.nc"
-        files <- paste0("/isibhv/projects/paleo_work/cdanek/post/mpiom1/seasmean/lm_THO_as_time_slope/cosmos-aso-wiso_Hol-Tx10_grb_mpiom1_seasmean_selcode_2_lm_THO_as_time_slope_sellevel_6_global_", c("DJF", "MAM", "JJA", "SON"), "_0001-7001.nc")
+        #files <- paste0("/isibhv/projects/paleo_work/cdanek/post/mpiom1/seasmean/lm_THO_as_time_slope/cosmos-aso-wiso_Hol-Tx10_grb_mpiom1_seasmean_selcode_2_lm_THO_as_time_slope_sellevel_6_global_", c("DJF", "MAM", "JJA", "SON"), "_0001-7001.nc")
         #files <- "/ace/user/cdanek/post/mpiom1/select/lm_THO_as_time/cosmos-aso-wiso_Hol-T_grb_mpiom1_select_selcode_2_lm_THO_as_time_slope_sellevel_6_global_annual_0004-7000.nc"
         #files <- paste0("/ace/user/cdanek/post/mpiom1/seasmean/lm_THO_as_time_slope/cosmos-aso-wiso_Hol-T_grb_mpiom1_seasmean_selcode_2_lm_THO_as_time_slope_sellevel_6_global_", c("DJF", "MAM", "JJA", "SON"), "_0004-7000.nc")
+        files <- paste0("/isibhv/projects/paleo_work/cdanek/post/mpiom1/select/lm_SICOMO_as_time_slope/cosmos-aso-wiso_Hol-T_grb_mpiom1_select_selcode_15_lm_SICOMO_as_time_slope_global_", c("annual", "Mar", "Sep"), "_0004-7000.nc")
         outpath <- dirname(files[1])
-        fout_rename_pattern <- "cosmos-aso-wiso_Hol-Tx10" 
-        #fout_rename_pattern <- "cosmos-aso-wiso_Hol-T" 
+        #fout_rename_pattern <- "cosmos-aso-wiso_Hol-Tx10" 
+        fout_rename_pattern <- "cosmos-aso-wiso_Hol-T" 
     }
     # files=             outpath=           reg_res=           cdo=      convert2nc=            
     # cdo_select=        mpiom_model_grid=  remap_method=      verbose=     

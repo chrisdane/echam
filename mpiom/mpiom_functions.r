@@ -40,7 +40,9 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath, fout_rename_patter
     for (fi in seq_along(files)) {
         
         if (verbose) message("\nfile ", fi, "/", length(files), ": ", files[fi])
-        
+       
+        if (!file.exists(files[fi])) stop("file does not exist")
+
         # get format of input files
         if (convert2nc) { # if conversion to nc is wanted
             convert2nc <- cdo_get_filetype(files[fi])$file_type
