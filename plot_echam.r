@@ -1,6 +1,7 @@
 ## r
 
-#options(warn = 2) # stop on warnings
+#options(warn=2) # stop on warnings
+#options(warn=0) # back to default
 
 if (T) {
     message("\nrm(list=ls())")
@@ -11,6 +12,7 @@ if (T) {
 } else {
     message("\ndo not clear work space ...")
 }
+message("graphics.off()")
 graphics.off()
 
 # load libraries necessary for plot_echam.r
@@ -28,7 +30,8 @@ host <- get_host()
 if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
     message("\nload ", host$homepath, "/functions/myfunctions.r ...")
     source(paste0(host$homepath, "/functions/myfunctions.r"))
-    # plot_echam.r needs the functions: setDefaultPlotOptions()
+    # plot_echam.r needs the functions: 
+    # setDefaultPlotOptions(), reorder_legend(), get_pval()
 } else {
     stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
 }
@@ -58,7 +61,7 @@ if (!exists("postpaths")) { # default from post_echam.r
 if (!exists("plotpath")) { # default from post_echam.r
     plotpath <- paste0(host$workpath, "/plots/", paste(unique(models), collapse="_vs_"))
 }
-if (!exists("names_legend")) names_legend <- names_short
+if (!exists("names_legend")) names_legend <- rep("", t=nsettings)
 
 # defaults: code stuff
 if (!exists("codes")) codes <- rep("", t=nsettings)
@@ -178,29 +181,38 @@ if (F) {
 } 
 if (!exists("lwds")) lwds <- rep(1, t=nsettings)
 if (!exists("pchs")) pchs <- rep(1, t=nsettings)
+if (!exists("scatterpchs")) scatterpchs <- rep(16, t=nsettings)
 if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
 if (exists("cols_samedims")) {
     if (class(cols_samedims) == "integer") { # user provided color numbers
         cols_samedims <- cols_vec[cols_samedims]
     }
 }
+
+# check suffixes
 plotname_suffix <- "" # default: nothing
 if (center_ts) plotname_suffix <- "_center_ts"
 if (scale_ts) plotname_suffix <- "_scale_ts"
+if (!ts_highlight_seasons$bool) ts_highlight_seasons$suffix <- ""
 
-if (any(add_linear_trend)) {
-    if (length(add_linear_trend) != nsettings) {
-        message("\n`add_linear_trend`=T but of length ", length(add_linear_trend), 
+if (length(add_linear_trend) != nsettings) {
+    if (length(add_linear_trend) == 1) {
+        message("\ngiven `add_linear_trend` but of length ", length(add_linear_trend), 
                 " and nsettings = ", nsettings, " --> repeat ", nsettings, " times ...") 
         add_linear_trend <- rep(add_linear_trend, t=nsettings)
+    } else {
+        if (length(add_linear_trend) != nsettings) {
+            stop("\ngiven `add_linear_trend` but of length ", length(add_linear_trend), 
+                " and nsettings = ", nsettings, " --> dont know how to interpret this")
+        }
     }
 }
+
 
 ## allocate
 datas <- vector("list", l=nsettings)
 names(datas) <- names_short
 data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
-season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1:12])
 
 
 ## load special data
@@ -251,7 +263,7 @@ for (i in seq_len(nsettings)) {
     } # for di
     if (length(dropinds) > 0) {
         message("--> drop these dims of length 1 ...")
-        dims[[i]][[dropinds]] <- NULL
+        dims[[i]][dropinds] <- NULL
     }
 
 
@@ -430,7 +442,7 @@ for (i in seq_len(nsettings)) {
                     }
                 } else if (is.numeric(seasonsp[i])) {
                     message("\nprovided `seasonsp[", i, "] = ", seasonsp[i], " != `seasonsf[", i, 
-                            "]` = \"", seasonsf[i], "\"\n", "--> find season indices ...")
+                            "]` = \"", seasonsf[i], "\"\n--> find season indices ...")
                     stop("not yet")
                 }
                 dims[[i]]$season_inds <- season_inds
@@ -535,7 +547,7 @@ for (i in seq_len(nsettings)) {
                 if (!file.exists(ll_fnames[li])) {
                     message("no proper `ll_file` with additional modeled lon,lat data", appendLF=F)
                 }
-                if (file.exists(ll_fnames[li]) && ll_vars[li] == "") message(" and ", appendLF=F)
+                if (!file.exists(ll_fnames[li]) && ll_vars[li] == "") message(" and ", appendLF=F)
                 if (ll_vars[li] == "") {
                     message("no proper `ll_vars` variable name", appendLF=F)
                 }
@@ -554,26 +566,16 @@ for (i in seq_len(nsettings)) {
     if (any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
         
         poly_fnames <- poly_vars <- "" # default: do not load additional lon,lat model data if wanted
-        if (grepl("cosmos-aso-wiso_Hol-T", prefixes[i]) && varnames_in[i] == "lm_tsurf_as_time_slope") {
+        if (F && grepl("cosmos-aso-wiso_Hol-T", prefixes[i]) && 
+            varnames_in[i] == "lm_tsurf_as_time_slope") {
             poly_vars <- list(c(lon="grid_corner_lon", lat="grid_corner_lat",
                                 data="lm_THO_as_time_slope")) # multiple lon,lat,data-vectors possible
             poly_fnames <- list(c(lon=paste0(host$repopath, "/mpiom/GR30s.nc"),
                                   lat=paste0(host$repopath, "/mpiom/GR30s.nc"),
                                   data=paste0(postpaths[i], "/mpiom1/", modes[i], "/", poly_vars[[1]]["data"], "/",
                                               "cosmos-aso-wiso_Hol-T_grb_mpiom1_", modes[i], "_selcode_2_", 
-                                              poly_vars[[1]]["data"], "_sellevel_6_global_")))
-            if (seasonsp[i] == "DJF") {
-                poly_fnames[[1]]["data"] <- paste0(poly_fnames[[1]]["data"], "DJF")
-            } else if (seasonsp[i] == "MAM") {
-                poly_fnames[[1]]["data"] <- paste0(poly_fnames[[1]]["data"], "MAM")
-            } else if (seasonsp[i] == "JJA") {
-                poly_fnames[[1]]["data"] <- paste0(poly_fnames[[1]]["data"], "JJA")
-            } else if (seasonsp[i] == "SON") {
-                poly_fnames[[1]]["data"] <- paste0(poly_fnames[[1]]["data"], "SON")
-            } else if (seasonsp[i] == "annual") {
-                poly_fnames[[1]]["data"] <- paste0(poly_fnames[[1]]["data"], "annual")
-            } 
-            poly_fnames[[1]]["data"] <- paste0(poly_fnames[[1]]["data"], "_", fromsf[i], "-", tosf[i], ".nc")
+                                              poly_vars[[1]]["data"], "_sellevel_6_global_", seasonsp[i], "_", 
+                                              fromsf[i], "-", tosf[i], ".nc")))
         } # which setting and variable
         if (length(poly_vars) != length(poly_fnames)) stop("`poly_vars` and `poly_fnames` must have the same length")
 
@@ -610,7 +612,7 @@ for (i in seq_len(nsettings)) {
                     if (!file.exists(poly_fnames[[polyi]][vi])) {
                         message("`poly_file[[", polyi, "]][", vi, "]`=", poly_fnames[[polyi]][vi], " does not exist", appendLF=F)
                     }
-                    if (file.exists(poly_fnames[[polyi]][vi]) && poly_vars[[polyi]][vi] == "") message(" and ", appendLF=F)
+                    if (!file.exists(poly_fnames[[polyi]][vi]) && poly_vars[[polyi]][vi] == "") message(" and ", appendLF=F)
                     if (poly_vars[[polyi]][vi] == "") {
                         message("`poly_vars[[", polyi, "]][", vi, "]` is no proper variable name was defined", appendLF=F)
                     }
@@ -618,8 +620,12 @@ for (i in seq_len(nsettings)) {
                 } # if file.exists(fname)
             } # for vi in poly_fnames[[polyi]]
 
-            poly_data_per_setting[[polyi]] <- tmp
-        
+            if (length(tmp) == 0) {
+                poly_data_per_setting[[polyi]] <- NULL
+            } else {
+                poly_data_per_setting[[polyi]] <- tmp
+            }
+
         } # for polyi in poly_fnames
 
         if (!all(sapply(poly_data_per_setting, is.null))) {
@@ -628,7 +634,7 @@ for (i in seq_len(nsettings)) {
     
     } # if nc file has lon and lat dims
     # finished loading additional modeled lon,lat data polygon if wanted
- 
+
     # reorder lon dim values to (-180,...,180) if wanted and necessary
     if (any(names(dims[[i]]) == "lon")) {
         if (reorder_lon_from_0360_to_180180) {
@@ -657,7 +663,7 @@ for (i in seq_len(nsettings)) {
                         ifelse(length(east_of_180_inds) > 1, paste0(",", dims[[i]]$lon_orig[east_of_180_inds[2]]), ""), 
                         ifelse(length(east_of_180_inds) > 3, ",...", ""),
                         ifelse(length(east_of_180_inds) > 2, paste0(",", dims[[i]]$lon_orig[east_of_180_inds[length(east_of_180_inds)]]), ""), 
-                        " deg lon)\n", "to\n   ", east_of_180_inds[1],
+                        " deg lon)\nto\n   ", east_of_180_inds[1],
                         ifelse(length(east_of_180_inds) > 1, paste0(",", east_of_180_inds[2]), ""), 
                         ifelse(length(east_of_180_inds) > 3, ",...", ""),
                         ifelse(length(east_of_180_inds) > 2, paste0(",", east_of_180_inds[length(east_of_180_inds)]), ""), 
@@ -710,7 +716,7 @@ for (i in seq_len(nsettings)) {
                             ifelse(length(east_of_180_inds) > 1, paste0(",", ll_data[[i]][[li]]$lon_orig[east_of_180_inds[2]]), ""), 
                             ifelse(length(east_of_180_inds) > 3, ",...", ""),
                             ifelse(length(east_of_180_inds) > 2, paste0(",", ll_data[[i]][[li]]$lon_orig[east_of_180_inds[length(east_of_180_inds)]]), ""), 
-                            " deg lon)\n", "to\n   ", east_of_180_inds[1],
+                            " deg lon)\nto\n   ", east_of_180_inds[1],
                             ifelse(length(east_of_180_inds) > 1, paste0(",", east_of_180_inds[2]), ""), 
                             ifelse(length(east_of_180_inds) > 3, ",...", ""),
                             ifelse(length(east_of_180_inds) > 2, paste0(",", east_of_180_inds[length(east_of_180_inds)]), ""), 
@@ -1543,31 +1549,43 @@ for (i in 1:nsettings) {
                 data_infos[[i]][[vi]]$offset$operator <- "-"
                 data_infos[[i]][[vi]]$offset$value <- 273.15
             }
-            data_infos[[i]][[vi]]$label <- "2m temperature [°C]"
+            data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " [°C]"))
             if (!is.na(remove_mean_froms[i])) {
-                data_infos[[i]][[vi]]$label <- paste0("2m temperature anomaly wrt ", 
-                                                      paste(unique(remove_mean_froms[i], remove_mean_tos[i]), collapse="-"),
-                                                      " [°C]")
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("T"["2m"], " anomaly wrt ", range, " [°C]")),
+                                            list(range=paste(unique(c(remove_mean_froms[i], 
+                                                                      remove_mean_tos[i])), collapse="-"))))
             }
             if (!is.na(remove_setting)) {
-                data_infos[[i]][[vi]]$label <- paste0("2m temperature\nanomaly wrt ", remove_setting)
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("T"["2m"], " anomaly wrt ", set, " [°C]")),
+                                            list(set=remove_setting)))
             }
             if (F) { # anomaly:
                 message("*** special label ***")
-                data_infos[[i]][[vi]]$label <- "2m temperature anomaly [°C]"
+                data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " anomaly [°C]"))
             }
+        
+        } else if (varname == "tsurf") {
+            data_infos[[i]][[vi]]$label <- expression(paste("T"["surf"], " [°C]"))
+        
+        } else if (varname == "aprt") {
+            data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " [mm/month]"))
+        
         } else if (varname == "toa_imbalance") {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("TOA imbalance [W m"^paste(-2), "]"))))
+        
         } else if (varname == "tau_aero_550") {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(integral(), " ", tau, " dV [m"^3, "]"))))
+        
         } else if (grepl("moc", varname)) {
             data_infos[[i]][[vi]]$label <- "MOC [Sv]"
             if (grepl("moc_max_depths", varname)) {
                 data_infos[[i]][[vi]]$label <- "Depth of MOC max [m]"
             }
+        
         } else if (grepl("siarea", varname)) {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NH sea ice extent [km"^2, 
                                                                             " " %*% " ", 10^6, "]"))))
+        
         } else if (varname == "tos") {
             data_infos[[i]][[vi]]$label <- "SST [°C]"
             if (T) {
@@ -1581,9 +1599,13 @@ for (i in 1:nsettings) {
                                                                             sigma[theta], " [kg m"^"-3","]"))))
             data_infos[[i]][[vi]]$offset$operator <- "-"
             data_infos[[i]][[vi]]$offset$value <- 1000
-    
+        
         } else if (varname == "wisoaprt_d") {
-            data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (‰)"))
+            #data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip [‰]"))
+            data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O"[p], " [\u2030]"))
+            #encoding <- get_encoding("‰") # does not work yet
+            if (p$plot_type == "pdf") encoding <- "CP1250"
+
             if (scale_ts) {
                 if (T) {
                     message("special diatom label")
@@ -1593,11 +1615,16 @@ for (i in 1:nsettings) {
                 }
             } else {
                 if (!is.na(remove_mean_froms[i])) {
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O (‰) anomaly wrt ", fromto)),
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O anomaly wrt ", fromto, " [‰]")),
                                                                    list(fromto=paste(unique(remove_mean_froms[i], remove_mean_tos[i]),
                                                                                      collapse="-"))))
                 }
             }
+        
+        } else if (varname == "lm_wisoaprt_d_post_as_time_slope") {
+            #data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O"[p], " trend [‰/7k years]"))))
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O"[p], " trend [\u2030/7k years]"))))
+            if (p$plot_type == "pdf") encoding <- "CP1250"
 
         } else if (varname == "wisoevap_d") {
             data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O evaporation (‰)"))
@@ -1612,31 +1639,48 @@ for (i in 1:nsettings) {
             }
         
         } else if (varname == "lm_temp2_as_time_slope") {
-            data_infos[[i]][[vi]]$label <- "2m temperature trend [K/7k years]"
-            #data_infos[[i]][[vi]]$label <- "2m temperature PI - 7ka"
+            data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " trend [°C/7k years]"))
             if (F) {
                 message("special: *-1")
                 data_infos[[i]][[vi]]$offset$operator <- "*"
                 data_infos[[i]][[vi]]$offset$value <- -1
-                data_infos[[i]][[vi]]$label <- "2m temperature 7ka - PI"
+                data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " trend 7ka - PI [°C]"))
+            }
+            if (T) {
+                message("special unit")
+                data_infos[[i]][[vi]]$offset$operator <- "*"
+                data_infos[[i]][[vi]]$offset$value <- "6/7" # °C/7k years --> °C/6k years
+                data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " trend [°C/6k years]"))
             }
         
         } else if (varname == "lm_tsurf_as_time_slope") {
-            data_infos[[i]][[vi]]$label <- "surface temperature trend [K/7k years]"
+            data_infos[[i]][[vi]]$label <- expression(paste("T"["surf"], " trend [°C/7k years]"))
+            if (T) {
+                message("special unit")
+                data_infos[[i]][[vi]]$offset$operator <- "*"
+                data_infos[[i]][[vi]]$offset$value <- "6/7" # °C/7k years --> °C/6k years
+                data_infos[[i]][[vi]]$label <- expression(paste("T"["surf"], " trend [°C/6k years]"))
+            }
         
         } else if (varname == "lm_THO_as_time_slope") {
             if (all(levs == 6)) {
-                data_infos[[i]][[vi]]$label <- "SST trend [K/7k years]"
+                data_infos[[i]][[vi]]$label <- "SST trend [°C/7k years]"
             } else {
-                data_infos[[i]][[vi]]$label <- "potential temperature trend [K/7k years]"
+                data_infos[[i]][[vi]]$label <- "potential temperature trend [°C/7k years]"
             }
         
         } else if (varname == "lm_SICOMO_as_time_slope") {
             data_infos[[i]][[vi]]$label <- "sea ice fraction trend [fraction/7k years]"
 
         } else if (varname == "lm_aprt_as_time_slope") {
-            data_infos[[i]][[vi]]$label <- "total precip trend [mm/a/7k years]"
-       
+            data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/month/7k years]"))
+            if (T) {
+                message("special unit")
+                data_infos[[i]][[vi]]$offset$operator <- c("*", "*")
+                data_infos[[i]][[vi]]$offset$value <- c(12, "6/7") # mm/month/7k years -> mm/year/6k years
+                data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/year/6k years]"))
+            }
+
         } else if (varname == "lm_act_fpc_as_time_slope") {
             if (all(levs == "sum1-4lev")) {
                 data_infos[[i]][[vi]]$label <- "Forest trend [fraction/7k years]"
@@ -1646,7 +1690,7 @@ for (i in 1:nsettings) {
         
         } else if (varname == "lm_albedo_as_time_slope") {
             data_infos[[i]][[vi]]$label <- "Albedo trend [fraction/7k years]"
-
+        
         } else if (varname == "SICOMO") {
             data_infos[[i]][[vi]]$offset$operator <- "/"
             data_infos[[i]][[vi]]$offset$power <- 6+6 # 1x10^6: m2 --> km2
@@ -1811,11 +1855,13 @@ message("\napply variable specific things ...")
 for (i in 1:nsettings) {
     for (vi in 1:length(datas[[i]])) {
         if (!is.null(data_infos[[i]][[vi]]$offset)) {
-            cmd <- paste0("datas[[", i, "]][[", vi, "]] <- datas[[", i, "]][[", vi, "]] ", 
-                          data_infos[[i]][[vi]]$offset$operator, " ", 
-                          data_infos[[i]][[vi]]$offset$value)
-            message("eval ", cmd, " ...")
-            eval(parse(text=cmd))
+            for (oi in seq_along(data_infos[[i]][[vi]]$offset$operator)) {
+                cmd <- paste0("datas[[", i, "]][[", vi, "]] <- datas[[", i, "]][[", vi, "]] ", 
+                              data_infos[[i]][[vi]]$offset$operator[oi], " ", 
+                              data_infos[[i]][[vi]]$offset$value[oi])
+                message("eval ", cmd, " ...")
+                eval(parse(text=cmd))
+            }
         }
     }
 } # for i nsettings
@@ -2160,7 +2206,7 @@ if (T && any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
     datasltm <- datas
     for (i in seq_len(nsettings)) {
-        if (i == 1) message("\n", "some settings have \"time\" dim --> calc long time means ...")
+        if (i == 1) message("\nsome settings have \"time\" dim --> calc long time means ...")
         ltm_range <- paste0(dims[[i]]$time[1], " to ", dims[[i]]$time[length(dims[[i]]$time)])
         message(i, "/", nsettings, ": ", names_short[i], " (", ltm_range, ") ...")
         for (vi in 1:length(datas[[i]])) {
@@ -2988,7 +3034,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         } # which plot_group "samevars" "samedims"
         
         # temporary plot specs
-        mode_p <- paste(unique(modes[sapply(dinds, "[")]), collapse="_vs_")
+        mode_p <- paste(sort(unique(modes[sapply(dinds, "[")])), collapse="_vs_")
         varnames_in_p <- gsub("_", "", varnames_in[sapply(dinds, "[")])
         names_short_p <- names_short[sapply(dinds, "[")]
         areas_p <- areas_out[sapply(dinds, "[")]
@@ -3334,14 +3380,451 @@ for (plot_groupi in seq_len(nplot_groups)) {
         cat(capture.output(str(d)), sep="\n")
 
         ## plot `datas` (`datas` always exists; no exists() check necessary)
-        message("\n", "****************** plot datas z_* ***************************")
+        message("\n****************** plot datas z_* ***************************")
         #stop("asd")
 
         ### 2 dims
         ## plot `datas` as lon vs lat
         if (ndims == 2 && all(dim_names == c("lon", "lat"))) {
-
+            
             message("\n", zname, " ", mode_p, " plot lon vs lat ...")
+
+            # compare lon,lat model data against data in a scatter plot
+            # -> find locations through interpolation (choose one):
+            # linear methods from interp2()-function: "linear"; "nearest"; "constant"
+            # non-linear method from barylag2d()-function: "barylag2d"
+            # --> do this before lon,lat plot so that the finally used stations 
+            #     can be plotted on the lon,lat map
+            interp_method <- "linear"
+            point_data <- point_data_fname <- point_data_varname <- point_data_label <- NULL
+            # `point_data` below must be list of n lists each containing "lon", "lat", "time" and `point_data_varname` 
+            if (T && exists("gnip_ts")) {
+                point_data <- gnip_ts 
+                point_data_fname <- "GNIP"
+                if (any(zname == c("temp2", "tsurf"))) {
+                    point_data_varname <- "tair"
+                    point_data_label <- "GNIP air temperature [°C]" 
+                } else if (zname == "aprt") {
+                    point_data_varname <- "precip"
+                    point_data_label <- "GNIP precipitation [mm/month]" 
+                } else if (zname == "wisoaprt_d") {
+                    point_data_varname <- "O18p"
+                    point_data_label <- expression(paste("GNIP ", delta^{18}, "O precip [‰]"))
+                }
+            } # if gnip_ts
+            if (T && exists("bartlein_etal_2011")) {
+                if (!is.null(point_data_fname)) stop("point_data_fname is already defined")
+                point_data_fname <- "bartlein_etal_2011"
+                point_data <- bartlein_etal_2011
+                if (any(zname == c("lm_temp2_as_time_slope", "lm_tsurf_as_time_slope"))) {
+                    point_data_varname <- "mat_trend"
+                    point_data_label <- "B11 MAT trend [°C/6k years]" # mean annual temperature
+                    point_data <- point_data$mat_MH_minus_PI
+                    point_data$data <- point_data$data*-1
+                } else if (zname == "lm_aprt_as_time_slope") {
+                    point_data_varname <- "map_trend"
+                    point_data_label <- "B11 MAP trend [mm/a/6k years]" # mean annual precip
+                    point_data <- point_data$map_MH_minus_PI
+                    point_data$data <- point_data$data*-1
+                }
+                # prepare bartlein et al 2011 data for scatter plot
+                if (!is.null(point_data_label)) {
+                    tmp <- point_data
+                    tmp$data <- as.vector(tmp$data)
+                    tmp$lonlat <- expand.grid(tmp$lon, tmp$lat, KEEP.OUT.ATTRS=F)
+                    inds <- which(!is.na(tmp$data))
+                    if (length(inds) > 0) {
+                        tmp$data <- tmp$data[inds]
+                        tmp$lonlat <- tmp$lonlat[inds,]
+                    }
+                    point_data <- vector("list", l=length(tmp$data))
+                    for (i in seq_along(point_data)) {
+                        point_data[[i]] <- list(lon=tmp$lonlat$Var1[i], lat=tmp$lonlat$Var2[i], 
+                                                time=make_posixlt_origin_function(-6000), # mean of 6k BP
+                                                tmp$data[i])
+                        names(point_data[[i]])[4] <- point_data_varname
+                    }
+                }
+            } # if bartlein_etal_2011
+            if (all(!sapply(list(point_data, point_data_fname, 
+                                 point_data_varname, point_data_label), 
+                            is.null))) {
+                # find model data points from z_points locations
+                message("\npoint_data_fname = ", point_data_fname, " was defined for zname = ", 
+                        zname, " --> compare lon,lat model data against data_point variable ", 
+                        point_data_varname, " (=point_data_varname) in a scatter plot ...")
+                xp <- yp <- z
+                for (i in seq_along(z)) { # for all settings
+                    xp[[i]] <- yp[[i]] <- NA # default
+                    # reduce data: use only stations within lon,lat lims
+                    z_lonlim <- range(d$lon[[i]]); z_latlim <- range(d$lat[[i]])
+                    message("******\nsetting ", i, " ", names_short[i], " lon,lat-data within area ",
+                            areas_p[i], ": ",
+                            z_lonlim[1], " to ", z_lonlim[2], "° lon ", 
+                            z_latlim[1], " to ", z_latlim[2], "° lat ...")
+                    point_data_lons <- sapply(point_data, "[[", "lon")
+                    point_data_lats <- sapply(point_data, "[[", "lat")
+                    if (all(is.null(point_data_lons)) || all(is.null(point_data_lats))) {
+                        stop("given point_data ", point_data_fname, " has no lon lat entries")
+                    }
+                    message("check ", length(point_data), " ", point_data_fname, 
+                            " stations with lon,lat-coords ", 
+                            min(point_data_lons), " to ", max(point_data_lons), "° lon and ", 
+                            min(point_data_lats), " to ", max(point_data_lats), "° lat ...")
+                    lonlatinds <- which(point_data_lons >= z_lonlim[1] & 
+                                        point_data_lons <= z_lonlim[2] &
+                                        point_data_lats >= z_latlim[1] & 
+                                        point_data_lats <= z_latlim[2])
+                    message("found ", length(lonlatinds), "/", length(point_data), 
+                            " ", point_data_fname, " stations in this area within model data area") 
+                    if (length(lonlatinds) > 0) { # some point_data stations are within model data area
+                        point_datap <- point_data[lonlatinds]
+                        # if point data has time dim, calc temporal means of point data (since 
+                        # here is the lon,lat section and not lon,lat,time)
+                        if (any(seasonsp_p[i] == names(season_check$known_seasons))) { # seas check 1/3
+                            season_inds <- season_check$known_seasons[[
+                                            which(seasonsp_p[i] == names(season_check$known_seasons))
+                                                                     ]]$inds
+                        } else {
+                            season_inds <- regexpr(seasonsp_p[i], season_check$string)
+                            if (any(season_inds != -1)) { # seas check 2/3: "DJF", "JJA"
+                                season_inds <- season_check$inds[
+                                            season_inds:(season_inds+attributes(season_inds)$match.length-1)
+                                                                ]
+                            } else { # seas check 3/3: "Jan", "Jul"
+                                season_inds <- regexpr(seasonsp_p[i], season_check$names)
+                                if (length(which(season_inds != -1)) == 1) {
+                                    season_inds <- which(season_inds != -1)
+                                } else {
+                                    stop("`seasonsp_p[", i, "]` = \"", seasonsp_p[i], "\" not defined")
+                                }
+                            }
+                        }
+                        # apply seasonal subset and apply temporal mean to all point data coords within lon,lat-lims
+                        message("calc ", point_data_fname, " ", point_data_varname, " ", seasonsp_p[i], 
+                                " means (use months ", paste(season_inds, collapse=","), 
+                                ") for ", length(point_datap), " stations ...")
+                        for (j in seq_along(point_datap)) { # for every point data location
+                            mu <- n_mu <- range_mu <- NA # default mean
+                            if (!is.null(point_datap[[j]][[point_data_varname]]) && # if current location has wanted varname
+                                !all(is.na(point_datap[[j]][[point_data_varname]]))) { # and not all are NA 
+                                minds <- c()
+                                for (si in seq_along(season_inds)) {
+                                    minds <- c(minds, which(point_datap[[j]]$time$mon+1 == season_inds[si]))
+                                }
+                                if (length(minds) == 0) { # season was not found
+                                    message("no ", seasonsp_p[i], " ", point_data_varname, " data found in ", 
+                                            point_data_fname, " location ", j)
+                                } else {
+                                    minds <- sort(minds)
+                                    if (any(is.na(point_datap[[j]][[point_data_varname]][minds]))) { # use only non-NA data
+                                        minds <- minds[-which(is.na(point_datap[[j]][[point_data_varname]][minds]))]
+                                    }
+                                    if (length(minds) == 0) { 
+                                        message("no non-NA ", seasonsp_p[i], " ", point_data_varname, 
+                                                " data found in ", point_data_fname, " location ", j)
+                                    } else { # any data left after varname/season/NA-filters
+                                        mu <- mean(point_datap[[j]][[point_data_varname]][minds], na.rm=T)
+                                        n_mu <- length(minds)
+                                        range_mu <- as.POSIXct(c(min(point_datap[[j]]$time[minds]),
+                                                                 max(point_datap[[j]]$time[minds])))
+                                    }
+                                }
+                            }
+                            point_datap[[j]][[paste0(point_data_varname, "_mean")]] <- mu
+                            point_datap[[j]][[paste0(point_data_varname, "_mean_n")]] <- n_mu
+                            point_datap[[j]][[paste0(point_data_varname, "_mean_range")]] <- range_mu
+                        } # for j in point_datap
+                        
+                        # throw out locations that did not survive the varname/season/NA-filters
+                        if (any(is.na(sapply(point_datap, "[[", paste0(point_data_varname, "_mean"))))) {
+                            inds <- which(is.na(sapply(point_datap, "[[", paste0(point_data_varname, "_mean"))))
+                            message("remove ", length(inds), "/", length(point_datap), " ", point_data_fname, 
+                                    " (=point_data_fname) stations not having any ", point_data_varname, 
+                                    " (=point_data_varname) records ...")
+                            if (length(inds) == length(point_datap)) {
+                                point_datap <- NULL
+                                message("these are all point_data locations. none of the point_data ",
+                                        "survived the varname/season/NA-filters")
+                            } else {
+                                point_datap <- point_datap[-inds]
+                            }
+                        }
+                        if (!is.null(point_datap)) {
+                            rangetot <- range(lapply(point_datap, "[[", paste0(point_data_varname, "_mean_range")))
+                            message("interp model data to ", length(point_datap), " non-NA ", seasonsp_p[i], " ", 
+                                    point_data_fname, " locations from\n   ", 
+                                    as.POSIXlt(rangetot, o="1970-1-1")[1], " to ", 
+                                    as.POSIXlt(rangetot, o="1970-1-1")[2], "\nwith interp_method = ", 
+                                    interp_method, " ...")
+                            # find closest model locations to remaining point data locations
+                            model_data <- rep(NA, t=length(point_datap))
+                            for (j in seq_along(point_datap)) {
+                                if (!any(search() == "package:pracma")) library(pracma)
+                                if (interp_method == "barylag2d") {
+                                    stop("not yet")
+                                } else {
+                                    # pracma::interp2 uses x,y in oppsite order
+                                    model_data[j] <- pracma::interp2(x=d$lat[[i]], y=d$lon[[i]], Z=z[[i]],
+                                                                     xp=point_datap[[j]]$lat, 
+                                                                     yp=point_datap[[j]]$lon, 
+                                                                     method=interp_method)
+                                }
+                            } # for j in point data lon,lat-subset data
+                            # save for scatter plot
+                            xp[[i]] <- model_data
+                            yp[[i]] <- sapply(point_datap, "[[", paste0(point_data_varname, "_mean"))
+                            attributes(yp[[i]])$ntot <- sum(sapply(point_datap, "[[", 
+                                                                   paste0(point_data_varname, "_mean_n")))
+                            attributes(yp[[i]])$ranges <- sapply(point_datap, "[[", 
+                                                                 paste0(point_data_varname, "_mean_range"))
+                            attributes(yp[[i]])$rangetot <- rangetot
+                        } # if any point_data points remain after seasonal subset
+                    } # if any point_data lon,lat coords are within model data area
+                } # for i in z
+
+                # plot all model data vs point data in one scatter plot
+                tlim_scatter <- as.POSIXlt(range(lapply(lapply(yp, attributes), "[[", "rangetot")), o="1970-1-1")
+                message("\ncompare ", length(xp), " model data and ", 
+                        point_data_fname, " data from ", tlim_scatter[1], " to ", tlim_scatter[2], 
+                        " in one scatter plot ...")
+                
+                xlim <- range(xp, na.rm=T)
+                ylim <- range(yp, na.rm=T)
+                xat <- pretty(xlim, n=10)
+                xlab <- format(xat, trim=T)
+                yat <- pretty(ylim, n=10)
+                ylab <- format(yat, trim=T)
+                message("xlim = ", appendLF=F)
+                dput(xlim)
+                message("ylim = ", appendLF=F)
+                dput(ylim)
+            
+                width_in <- p$inch #a4_width_in # maximum a4 width as threshold (8.26 in)
+                message("width_in = ", width_in, " ", appendLF=F)
+                asp_width_over_height <- p$scatter_width/p$scatter_height 
+                message("--> aspect ratio = ", round(asp_width_over_height, 3))
+                height_in <- width_in/asp_width_over_height
+                message("height_in = width_in/aspect_ratio = ", 
+                        width_in, "/", round(asp_width_over_height, 3), " = ", 
+                        round(width_in/asp_width_over_height, 4), " = ",
+                        round(height_in, 4), " ", appendLF=F)
+                if (height_in > p$a4_height_in) {
+                    height_in <- p$a4_height_in # take a4 maximum height as threshold (11.58 in)
+                    message("> ", p$a4_height_in, " --> height_in = ", height_in, 
+                            " --> aspect ratio = ", round(width_in/height_in, 3))
+                } else {
+                    message()
+                }
+                pointsize <- p$pointsize*width_in/p$inch # multiple of default
+               
+                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                   zname, "_", 
+                                   paste0(names_short_p, "_", seasonsp_p, 
+                                          "_", froms_plot_p, "_to_", tos_plot_p, "_", 
+                                          areas_p, collapse="_vs_"), 
+                                   plotname_suffix, 
+                                   "_scatter_", interp_method, "_vs_", point_data_fname, "_", point_data_varname, 
+                                   ".", p$plot_type)
+                if (nchar(plotname) > nchar_max_foutname) {
+                    plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                       zname, "_", 
+                                       paste(unique(names_short_p), collapse="_"), "_",
+                                       paste(unique(seasonsp_p), collapse="_"), "_", 
+                                       paste(unique(froms_plot_p), collapse="_"), "-", 
+                                       paste(unique(tos_plot_p), collapse="_"), "_", 
+                                       paste(unique(areas_p), collapse="_"), 
+                                       plotname_suffix, 
+                                       "_scatter_", interp_method, "_vs_", point_data_fname, "_", point_data_varname, 
+                                       ".", p$plot_type)
+                }
+                message("open plot ", plotname, " ...")
+                dir.create(dirname(plotname), recursive=T, showWarnings=F)
+                if (p$plot_type == "png") {
+                    width <- width_in*p$ppi; height <- height_in*p$ppi
+                    png(plotname, width=width, height=height, res=p$ppi, family=p$family_png, pointsize=pointsize)
+                } else if (p$plot_type == "pdf") {
+                    pdf(plotname, width=width_in, height=height_in, family=p$family_pdf, pointsize=pointsize, encoding=encoding)
+                }
+                 
+                # set plot margins
+                mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
+                mar[4] <- 1 # decrease right margin
+                if (!add_title) mar[3] <- 1 # decrease upper margin
+
+                # open plot
+                par(mar=mar)
+                plot(xp[[1]], yp[[1]], t="n",
+                     xlab=NA, ylab=NA, 
+                     xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
+                axis(1, at=xat, labels=xlab)
+                axis(2, at=yat, labels=ylab, las=1)
+
+                # add variable label
+                if (any(zname == c("temp2", "tsurf"))) {
+                    lab <- expression(paste("Model T"["2m"], " [°C]"))
+                } else if (zname == "tsurf") {
+                    lab <- expression(paste("Model T"["surf"], " [°C]"))
+                } else if (zname == "aprt") {
+                    lab <- expression(paste("Model P"["total"], " [mm/month]"))
+                } else if (zname == "wisoaprt_d") {
+                    lab <- expression(paste("Model ", delta^{18}, "O precip [\u2030]"))
+                } else if (zname == "lm_temp2_as_time_slope") {
+                    lab <- expression(paste("Model T"["2m"], " trend [°C/6k years]"))
+                } else if (zname == "lm_tsurf_as_time_slope") {
+                    lab <- expression(paste("Model T"["surf"], " trend [°C/6k years]"))
+                } else if (zname == "lm_aprt_as_time_slope") {
+                    lab <- expression(paste("Model P"["total"], " trend [mm/year/6k years]"))
+                } else {
+                    lab <- paste0("Model ", data_info$label)
+                }
+                mtext(side=1, lab, line=3.4, cex=0.9)
+                mtext(side=2, point_data_label, line=3.4, cex=0.9)
+
+                # add zero lines
+                if (add_zeroline) {
+                    abline(h=0, col="gray", lwd=0.75, lty=2)
+                    abline(v=0, col="gray", lwd=0.75, lty=2)
+                }
+
+                # add 1:1 line
+                if (add_1to1_line_scatter) {
+                    message("add 1:1 line ...")
+                    abline(a=0, b=1, col="gray", lwd=0.75, lty=2) # a=intercept, b=slope
+                }
+                
+                # add data to scatter plot colored by time
+                message("add data")
+                seascols <- lm_labels <- rep(NA, t=length(xp))
+                for (i in seq_along(xp)) {
+                    if (!all(is.na(yp[[i]]))) {
+                        if (any(names(season_check$known_seasons) == seasonsp_p[i])) {
+                            if (length(xp) > 1) {
+                                message("use season_check$known_seasons$", seasonsp_p[i], "$col_rgb = ", appendLF=F) 
+                                seascols[i] <- season_check$known_seasons[[which(names(season_check$known_seasons) == 
+                                                                                 seasonsp_p[i])]]$col_rgb
+                            } else {
+                                message("use season_check$known_seasons$", seasonsp_p[i], "$col = ", appendLF=F) 
+                                seascols[i] <- season_check$known_seasons[[which(names(season_check$known_seasons) == 
+                                                                                 seasonsp_p[i])]]$col
+                            }
+                        } else {
+                            message("use default color = ", appendLF=F)
+                            seascols[i] <- i
+                        }
+                        message(seascols[i], " for coloring seasonsp_p[", i, "] = ", seasonsp_p[i])
+                        message(point_data_fname, " from ", 
+                                as.POSIXlt(attributes(yp[[i]])$rangetot[1], o="1970-1-1"), " to ",
+                                as.POSIXlt(attributes(yp[[i]])$rangetot[2], o="1970-1-1"))
+                        points(xp[[i]], yp[[i]],
+                               col=seascols[i],
+                               #col=timecols_rgb,
+                               #pch=scatterpchs_vstime[i], 
+                               pch=scatterpchs[i])
+
+                        if (add_linear_trend[i]) {
+                            lm <- lm(yp[[i]] ~ xp[[i]]) # model obs (yp) by model data (xp)
+                            lm_summary <- summary(lm)
+                            print(lm_summary)
+                            lm_labels[i] <- paste0("r=", round(sqrt(lm_summary$r.squared), 2), ", p")
+                            pval <- get_pval(lm)
+                            if (pval < 1e-15) {
+                                lm_labels[i] <- paste0(lm_labels[i], "<1e-15")
+                            } else {
+                                lm_labels[i] <- paste0(lm_labels[i], "=", round(pval, 4)) 
+                            }
+                            lm_labels[i] <- paste0(lm_labels[i], ", df=", lm_summary$fstatistic["dendf"])
+                            message("--> ", lm_labels[i])
+                            # plot regression line within data limits only
+                            if (F) {
+                                message("draw linear regression line within regression limits only ...")
+                                lines(xp[[i]], lm$fitted.values, 
+                                      col=seascols[i], lwd=lwds_p[i], lty=ltys_p[i])
+                            # or plot line through whole plot with regression coefficients
+                            } else if (T) {
+                                message("draw linear regression line through whole plot ...")
+                                abline(a=lm$coefficients[1], b=lm$coefficients[2],
+                                       col=seascols[i], lwd=lwds_p[i], lty=ltys_p[i])
+                            }
+                        } # if add_linear_trend
+                    } # if there are any point_datap (=yp) data
+                } # for i in xp
+
+                # add legend if wanted
+                if (add_legend) {
+                    message("add legend to scatter plot ...")
+                    le <- list()
+                    if (F && suppressPackageStartupMessages(require(Hmisc))) {
+                        tmp <- Hmisc::largest.empty(x=unlist(xp), y=unlist(yp), method="area")
+                        #rect(tmp$rect$x[1], tmp$rect$y[1], tmp$rect$x[2], tmp$rect$y[3])
+                        le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner if x- and y-coords are both increasing (default)
+                        message("automatically derived Hmisc::largest.empty legend position: ", le$pos[1], ", ", le$pos[2])
+                    } else if (T && suppressPackageStartupMessages(require(adagio))) {
+                        x <- unlist(xp); y <- unlist(yp)
+                        if (any(is.na(x))) {
+                            y <- y[-which(is.na(x))]
+                            x <- x[-which(is.na(x))]
+                        }
+                        if (any(is.na(y))) {
+                            x <- x[-which(is.na(y))]
+                            y <- y[-which(is.na(y))]
+                        }
+                        tmp <- adagio::maxempty(x=x, y=y, ax=par("usr")[1:2], ay=par("usr")[3:4])
+                        #rect(tmp$rect[1], tmp$rect[2], tmp$rect[3], tmp$rect[4])
+                        le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
+                        message("automatically derived adagio::maxempty legend position: ", le$pos[1], ", ", le$pos[2])
+                    } else {
+                        le$pos <- "topleft" 
+                    }
+                    le$ncol <- 1
+                    #le$ncol <- 2 
+                    le$text <- paste0(names_legend, " (n=", sapply(lapply(yp, attributes), "[[", "ntot"), ")")
+                    le$col <- seascols #"black"
+                    le$lty <- NA
+                    le$lwd <- NA
+                    le$pch <- scatterpchs
+                    le$cex <- 1
+                    #le$cex <- 0.85
+                    if (T) le <- reorder_legend(le)
+                    if (length(le$pos) == 1) {
+                        legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
+                               pch=le$pch, col=le$col, ncol=le$ncol,
+                               x.intersp=0.2, cex=le$cex, bty="n")
+                    } else if (length(le$pos) == 2) {
+                        legend(x=le$pos[1], y=le$pos[2],
+                               legend=le$text, lty=le$lty, lwd=le$lwd,
+                               pch=le$pch, col=le$col, ncol=le$ncol,
+                               x.intersp=0.2, cex=le$cex, bty="n")
+                    }
+                } # if add_legend
+                box()
+                message("save plot ", plotname, " ...")
+                dev.off()
+                if (p$plot_type == "pdf") {
+                    if (T) {
+                        if (F && "extrafont" %in% (.packages())){
+                            message("run `extrafont::embed_fonts()` ...")
+                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        } else {
+                            message("run `grDevices::embedFonts()` ...")
+                            grDevices::embedFonts(plotname, outfile=plotname)
+                        }
+                    } else {
+                        message("todo: sometimes pdf font embedding blurrs colors why?")
+                    }
+                }
+                message()
+                # finished plot all model data vs point data in one scatter plot
+                
+
+                # plot model data vs point data in n scatter plots separately
+                
+                # finished plot model data vs point data in n scatter plots separately
+
+            } else {
+                message("\nno point_data defined for zname = ", zname, " ...\n")
+            } # if point_data was properly defined or not for current zname
+
 
             # make lat regular for `image(..., useRaster=T)` usage
             if (!all(sapply(lapply(lapply(d$lat, diff), unique), length) == 1)) {
@@ -3365,7 +3848,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 "\" and \"", znamev, "\" as u and v components ")  
                         quiver_list <- list(u=zuv_samevars[[znameu]], v=zuv_samevars[[znamev]])
                         quiver_list$nx_fac <- rep(0.5, t=length(quiver_list$u))
-                        quiver_list$ny_fac <- rep(1, t=length(quiver_list$u))
+                        quiver_list$ny_fac <- rep(0.75, t=length(quiver_list$u))
                         quiver_list$const <- rep(T, t=length(quiver_list$u))
                     }
                 }
@@ -3436,28 +3919,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # if quv quv_direction
             # finished add special data to z
             
-            cmd_list <- segment_list <- NULL # default
-            if (exists("PLOT_coords_cmd_list")) {
-                message("special: add PLOT coords to plot ...")
-                cmd_list <- PLOT_coords_cmd_list
-            }
-            
-            addland_list <- list(data="world", xlim="xlim", ylim="ylim") # default yes since lon,lat plot
-            if (mode_p == "area") addland_list <- NULL # fesom
-            if (add_mpiom_GR30_lsm_seg) {
-                message("special: add mpiom land sea mask segements to plot ...")
-                segment_list <- mpiom_GR30_lsm_seg
-                addland_list <- NULL
-            }
-
             # colorbar values
             message("define color levels here if wanted ...")
-            source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             message("get global min/max ... ", appendLF=F)
             zlim <- range(z, na.rm=T)
             message(" = ", appendLF=F)
             dput(zlim)
-            nlevels <- zlevels <- y_at <- palname <- NULL
+            nlevels <- zlevels <- y_at <- palname <- anom_colorbar <- NULL
             if (zname == "quv") {
                 message("special zlim")
                 nlevels <- 200
@@ -3467,52 +3935,150 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #zlim <- c(8.33, 422.71) # nov; era5: 0.108525462448597, 300.630645751953
                 zlim <- c(0.00584759470075369, 531.362243652344)
             } else if (zname == "lm_temp2_as_time_slope") {
-                zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2]) # deg C / 7k yrs
+                message("special zlim")
+                # Hol-T annual: c(-2.77528234243418, 2.26845881332211)
+                #zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2]) # deg C / 7k yrs
+                zlim <- c(-4.38023477841683, 2.41626973920076)
+                zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.5), zlim[2]) # deg C / 7k yrs
+                palname <- "colormaps_jaisnd"
             } else if (zname == "lm_THO_as_time_slope") {
                 # lm_tho: 360x180: 5 season: c(-4.00305379614524, 3.54971842687043)
                 # lm_tho: 3600x1800: 5 season: c(-4.03669006075327, 3.55691367873545)
             } else if (zname == "lm_tsurf_as_time_slope") {
-                # lm_tsurf: 5 season: -9.440916  6.903386
-                # lm_tsurf: 3600x1800: 5 season: c(-9.46404887704723, 6.91053024191786)
                 message("special zlim")
+                # Hol-T annual: c(-4.38023477841683, 2.41626973920076)
+                # Hol-T: 5 season: -9.440916  6.903386
+                # Hol-T: 3600x1800: 5 season: c(-9.46404887704723, 6.91053024191786)
+                zlim <- c(-4.38023477841683, 2.41626973920076)
                 #zlim <- c(-4.03669006075327, 3.55691367873545)
                 #zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2]) # deg C / 7k yrs
                 zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.5), zlim[2]) # deg C / 7k yrs
                 palname <- "colormaps_jaisnd"
-                if (F) { # add sea ice trend
-                    contour_list <- list(x=NULL, y=NULL, z=NULL, levels=NULL)
-                    for (i in seq_along(ll_data)) {
-                        contour_list$x[[i]] <- ll_data[[i]]$lm_SICOMO_as_time_slope$lon
-                        contour_list$y[[i]] <- ll_data[[i]]$lm_SICOMO_as_time_slope$lat
-                        contour_list$z[[i]] <- ll_data[[i]]$lm_SICOMO_as_time_slope$lm_SICOMO_as_time_slope
-                    }
-                    contour_list$levels <- pretty(range(contour_list$z, na.rm=T), n=10)
-                }
-                if (T) { # add THO trend
-                    polygon_list <- list(x=NULL, y=NULL, z=NULL, levels=NULL)
-                    for (i in seq_along(poly_data)) {
-                        polygon_list$x[[i]] <- rbind(t(apply(poly_data[[i]]$lm_THO_as_time_slope$lon, 1, as.vector)), NA)
-                        polygon_list$y[[i]] <- rbind(t(apply(poly_data[[i]]$lm_THO_as_time_slope$lat, 1, as.vector)), NA)
-                        polygon_list$z[[i]] <- as.vector(poly_data[[i]]$lm_THO_as_time_slope$data)
-                        # remove cyclic elements
-                        inds <- abs(apply(polygon_list$x[[i]], 2, diff))
-                        inds <- apply(inds, 2, max, na.rm=T)
-                        inds <- which(inds > 100*median(inds, na.rm=T))
-                        if (length(inds) > 0) {
-                            message("remove ", length(inds), " cyclic polygons ...")
-                            polygon_list$x[[i]] <- polygon_list$x[[i]][,-inds]
-                            polygon_list$y[[i]] <- polygon_list$y[[i]][,-inds]
-                            polygon_list$z[[i]] <- polygon_list$z[[i]][-inds]
-                        }
-                    }
-                    #polygon_list$levels <- pretty(range(polygon_list$z, na.rm=T), n=10)
-                    polygon_list$levels <- zlevels
-                }
-            } else if (zname == "lm_aprt_as_time_slope") {
-                zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=25), zlim[2]) # mm/a / 7k yrs
+            } else if (T && zname == "lm_aprt_as_time_slope") {
+                message("special zlim")
+                #zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=25), zlim[2]) # mm/month / 7k yrs
+                zlevels <- c(-500, -200, -100, -50, -20, 0, 20, 50, 100, 200, 500) # bartlein et al. 2011 Fig. 6
+                palname <- "BrBG"
+            } else if (zname == "wisoaprt_d") {
+                palname <- "RdYlBu"
+                anom_colorbar <- F
             }
-            ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, palname=palname, verbose=F)
-            #stop("asd")
+            source(paste0(host$homepath, "/functions/image.plot.pre.r"))
+            ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, 
+                                 palname=palname, 
+                                 anom_colorbar=anom_colorbar, verbose=F)
+            
+            # default names
+            if (any(names_legend_p != "")) {
+                names_legend_p[which(names_legend_p != "")] <- paste0(letters[[which(names_legend_p != "")]], ") ", 
+                                                                      names_legend_p[which(names_legend_p != "")])
+            }
+
+            # prepare adding further stuff to every subplot
+            polygon_list <- segment_list <- point_list <- cmd_list <- NULL # default
+            
+            if (T && zname == "lm_tsurf_as_time_slope" && !all(sapply(ll_data, is.null))) { # add sea ice trend
+                message("add SICOMO contours")
+                contour_list <- list(x=NULL, y=NULL, z=NULL, levels=NULL)
+                for (i in seq_along(ll_data)) {
+                    contour_list$x[[i]] <- ll_data[[i]]$lm_SICOMO_as_time_slope$lon
+                    contour_list$y[[i]] <- ll_data[[i]]$lm_SICOMO_as_time_slope$lat
+                    contour_list$z[[i]] <- ll_data[[i]]$lm_SICOMO_as_time_slope$lm_SICOMO_as_time_slope
+                }
+                contour_list$levels <- pretty(range(contour_list$z, na.rm=T), n=10)
+                plotname_suffix <- paste0(plotname_suffix, "_contour_SICOMO")
+            }
+            if (T && zname == "lm_tsurf_as_time_slope" && !all(sapply(poly_data, is.null))) { # add THO trend
+                message("add THO polys")
+                polygon_list <- list(x=NULL, y=NULL, z=NULL, levels=NULL)
+                for (i in seq_along(poly_data)) {
+                    polygon_list$x[[i]] <- rbind(t(apply(poly_data[[i]]$lm_THO_as_time_slope$lon, 1, as.vector)), NA)
+                    polygon_list$y[[i]] <- rbind(t(apply(poly_data[[i]]$lm_THO_as_time_slope$lat, 1, as.vector)), NA)
+                    polygon_list$z[[i]] <- as.vector(poly_data[[i]]$lm_THO_as_time_slope$data)
+                    # remove cyclic elements
+                    inds <- abs(apply(polygon_list$x[[i]], 2, diff))
+                    inds <- apply(inds, 2, max, na.rm=T)
+                    inds <- which(inds > 100*median(inds, na.rm=T))
+                    if (length(inds) > 0) {
+                        message("remove ", length(inds), " cyclic polygons ...")
+                        polygon_list$x[[i]] <- polygon_list$x[[i]][,-inds]
+                        polygon_list$y[[i]] <- polygon_list$y[[i]][,-inds]
+                        polygon_list$z[[i]] <- polygon_list$z[[i]][-inds]
+                    }
+                }
+                #polygon_list$levels <- pretty(range(polygon_list$z, na.rm=T), n=10)
+                polygon_list$levels <- zlevels
+                plotname_suffix <- paste0(plotname_suffix, "_poly_THO")
+            }
+
+            # show locations of point data 
+            if (all(!sapply(list(point_data, point_data_fname, 
+                                 point_data_varname, point_data_label), 
+                            is.null))) {
+                if (T && zname == "wisoaprt_d") {
+                    message("special: add ", point_data_fname, " location to plot ...")
+                    point_list <- vector("list", l=length(z))
+                    for (i in seq_along(z)) {
+                        point_list[[i]] <- list(x=sapply(point_datap, "[[", "lon"),
+                                                y=sapply(point_datap, "[[", "lat")
+                                                #, pch=16
+                                                #, cex=0.2
+                                               )
+                    }
+                    plotname_suffix <- paste0("_", point_data_fname, "_locs")
+                }
+            } # if point_data is defined
+
+            if (exists("bartlein_etal_2011")) {
+                if (any(zname == c("lm_temp2_as_time_slope", "lm_tsurf_as_time_slope")) && 
+                    !is.null(bartlein_etal_2011$mat_MH_minus_PI)) {
+                    message("special: add bartlein_etal_2011$mat_MH_minus_PI*-1 to 5th plot")
+                    tmp <- bartlein_etal_2011$mat_MH_minus_PI
+                } else if (zname == "lm_aprt_as_time_slope" && !is.null(bartlein_etal_2011$map_MH_minus_PI)) {
+                    message("special: add bartlein_etal_2011$map_MH_minus_PI*-1 to 5th plot")
+                    tmp <- bartlein_etal_2011$map_MH_minus_PI
+                } else {
+                    tmp <- NULL
+                }
+                if (!is.null(tmp)) {
+                    tmp$data <- as.vector(tmp$data)*-1
+                    tmp$lonlat <- expand.grid(tmp$lon, tmp$lat, KEEP.OUT.ATTRS=F)
+                    inds <- which(!is.na(tmp$data))
+                    if (length(inds) > 0) {
+                        tmp$data <- tmp$data[inds]
+                        tmp$lonlat <- tmp$lonlat[inds,]
+                    }
+                    if (F) { # constant color
+                        tmp$col <- rep("brown", t=length(tmp$data)) # color for dry trend
+                        if (any(tmp$data > 0)) tmp$col[which(tmp$data > 0)] <- "blue" # color for wet trend
+                    } else if (T) { # same colors as z
+                        inds <- findInterval(x=tmp$data, vec=ip$levels, all.inside=T)
+                        tmp$col <- ip$cols[inds]
+                    }
+                    point_list <- vector("list", l=length(z))
+                    point_list[[length(z)]] <- list(x=tmp$lonlat$Var1, y=tmp$lonlat$Var2, 
+                                                    #col=tmp$col,
+                                                    bg=tmp$col, pch=21
+                                                    #, cex=0.75, lwd=0.2
+                                                    )
+                    plotname_suffix <- paste0(plotname_suffix, "_bartlein_etal_2011")
+                }
+                rm(tmp)
+            } # if bartlein_etal_2011
+
+            addland_list <- list(data="world", xlim="xlim", ylim="ylim") # default yes since lon,lat plot
+            if (mode_p == "area") addland_list <- NULL # fesom
+            if (add_mpiom_GR30_lsm_seg) {
+                message("special: add mpiom land sea mask segments to plot ...")
+                segment_list <- mpiom_GR30_lsm_seg
+                addland_list <- NULL
+            }
+
+            # show PLOT coords
+            if (exists("PLOT_coords_cmd_list")) {
+                message("special: add PLOT coords to plot ...")
+                cmd_list <- c(cmd_list, PLOT_coords_cmd_list)
+            }
 
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
@@ -3525,48 +4091,69 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, dry=T)
             }
 
+            # this is the lon vs lat plot: respecting aspect ratio based on dlon and dlat make sense here 
+            width_in <- p$a4_width_in # maximum a4 width as threshold (8.26 in)
+            message("width_in = ", width_in, " ", appendLF=F)
+            if (respect_asp) {
+                message("--> `respect_asp`=T ", appendLF=F)
+                asp_width_over_height <- sapply(lapply(d$lon, range), diff)/sapply(lapply(d$lat, range), diff) # per subplot
+                asp_width_over_height <- max(asp_width_over_height) # makes sense?
+                if (asp_width_over_height > aspect_ratio_thr) {
+                    message("--> dlon/dlat = ", round(asp_width_over_height, 3), 
+                            " > `aspect_ratio_thr` = ", aspect_ratio_thr, " ", appendLF=F)
+                    asp_width_over_height <- aspect_ratio_thr
+                }
+            } else { # use own default aspect ratio 
+                asp_width_over_height <- p$map_width/p$map_height 
+            }
+            message("--> aspect ratio = ", round(asp_width_over_height, 3))
+            height_in <- nm$nrow*width_in/asp_width_over_height
+            message("height_in = nrow*width_in/aspect_ratio = ", 
+                    nm$nrow, "*", width_in, "/", round(asp_width_over_height, 3), " = ", 
+                    nm$nrow, "*", round(width_in/asp_width_over_height, 4), " = ",
+                    round(height_in, 4), " ", appendLF=F)
+            if (height_in > p$a4_height_in) {
+                height_in <- p$a4_height_in # take a4 maximum height as threshold (11.58 in)
+                message("> ", p$a4_height_in, " --> height_in = ", height_in, 
+                        " --> aspect ratio = ", round(width_in/height_in, 3))
+            } else {
+                message()
+            }
+            pointsize <- p$pointsize*width_in/p$inch # multiple of default
+            
+            # open plot device 
             plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
-                               varname, "_", 
+                               zname, "_", 
                                paste0(names_short_p, "_", seasonsp_p, 
                                       "_", froms_plot_p, "_to_", tos_plot_p, "_", 
                                       areas_p, collapse="_vs_"), 
                                plotname_suffix, ".", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
                 plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
-                                   varname, "_", 
+                                   zname, "_", 
                                    paste(unique(names_short_p), collapse="_"), "_",
                                    paste(unique(seasonsp_p), collapse="_"), "_", 
-                                   paste(unique(froms_plot_p), collapse="_"), "_", 
+                                   paste(unique(froms_plot_p), collapse="_"), "-", 
                                    paste(unique(tos_plot_p), collapse="_"), "_", 
                                    paste(unique(areas_p), collapse="_"), 
                                    plotname_suffix, ".", p$plot_type)
             }
-            message("plot ", plotname, " ...")
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
-            
-            # this is the lon vs lat plot: respecting aspect ratio based on dlon and dlat make sense here 
-            asp_dlon_over_dlat <- sapply(lapply(d$lon, range), diff)/sapply(lapply(d$lat, range), diff) # per subplot
-            asp_dlon_over_dlat <- max(asp_dlon_over_dlat) # use maximum aspect ratio for all subplots
-            if (respect_asp) {
-                if (asp_dlon_over_dlat > respect_asp_thr) {
-                    message("`respect_asp`=T and dlon/dlat aspect ratio ", asp_dlon_over_dlat, 
-                            " > `respect_asp_thr` = ", respect_asp_thr, " --> set dlon/dlat aspect ratio to ", 
-                            respect_asp_thr, " ...")
-                    asp_dlon_over_dlat <- respect_asp_thr
-                }
-                width_per_subplot <- p$map_width
-                height_per_subplot <- width_per_subplot/asp_dlon_over_dlat
-            } else {
-                width_per_subplot <- p$map_width
-                height_per_subplot <- p$map_height
-            }
+            message("open plot ", plotname, " ...")
             if (p$plot_type == "png") {
-                png(plotname, width=nm$ncol*width_per_subplot, height=nm$nrow*height_per_subplot,
-                    res=p$dpi, family=p$family_png)
+                width <- width_in*p$ppi; height <- height_in*p$ppi
+                png(plotname, width=width, height=height, res=p$ppi, family=p$family_png, pointsize=pointsize)
             } else if (p$plot_type == "pdf") {
-                pdf(plotname, width=nm$ncol*p$inch, height=nm$nrow*p$inch/(width_per_subplot/height_per_subplot),
-                    family=p$family_pdf, pointsize=6)
+                width <- width_in; height <- height_in
+                pdf(plotname, width=width_in, height=height_in, family=p$family_pdf, encoding=encoding, pointsize=pointsize
+                    #, paper="a4" # pdf page will alyways have sizes of a4 in inch, no matter what `width` and `height` are
+                    )
+                #library(showtext)
+                #showtext_auto() 
+                #def <- get(".PDF.Options.default", envir = grDevices:::.PSenv)
             }
+            message("final ", p$plot_type, ifelse(p$plot_type == "png", paste0(" (ppi=", p$ppi, ")"), ""), 
+                    " plot width/height = ", width, "/", height, " = ", round(width/height, 3), " ...") 
 
             # map plot
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
@@ -3574,8 +4161,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            n=nm$nrow, m=nm$ncol, verbose=T,
                            y_at=y_at,
                            xlab="Longitude [°]", ylab="Latitude [°]", 
-                           zlab=data_info$label, 
-                           znames=paste0(letters[seq_along(z)], ") ", names_legend_p),
+                           zlab=data_info$label, znames=names_legend_p, 
                            add_contour=F,
                            polygon_list=polygon_list,
                            quiver_list=quiver_list,
@@ -3583,21 +4169,27 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            contour_posneg_redblue=T, 
                            #contour_smooth=T, contour_smooth_n_pixel_thr=50, contour_spar=1,
                            addland_list=addland_list,
+                           point_list=point_list,
                            segment_list=segment_list,
                            cmd_list=cmd_list)
             
             message("save plot ", plotname, " ...")
             dev.off()
             if (p$plot_type == "pdf") {
-                if (F && "extrafont" %in% (.packages())){
-                    message("embed_fonts() blurrs colors why?")
-                    extrafont::embed_fonts(plotname, outfile=plotname)
-                } else if (F) {
-                    message("plot is pdf --> run grDevices::embedFonts() ...")
-                    grDevices::embedFonts(plotname, outfile=plotname)
+                if (T) {
+                    if (F && "extrafont" %in% (.packages())){
+                        message("run `extrafont::embed_fonts()` ...")
+                        extrafont::embed_fonts(plotname, outfile=plotname)
+                    } else {
+                        message("run `grDevices::embedFonts()` ...")
+                        grDevices::embedFonts(plotname, outfile=plotname)
+                    }
+                } else {
+                    message("todo: sometimes pdf font embedding blurrs colors why?")
                 }
             }
-       
+            #stop("asd")
+
             # anomaly lon,lat plot of 2 settings 
             if (length(z) == 2) {
 
@@ -3607,12 +4199,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     length(d$lat[[1]]) == length(d$lat[[2]])) {
                 
                     message("AND both settings have same number of lons and lats\n",
-                            "--> plot anomalies 2 minus 1: ", names_legend_p[2], " minus ", names_legend_p[1], 
+                            "--> plot anomalies 2 minus 1: ", names_short_p[2], " minus ", names_short_p[1], 
                             " as lon vs lat ...")
                     
                     # colorbar values
                     zanom <- list(z[[2]] - z[[1]])
-                    names(zanom) <- paste0(names_legend_p[2], " minus ", names_legend_p[1])
+                    names(zanom) <- paste0(names_short_p[2], " minus ", names_short_p[1])
                     source(paste0(host$homepath, "/functions/image.plot.pre.r"))
                     ip <- image.plot.pre(range(zanom, na.rm=T), verbose=F)
 
@@ -3630,11 +4222,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     dir.create(dirname(plotname), recursive=T, showWarnings=F)
                     if (p$plot_type == "png") {
                         png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
-                            res=p$dpi, family=p$family_png)
+                            res=p$ppi, family=p$family_png)
                     } else if (p$plot_type == "pdf") {
                         pdf(plotname, width=nm$ncol*p$inch, 
                             height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
-                            family=p$family_pdf)
+                            family=p$family_pdf, encoding=encoding)
                     }
 
                     # map plot
@@ -3650,10 +4242,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     message("\nsave plot ", plotname, " ...")
                     dev.off()
                     if (p$plot_type == "pdf") {
-                        if("extrafont" %in% (.packages())){
-                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        if (T) {
+                            if (F && "extrafont" %in% (.packages())){
+                                message("run `extrafont::embed_fonts()` ...")
+                                extrafont::embed_fonts(plotname, outfile=plotname)
+                            } else {
+                                message("run `grDevices::embedFonts()` ...")
+                                grDevices::embedFonts(plotname, outfile=plotname)
+                            }
                         } else {
-                            grDevices::embedFonts(plotname, outfile=plotname)
+                            message("todo: sometimes pdf font embedding blurrs colors why?")
                         }
                     }
 
@@ -3663,6 +4261,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else { # if length(z) != 2
                 message("\nlength(z) != 2 --> cannot plot anomaly as lon vs lat")
             } # finished anomaly plot of 2 dims (lon,lat)
+
+
 
         } # if ndims == 2 and lon,lat
         # finished plot `datas` as lon vs lat
@@ -3674,7 +4274,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             message("\n", zname, " ", mode_p, " plot time vs lat ...")
 
             if (add_smoothed) {
-                message("\n", "`add_smoothed` = T --> use zma and not z ...")
+                message("\n`add_smoothed` = T --> use zma and not z ...")
                 z <- zma
             }
             
@@ -3692,6 +4292,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("\n")
             }
 
+            # load additional data sets
+            addland_list <- NULL
+
             message("get global zlim ... ", appendLF=F)
             zlim <- range(z, na.rm=T)
             message("min, max = ", zlim[1], ", ", zlim[2])
@@ -3699,25 +4302,23 @@ for (plot_groupi in seq_len(nplot_groups)) {
             pos_cols <- NULL
             neg_cols <- NULL
             nlevels <- 11
-            addland_list <- NULL
-            if (varname == "srad0d" && F) {
+            if (F && varname == "srad0d") {
                 message("special zlevels")
-                # levels/colors as marcott et al. 2013 Fig. 2 A December
-                zlevels <- seq(-34, 10, b=4)
-                if (min(zlevels) > zlim[1]) zlevels <- c(zlim[1], zlevels)
-                if (max(zlevels) < zlim[2]) zlevels <- c(zlevels, zlim[2])
-                pos_cols <- c("#fbe4f3", "#f7b9de", "#f591cb", "#ec1168")
-                neg_cols <- c("#5b58b0", "#5b58b0", "#c6b7df", "#edeaf7", "#fafbfb")
-                nlevels <- 20
-            } else if (varname == "srad0d" && F) {
-                message("special zlevels")
-                # levels/colors as marcott et al. 2013 Fig. 2 B June
-                zlevels <- seq(-4, 36, b=4)
-                if (min(zlevels) > zlim[1]) zlevels <- c(zlim[1], zlevels)
-                if (max(zlevels) < zlim[2]) zlevels <- c(zlevels, zlim[2])
-                pos_cols <- c("#fbd3eb", "#f693cc", "#f584c6", "#ef47a8", "#ec0f64")
-                neg_cols <- "#5b5cb2"
-                nlevels <- 20
+                if (T) { # levels/colors as marcott et al. 2013 Fig. 2 A December
+                    zlevels <- seq(-34, 10, b=4)
+                    if (min(zlevels) > zlim[1]) zlevels <- c(zlim[1], zlevels)
+                    if (max(zlevels) < zlim[2]) zlevels <- c(zlevels, zlim[2])
+                    pos_cols <- c("#fbe4f3", "#f7b9de", "#f591cb", "#ec1168")
+                    neg_cols <- c("#5b58b0", "#5b58b0", "#c6b7df", "#edeaf7", "#fafbfb")
+                    nlevels <- 20
+                } else if (T) { # levels/colors as marcott et al. 2013 Fig. 2 B June
+                    zlevels <- seq(-4, 36, b=4)
+                    if (min(zlevels) > zlim[1]) zlevels <- c(zlim[1], zlevels)
+                    if (max(zlevels) < zlim[2]) zlevels <- c(zlevels, zlim[2])
+                    pos_cols <- c("#fbd3eb", "#f693cc", "#f584c6", "#ef47a8", "#ec0f64")
+                    neg_cols <- "#5b5cb2"
+                    nlevels <- 20
+                }
             } else if (F && any(varname == c("temp2", "tslm1", "THO"))) {
                 message("special zlim")
                 #zlim <- c(-0.566165227890015, 2.67736038208008) # annual
@@ -3726,6 +4327,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("min, max = ", zlim[1], ", ", zlim[2])
                 addland_list <- list(data="world", ylim="ylim")
             }
+            if (add_mpiom_GR30_lsm_seg) {
+                message("special: add mpiom land sea mask segments to plot ...")
+                addland_list <- list(data=mpiom_GR30_lsm_seg, ylim="ylim")
+            }
+            
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim, nlevels=nlevels,
                                  palname="RdBu", 
@@ -3743,20 +4349,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
-            nm <- image.plot.nxm(x=d$time, y=d$lat, z=z
+            nm <- image.plot.nxm(x=d$time, y=d$lat, z=z, verbose=F,
                                  #, n=1, m=2 # special
                                  #, n=1, m=3 # special
                                  , n=2, m=2 # special
                                  , ip=ip, dry=T
-                                 #, verbose=T
                                  )
             
             if (p$plot_type == "png") {
                 png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
-                    res=p$dpi, family=p$family_png)
+                    res=p$ppi, family=p$family_png)
             } else if (p$plot_type == "pdf") {
                 pdf(plotname, width=p$inch, height=p$inch/(p$map_width/p$map_height),
-                    family=p$family_pdf, pointsize=6)
+                    family=p$family_pdf, encoding=encoding)
             }
 
             # plot
@@ -3767,7 +4372,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            , ip=ip, verbose=T,
                            individual_zlim=T,
                            contour_only=T, contour_posneg_redblue=T,
-                           add_contour=T,
+                           #add_contour=T,
                            addland_list=addland_list,
                            #xlim=tlimct, 
                            , x_at=tatn, x_labels=tlablt, xlab=tunit, 
@@ -3777,10 +4382,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
             message("\nsave plot ", plotname, " ...")
             dev.off()
             if (p$plot_type == "pdf") {
-                if("extrafont" %in% (.packages())){
-                    extrafont::embed_fonts(plotname, outfile=plotname)
+                if (T) {
+                    if (F && "extrafont" %in% (.packages())){
+                        message("run `extrafont::embed_fonts()` ...")
+                        extrafont::embed_fonts(plotname, outfile=plotname)
+                    } else {
+                        message("run `grDevices::embedFonts()` ...")
+                        grDevices::embedFonts(plotname, outfile=plotname)
+                    }
                 } else {
-                    grDevices::embedFonts(plotname, outfile=plotname)
+                    message("todo: sometimes pdf font embedding blurrs colors why?")
                 }
             }
 
@@ -3792,7 +4403,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (ndims == 2 && all(dim_names == c("time", "depth"))) {
        
             if (add_smoothed) {
-                message("\n", "`add_smoothed` = T --> replace z with zma ...")
+                message("\n`add_smoothed` = T --> replace z with zma ...")
                 z <- zma
             }
 
@@ -3806,7 +4417,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
 
             if (add_ts_to_time_vs_depth) {
-                message("\n", "add time series to datas time vs depth plot ...")
+                message("\nadd time series to datas time vs depth plot ...")
 
             } # if add_ts_to_time_vs_depth
 
@@ -3817,7 +4428,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 zlevels <- seq(ceiling(zlim[1]), min(10, zlim[2]), b=1)
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
-            ip <- image.plot.pre(zlim, zlevels=zlevels, verbose=T, axis.addzlims=T)
+            ip <- image.plot.pre(zlim, zlevels=zlevels, verbose=T)
 
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
@@ -3834,11 +4445,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             if (p$plot_type == "png") {
                 png(plotname, width=nm$ncol*p$ts_width, height=nm$nrow*p$ts_height,
-                    res=p$dpi, family=p$family_png)
+                    res=p$ppi, family=p$family_png)
             } else if (p$plot_type == "pdf") {
                 pdf(plotname, width=nm$ncol*p$inch, 
                     height=p$inch*((nm$nrow*p$ts_height)/(nm$ncol*p$ts_width)),
-                    family=p$family_pdf)
+                    family=p$family_pdf, encoding=encoding)
             }
 
             # plot
@@ -3848,13 +4459,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            xlab="Time", ylab=ylab,
                            zlab=data_info$label, znames=names_legend_p)
         
-            message("\n", "save plot ", plotname, " ...")
+            message("\nsave plot ", plotname, " ...")
             dev.off()
             if (p$plot_type == "pdf") {
-                if("extrafont" %in% (.packages())){
-                    extrafont::embed_fonts(plotname, outfile=plotname)
+                if (T) {
+                    if (F && "extrafont" %in% (.packages())){
+                        message("run `extrafont::embed_fonts()` ...")
+                        extrafont::embed_fonts(plotname, outfile=plotname)
+                    } else {
+                        message("run `grDevices::embedFonts()` ...")
+                        grDevices::embedFonts(plotname, outfile=plotname)
+                    }
                 } else {
-                    grDevices::embedFonts(plotname, outfile=plotname)
+                    message("todo: sometimes pdf font embedding blurrs colors why?")
                 }
             }
 
@@ -4492,13 +5109,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     #height=p$ts_width,
                     #width=p$map_width, 
                     #height=p$map_height,
-                    res=p$dpi, family=p$family_png)
+                    res=p$ppi, family=p$family_png)
             } else if (p$plot_type == "pdf") {
                 #message("special plot size")
                 pdf(plotname, width=p$inch, 
                     height=p$inch*p$ts_height/p$ts_width,
                     #height=p$inch*p$map_height/p$map_width,
-                    family=p$family_pdf)
+                    family=p$family_pdf, encoding=encoding)
             }
 
             # set plot margins
@@ -4544,11 +5161,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # add grid
             if (add_xgrid) {
-                message("\n", "add xgrid ...")
+                message("\nadd xgrid ...")
                 abline(v=tatn, col="gray", lwd=0.5)
             }
             if (add_ygrid) {
-                message("\n", "add ygrid ...")
+                message("\nadd ygrid ...")
                 abline(h=yat, col="gray", lwd=0.5)
             }
 
@@ -4601,9 +5218,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } # for i seq_along(z)
                     
                     if (add_legend && i == length(z)) {
-                        message("\n", "add default stuff to ", mode_p, " legend ...")
+                        message("\nadd default stuff to ", mode_p, " legend ...")
                         le <- list()
-                        le$pos <- "bottom" 
+                        if (suppressPackageStartupMessages(require(Hmisc))) {
+                            tmp <- Hmisc::largest.empty(x=unlist(d$time), y=unlist(z), method="area")
+                            le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y))
+                        } else {
+                            le$pos <- "bottom" 
+                        }
                         le$ncol <- length(ts_highlight_seasons$seasons)
                         le$text <- ts_highlight_seasons$seasons
                         le$col <- ts_highlight_seasons$cols
@@ -4637,7 +5259,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if (ts_highlight_seasons$bool)
             } # if add_unsmoothed
 
-            # smoothed data after unsmoothed data
+            # add smoothed data after unsmoothed data
             if (add_smoothed) {
                 for (i in seq_along(zma)) {
                     lines(d$time[[i]], zma[[i]], 
@@ -4659,10 +5281,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (any(add_linear_trend)) {
                 message("\ncalc and add linear trend against time ...")
                 lm_labels <- rep(NA, t=length(z))
-                names(lm_labels) <- names_legend
+                names(lm_labels) <- names_short_p
                 for (i in seq_along(z)) {
                     if (add_linear_trend[i]) {
-                        message("\nsetting ", i, " ", names_legend[i], ":")
+                        message("\nsetting ", i, " ", names_short_p[i], ":")
                         lm <- lm(z[[i]] ~ d$time[[i]])
                         lm_summary <- summary(lm)
                         print(lm_summary)
@@ -4692,7 +5314,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             ## add obs, etc.
             if (F && varname == "temp2") {
-                message("\n", "add hadcrut4_sat_anom, gistempv4_sat_anom to datas plot ...")
+                message("\nadd hadcrut4_sat_anom, gistempv4_sat_anom to datas plot ...")
                 polygon(c(as.POSIXct(hadcrut4_sat_anom_annual$time), 
                           rev(as.POSIXct(hadcrut4_sat_anom_annual$time))),
                         c(hadcrut4_sat_anom_annual$hadcrut4_sat_anom_lower_uncert,
@@ -4705,7 +5327,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #      col=cols[2], lwd=2, lty=2)
             }
             if (F && varname == "moc_max_26.25deg") {
-                message("\n", "add moc_rapid$moc_annual to datas plot ...")
+                message("\nadd moc_rapid$moc_annual to datas plot ...")
                 # exclude NA values
                 nainds <- which(!is.na(moc_rapid$moc) & !is.na(moc_rapid$moc_error)) 
                 #polygon(c(as.POSIXct(moc_rapid$time[nainds]), rev(as.POSIXct(moc_rapid$time[nainds]))),
@@ -4717,7 +5339,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                       lwd=moc_rapid$lwd)
             }
             if (T && varname == "siarean") {
-                message("\n", "add nsidc annual to datas plot ...")
+                message("\nadd nsidc annual to datas plot ...")
                 lines(nsidc_siarean_annual$time, nsidc_siarean_annual$siarean,
                       col=nsidc_siarean_annual$col, lty=nsidc_siarean_annual$lty,
                       lwd=nsidc_siarean_annual$lwd)
@@ -4725,7 +5347,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
                 all(grepl("ladoga", areas))) {
-                message("\n", "add kostrova et al. 2019 to datas plot ...")
+                message("\nadd kostrova et al. 2019 to datas plot ...")
                 points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
                        t=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
                        lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd, 
@@ -4733,7 +5355,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
             
             if (add_meyer_etal_xlsx) {
-                message("\n", "add meyer et al. xlsx to datas plot ...")
+                message("\nadd meyer et al. xlsx to datas plot ...")
                 points(meyer_etal_tmp$data$time, meyer_etal_tmp$data$d18o_corr_perm,
                        t=meyer_etal$type, col=meyer_etal$col, 
                        lty=meyer_etal$lty, lwd=meyer_etal$lwd, 
@@ -4758,14 +5380,27 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\nadd default stuff to datas legend here1 ...")
                 le <- list()
-                le$pos <- "topleft" 
-                #le$pos <- "left"
-                #le$pos <- "bottomleft"
-                #le$pos <- "topright"
-                #le$pos <- "bottomright" 
-                #le$pos <- c(tatn[1], yat[length(yat)-1])
-                #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
-                #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), yat[length(yat)])
+                if (suppressPackageStartupMessages(require(Hmisc))) {
+                    tmp <- Hmisc::largest.empty(x=unlist(d$time), y=unlist(z), method="area")
+                    le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner
+                    message("automatically derived legend position: ", le$pos[1], ", ", le$pos[2])
+                } else {
+                    le$pos <- "bottom" 
+                    #le$pos <- "topleft" 
+                    #le$pos <- "left"
+                    #le$pos <- "bottomleft"
+                    #le$pos <- "topright"
+                    #le$pos <- "bottomright" 
+                    #le$pos <- c(tatn[1], yat[length(yat)-1])
+                    #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), 13.45)
+                    #le$pos <- c(as.POSIXct("2650-1-1", tz="UTC"), yat[length(yat)])
+                    message("manually set legend position: ", appendLF=F)
+                    if (length(le$pos) == 1) {
+                        message(le$pos) 
+                    } else {
+                        message(le$pos[1], ", ", le$pos[2])
+                    }
+                }
                 #le$ncol <- ceiling(length(z)/4) 
                 #le$ncol <- length(z)
                 #le$ncol <- length(z)/2
@@ -4886,7 +5521,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # add obs before model data
                 if (T && varname == "siarean") {
-                    message("\n", "add nsidc annual to right plot ...")
+                    message("\nadd nsidc annual to right plot ...")
                     lines(nsidc_siareas_annual$time, nsidc_siareas_annual$siareas,
                           col=nsidc_siareas_annual$col, lty=nsidc_siareas_annual$lty,
                           lwd=nsidc_siareas_annual$lwd)
@@ -4970,7 +5605,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         cor <- cor.test(z[[i]], data_right$data[[i]]$y)
                         # plusminus: %+-%
                         subtitle <- substitute(paste(setting, ": cor(", x, ",", y, ") = ", r, " " %+-% "", uncert, "; p ", p),
-                                               list(setting=names_legend[i],
+                                               list(setting=names_legend_p[i],
                                                     x=varname, y=data_right$data[[i]]$text,
                                                     r=round(cor$estimate, 2), 
                                                     uncert=round(cor$estimate - cor$conf.int[1], 3),
@@ -5077,10 +5712,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
             message("\nsave plot ", plotname, " ...")
             dev.off()
             if (p$plot_type == "pdf") {
-                if("extrafont" %in% (.packages())){
-                    extrafont::embed_fonts(plotname, outfile=plotname)
+                if (T) {
+                    if (F && "extrafont" %in% (.packages())){
+                        message("run `extrafont::embed_fonts()` ...")
+                        extrafont::embed_fonts(plotname, outfile=plotname)
+                    } else {
+                        message("run `grDevices::embedFonts()` ...")
+                        grDevices::embedFonts(plotname, outfile=plotname)
+                    }
                 } else {
-                    grDevices::embedFonts(plotname, outfile=plotname)
+                    message("todo: sometimes pdf font embedding blurrs colors why?")
                 }
             }
             
@@ -5123,11 +5764,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     png(plotname, 
                         width=nm$ncol*p$ts_width, 
                         height=nm$nrow*p$ts_height,
-                        res=p$dpi, family=p$family_png)
+                        res=p$ppi, family=p$family_png)
                 } else if (p$plot_type == "pdf") {
                     pdf(plotname, width=nm$ncol*p$inch, 
                         height=p$inch*((nm$nrow*p$ts_height)/(nm$ncol*p$ts_width)),
-                        family=p$family_pdf)
+                        family=p$family_pdf, encoding=encoding)
                 }
                 plot.nxm(d$time, y, dry=F, 
                          cols=cols_p, ltys=ltys_p, lwds=lwds_p, pchs=pchs_p, 
@@ -5138,7 +5779,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             } # if ts_plot_each_setting_in_subplot
 
-        } # if (ndims_unique == 1 && dim_names == "time") {
+        } # if (ndims_unique == 1 && dim_names == "time")
         # finished plot `datas` as time 
         
         
@@ -5256,7 +5897,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             ndims_mon <- length(dim(zmon[[1]]))
             dim_names_mon <- attributes(zmon[[1]])$dims
-            message("\n", "zmon_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname_mon, 
+            message("\nzmon_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname_mon, 
                     "\" has ", ndims_mon, " dim", ifelse(ndims_mon > 1, "s", ""), ": \"", 
                     paste(dim_names_mon, collapse="\", \""), "\". check if this case is defined ...")
 
@@ -5272,7 +5913,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             mean(zmon[[i]], na.rm=T), " / ", max(zmon[[i]], na.rm=T))
                 }
                 ylim_mon <- range(zmon, na.rm=T)
-                message("\n", "ylim_mon=", appendLF=F)
+                message("\nylim_mon=", appendLF=F)
                 dput(ylim_mon)
                 ylim_mon[is.infinite(ylim_mon)] <- 0
                 
@@ -5350,7 +5991,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         ylim_right_mon <- range(ylim_right_mon)
                     } # if ylim_right_mon does not already exist
                     
-                    message("\n", "ylim_right_mon=", appendLF=F)
+                    message("\nylim_right_mon=", appendLF=F)
                     dput(ylim_right_mon)
                     ylim_right_mon[is.infinite(ylim_right_mon)] <- 0
 
@@ -5390,10 +6031,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dir.create(dirname(plotname), recursive=T, showWarnings=F)
                 if (p$plot_type == "png") {
                     png(plotname, width=p$ts_width_m, height=p$ts_height_m,
-                        res=p$dpi, family=p$family_png)
+                        res=p$ppi, family=p$family_png)
                 } else if (p$plot_type == "pdf") {
                     pdf(plotname, width=p$inch, height=p$inch*p$ts_height_m/p$ts_width_m,
-                        family=p$family_pdf)
+                        family=p$family_pdf, encoding=encoding)
                 }
 
                 # set plot margins
@@ -5427,11 +6068,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # add grid
                 if (add_xgrid) {
-                    message("\n", "add xgrid ...")
+                    message("\nadd xgrid ...")
                     abline(v=tatn, col="gray", lwd=0.5)
                 }
                 if (add_ygrid) {
-                    message("\n", "add ygrid ...")
+                    message("\nadd ygrid ...")
                     abline(h=yat, col="gray", lwd=0.5)
                 }
 
@@ -5463,7 +6104,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add legend if wanted
                 if (add_legend) {
-                    message("\n", "add default stuff to ", mode_p, " mon legend ...")
+                    message("\nadd default stuff to ", mode_p, " mon legend ...")
                     le <- list()
                     le$pos <- "topleft" 
                     #le$pos <- "top"
@@ -5489,7 +6130,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le$cex <- 0.85
                     # add stuf to legend here
                     if (F) {
-                        message("\n", "add non default stuff to ", mode_p, " mon legend ...")
+                        message("\nadd non default stuff to ", mode_p, " mon legend ...")
 
                     }
                     if (T && exists("noaa_ghcdn")) {
@@ -5519,7 +6160,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if add_legend
 
                 if (add_data_right_yaxis_ts_mon) {
-                    message("\n", "`add_data_right_yaxis_ts_mon` = T --> add data right yaxis mon ...")
+                    message("\n`add_data_right_yaxis_ts_mon` = T --> add data right yaxis mon ...")
                     par(new=T)
                     plot(data_right_mon$data[[1]]$x, data_right_mon$data[[1]]$y, #log="y", 
                          t="n", xlim=monlim, ylim=ylim_right_mon, 
@@ -5550,7 +6191,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
 
                     if (add_legend_right_yaxis) {
-                        message("\n", "add default stuff to ", mode_p, " right_data mon legend ...")
+                        message("\nadd default stuff to ", mode_p, " right_data mon legend ...")
                         le <- list()
                         le$pos <- "top" 
                         le$ncol <- 1
@@ -5570,7 +6211,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$cex <- 0.85
                         # add stuf to legend here
                         if (T && varname == "temp2") {
-                            message("\n", "add non default stuff to ", mode_p, " legend ...")
+                            message("\nadd non default stuff to ", mode_p, " legend ...")
                             if (varname == "temp2") {
                                 le$text <- c(le$text, hadcrut4_sat_anom_annual$text)
                                 le$col <- c(le$col, hadcrut4_sat_anom_annual$col)
@@ -5596,13 +6237,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if add_data_right_yaxis_ts_mon
 
                 box()
-                message("\n", "save plot ", plotname, " ...")
+                message("\nsave plot ", plotname, " ...")
                 dev.off()
                 if (p$plot_type == "pdf") {
-                    if("extrafont" %in% (.packages())){
-                        extrafont::embed_fonts(plotname, outfile=plotname)
+                    if (T) {
+                        if (F && "extrafont" %in% (.packages())){
+                            message("run `extrafont::embed_fonts()` ...")
+                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        } else {
+                            message("run `grDevices::embedFonts()` ...")
+                            grDevices::embedFonts(plotname, outfile=plotname)
+                        }
                     } else {
-                        grDevices::embedFonts(plotname, outfile=plotname)
+                        message("todo: sometimes pdf font embedding blurrs colors why?")
                     }
                 }
             
@@ -5620,7 +6267,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             ndims_an <- length(dim(zan[[1]]))
             dim_names_an <- attributes(zan[[1]])$dims
-            message("\n", "zan_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname_an, 
+            message("\nzan_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname_an, 
                     "\" has ", ndims_an, " dim", ifelse(ndims_an > 1, "s", ""), ": \"", 
                     paste(dim_names_an, collapse="\", \""), "\". check if this case is defined ...")
 
@@ -5636,7 +6283,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             mean(zan[[i]], na.rm=T), " / ", max(zan[[i]], na.rm=T))
                 }
                 ylim_an <- range(zan, na.rm=T)
-                message("\n", "ylim_an=", appendLF=F)
+                message("\nylim_an=", appendLF=F)
                 dput(ylim_an)
                 ylim_an[is.infinite(ylim_an)] <- 0
             
@@ -5783,10 +6430,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dir.create(dirname(plotname), recursive=T, showWarnings=F)
                 if (p$plot_type == "png") {
                     png(plotname, width=p$ts_width, height=p$ts_height,
-                        res=p$dpi, family=p$family_png)
+                        res=p$ppi, family=p$family_png)
                 } else if (p$plot_type == "pdf") {
                     pdf(plotname, width=p$inch, height=p$inch*p$ts_height/p$ts_width,
-                        family=p$family_pdf)
+                        family=p$family_pdf, encoding=encoding)
                 }
 
                 # set plot margins
@@ -5820,11 +6467,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # add grid
                 if (add_xgrid) {
-                    message("\n", "add xgrid ...")
+                    message("\nadd xgrid ...")
                     abline(v=tatn, col="gray", lwd=0.5)
                 }
                 if (add_ygrid) {
-                    message("\n", "add ygrid ...")
+                    message("\nadd ygrid ...")
                     abline(h=yat, col="gray", lwd=0.5)
                 }
 
@@ -5842,7 +6489,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # add obs 
                 if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
                     all(grepl("ladoga", areas))) {
-                    message("\n", "add kostroval et al. 2019 to annual plot ...")
+                    message("\nadd kostroval et al. 2019 to annual plot ...")
                     points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
                            t=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
                            lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd, 
@@ -5865,7 +6512,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add legend if wanted
                 if (add_legend) {
-                    message("\n", "add default stuff to ", mode_p, " an legend ...")
+                    message("\nadd default stuff to ", mode_p, " an legend ...")
                     le <- list()
                     le$pos <- "topleft" 
                     #le$pos <- "top"
@@ -5891,7 +6538,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le$cex <- 0.85
                     # add stuf to legend here
                     if (F) {
-                        message("\n", "add non default stuff to ", mode_p, " an legend ...")
+                        message("\nadd non default stuff to ", mode_p, " an legend ...")
 
                     }
                     if (T && exists("noaa_ghcdn")) {
@@ -5921,7 +6568,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if add_legend
 
                 if (add_data_right_yaxis_ts_an) {
-                    message("\n", "`add_data_right_yaxis_ts_an` = T --> add data right yaxis an ...")
+                    message("\n`add_data_right_yaxis_ts_an` = T --> add data right yaxis an ...")
                     par(new=T)
                     plot(data_right_an$data[[1]]$x, data_right_an$data[[1]]$y, #log="y", 
                          t="n", xlim=anlim, ylim=ylim_right_an, 
@@ -5970,7 +6617,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
 
                     if (add_legend_right_yaxis) {
-                        message("\n", "add default stuff to ", mode_p, " right_data an legend ...")
+                        message("\nadd default stuff to ", mode_p, " right_data an legend ...")
                         le <- list()
                         le$pos <- "top" 
                         le$ncol <- 1
@@ -5990,7 +6637,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$cex <- 0.85
                         # add stuf to legend here
                         if (T && varname == "temp2") {
-                            message("\n", "add non default stuff to ", mode_p, " legend ...")
+                            message("\nadd non default stuff to ", mode_p, " legend ...")
                             if (varname == "temp2") {
                                 le$text <- c(le$text, hadcrut4_sat_anom_annual$text)
                                 le$col <- c(le$col, hadcrut4_sat_anom_annual$col)
@@ -6020,7 +6667,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             cor <- cor.test(zan[[i]], data_right_an$data[[i]]$y)
                             # plusminus: %+-%
                             subtitle <- substitute(paste(setting, ": cor(", x, ",", y, ") = ", r, " " %+-% "", uncert, "; p ", p),
-                                                   list(setting=names_legend[i],
+                                                   list(setting=names_legend_pan[i],
                                                         x=varname, y=data_right_an$data[[i]]$text,
                                                         r=round(cor$estimate, 2), 
                                                         uncert=round(cor$estimate - cor$conf.int[1], 3),
@@ -6035,13 +6682,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if add_data_right_yaxis_ts_an
 
                 box()
-                message("\n", "save plot ", plotname, " ...")
+                message("\nsave plot ", plotname, " ...")
                 dev.off()
                 if (p$plot_type == "pdf") {
-                    if("extrafont" %in% (.packages())){
-                        extrafont::embed_fonts(plotname, outfile=plotname)
+                    if (T) {
+                        if (F && "extrafont" %in% (.packages())){
+                            message("run `extrafont::embed_fonts()` ...")
+                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        } else {
+                            message("run `grDevices::embedFonts()` ...")
+                            grDevices::embedFonts(plotname, outfile=plotname)
+                        }
                     } else {
-                        grDevices::embedFonts(plotname, outfile=plotname)
+                        message("todo: sometimes pdf font embedding blurrs colors why?")
                     }
                 }
             
@@ -6059,7 +6712,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             ndims_ltm <- length(dim(zltm[[1]]))
             dim_names_ltm <- attributes(zltm[[1]])$dims
-            message("\n", "zltm_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname_ltm, 
+            message("\nzltm_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname_ltm, 
                     "\" has ", ndims_ltm, " dim", ifelse(ndims_ltm > 1, "s", ""), ": \"", 
                     paste(dim_names_ltm, collapse="\", \""), "\". check if this case is defined ...")
 
@@ -6110,11 +6763,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("plot ", plotname, " ...")
                 if (p$plot_type == "png") {
                     png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
-                        res=p$dpi, family=p$family_png)
+                        res=p$ppi, family=p$family_png)
                 } else if (p$plot_type == "pdf") {
                     pdf(plotname, width=nm$ncol*p$inch, 
                         height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
-                        family=p$family_pdf)
+                        family=p$family_pdf, encoding=encoding)
                 }
 
                 # use km instead of m as depth unit
@@ -6132,13 +6785,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                zlab=data_info$label, znames=names_legend_pltm,
                                image_list=moc_topo)
             
-                message("\n", "save plot ", plotname, " ...")
+                message("\nsave plot ", plotname, " ...")
                 dev.off()
                 if (p$plot_type == "pdf") {
-                    if("extrafont" %in% (.packages())){
-                        extrafont::embed_fonts(plotname, outfile=plotname)
+                    if (T) {
+                        if (F && "extrafont" %in% (.packages())){
+                            message("run `extrafont::embed_fonts()` ...")
+                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        } else {
+                            message("run `grDevices::embedFonts()` ...")
+                            grDevices::embedFonts(plotname, outfile=plotname)
+                        }
                     } else {
-                        grDevices::embedFonts(plotname, outfile=plotname)
+                        message("todo: sometimes pdf font embedding blurrs colors why?")
                     }
                 }
 
@@ -6225,10 +6884,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             dir.create(dirname(plotname), recursive=T, showWarnings=F)
                             if (p$plot_type == "png") {
                                 png(plotname, width=p$scatter_width, height=p$scatter_height,
-                                    res=p$dpi, family=p$family_png)
+                                    res=p$ppi, family=p$family_png)
                             } else if (p$plot_type == "pdf") {
                                 pdf(plotname, width=p$inch, height=p$inch,
-                                    family=p$family_pdf)
+                                    family=p$family_pdf, encoding=encoding)
                             }
 
                             # set plot margins
@@ -6313,13 +6972,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             } # if add_legend
 
                             box()
-                            message("\n", "save plot ", plotname, " ...")
+                            message("\nsave plot ", plotname, " ...")
                             dev.off()
                             if (p$plot_type == "pdf") {
-                                if("extrafont" %in% (.packages())){
-                                    extrafont::embed_fonts(plotname, outfile=plotname)
+                                if (T) {
+                                    if (F && "extrafont" %in% (.packages())){
+                                        message("run `extrafont::embed_fonts()` ...")
+                                        extrafont::embed_fonts(plotname, outfile=plotname)
+                                    } else {
+                                        message("run `grDevices::embedFonts()` ...")
+                                        grDevices::embedFonts(plotname, outfile=plotname)
+                                    }
                                 } else {
-                                    grDevices::embedFonts(plotname, outfile=plotname)
+                                    message("todo: sometimes pdf font embedding blurrs colors why?")
                                 }
                             }
 
@@ -6343,7 +7008,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         ## plot var1 vs var2 of `datas`
         if (plot_scatter_v1_vs_v2) {
 
-            message("\n", "****************** `plot_scatter_v1_vs_v2`=T --> scatterplot varx vs vary *******************\n",
+            message("\n****************** `plot_scatter_v1_vs_v2`=T --> scatterplot varx vs vary *******************\n",
                     "`varnamex = \"", varnamex, "\", varnamey = \"", varnamey, "\"")
 
             if (exists(varnamex) && exists(varnamey)) {
@@ -6376,7 +7041,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     eval(parse(text=paste0("vary_infos <- ", varnameyp, "_infos")))
 
                     if (varname == "temp2_vs_toa_imbalance" && T) {
-                        message("\n", "special: substract last PI value from experiments ...")
+                        message("\nspecial: substract last PI value from experiments ...")
                         for (i in 2:length(varx)) {
                             varx[[i]] <- varx[[i]] - rep(varx[[1]][length(varx[[1]])], t=length(length(varx[[1]])))
                             varx_infos[[i]]$label <- "2m temperature increase [K]"
@@ -6401,10 +7066,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     dir.create(dirname(plotname), recursive=T, showWarnings=F)
                     if (p$plot_type == "png") {
                         png(plotname, width=p$scatter_width, height=p$scatter_height,
-                            res=p$dpi, family=p$family_png)
+                            res=p$ppi, family=p$family_png)
                     } else if (p$plot_type == "pdf") {
                         pdf(plotname, width=p$inch, height=p$inch,
-                            family=p$family_pdf)
+                            family=p$family_pdf, encoding=encoding)
                     }
                     
                     message("xlim = ", min(xlim), " / ", max(xlim))
@@ -6708,10 +7373,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     message("save v1 vs v2 plot\n   \"", plotname, "\"\n...")
                     dev.off()
                     if (p$plot_type == "pdf") {
-                        if("extrafont" %in% (.packages())){
-                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        if (T) {
+                            if (F && "extrafont" %in% (.packages())){
+                                message("run `extrafont::embed_fonts()` ...")
+                                extrafont::embed_fonts(plotname, outfile=plotname)
+                            } else {
+                                message("run `grDevices::embedFonts()` ...")
+                                grDevices::embedFonts(plotname, outfile=plotname)
+                            }
                         } else {
-                            grDevices::embedFonts(plotname, outfile=plotname)
+                            message("todo: sometimes pdf font embedding blurrs colors why?")
                         }
                     }
 
@@ -6773,10 +7444,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 dir.create(dirname(plotname), recursive=T, showWarnings=F)
                                 if (p$plot_type == "png") {
                                     png(plotname, width=p$scatter_width, height=p$scatter_height,
-                                        res=p$dpi, family=p$family_png)
+                                        res=p$ppi, family=p$family_png)
                                 } else if (p$plot_type == "pdf") {
                                     pdf(plotname, width=p$inch, height=p$inch,
-                                        family=p$family_pdf)
+                                        family=p$family_pdf, encoding=encoding)
                                 }
 
                                 # set plot margins
@@ -6863,10 +7534,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 message("save v1 vs v2 plot colored by time or season or ...\n   \"", plotname, "\"\n...")
                                 dev.off()
                                 if (p$plot_type == "pdf") {
-                                    if("extrafont" %in% (.packages())){
-                                        extrafont::embed_fonts(plotname, outfile=plotname)
+                                    if (T) {
+                                        if (F && "extrafont" %in% (.packages())){
+                                            message("run `extrafont::embed_fonts()` ...")
+                                            extrafont::embed_fonts(plotname, outfile=plotname)
+                                        } else {
+                                            message("run `grDevices::embedFonts()` ...")
+                                            grDevices::embedFonts(plotname, outfile=plotname)
+                                        }
                                     } else {
-                                        grDevices::embedFonts(plotname, outfile=plotname)
+                                        message("todo: sometimes pdf font embedding blurrs colors why?")
                                     }
                                 }
 
