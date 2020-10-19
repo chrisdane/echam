@@ -1879,12 +1879,12 @@ f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- "/isibhv/projects/paleo_work/cdanek/data/GNIP/read_gnip.r"
 }
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load GNIP monthly station data ...")
-    message("load ", f, " ...")
+    message("source(", f, ") ...")
     source(f)
-    message("run read_gnip() ...")
-    gnip_ts <- read_gnip(varname=NULL, country=NULL, f=NULL, verbose=F)
+    #gnip_ts <- read_gnip()
+    gnip_ts <- read_gnip(files=paste0(dirname(f), "/data/2020-10-16_GNIP_Oct20_finalData.xlsx"))
 } else {
     message("enable here to load monthly GNIP data ...")
 } # load GNIP data
@@ -1913,8 +1913,10 @@ if (T && any(file.exists(fs))) {
             names(bartlein_etal_2011)[i] <- "mat_MH_minus_PI"
         } else if (grepl("map_delta_06ka", fs[i])) {
             if (F) {
+                message("use all data")
                 bartlein_etal_2011[[i]]$data <- ncvar_get(ncin, "map_anm_mean")
             } else if (T) {
+                message("use significant data only")
                 bartlein_etal_2011[[i]]$data <- ncvar_get(ncin, "map_sig_val")
                 bartlein_etal_2011[[i]]$data[bartlein_etal_2011[[i]]$data == 0] <- NA
             }
