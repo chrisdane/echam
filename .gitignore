@@ -8,6 +8,7 @@
 !mpiom/
 !wiso/
 !helper_functions.r
+!load_pangaea_data.r
 !load_special_data.r
 !namelist.loop.plot.r
 !namelist.plot.r

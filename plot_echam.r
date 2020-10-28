@@ -3304,7 +3304,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # time limits
                 # -> POSIX will be converted to numeric by plot(), so use these numeric values as limits
                 tlim <- range(lapply(d$time, as.numeric)) # seconds by default 
-                tlimlt <- as.POSIXlt(tlim, origin="1970-01-01", tz="UTC")
+                tlimlt <- as.POSIXlt(tlim, origin="1970-1-1", tz="UTC")
                 tlimct <- as.POSIXct(tlimlt)
                 tlabcex <- 0.8
                 tlabsrt <- 0
@@ -4997,7 +4997,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim <- range(ylim, nsidc_siarean_annual$siarean, na.rm=T)
             } # if add nsidc
 
-            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
+            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && 
+                exists("kostrova_etal_2019") &&
                 all(grepl("ladoga", areas))) {
                 message("\nadd kostrova et al. 2019 d18o data ...")
                 message("ylim before: ", ylim[1], ", ", ylim[2])
@@ -5399,7 +5400,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                       lwd=nsidc_siarean_annual$lwd)
             }
             
-            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
+            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && 
+                exists("kostrova_etal_2019") &&
                 all(grepl("ladoga", areas))) {
                 message("\nadd kostrova et al. 2019 to datas plot ...")
                 points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
@@ -5495,7 +5497,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch <- c(le$pch, hadcrut4_sat_anom_annual$pch)
                     }
                 }
-                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
+                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) &&
+                    exists("kostrova_etal_2019") &&
                     all(grepl("ladoga", areas))) {
                     message("\nadd kostrova et al. 2019 to datas legend ...")
                     le$pos <- "bottom"
@@ -6541,7 +6544,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 # add obs 
-                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && exists("kostrova_etal_2019") &&
+                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) &&
+                    exists("kostrova_etal_2019") &&
                     all(grepl("ladoga", areas))) {
                     message("\nadd kostroval et al. 2019 to annual plot ...")
                     points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,

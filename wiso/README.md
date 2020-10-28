@@ -3,7 +3,7 @@
 isotope deltas (`lev1: d16O, lev2: d18O, lev3: `) in different variables
 
 during model run:
-```
+```bash
 /ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh
 # convert 2m-temperature and surface temperature from K to C)
 ${cdo} -s -f nc -monmean -subc,273.15  -selcode,167 $IN temp2
