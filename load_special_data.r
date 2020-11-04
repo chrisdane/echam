@@ -1,6 +1,6 @@
 # r
 
-# todo: solve dependencies from other repos: make_posixlt_origin_function()
+# todo: solve dependencies from other repos: make_posixlt_origin()
 #source(paste0(hompath, "/functions/myfunctions.r"))
 
 # mpiom land sea mask segments
@@ -254,7 +254,7 @@ if (F && file.exists(f)) {
     marcott_etal_2013 <- read_marcott_etal_2013_function(f)
     time <- marcott_etal_2013$year_before_1950 # -50 -30 -10  10 ... 11210 11230 11250 11270 11290
     time <- rev(-1*time) # -11290 -11270 -11250 -11230 -11210 -11190 -11170 ... -70 -50 -30 -10  10  30  50
-    timelt <- make_posixlt_origin_function(time, origin_in=1950, origin_out=1950, verbose=0)
+    timelt <- make_posixlt_origin(time, origin_in=1950, origin_out=1950, verbose=0)
     marcott_etal_2013 <- list(marcott_etal_2013_anom=rev(marcott_etal_2013$"temp_anom_1961-1990_global_5x5"),
                               marcott_etal_2013_anom_sd=rev(marcott_etal_2013$"temp_anom_1961-1990_global_5x5_sd"),
                               time=timelt, timen=as.numeric(timelt), col="black",
@@ -428,7 +428,7 @@ if (F && file.exists(f)) {
     orb_berger_acc <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precessionobliquity"))
     years <- orb_berger_acc$year_before_1950 # kyr before 1950 --> 7.00 6.99 6.98 6.97 ... 0.03 0.02 0.01 0.00
     years <- -1*years*1000 # --> -7000 -6990 -6980 -6970 -6960 ... -40 -30 -20 -10   0
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+    timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
     orb_berger_acc <- list(eccentricity=orb_berger_acc$eccentricity, 
                        precession=orb_berger_acc$precession,
                        obliquity=orb_berger_acc$obliquity,
@@ -468,7 +468,7 @@ if (F && file.exists(f)) {
     orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precessionobliquity"))
     years <- orb_berger$year_before_1950 # kyr before 1950 --> 6.999, 6.998, 6997, ...
     years <- -1*years*1000 # --> -6999, -6998, -6997, ...
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+    timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
     orb_berger <- list(eccentricity=orb_berger$eccentricity, 
                        precession=orb_berger$precession,
                        obliquity=orb_berger$obliquity,
@@ -507,7 +507,7 @@ if (F && file.exists(f)) {
     # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: calendar_day_of_perihelion 5: angle_of_perihelion_deg_from_vernal_equinox
     years <- my_orb_berger$kyear_from_1950 # kyr before 1950 in reverse order --> -800, -799, -798, ...
     years <- years*1000 # -800000, -799000, -798000, ...
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+    timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
     my_orb_berger <- list(eccentricity=my_orb_berger$ecc, 
                           obliquity=my_orb_berger$obl_deg,
                           calendar_day_of_perihelion=my_orb_berger$calendar_day_of_perihelion,
@@ -583,7 +583,7 @@ if (F && file.exists(f)) {
     # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: angle_of_perihelion_deg_from_vernal_equinox
     years <- my_orb_laskar$kyear_from_2000 # kyr before 2000 in reverse order --> -800, -799, -798, ..., -3, -2, -1,  0
     years <- years*1000 # -800000, -799000, -798000, ..., -3000, -2000, -1000,  0
-    timelt <- make_posixlt_origin_function(years, origin_in=2000, origin_out=1950, verbose=0)
+    timelt <- make_posixlt_origin(years, origin_in=2000, origin_out=1950, verbose=0)
     my_orb_laskar <- list(eccentricity=my_orb_laskar$ecc, 
                           obliquity=my_orb_laskar$obl_deg,
                           angle_of_perihelion_deg_from_vernal_equinox=my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox,
@@ -808,7 +808,7 @@ if (F) { # ladoga; kostrova et al. 2019: https://doi.pangaea.de/10.1594/PANGAEA.
     kostrova_etal_2019 <- pg_data(doi=pdoi)
     years <- kostrova_etal_2019[[1]]$data$"Cal age [ka BP]" # 0.203  0.793  1.373  1.939 ... 9.662 10.062 10.428 10.750
     years <- -1*rev(years*1000) # -10750 -10428 -10062  -9662 ... -1939  -1373   -793   -203
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+    timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
     kostrova_etal_2019 <- list(time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                                d18o=rev(kostrova_etal_2019[[1]]$data$"Diatoms δ18O [‰ SMOW] (Contamination corrected)"),
                                text="Kostrova et al. 2019", 
@@ -844,13 +844,13 @@ if (F) { # 231Pa/230Th of ng et al. 2018
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 PaTh <- rev(PaTh)
             }
         }
         years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
                           lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
@@ -907,13 +907,13 @@ if (F) {  # 231Pa/230Th of gherardi et al. 2009
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 PaTh <- rev(PaTh)
             }
         }
         years <- years*-1000
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=lon, lat=lat,
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                           "Pa/Th"=PaTh,
@@ -955,13 +955,13 @@ if (F) { # 231Pa/230Th of süfke et al. 2019
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 PaTh <- rev(PaTh)
             }
         }
         years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
                           lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
@@ -1022,13 +1022,13 @@ if (F) { # 231Pa/230Th of süfke et al. 2019: different data structure than süf
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 PaTh <- rev(PaTh)
             }
         }
         years <- years*-1000
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=lon, lat=lat,
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                           "Pa/Th"=PaTh,
@@ -1085,13 +1085,13 @@ if (F) { # 231Pa/230Th of lippold et al. 2016
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 PaTh <- rev(PaTh)
             }
         }
         years <- years*-1000
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=lon, lat=lat,
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                           "Pa/Th"=PaTh,
@@ -1162,13 +1162,13 @@ if (F) { # 231Pa/230Th of lippold et al. 2012
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 PaTh <- rev(PaTh)
             }
         }
         years <- years*-1000
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=lon, lat=lat,
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                           "Pa/Th"=PaTh,
@@ -1214,13 +1214,13 @@ if (F) { # 231Pa/230Th of lippold et al. 2009
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 PaTh <- rev(PaTh)
             }
         }
         years <- years*-1000
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=lon, lat=lat,
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                           "Pa/Th"=PaTh,
@@ -1257,13 +1257,13 @@ if (F) { # 231Pa/230Th of meckler et al. 2013
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 PaTh <- rev(PaTh)
             }
         }
         years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
                           lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
@@ -1301,13 +1301,13 @@ if (F) { # 231Pa/230Th of mulitza et al. 2017
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 PaTh <- rev(PaTh)
             }
         }
         years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
                           lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
@@ -1359,13 +1359,13 @@ if (F) { # silt size from praetorius et al. 2008
                 message(paste(years, collapse=","))
                 PaTh <- PaTh[sortinds]
             }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin_function(): 1,2,3 ka BP -> 3,2,1 ka BP
+            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
                 years <- rev(years)
                 silt_fraction <- rev(silt_fraction)
             }
         }
         years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
         data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
                           lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
                           time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
@@ -1413,7 +1413,7 @@ if (F && file.exists(f)) {
             silt_size <- rev(dat[["X..Mean.sortable.silt.Grain.Size..um"]])
             years <- rev(dat[["Age.yrsBP."]]) # BP = 1950
             years <- -years # 0.203   0.793  1.373  1.939  2.483
-            timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+            timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
             data[[i]] <- list(lon=-45.688, lat=50.208,
                               time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                               "silt_size"=silt_size,
@@ -1425,7 +1425,7 @@ if (F && file.exists(f)) {
             silt_size <- rev(dat[["X..Mean.sortable.silt.Grain.Size..um"]])
             years <- rev(dat[["Age..years.BP."]]) # BP = 1950
             years <- -years # 0.203   0.793  1.373  1.939  2.483
-            timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+            timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
             data[[i]] <- list(lon=-27.913, lat=57.458,
                               time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
                               "silt_size"=silt_size,
@@ -1456,7 +1456,7 @@ if (F && file.exists(f)) {
     years <- rev(dat$age_calkaBP) # BP = 1950
     silt_size_change <- rev(dat$SS.depwgt.grp)
     years <- -1000*years # 0.203   0.793  1.373  1.939  2.483
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+    timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
     data <- vector("list", l=1)
     data[[1]] <- list(lon=-20.82808, # = mean(c(-17.5895, -24.066667)),
                       lat=61.68942, # = mean(c(60.403333, 62.9755))
@@ -1502,7 +1502,7 @@ if (F && file.exists(f)) {
         silt_size <- silt_size[-which(is.na(silt_size))]
     }
     years <- -years 
-    timelt <- make_posixlt_origin_function(years, origin_in=1950, origin_out=1950, verbose=0)
+    timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
     data <- vector("list", l=1) 
     data[[1]] <- list(lon=-23.96667, lat=60.31967, 
                       time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
@@ -1866,14 +1866,16 @@ if (F && file.exists(ghcdn_csv[1])) {
 # GNIP monthly station data from https://nucleus.iaea.org/wiser/index.aspx
 f <- ""
 if (host$machine_tag == "paleosrv") {
-    f <- "/isibhv/projects/paleo_work/cdanek/data/GNIP/read_gnip.r"
+    f <- "/isibhv/projects/paleo_work/cdanek/data/iaea_wmo/gnip/read_gnip.r"
 }
-if (T && file.exists(f)) {
+if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load GNIP monthly station data ...")
     message("source(", f, ") ...")
     source(f)
     #gnip_ts <- read_gnip()
-    gnip_ts <- read_gnip(files=paste0(dirname(f), "/data/2020-10-16_GNIP_Oct20_finalData.xlsx"))
+    #gnip_ts <- read_gnip(files=paste0(dirname(f), "/data/2020-10-16_GNIP_Oct20_finalData.xlsx"))
+    gnip_ts <- read_gnip(files=paste0(dirname(f), "/data/2020-10-16_GNIP_Oct20_finalData.xlsx"), 
+                         min_consecutive_complete_yrs=5, timmean_csv_path=NULL)
 } else {
     message("enable here to load monthly GNIP data ...")
 } # load GNIP data
@@ -1920,22 +1922,69 @@ if (T && any(file.exists(fs))) {
     message("enable here to load bartlein et al. 2011 data ...")
 } # read bartlein et al. 2011
 
-# read kaufman et al. 202004
+# read kaufman et al. 2020 temp12k
 f <- ""
 if (host$machine_tag == "paleosrv") {
-    f <- "/isibhv/projects/paleo_work/cdanek/data/kaufman_etal_202004/Temp12k_v1_0_0_ts_non-scale_274_records_with_units_degC_and_variableName_temperature_or_temperatureComposite_and_area_NAsiberia_from_-7000_to_-50_lm_p_lt_0.001_6kyr_trend_ge_-7_and_le_7.RData"
+    f <- paste0("/isibhv/projects/paleo_work/cdanek/data/kaufman_etal_2020_temp12k/",
+                "Temp12k_v1_0_0_ts_non-scale_623_records_with_units_degC_and_variableName_temperature_or_temperatureComposite_from_-7000_to_-50_lm_p_lt_0.01_6kyr_trend_ge_-7_and_le_7",
+                ".RData2")
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load kaufman et al. 202004 data ...")
-    datnames <- load(f)
-    kaufman_etal_202004 <- list()
-    kaufman_etal_202004$data
-    names(kaufman_etal_202004)[i] <- "mat_MH_minus_PI"
-    kaufman_etal_202004$lon <- ncin$dim$lon$vals
-    kaufman_etal_202004$lat <- ncin$dim$lat$vals
+    message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k data ...")
+    datnames <- load(f) # = "data"
+    kaufman_etal_2020_temp12k <- data
+    rm(data, datnames)
 } else {
-    message("enable here to load bartlein et al. 2011 data ...")
-} # read kaufman et al. 202004
+    message("enable here to load kaufman et al. 2020 temp12k data ...")
+} # read kaufman et al. 2020 temp12k
+    
+# read global holcene lipd temp data
+f <- ""
+if (host$machine_tag == "paleosrv") {
+    f <- paste0("/isibhv/projects/paleo_work/cdanek/data/lipd/global_holocene/",
+                "globalHolocene1_0_0_ts_non-scale_383_records_with_units_degC_and_variableName_temperature_or_temperatureComposite_and_area_NAsiberia_from_-7000_to_-50_lm_p_lt_0.001_6kyr_trend_ge_-7_and_le_7",
+                ".RData2")
+}
+if (F && file.exists(f)) {
+    message("\ndisable here if you do not want to load global holcene lipd temp data ...")
+    datnames <- load(f) # = "data"
+    global_holocene_lipd_temp <- data
+    rm(data, datnames)
+} else {
+    message("enable here to load global holcene lipd data ...")
+} # read global holcene lipd temp data
+
+# read global holcene lipd precip data
+f <- ""
+if (host$machine_tag == "paleosrv") {
+    f <- paste0("/isibhv/projects/paleo_work/cdanek/data/lipd/global_holocene/",
+                "globalHolocene1_0_0_ts_non-scale_110_records_with_units_mm_or_mmyr_and variableName_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-2339.35508193594_and_le_3000",
+                ".RData2")
+}
+if (T && file.exists(f)) {
+    message("\ndisable here if you do not want to load global holcene lipd precip data ...")
+    datnames <- load(f) # = "data"
+    global_holocene_lipd_precip <- data
+    rm(data, datnames)
+} else {
+    message("enable here to load global holcene lipd data ...")
+} # read global holcene lipd precip data
+
+# read konecky et al. 2020 iso2k data
+f <- ""
+if (host$machine_tag == "paleosrv") {
+    f <- paste0("/isibhv/projects/paleo_work/cdanek/data/konecky_etal_2020/",
+                "iso2k1_0_0_ts_non-scale_131_records_with_variableName_d18O_from_1967_to_2013_lm_p_lt_0.05",
+                ".RData2")
+}
+if (F && file.exists(f)) {
+    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k data ...")
+    datnames <- load(f) # = "data"
+    konecky_etal_2020_iso2k <- data
+    rm(data, datnames)
+} else {
+    message("enable here to load konecky et al. 2020 iso2k data ...")
+} # read konecky et al. 2020 iso2k data
 
 # ERA5 time series data
 fs <- ""

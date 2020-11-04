@@ -18,7 +18,7 @@ if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
     message("\nload ", host$homepath, "/functions/myfunctions.r ...")
     source(paste0(host$homepath, "/functions/myfunctions.r"))
     # post_echam.r needs the myfunctions.r functions: 
-    # ht(), make_posixlt_origin_function(), is.leap(), tryCatch.W.E(), identical_list(), cdo_get_filetype()
+    # ht(), make_posixlt_origin(), is.leap(), tryCatch.W.E(), identical_list(), cdo_get_filetype()
 } else {
     stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
 }
@@ -1829,9 +1829,9 @@ for (i in 1:nsettings) {
                             if (F) { # old
                                 dates_out_ncap <- as.POSIXlt(dates_out, tz="UTC") # old
                             } else if (T) { # new
-                                message("run `make_posixlt_origin_function(years_out=c(",
+                                message("run `make_posixlt_origin(years_out=c(",
                                         paste(c(head(years_out), "...", tail(years_out)), collapse=","), "))` ...")
-                                dates_out_ncap <- make_posixlt_origin_function(years_out)
+                                dates_out_ncap <- make_posixlt_origin(years_out)
                                 dates_out_ncap$mon <- months_out - 1 # posix months start counting from zero
                                 dates_out_ncap$mday <- days_out
                             }
