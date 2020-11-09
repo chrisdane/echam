@@ -30,7 +30,8 @@ if (T && file.exists(f)) {
     co2_hist_ncin <- nc_open(f)
     time <- co2_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
-    co2_hist <- list(co2_ppm=ncvar_get(co2_hist_ncin, "CO2"), time=timelt, timen=time,
+    co2_hist <- list(file=f,
+                     co2_ppm=ncvar_get(co2_hist_ncin, "CO2"), time=timelt, timen=time,
                      text="", col="red", lty=2, lwd=0.5, pch=NA)
     add_co2_hist <- F
     message("set add_co2_hist=T if you want to add to plot")
@@ -48,7 +49,8 @@ if (T && file.exists(f)) {
     co2_1pct_ncin <- nc_open(f)
     time <- co2_1pct_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
-    co2_1pct <- list(co2_ppm=ncvar_get(co2_1pct_ncin, "CO2"), time=timelt, timen=time,
+    co2_1pct <- list(file=f,
+                     co2_ppm=ncvar_get(co2_1pct_ncin, "CO2"), time=timelt, timen=time,
                      text="", col="#377EB8", lty=2, lwd=0.5, pch=NA)
     add_co2_1pct <- F
     message("set add_co2_1pct=T if you want to add to plot")

@@ -288,7 +288,8 @@ for (i in 1:nsettings) {
     fout <- paste0(postpaths[i], "/", 
                    ifelse(!is.na(prefixes[i]), paste0(prefixes[i], "_"), ""),
                    models[i], "_", modes[i],
-                   ifelse(!is.na(codes[i]), paste0("_selcode_", codes[i]), ""),
+                   #todo: include code number in fout or not?
+                   #ifelse(!is.na(codes[i]), paste0("_selcode_", codes[i]), ""),
                    "_", fvarnames[i], 
                    lev_fnames[i], 
                    "_", areas_out[i],
@@ -581,6 +582,7 @@ for (i in 1:nsettings) {
         if (as.integer(froms[i]) < min(years_filenames) || 
             as.integer(tos[i]) > max(years_filenames)) {
             if (fvarnames[i] %in% names(cdo_known_cmds)) {
+                years_wanted <- froms[i]:tos[i] 
                 # try to apply command later
             } else {
                 stop("--> these are out of found years from filenames: ", 
@@ -821,10 +823,11 @@ for (i in 1:nsettings) {
         } # convert if wanted and input is grb
        
 
-        ## run special functions instead of the default process or any entry of `cdo_known_cmds`
+        # run special functions instead of the default process or any entry of `cdo_known_cmds`
         if (F) { # set conditions here
 
-        } else { # no special function; continue with default or any entry of `cdo_known_cmds`
+        # else no special function: continue with default or any entry of `cdo_known_cmds`
+        } else {
 
             # check if requested variable is in first found file
             message("\ncheck if requested variable ", appendLF=F)
@@ -857,24 +860,23 @@ for (i in 1:nsettings) {
                 #if (fvarnames[i] %in% known_wiso_d_vars$vars) {
                 if (fvarnames[i] %in% names(cdo_known_cmds)) {
 
+                    own_cmd <- T
                     nchunks <- 1 # for rest of script
                     fout_vec <- fout
 
                     message("\nhowever, requested variable \"", fvarnames[i], 
                             "\" is one of the variables defined in `cdo_known_cmds`:")
-                    #for (vari in 1:length(cdo_known_cmds)) {
-                        vari <- which(names(cdo_known_cmds) == fvarnames[i])
-                        message("   cdo_known_cmds[[", vari, "]]: \"", names(cdo_known_cmds)[vari], "\": ", appendLF=F)
-                        if (length(cdo_known_cmds[[vari]]$cmd) == 1) {
-                            message("`", cdo_known_cmds[[vari]]$cmd, "`")
-                        } else {
-                            message("\n", appendLF=F)
-                            for (cmdi in seq_along(cdo_known_cmds[[vari]]$cmd)) {
-                                message("      cmd ", cmdi, "/", length(cdo_known_cmds[[vari]]$cmd), ": `", 
-                                        cdo_known_cmds[[vari]]$cmd[cmdi], "`")
-                            }
+                    vari <- which(names(cdo_known_cmds) == fvarnames[i])
+                    message("   cdo_known_cmds[[", vari, "]]: \"", names(cdo_known_cmds)[vari], "\": ", appendLF=F)
+                    if (length(cdo_known_cmds[[vari]]$cmd) == 1) {
+                        message("`", cdo_known_cmds[[vari]]$cmd, "`")
+                    } else {
+                        message("\n", appendLF=F)
+                        for (cmdi in seq_along(cdo_known_cmds[[vari]]$cmd)) {
+                            message("      cmd ", cmdi, "/", length(cdo_known_cmds[[vari]]$cmd), ": `", 
+                                    cdo_known_cmds[[vari]]$cmd[cmdi], "`")
                         }
-                    #}
+                    }
 
                     # check command if all necessary input files are available
                     cmdsin <- cdo_known_cmds[[fvarnames[i]]]$cmd
@@ -967,7 +969,8 @@ for (i in 1:nsettings) {
                 # else requested variable is not defined in `cdo_known_cmds`
                 } else { 
 
-                    message("and none of `cdo_known_cmds` is named \"", fvarnames[i], "\" in namelist.post.r.")
+                    message("and none of `cdo_known_cmds` is named \"", 
+                            fvarnames[i], "\" in namelist.post.r.")
                     stop("dont know how to proceed")
 
                 } # if special case if requested variable is one of the wiso delta variables or not
@@ -976,6 +979,8 @@ for (i in 1:nsettings) {
             # else if requested variable was found in first found file (the default)
             } else { 
                 
+                own_cmd <- F
+
                 # continue with default case -> cdo cmd and not any of `cdo_known_cmds`
                 message("--> requested variable was found in first file")
                 if (clean) system(paste0("rm -v ", varcheck_file))
@@ -2170,7 +2175,7 @@ for (i in 1:nsettings) {
         }
 
         # change from/to in final fout if new dates were applied
-        if (!is.null(new_date_list[[i]]$years)) {
+        if (!own_cmd && !is.null(new_date_list[[i]]$years)) {
             message("\nrename initial fout according to new dates ...")
             cmd <- paste0("mv -v ", fout, " ")
             from_new <- range(sapply(dates_out_list, "[", "years"))[1]
@@ -2186,7 +2191,7 @@ for (i in 1:nsettings) {
     } # if fout_exist_check (if output file already exists or not)
 
     # set relative time axis
-    if (cdo_set_rel_time && is.null(new_date_list[[i]])) {
+    if (!own_cmd && cdo_set_rel_time && is.null(new_date_list[[i]])) {
         message("\n", "`cdo_set_rel_time`=T --> set relative time axis ...")
         reltime_file <- paste0(postpaths[i], "/tmp_reltime_", Sys.getpid())
         cmd <- paste0("cdo ", cdo_silent, " --no_history -r copy ", fout, " ", reltime_file, 
@@ -2253,7 +2258,7 @@ for (i in 1:nsettings) {
 
 message("\nfinished")
 
-for (i in 1:nsettings) {
+for (i in seq_len(nsettings)) {
     message("\nsetting ", i, "/", nsettings , "\n",
             "  ", datapaths[i], "/", fpatterns[i], "\n",
             "took ", elapsed[[i]], " ", 

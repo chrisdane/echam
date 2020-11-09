@@ -3,7 +3,7 @@
 #options(warn=2) # stop on warnings
 #options(warn=0) # back to default
 
-if (T) {
+if (F) {
     message("\nrm(list=ls())")
     rm(list=ls())
     # make squeeze default:
@@ -4040,8 +4040,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 #print(lm_summary)
                                 lm_labels[i] <- paste0("r=", round(sqrt(lm_summary$r.squared), 2), ", p")
                                 pval <- get_pval(lm)
-                                if (pval < 1e-15) {
-                                    lm_labels[i] <- paste0(lm_labels[i], "<1e-15")
+                                if (pval < 1e-5) {
+                                    lm_labels[i] <- paste0(lm_labels[i], "<1e-5")
                                 } else {
                                     lm_labels[i] <- paste0(lm_labels[i], "=", round(pval, 4)) 
                                 }
@@ -5764,11 +5764,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #le$cex <- 0.75
                 #le$cex <- 0.66
                 #le$cex <- 0.5
+                names_legend_p_w_lm <- names_legend_p
                 if (any(add_linear_trend)) {
-                    names_legend_p[which(!is.na(lm_labels))] <- paste0(names_legend_p[which(!is.na(lm_labels))], " ", 
-                                                                       lm_labels[which(!is.na(lm_labels))])
+                    names_legend_p_w_lm[which(!is.na(lm_labels))] <- 
+                        paste0(names_legend_p_w_lm[which(!is.na(lm_labels))], " ", 
+                               lm_labels[which(!is.na(lm_labels))])
                 }
-                le$text <- names_legend_p
+                le$text <- names_legend_p_w_lm
                 le$col <- cols_p
                 le$lty <- ltys_p
                 le$lwd <- lwds_p
@@ -7392,16 +7394,44 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     eval(parse(text=paste0("varx_infos <- ", varnamexp, "_infos")))
                     eval(parse(text=paste0("vary_infos <- ", varnameyp, "_infos")))
 
-                    if (varname == "temp2_vs_toa_imbalance" && T) {
-                        message("\nspecial: substract last PI value from experiments ...")
-                        for (i in 2:length(varx)) {
-                            varx[[i]] <- varx[[i]] - rep(varx[[1]][length(varx[[1]])], t=length(length(varx[[1]])))
-                            varx_infos[[i]]$label <- "2m temperature increase [K]"
+                    if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
+                        message("\nspecial: do ECS/TCR stuff. see https://github.com/ESMValGroup/ESMValTool/issues/1814")
+                        inds <- seq_along(z)
+                        if (length(which(grepl("piControl", names_short))) == 1) {
+                            piind <- which(grepl("piControl", names_short))
+                            inds <- inds[-piind]
+                        } else {
+                            stop("not defined")
                         }
-                        # last: pi itself
-                        varx[[1]] <- varx[[1]] - rep(varx[[1]][length(varx[[1]])], t=length(length(varx[[1]])))
-                        varx_infos[[1]]$label <- "2m temperature increase [K]"
-                    }
+                        if (F) { # subtract last PI value
+                            message("subtract last PI value from experiments ...")
+                            for (i in inds) {
+                                varx[[i]] <- varx[[i]] - rep(varx[[piind]][length(varx[[piind]])], 
+                                                             t=length(length(varx[[piind]])))
+                                varx_infos[[i]]$label <- "2m temperature increase [K]"
+                            }
+                            # last: pi itself
+                            varx[[piind]] <- varx[[piind]] - rep(varx[[piind]][length(varx[[piind]])], 
+                                                                 t=length(length(varx[[piind]])))
+                            varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                        
+                        } else if (T) { # subtract PI values year by year
+                            message("substract PI values year by year ...")
+                            for (i in inds) {
+                                if (length(varx[[i]]) != length(varx[[piind]])) {
+                                    stop("varx[[", i, "]] and varx[[", piind, "]] are of different length")
+                                }
+                                if (!all(dims[[i]]$timelt$year == dims[[piind]]$timelt$year)) {
+                                    stop("years of setting ", i, " and ", piind, " differ")
+                                }
+                                varx[[i]] <- varx[[i]] - varx[[piind]]
+                                varx_infos[[i]]$label <- "2m temperature increase [K]"
+                            }
+                            # last: pi itself
+                            varx[[piind]] <- varx[[piind]] - varx[[piind]] # = all zero
+                            varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                        }
+                    } # if varname == "temp2_vs_toa_imbalance" do ECS/TCR stuff
 
                     xlim <- range(varx, na.rm=T)
                     ylim <- range(vary, na.rm=T)
@@ -7409,6 +7439,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     xlab <- format(xat, trim=T)
                     yat <- pretty(ylim, n=10)
                     ylab <- format(yat, trim=T)
+                    message("xlim = ", min(xlim), " / ", max(xlim))
+                    message("ylim = ", min(ylim), " / ", max(ylim))
 
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_", 
@@ -7423,9 +7455,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         pdf(plotname, width=p$inch, height=p$inch,
                             family=p$family_pdf, encoding=encoding)
                     }
-                    
-                    message("xlim = ", min(xlim), " / ", max(xlim))
-                    message("ylim = ", min(ylim), " / ", max(ylim))
 
                     # set plot margins
                     mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
@@ -7472,16 +7501,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     plotorder <- seq_along(varx)
                     
                     # special: change plot order
-                    if (varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
-                        message("change plot order from ", paste0(plotorder, collapse=","), " to ", appendLF=F)
-                        plotorder <- c(plotorder[-which(grepl("piControl", names_short))], which(grepl("piControl", names_short)))
+                    if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
+                        # plot PI last
+                        message("special: change plot order from ", 
+                                paste(plotorder, collapse=","), " to ", appendLF=F)
+                        plotorder <- c(plotorder[-which(grepl("piControl", names_short))],
+                                       which(grepl("piControl", names_short)))
                         if (length(plotorder) == 0) stop("length(plotorder) new is 0")
                         message(paste(plotorder, collapse=","), " ...")
                     }
 
                     # special: add gray dots of data first
-                    if (varname == "temp2_vs_toa_imbalance") {
-                        messge("special: add every non-pi data point gray")
+                    if (T && varname == "temp2_vs_toa_imbalance") {
+                        message("special: add every non-pi data point gray")
                         for (i in plotorder) {
                             if (names_short[i] == "piControl") {
                                 # nothing
@@ -7496,32 +7528,37 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     
                     # add data 
                     for (i in plotorder) {
-                        if (varname == "temp2_vs_toa_imbalance" && grepl("piControl", names_short[i])) {
-                            message("special: plot only time mean for setting ", names_short[i])
-                            points(mean(varx[[i]]), mean(vary[[i]]), 
-                                   #col=cols_rgb[i], 
-                                   col=cols[i],
-                                   pch=scatterpchs[i], cex=scattercexs[i])
-                        } else if (T && varname == "temp2_vs_toa_imbalance") { 
-                            message("special: use year as symbols")
-                            #years_of_setting_to_show <- c(1:10, seq(25, 250, b=25))
-                            years_of_setting_to_show <- c(1:10, 15, seq(20, 100, b=10), seq(125, 250, b=25))
-                            tmpx <- varx[[i]]
-                            tmpy <- vary[[i]]
-                            tmpx[years_of_setting_to_show] <- NA
-                            tmpy[years_of_setting_to_show] <- NA
-                            #points(tmpx, tmpy, 
-                            #       col=cols_rgb[i], 
-                            #       #col=cols[i],
-                            #       pch=scatterpchs[i], cex=scattercexs[i])
-                            # add wanted years as text
-                            text(varx[[i]][years_of_setting_to_show], 
-                                 vary[[i]][years_of_setting_to_show], 
-                                 labels=years_of_setting_to_show,
-                                 #col=cols_rgb[i], 
-                                 col=cols[i], 
-                                 cex=scattercexs[i])
-                        } else { # default
+                        if (T && varname == "temp2_vs_toa_imbalance") {
+                            if (grepl("piControl", names_short[i])) {
+                                message("special: plot only time mean for setting ", names_short[i])
+                                points(mean(varx[[i]]), mean(vary[[i]]), 
+                                       #col=cols_rgb[i], 
+                                       col=cols[i],
+                                       pch=scatterpchs[i], cex=scattercexs[i])
+                            } else { # non-PI
+                                message("special: use year as symbols")
+                                #years_of_setting_to_show <- c(1:10, seq(25, 250, b=25))
+                                #years_of_setting_to_show <- c(1:10, 15, seq(20, 100, b=10), seq(125, 250, b=25))
+                                years_of_setting_to_show <- c(1:10, 15, seq(20, 150, b=10), seq(175, 250, b=25))
+                                tmpx <- varx[[i]]
+                                tmpy <- vary[[i]]
+                                tmpx[years_of_setting_to_show] <- NA
+                                tmpy[years_of_setting_to_show] <- NA
+                                #points(tmpx, tmpy, 
+                                #       col=cols_rgb[i], 
+                                #       #col=cols[i],
+                                #       pch=scatterpchs[i], cex=scattercexs[i])
+                                # add wanted years as text
+                                text(varx[[i]][years_of_setting_to_show], 
+                                     vary[[i]][years_of_setting_to_show], 
+                                     labels=years_of_setting_to_show,
+                                     #col=cols_rgb[i], 
+                                     col=cols[i], 
+                                     cex=scattercexs[i])
+                            }
+                            
+                        # else default plotting
+                        } else { 
                             points(varx[[i]], vary[[i]], 
                                    col=cols_rgb_p[i],
                                    #col=cols_rgb[i], 
@@ -7531,118 +7568,180 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } # finished add data to scatter plot 
 
                     # add linear trend
-                    if (add_linear_trend) {
+                    names_legend_p_w_lm <- names_legend_p
+                    if (any(add_linear_trend)) {
                         message("\nadd linear trend in scatterplot varx vs vary ...")
                         lms_lin <- vector("list", l=length(varx))
                         lm_text <- c()
                         for (i in seq_along(varx)) {
-                            message("\nsetting ", i, "/", length(varx), ": ", names_short_p[i])
-                            lms_lin[[i]] <- lm(vary[[i]] ~ varx[[i]])
-                            lm_summary <- summary(lms_lin[[i]])
-                            print(lm_summary)
-                            # linear regression results
-                            intercept <- as.vector(lm_summary$coefficients[1,1])
-                            intercept_error <- as.vector(lm_summary$coefficients[1,2])
-                            intercept_pval <- paste0("=", lm_summary$coefficients[1,4])
-                            slope <- as.vector(lm_summary$coefficients[2,1])
-                            slope_error <- as.vector(lm_summary$coefficients[2,2])
-                            slope_pval <- lm_summary$coefficients[2,4]
-                            if (slope_pval < 1e-15) { 
-                                slope_pval <- "<1e-15"
-                            } else {
-                                slope_pval <- paste0("=", format(slope_pval, trim=T))
-                            }
-                            # plot regression line within data limits only
-                            if (F) {
-                                message("draw linear regression line within regression limits only ...")
-                                lines(varx[[i]], lms_lin[[i]]$fitted.values, 
-                                      col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
-                            # or plot line through whole plot with regression coefficients
-                            } else if (T || (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i]))) {
-                                message("draw linear regression line through whole plot ...")
-                                abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
-                                       col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
-                            }
-                            # add linear regression coefficients to legend
-                            if (T) {
-                                message("add linear regression coefficients to legend ...")
-                                first_part <- names_legend_p[i]
-                                last_part <- "" # default
-                                last_part <- eval(substitute(expression(paste("(", alpha, "=", slope, ", p", p, ", r=", r, ")")),
-                                                             list(slope=round(slope, 2), p=slope_pval, 
-                                                                  r=round(sqrt(lm_summary$r.squared), 2))))
-                                if (is.expression(last_part)) {
-                                    new <- bquote(.(do.call(substitute, as.list(first_part))) ~ 
-                                                  .(do.call(substitute, as.list(last_part))))
-                                    names_legend_p[i] <- eval(substitute(expression(new), list(new=new)))
-                                }
-                            }
-                            # special stuff 
-                            if (varname == "temp2_vs_toa_imbalance" && grepl("1pctCO2", names_short[i])) {
-
-                                ## winton et al. 2014: transient climate respomse: TCR
-                                # use global warming as modeled in the 1pct experiment when the pi CO2 value doubled
-                                co2_hist_1850_ind <- which.min(abs(co2_hist$time - as.POSIXlt("1850-01-01", tz="UTC")))
-                                co2_hist_1850 <- drop(co2_hist$co2_ppm[co2_hist_1850_ind])
-                                co2_1pct_1850_doubled_ind <- which.min(abs(co2_1pct$co2_ppm - 2*co2_hist_1850))
-                                co2_1pct_1850_doubled <- drop(co2_1pct$co2_ppm[co2_1pct_1850_doubled_ind])
-                                deltaT_1pct_1850_co2_doubled <- varx[[i]][co2_1pct_1850_doubled_ind]
-                                message("CO2 of 1pctCO2 experiment = 2 x ", co2_hist_1850, " ppm (piControl CO2 of ", 
-                                        co2_hist$time[co2_hist_1850_ind], ") at year ", co2_1pct_1850_doubled_ind, " = ", 
-                                        co2_1pct$time[co2_1pct_1850_doubled_ind], " = ", co2_1pct_1850_doubled, " ppm", "\n",
-                                        " --> deltaT of 1pctCO2 experiment at this year = ", deltaT_1pct_1850_co2_doubled, " K = TCR")
-                                # or use model year 61-80 starting frmo 1850 --> 1911-1930 (20 year) mean global warming as in winton et al. 2014
-                                year_inds <- which(d$time[[i]] >= as.POSIXct("1911-01-01", tz="UTC") &
-                                                   d$time[[i]] <= as.POSIXct("1931-01-01", tz="UTC"))
-                                if (length(year_inds) == 0) {
-                                    warning("cannot add transient climate response between year 1911 and 1931: out or range of d$time[[", i, "]]. use whole time instead ...")
-                                    year_inds <- seq_along(d$time[[i]])
-                                }
-                                average_deltaT_1pct_1850_co2_doubled <- mean(varx[[i]][year_inds])
-                                message("average deltaT of 1pctCO2 experiment of years ", min(d$time[[i]][year_inds]), " to ", 
-                                        max(d$time[[i]][year_inds]), " = ", average_deltaT_1pct_1850_co2_doubled, " K")
-                                lm_text <- c(lm_text,
-                                             eval(substitute(expression(paste("TCR = ", Delta, "T"["1%"], "(CO"[2], "=2" %*% "CO"[paste("2,PI")], 
-                                                                              " = ", co2_1pct_1850_doubled, " ppm)")),
-                                                             list(co2_1pct_1850_doubled=round(co2_1pct_1850_doubled)))),
-                                             eval(substitute(expression(paste("    = ", bar(paste(Delta, "T"))["1%"]^"years 61-80", 
-                                                                              " = ", average_deltaT_1pct_1850_co2_doubled, " K")),
-                                                             list(average_deltaT_1pct_1850_co2_doubled=round(average_deltaT_1pct_1850_co2_doubled, 2)))))
-
-                            } else if (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i])) {
+                            if (add_linear_trend[i]) {
+                                message("\nsetting ", i, "/", length(varx), ": ", names_short_p[i])
+                                lms_lin[[i]] <- lm(vary[[i]] ~ varx[[i]])
+                                lm_summary <- summary(lms_lin[[i]])
+                                print(lm_summary)
+                                # linear regression results
+                                intercept <- as.vector(lm_summary$coefficients[1,1])
+                                intercept_error <- as.vector(lm_summary$coefficients[1,2])
+                                intercept_pval <- paste0("=", lm_summary$coefficients[1,4])
+                                if (dim(lm_summary$coefficients)[1] == 1) { # all input NA or lm not succcessfull
+                                    slope <- NA
+                                    slope_pval <- NA
+                                } else {
+                                    slope <- as.vector(lm_summary$coefficients[2,1])
+                                    slope_error <- as.vector(lm_summary$coefficients[2,2])
+                                    slope_pval <- lm_summary$coefficients[2,4]
+                                    if (slope_pval < 1e-5) { 
+                                        slope_pval <- "<1e-5"
+                                    } else {
+                                        slope_pval <- paste0("=", format(slope_pval, trim=T))
+                                    }
+                                    # plot regression line within data limits only
+                                    if (F) {
+                                        message("draw linear regression line within regression limits only ...")
+                                        lines(varx[[i]], lms_lin[[i]]$fitted.values, 
+                                              col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                    # or plot line through whole plot with regression coefficients
+                                    } else if (T || 
+                                               (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i]))) {
+                                        message("draw linear regression line through whole plot ...")
+                                        abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
+                                               col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                    }
+                                    if (T) {
+                                        message("add linear regression coefficients to legend ...")
+                                        first_part <- names_legend_p[i]
+                                        last_part <- "" # default
+                                        last_part <- eval(substitute(expression(paste(
+                                            "(", alpha, "=", slope, ", p", p, ", r=", r, ")")),
+                                                                     list(slope=round(slope, 2), p=slope_pval, 
+                                                                          r=round(sqrt(lm_summary$r.squared), 2))))
+                                        if (is.expression(last_part)) {
+                                            new <- bquote(.(do.call(substitute, as.list(first_part))) ~ 
+                                                          .(do.call(substitute, as.list(last_part))))
+                                            names_legend_p_w_lm[i] <- eval(substitute(expression(new), list(new=new)))
+                                        }
+                                    }
+                                } # if lm sucessfull or not
                                 
-                                # gregory et al. 2004: equilibrium climate sensitivity (ECS):
-                                alpha <- slope
-                                alpha_error <- slope_error
-                                radiative_forcing_F <- intercept
-                                radiative_forcing_F_error <- intercept_error
-                                deltaT_eq_4x <- sort(c((radiative_forcing_F - radiative_forcing_F_error)/(abs(alpha) - alpha_error),
-                                                       (radiative_forcing_F + radiative_forcing_F_error)/(abs(alpha) + alpha_error)))
-                                deltaT_eq_2x <- deltaT_eq_4x/2
-                                message("deltaT_eq_4x for setting ", names_short[i], " = (", round(min(deltaT_eq_4x), 2), ",", 
-                                        round(max(deltaT_eq_4x), 2), ") K (gregory et al. 2004)\n",
-                                        " --> deltaT_eq_4x/2 = deltaT_eq_2x = ECS = equilibrium climate sensitivity = ", 
-                                        round(min(deltaT_eq_2x), 2), ",", round(max(deltaT_eq_2x), 2), " K")
-                                Forcing <- abs(alpha)*as.vector(varx[[i]]) # = alpha*dT
-                                lm_text <- c(lm_text,
-                                             eval(substitute(expression(paste("F"[paste("4" %*% "")], " = ", radiative_forcing_F, "" %+-% "",
-                                                                              radiative_forcing_F_error, " W m"^paste(-2), " (intercept)")),
-                                                             list(radiative_forcing_F=round(radiative_forcing_F, 2),
-                                                                  radiative_forcing_F_error=round(radiative_forcing_F_error, 2)))),
-                                             eval(substitute(expression(paste(alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, 
-                                                                              " W m"^paste(-2), " K"^paste(-1), " (slope)")), 
-                                                             list(alph=round(alpha, 2), alpha_error=round(alpha_error, 2)))),
-                                             eval(substitute(expression(paste("F"[paste("4" %*% "")], "/|", alpha, ""[paste("4" %*% "")], 
-                                                                              "| = ", Delta, "T"[paste("eq,4" %*% "")],
-                                                                              " = ", deltaT_eq_4x_lower, "-", deltaT_eq_4x_upper, " K")),
-                                                             list(deltaT_eq_4x_lower=round(min(deltaT_eq_4x), 2), deltaT_eq_4x_upper=round(max(deltaT_eq_4x), 2)))),
-                                             eval(substitute(expression(paste("ECS = ", Delta, "T"[paste("eq,2" %*% "")], " = 1/2 ", Delta, "T"[paste("eq,4" %*% "")], 
-                                                                              " = ", deltaT_eq_2x_lower, "-", deltaT_eq_2x_upper, " K")),
-                                                             list(deltaT_eq_2x_lower=round(min(deltaT_eq_2x), 2), deltaT_eq_2x_upper=round(max(deltaT_eq_2x), 2)))))
-                            } # if special setting
+                                # special stuff 
+                                if (T && varname == "temp2_vs_toa_imbalance") {
+                                    # transient climate response: TCR after winton et al. 2014
+                                    # --> global warming as modeled in the 1pct experiment when the pi CO2 value doubled
+                                    if (grepl("1pctCO2", names_short[i]) && exists("co2_hist") && exists("co2_1pct")) {
+                                        message("\nspecial: transient climate response TCR based on `co2_hist` and `co2_1pct` after\n",
+                                                "Winton et al. 2014 (https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1002/2014GL061523):\n",
+                                                "   \"The transient sensitivity is quantified with the transient climate\n",
+                                                "   response (TCR), the global surface warming at CO2 doubling in a 1%/year\n",
+                                                "   CO2 increase experiment.\"\n",
+                                                "and later:\n",
+                                                "   \"The values for the transient climate response (TCR)—the year 61–80 \n",
+                                                "   average global warming—are ...\"\n",
+                                                "--> length(61:80) = ", length(61:80), " years\n",
+                                                "see https://github.com/ESMValGroup/ESMValTool/issues/1901 ...")
+                                        co2_hist_1850_ind <- which(co2_hist$time$year+1900 == 1850)
+                                        if (length(co2_hist_1850_ind) != 1) stop("not defined for current `co2_hist` data")
+                                        co2_hist_1850 <- drop(co2_hist$co2_ppm[co2_hist_1850_ind])
+                                        co2_1pct_doubled_1850_ind <- which.min(abs(co2_1pct$co2_ppm - 2*co2_hist_1850))[1]
+                                        co2_1pct_doubled <- drop(co2_1pct$co2_ppm[co2_1pct_doubled_1850_ind])
+                                        co2_1pct_doubled_time <- co2_1pct$time[co2_1pct_doubled_1850_ind]
+                                        co2_1pct_doubled_1850_model_ind <- difftime(d$time[[i]], 
+                                                                                    rep(co2_1pct_doubled_time, t=length(d$time[[i]])))
+                                        co2_1pct_doubled_1850_model_ind <- which.min(abs(co2_1pct_doubled_1850_model_ind))[1]
+                                        deltaT_1pct_co2_doubled <- varx[[i]][co2_1pct_doubled_1850_model_ind]
+                                        message("TCR_{1year} = dT_{modelexp-1pctCO2}[CO2_{1pctCO2}=2xCO2_{piControl}]\n",
+                                                "with CO2_{piControl} from e.g. ", co2_hist$file, "\n",
+                                                "     CO2_{1pctCO2} from e.g. ", co2_1pct$file, "\n",
+                                                "--> CO2_{piControl} = CO2_{historical,year=1850} = ",
+                                                "CO2_{1pctCO2,year=1850} = ", co2_hist_1850, " ppm\n",
+                                                "--> 2 x ", co2_hist_1850, " ppm = ", 2*co2_hist_1850, " ppm\n",
+                                                "--> this CO2 value is from ", co2_hist$time[co2_hist_1850_ind], 
+                                                " (time from ", co2_hist$file, ")\n",
+                                                "--> closest CO2_{1pctCO2} = ", co2_1pct_doubled, 
+                                                " ppm from ", co2_1pct$time[co2_1pct_doubled_1850_ind], 
+                                                " (time from ", co2_1pct$file, ")\n",
+                                                "--> counting from year 1850 (=year number 1), this year ",
+                                                co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, 
+                                                " is year number ",
+                                                co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900-1850+1, " (=",
+                                                co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, "-1850+1)\n",
+                                                "--> the closest 1pctCO2 model-date to this 1pctCO2-date is ",
+                                                "model-date number ", co2_1pct_doubled_1850_model_ind, ": ", 
+                                                d$time[[i]][co2_1pct_doubled_1850_model_ind], "\n",
+                                                "--> dT_{modelexp-1pctCO2,model-year[", co2_1pct_doubled_1850_model_ind, "]=", 
+                                                dims[[i]]$timelt[co2_1pct_doubled_1850_model_ind]$year+1900, "} = ", 
+                                                deltaT_1pct_co2_doubled, " K = ",
+                                                round(deltaT_1pct_co2_doubled, 2), " K = TCR")
+                                        
+                                        # or use model year 61-80 starting from 1850
+                                        # --> 1911-1930 (20 year) mean global warming as in winton et al. 2014
+                                        #TCR_from_to <- c(as.POSIXct("1911-01-01", tz="UTC"),
+                                        #                 as.POSIXct("1931-21-31", tz="UTC"))
+                                        TCR_from_to <- c(as.POSIXct("1910-01-01", tz="UTC"),
+                                                         as.POSIXct("1930-12-31", tz="UTC"))
+                                        year_inds <- which(d$time[[i]] >= TCR_from_to[1] &
+                                                           d$time[[i]] <= TCR_from_to[2])
+                                        if (length(year_inds) == 0) {
+                                            stop("cannot calc TCR between years ", TCR_from_to[1], " and ", TCR_from_to[2], 
+                                                    ": out or range of d$time[[", i, "]]")
+                                        }
+                                        average_deltaT_1pct_co2_doubled <- mean(varx[[i]][year_inds])
+                                        message("TCR_{mean} = dT_{modelexp-1pctCO2} mean over model-dates ", 
+                                                min(year_inds), " to ", max(year_inds), ":\n",
+                                                "            ", min(d$time[[i]][year_inds]), " to ",
+                                                max(d$time[[i]][year_inds]), " (n=", 
+                                                length(year_inds), "; n_unique_years=", 
+                                                length(unique(dims[[i]]$timelt[year_inds]$year+1900)), ")\n",
+                                                "--> ", average_deltaT_1pct_co2_doubled, " K = ", 
+                                                round(average_deltaT_1pct_co2_doubled, 2), " K")
+                                        lm_text <- c(lm_text, 
+                                                     eval(substitute(expression(paste(
+                "TCR = ", Delta, "T"["1%"], "(CO"[2], "=2" %*% "CO"[paste("2,PI")], " = ", co2_1pct_doubled, " ppm)")),
+                                                                     list(co2_1pct_doubled=round(co2_1pct_doubled)))),
+                                                     eval(substitute(expression(paste(
+                "    = ", bar(paste(Delta, "T"))["1%"]^"years 61-80", " = ", average_deltaT_1pct_co2_doubled, " K")),
+                                                                     list(average_deltaT_1pct_co2_doubled=round(average_deltaT_1pct_co2_doubled, 2)))))
+                                    } # if 1pctCO2 and exists("co2_hist")
+                                    
+                                    if (grepl("abrupt-4xCO2", names_short[i]) && !is.na(slope)) {
+                                        message("\nspecial: ECS for abrupt-4xCO2 and non-NA regression slope\n",
+                                                "see https://github.com/ESMValGroup/ESMValTool/issues/1814 ...")
+                                        # gregory et al. 2004: equilibrium climate sensitivity (ECS):
+                                        alpha <- slope
+                                        alpha_error <- slope_error
+                                        radiative_forcing_F <- intercept
+                                        radiative_forcing_F_error <- intercept_error
+                                        deltaT_eq_4x <- sort(c((radiative_forcing_F - radiative_forcing_F_error)/(abs(alpha) - alpha_error),
+                                                               (radiative_forcing_F + radiative_forcing_F_error)/(abs(alpha) + alpha_error)))
+                                        deltaT_eq_2x <- deltaT_eq_4x/2
+                                        message("deltaT_eq_4x for setting ", names_short[i], " = (", round(min(deltaT_eq_4x), 2), ",", 
+                                                round(max(deltaT_eq_4x), 2), ") K (gregory et al. 2004)\n",
+                                                " --> deltaT_eq_4x/2 = deltaT_eq_2x = ECS = equilibrium climate sensitivity = ", 
+                                                round(mean(deltaT_eq_2x), 2), " (", 
+                                                round(min(deltaT_eq_2x), 2), "-", round(max(deltaT_eq_2x), 2), ") K")
+                                        Forcing <- abs(alpha)*as.vector(varx[[i]]) # = alpha*dT
+                                        lm_text <- c(lm_text,
+                                                     eval(substitute(expression(paste(
+    "F"[paste("4" %*% "")], " = ", radiative_forcing_F, "" %+-% "", radiative_forcing_F_error, " W m"^paste(-2), " (intercept)")),
+                                                                     list(radiative_forcing_F=round(radiative_forcing_F, 2),
+                                                                          radiative_forcing_F_error=round(radiative_forcing_F_error, 2)))),
+                                                     eval(substitute(expression(paste(
+    alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste(-2), " K"^paste(-1), " (slope)")), 
+                                                                     list(alph=round(alpha, 2), alpha_error=round(alpha_error, 2)))),
+                                                     eval(substitute(expression(paste(
+    "F"[paste("4" %*% "")], "/|", alpha, ""[paste("4" %*% "")], "| = ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_eq_4x_lower, "-", deltaT_eq_4x_upper, " K")),
+                                                                     list(deltaT_eq_4x_lower=round(min(deltaT_eq_4x), 2), 
+                                                                          deltaT_eq_4x_upper=round(max(deltaT_eq_4x), 2)))),
+                                                     eval(substitute(expression(paste(
+    "ECS = ", Delta, "T"[paste("eq,2" %*% "")], " = 1/2 ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_mean, " (", deltaT_eq_2x_lower, "-", deltaT_eq_2x_upper, ") K")),
+                                                                     list(deltaT_mean=round(mean(deltaT_eq_2x), 2),
+                                                                          deltaT_eq_2x_lower=round(min(deltaT_eq_2x), 2), 
+                                                                          deltaT_eq_2x_upper=round(max(deltaT_eq_2x), 2)))))
+                                    } # if abrupt-4xCO2
+                                } # if temp2_vs_toa_imbalance
+                            } # if add_linear_trend[i]
                         } # for i in seq_along(varx)
-                        if (exists("deltaT_eq_2x") && exists("average_deltaT_1pct_1850_co2_doubled")) {
-                            CER <- average_deltaT_1pct_1850_co2_doubled/deltaT_eq_2x # climate equilibrium ratio
+                        if (exists("deltaT_eq_2x") && exists("average_deltaT_1pct_co2_doubled")) {
+                            CER <- average_deltaT_1pct_co2_doubled/deltaT_eq_2x # climate equilibrium ratio
                             message("min/max of climate equilibirum ratio CER = TCR/ECS = ", min(CER), "/", max(CER))
                         }
                         if (!is.null(lm_text)) {
@@ -7652,7 +7751,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    lty=NA, pch=NA, lwd=NA, bty="n", 
                                    cex=0.9, y.intersp=1.1)
                         }
-                    } # add_linear_trend
+                    } # if any add_linear_trend
 
                     # add non-linear trend
                     if (add_nonlinear_trend) {
@@ -7688,7 +7787,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$ncol <- 1
                         #le$ncol <- 2 
                         le$cex <- 1
-                        le$text <- names_legend_p
+                        le$text <- names_legend_p_w_lm # = names_legend_p if no lm
                         le$col <- cols_p
                         #le$col <- cols_rgb
                         #le$col <- cols
@@ -7698,6 +7797,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pchs <- scatterpchs
                         #le$pchs <- pchs_p
                         if (T && varname == "temp2_vs_toa_imbalance") {
+                            message("special legend pchs")
                             le$pchs <- rep(NA, t=length(varx))
                         }
                         # add stuf to legend here

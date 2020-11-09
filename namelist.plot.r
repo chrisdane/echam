@@ -94,15 +94,15 @@ scatter_s1_vs_s1_varname <- "tsurf"
 #scatter_s1_vs_s1_varname <- "wisoaprt_d"
 plot_scatter_v1_vs_v2 <- T # uses `datas`
 varnamex <- varnamey <- "abc" # default
-#varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
+varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
 #varnamex <- "tsurf_datas"
 #varnamex <- "tsurfaprt_datas"
 #varnamex <- "quv_datas"
 #varnamex <- "quv_direction_datasan"
-varnamex <- "aprt_datas"
-#varnamey <- "toa_imbalance_datas"
+#varnamex <- "aprt_datas"
+varnamey <- "toa_imbalance_datas"
 #varnamey <- "quv_direction_datas"
-varnamey <- "wisoaprt_d_datas"
+#varnamey <- "wisoaprt_d_datas"
 
 # time vs depth:
 add_ts_to_time_vs_depth <- T
@@ -347,7 +347,7 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (T) { # Hol-T with vs without orbital acceleration
+} else if (F) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_Hol-T", "cosmos-aso-wiso_Hol-Tx10")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")
@@ -711,68 +711,34 @@ if (F) { # awi-esm-1-1-lr hist
 
 # =====================================
 # 4 settings
-} else if (F) { # awi-esm-1-1-lr deck
+} else if (T) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
     if (F) { # awi-cm-1-1-lr
-        if (F) { # srad, trad
-            prefixes <- c("awi-cm-1-1-lr_piControl_echam6_echam",
-                          "awi-cm-1-1-lr_historical_echam6_echam",
-                          "awi-cm-1-1-lr_1percCO2_echam6_echam",
-                          "awi-cm-1-1-lr_4CO2_echam6_echam")
-        } else if (F) { # temp2
-            prefixes <- c("awi-cm-1-1-lr_piControl_echam6_echammon",
-                          "awi-cm-1-1-lr_historical_echam6_echammon",
-                          "awi-cm-1-1-lr_1percCO2_echam6_echammon",
-                          "awi-cm-1-1-lr_4CO2_echam6_echammon")
-        }
+        prefixes <- c("awi-cm-1-1-lr_piControl",
+                      "awi-cm-1-1-lr_historical",
+                      "awi-cm-1-1-lr_1percCO2",
+                      "awi-cm-1-1-lr_4CO2")
         names_short <- paste0("awi-cm-1-1-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
-    } else if (F) { # awi-esm-1-1-lr
-        if (F) {
-            prefixes <- c("awi-esm-1-1-lr_piControl_echam6_echammon",
-                          "awi-esm-1-1-lr_historical_echam6_echammon",
-                          "awi-esm-1-1-lr_1percCO2_echam6_echammon",
-                          "awi-esm-1-1-lr_4CO2_echam6_echammon")
-        } else if (F) {
-            prefixes <- c("awi-esm-1-1-lr_piControl_echam6_echam",
-                          "awi-esm-1-1-lr_historical_echam6_echam",
-                          "awi-esm-1-1-lr_1percCO2_echam6_echam",
-                          "awi-esm-1-1-lr_4CO2_echam6_echam")
-        } else if (F) {
-            prefixes <- c("awi-esm-1-1-lr_piControl_echam6_echam_yearmean",
-                          "awi-esm-1-1-lr_historical_echam6_echam_yearmean",
-                          "awi-esm-1-1-lr_1percCO2_echam6_echam_yearmean",
-                          "awi-esm-1-1-lr_4CO2_echam6_echam_yearmeam")
-        } else if (F) {
-            prefixes <- c("awi-esm-1-1-lr_piControl_echam6_echammon_yearmean",
-                          "awi-esm-1-1-lr_historical_echam6_echammon_yearmean",
-                          "awi-esm-1-1-lr_1percCO2_echam6_echammon_yearmean",
-                          "awi-esm-1-1-lr_4CO2_echam6_echammon_yearmean")
-        } else if (F) {
-            prefixes <- c("awi-esm-1-1-lr_piControl_echam6_aeroptmon",
-                          "awi-esm-1-1-lr_historical_echam6_echammon",
-                          "awi-esm-1-1-lr_1percCO2_echam6_echammon",
-                          "awi-esm-1-1-lr_4CO2_echam6_echammon")
-        } else if (F) { # fesom
-            prefixes <- c("awi-esm-1-1-lr_piControl_monthly_mean",
-                          "awi-esm-1-1-lr_historical_monthly_mean",
-                          "awi-esm-1-1-lr_1percCO2_monthly_mean",
-                          "awi-esm-1-1-lr_4CO2_monthly_mean")
-        }
+    } else if (T) { # awi-esm-1-1-lr
+        prefixes <- c("awi-esm-1-1-lr_piControl",
+                      "awi-esm-1-1-lr_historical",
+                      "awi-esm-1-1-lr_1percCO2",
+                      "awi-esm-1-1-lr_4CO2")
         names_short <- paste0("awi-esm-1-1-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
     } else if (F) { # awi-esm-1-2-lr
-        prefixes <- c("awi-esm-1-2-lr_piControl_echam6_echam",
-                      "awi-esm-1-2-lr_historical_echam6_echam",
-                      "awi-esm-1-2-lr_1percCO2_echam6_echam",
-                      "awi-esm-1-2-lr_4CO2_echam6_echam")
+        prefixes <- c("awi-esm-1-2-lr_piControl",
+                      "awi-esm-1-2-lr_historical",
+                      "awi-esm-1-2-lr_1percCO2",
+                      "awi-esm-1-2-lr_4CO2")
         names_short <- paste0("awi-esm-1-2-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
     }
     text_cols <- c("black", "#E41A1C", "#377EB8", "#1B9E77")
     scatterpchs <- c(4, 16, 16, 16)
-    #varnames_in <- rep("temp2", t=4)
+    varnames_in <- rep("temp2", t=4)
     #codes <- c(167, "", "", "")
     #varnames_in <- rep("srad0", t=4)
-    varnames_in <- rep("toa_imbalance", t=4)
+    #varnames_in <- rep("toa_imbalance", t=4)
     #varnames_in <- rep("tau_aero_550", t=4)
     #codes <- c(11, "", "", "")
     #varnames_in <- rep("srad0d", t=4)
@@ -794,19 +760,15 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("tos", t=4)
     #postpaths <- paste0(workpath, "/post/", models, "/regular_grid/ltm/", mode, "/", varnames_in)
     #reg_dxs <- reg_dys <- rep("0.250", t=4)
-    if (F) { # transient pi last 100
-        if (F) { # awi-cm-1-1-lr
-            fromsf <- c(1855, 1850, 1850, 1850)
-            tosf <- c(1954, 2014, 2099, 2099)
-            new_origins <- c(1750, NA, NA, NA) # plot pi before historical on time axis
-        } else if (F) { # awi-esm-1-1-lr
-            fromsf <- c(1842, 1850, 1850, 1850)
-            tosf <- c(1941, 2014, 2099, 2099)
-            new_origins <- c(1842-91, NA, NA, NA) # plot pi before historical on time axis
-            #fromsp <- c(1849-99, 2014-29, 2099-29, 2099-29)
-            #tosp <- c(1849, 2014, 2099, 2099)
-            #fromsp <- c(1849-99, 1850, 1850, 1850)
-            #tosp <- c(1849, 2014, 2099, 2099)
+    if (T) { # transient pi last 100
+        if (T) { # my PI
+            #fromsf <- c(1855, 1850, 1850, 1850)
+            #tosf <- c(1954, 2014, 2099, 2099)
+            #new_origins <- c(1750, NA, NA, NA) # plot pi before historical on time axis
+            fromsf <- c(1942, 1850, 1850, 1850)
+            tosf <- c(2091, 2014, 2099, 2099)
+            new_origins <- c(1850, NA, NA, NA)
+            tosp <- rep(1999, t=4)
         } else if (F) { # awi-esm-1-2-lr lars
             fromsf <- c(1016, 1850, 1850, 1850)
             tosf <- c(1045, 2014, 2074, 2021)
@@ -832,7 +794,7 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- rep(60, t=4)
     #n_mas <- rep(36, t=4)
     #n_mas <- rep(1, t=4)
-    if (F) {
+    if (T) {
         names_legend <- c("piControl", 
                           "historical", 
                           eval(substitute(expression(paste("1%CO"[2])))),
