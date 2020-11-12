@@ -11,13 +11,13 @@ if (T) {
         message("\ndisable here if you do not want to load mpiom land sea mask segments from ", f, " ...")
         mpiom_GR30_lsm_seg <- read.table(f, header=T)
         add_mpiom_GR30_lsm_seg <- T
-        message("set add_mpiom_GR30_lsm_seg=T if you want to add to lon,lat plot")
+        message("set add_mpiom_GR30_lsm_seg=T if you want to add to lon,lat plot ...\n")
     } else {
         message("file ", f, " does not exist. run the function mpiom_get_lsm_segments() via ", 
                 host$repopath, "/mpiom/run_mpiom.r to generate the land sea mask segments ...")
     }
 } else {
-    message("\neable here to load mpiom land sea mask segments ...")
+    message("enable here to load mpiom land sea mask segments ...")
 }
 
 # cmip6 co2 hist
@@ -121,7 +121,7 @@ if (T && file.exists(f)) {
             " if you ", ifelse(add_koehler_etal_2017_paul, 
                                "dont want (or set add_data_right_yaxis_ts=F)", 
                                "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot")
+            " to add this data to plot\n")
 } else {
     message("enable here to load koehler et al. 2017 ghg forcing from paul ...")
 }
@@ -534,40 +534,6 @@ if (F && file.exists(f)) {
                                "dont want (or set add_data_right_yaxis_ts=F)", 
                                "want (set also add_data_right_yaxis_ts=T)"), 
             " to add this data to plot")
-    if (F) { # plot berger
-        message("plot ...")
-        xlim <- range(unclass(my_orb_berger$time)$year + 1900)
-        xat <- pretty(xlim, n=20)
-        if (any(!(xat %in% xlim))) {
-            out_inds <- which(xat > max(xlim))
-            if (length(out_inds) > 0) xat <- xat[-out_inds]
-            out_inds <- which(xat < min(xlim))
-            if (length(out_inds) > 0) xat <- xat[-out_inds]
-        }
-        png("~/berger.png", width=4000, height=8000, res=400)
-        par(mfrow=c(4, 1))
-        # ecc
-        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$eccentricity, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Eccentricity")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_berger$eccentricity, n=8), las=2)
-        # obl
-        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$obliquity, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Obliquity [deg]")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_berger$obliquity, n=8), las=2)
-        # calendar_day_of_perihelion
-        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$calendar_day_of_perihelion, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Calendar day of perihelion")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_berger$calendar_day_of_perihelion, n=8), las=2)
-        # angle_of_perihelion_deg_from_vernal_equinox
-        plot(unclass(my_orb_berger$time)$year + 1900, my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Angle of perihelion [deg from v.e.]")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox, n=8), las=2)
-        dev.off()
-    } # plot
 } else {
     message("enable here to load my berger orbital parameters ...")
 }
@@ -609,129 +575,9 @@ if (F && file.exists(f)) {
                                "dont want (or set add_data_right_yaxis_ts=F)", 
                                "want (set also add_data_right_yaxis_ts=T)"), 
             " to add this data to plot")
-    if (F) { # plot laskar
-        message("plot ...")
-        xlim <- range(unclass(my_orb_laskar$time)$year + 1900)
-        xat <- pretty(xlim, n=20)
-        if (any(!(xat %in% xlim))) {
-            out_inds <- which(xat > max(xlim))
-            if (length(out_inds) > 0) xat <- xat[-out_inds]
-            out_inds <- which(xat < min(xlim))
-            if (length(out_inds) > 0) xat <- xat[-out_inds]
-        }
-        png("~/laskar.png", width=4000, height=6000, res=400)
-        par(mfrow=c(3, 1))
-        # ecc
-        plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$eccentricity, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Eccentricity")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_laskar$eccentricity, n=8), las=2)
-        # obl
-        plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$obliquity, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Obliquity [deg]")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_laskar$obliquity, n=8), las=2)
-        # angle_of_perihelion_deg_from_vernal_equinox
-        plot(unclass(my_orb_laskar$time)$year + 1900, my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox, t="l", 
-             xaxt="n", yaxt="n", xlab=paste0("kyear before ", origin_out), ylab="Angle of perihelion [deg from v.e.]")
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox, n=8), las=2)
-        dev.off()
-    } # plot
 } else {
     message("enable here to load laskar orbital parameters ...")
 }
-
-if (F) { # compare koehler et al. 2017 vs paul
-    message("\ndisable here if you do not want to compare pauls and koehlers et al. 2017 CO2 ...")
-    xlim <- range(unclass(koehler_etal_2017$time)$year + 1900)
-    xlim <- range(xlim, unclass(koehler_etal_2017_paul$time)$year + 1900)
-    xat <- pretty(xlim, n=20)
-    if (any(!(xat %in% xlim))) {
-        out_inds <- which(xat > max(xlim))
-        if (length(out_inds) > 0) xat <- xat[-out_inds]
-        out_inds <- which(xat < min(xlim))
-        if (length(out_inds) > 0) xat <- xat[-out_inds]
-    }
-    png("~/koehler_etal_2017_vs_paul.png", width=4000, height=2500, res=400)
-    par(mar=c(5.1, 6.1, 4.1, 6.1) + 0.1)
-    # co2
-    ylim <- range(koehler_etal_2017$co2, koehler_etal_2017_paul$co2)
-    plot(unclass(koehler_etal_2017$time)$year + 1900, koehler_etal_2017$co2, t="l", 
-         xlim=xlim, ylim=ylim, xaxt="n", yaxt="n", 
-         xlab="kyear before 1950", ylab="CO2 [µmol/mol]")
-    axis(1, at=xat, labels=abs(xat)/1000)
-    axis(2, at=pretty(ylim, n=8), las=2)
-    lines(unclass(koehler_etal_2017_paul$time)$year + 1900, koehler_etal_2017_paul$co2, col="red")
-    legend("topleft", c("Köhler et al. 2017", "Köhler et al. 2017 (paul)"), 
-           col=c("black", "red"), lty=1, bty="n")
-    # co2 differences
-    par(new=T)
-    ydiff <- koehler_etal_2017_paul$co2 - koehler_etal_2017$co2
-    ylim <- range(ydiff)
-    plot(unclass(koehler_etal_2017$time)$year + 1900, ydiff,
-         t="l", col="blue",
-         axes=F, xlab=NA, ylab=NA)
-    abline(h=0, col="blue", lwd=0.5)
-    axis(4, at=pretty(ylim, n=15), las=2, col="blue", col.axis="blue", col.ticks="blue")
-    mtext(side=4, "Difference Paul minus Köhler [µmol/mol]", line=4.5, cex=0.9, col="blue")
-    dev.off()
-} else {
-    message("enable here to compare pauls and koehlers et al. 2017 CO2 ...")
-} # compare koehler et al. 2017 vs paul
-
-if (F) { # compare berger and laskar orb
-    message("\ndisable here if you do not want to compare berger vs laskar orbital parameters ...")
-    xlim <- range(unclass(my_orb_laskar$time)$year + 1900)
-    xlim <- range(xlim, unclass(my_orb_berger$time)$year + 1900)
-    xat <- pretty(xlim, n=20)
-    if (any(!(xat %in% xlim))) {
-        out_inds <- which(xat > max(xlim))
-        if (length(out_inds) > 0) xat <- xat[-out_inds]
-        out_inds <- which(xat < min(xlim))
-        if (length(out_inds) > 0) xat <- xat[-out_inds]
-    }
-    png("~/berger_vs_laskar.png", width=4000, height=7500, res=400)
-    par(mfrow=c(3, 1))
-    par(mar=c(5.1, 6.1, 4.1, 6.1) + 0.1)
-    for (i in 1:3) {
-        if (i == 1) {
-            ylab <- "Obliquity [deg]"
-            yberger <- my_orb_berger$obliquity
-            ylaskar <- my_orb_laskar$obliquity
-        } else if (i == 2) {
-            ylab <- "Eccentricity"
-            yberger <- my_orb_berger$eccentricity
-            ylaskar <- my_orb_laskar$eccentricity
-        } else if (i == 3) {
-            ylab <- "Anlge of perihelion [deg]"
-            yberger <- my_orb_berger$angle_of_perihelion_deg_from_vernal_equinox
-            ylaskar <- my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox
-        }
-        # obl
-        ylim <- range(yberger, ylaskar)
-        plot(unclass(my_orb_berger$time)$year + 1900, yberger, t="l", 
-             xlim=xlim, ylim=ylim, xaxt="n", yaxt="n", 
-             xlab=paste0("kyear before ", origin_out), ylab=ylab)
-        axis(1, at=xat, labels=abs(xat)/1000)
-        axis(2, at=pretty(ylim, n=8), las=2)
-        lines(unclass(my_orb_laskar$time)$year + 1900, ylaskar, col="red")
-        legend("bottomleft", c("Berger", "Laskar"), col=c("black", "red"), lty=1, bty="n")
-        # obl differences
-        par(new=T)
-        ydiff <- yberger - ylaskar
-        ylim <- range(ydiff)
-        plot(unclass(my_orb_berger$time)$year + 1900, ydiff,
-             t="l", col="blue",
-             axes=F, xlab=NA, ylab=NA)
-        abline(h=0, col="blue", lwd=0.5)
-        axis(4, at=pretty(ylim, n=15), las=2, col="blue", col.axis="blue", col.ticks="blue")
-        mtext(side=4, "Difference Berger minus Laskar", line=4.5, cex=0.9, col="blue")
-    }
-    dev.off()
-} else {
-    message("enable here to compare berger and laskar orbital parameters ...")
-} # comapre berger and laskar orb
 
 # PLOT coords as eval list
 f <- ""
@@ -748,9 +594,14 @@ if (T && file.exists(f)) {
         cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
         cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
         cmd <- paste0(cmd, ", labels=\"", LETTERS[lakei], "\", cex=1")
+        if (T) {
+            if (lakei == 1) message("special: blue")
+            cmd <- paste0(cmd, ", col=\"blue\"")
+        }
         cmd <- paste0(cmd, ") # ", lakes[lakei])
         PLOT_coords_cmd_list[[lakei]] <- cmd 
     }
+    message()
 } else {
     message("enable here to load PLOT lake coords from and save in `PLOT_coords_cmd_list` ...")
 }
@@ -761,12 +612,12 @@ if (host$machine_tag == "paleosrv") {
     f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
     source("/isibhv/projects/paleo_work/cdanek/data/meyer_etal/read_meyer_etal_function.r")
 }
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load hanno meyer et al. PLOT data from ", f)
     message("run read_meyer_etal_function() ...")
     #tmp <- read_meyer_etal_function(xlsx_file=f)
-    #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
-    tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
+    tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
+    #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
     #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
     #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
     #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
@@ -779,614 +630,10 @@ if (F && file.exists(f)) {
                        col="#377EB8", # myblue
                        #col="#1B9E77", # mygreen
                        lty=1, lwd=1, pch=1, cex=1)
-    if (F) { # plot meyer et al data
-        for (i in seq_along(meyer_etal$data)) {
-            plotname <- gsub(" ", "_", names(meyer_etal$data)[i])
-            plotname <- gsub("[[:punct:]]", "_", plotname)
-            plotname <- paste0(plotname, "_", paste(range(meyer_etal$data[[i]]$data$timelt$year+1900), collapse="_to_"))
-            plotname <- paste0(dirname(f), "/", plotname, ".png")
-            message("save ", plotname, " ...")
-            png(plotname, width=p$ts_width, height=p$ts_height, res=p$dpi)
-            par(mar=c(5.1, 5.1, 4.1, 2.1))
-            plot(meyer_etal$data[[i]]$data$time, meyer_etal$data[[i]]$data$d18o_corr_perm,
-                 t="o", xaxt="n", yaxt="n",
-                 xlab="year from 1950", ylab=NA)
-            title(names(meyer_etal$data)[i])
-            axis.POSIXct(1, at=pretty(meyer_etal$data[[i]]$data$time, n=20))
-            axis(2, at=pretty(meyer_etal$data[[i]]$data$d18o_corr_perm, n=8), las=2)
-            mtext(side=2, line=3, expression(paste(delta^{18}, "O diatom (‰)")))
-            dev.off()
-        } # for all excel sheets
-        #stop("asd")
-    } # if plot meyer et al data
 } else {
     message("enable here to load hanno meyer et al. PLOT data excel sheet ...")
 }
 
-if (F) { # ladoga; kostrova et al. 2019: https://doi.pangaea.de/10.1594/PANGAEA.899329
-    message("\ndisable here if you do not want to load kostrova et al. 2019 pangaea data ...")
-    library(pangaear)
-    pdoi <- "10.1594/PANGAEA.899329" 
-    kostrova_etal_2019 <- pg_data(doi=pdoi)
-    years <- kostrova_etal_2019[[1]]$data$"Cal age [ka BP]" # 0.203  0.793  1.373  1.939 ... 9.662 10.062 10.428 10.750
-    years <- -1*rev(years*1000) # -10750 -10428 -10062  -9662 ... -1939  -1373   -793   -203
-    timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-    kostrova_etal_2019 <- list(time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                               d18o=rev(kostrova_etal_2019[[1]]$data$"Diatoms δ18O [‰ SMOW] (Contamination corrected)"),
-                               text="Kostrova et al. 2019", 
-                               type="o", col="#377EB8",
-                               lty=1, lwd=1, pch=1, cex=1)
-} else {
-    message("enable here to load kostrova et al. 2019 pangaea data ...")
-}
-
-if (F) { # elgygytgyn; swann et al. 2010: https://doi.pangaea.de/10.1594/PANGAEA.856095
-    pdoi <- "10.1016/j.quascirev.2009.11.024"
-}
-
-save_PaTh_list <- F
-if (save_PaTh_list) { # load all Pa/Th into one list
-    PaTh_all <- list()
-}
-
-if (F) { # 231Pa/230Th of ng et al. 2018
-    message("\ndisable here if you do not want to load ng et al. 2018 pangaea data ...")
-    library(pangaear)
-    pdoi <- c("10.1594/PANGAEA.890927", "10.1594/PANGAEA.890928", "10.1594/PANGAEA.890929", "10.1594/PANGAEA.890930") 
-    data <- vector("list", l=length(pdoi))
-    for (i in seq_along(pdoi)) {
-        tmp <- pg_data(doi=pdoi[i])
-        years <- tmp[[1]]$data[["Age [ka BP]"]] # 4.425  5.547  7.656  8.568  9.763 10.686  ... 21.648 22.251 23.141 24.210
-        PaTh <- tmp[[1]]$data[["231Pa/230Th xs,0"]]
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                PaTh <- rev(PaTh)
-            }
-        }
-        years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
-                          lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "Pa/Th"=PaTh,
-                          id=names(tmp[[1]]$metadata$events)[1],
-                          text="Ng et al. 2018")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    }
-    ng_etal_2018 <- list(data=data, 
-                         type="o", col="#377EB8",
-                         lty=1, lwd=1, pch=1, cex=1)
-    if (save_PaTh_list) PaTh_all[[length(PaTh_all)+1]] <- ng_etal_2018
-} else {
-    message("enable here to load ng et al. 2018 pangaea data ...")
-} # 231Pa/230Th of ng et al. 2018
-
-if (F) {  # 231Pa/230Th of gherardi et al. 2009
-    message("\ndisable here if you do not want to load gherardi et al. 2009 pangaea data ...")
-    library(pangaear)
-    pdoi <- "10.1594/PANGAEA.760022"
-    tmp <- pg_data(pdoi) # "Age [ka BP]", "231Pa/230Th xs,0"
-    tmp_names <- unique(tmp[[1]]$data$Event)
-    if (any(tmp_names == "MD95-2037")) {
-        message("use MD95-2037 of lippold et al. 2012 instead of gherardi et al. 2009")
-        tmp_names <- tmp_names[-which(tmp_names == "MD95-2037")]
-    }
-    if (any(tmp_names == "SU90-44")) {
-        message("use SU90-44 of lippold et al. 2012 instead of gherardi et al. 2009")
-        tmp_names <- tmp_names[-which(tmp_names == "SU90-44")]
-    }
-    data <- vector("list", l=length(tmp_names))
-    for (i in seq_along(tmp_names)) {
-        inds <- which(tmp[[1]]$data$Event == tmp_names[i])
-        if (length(inds) == 0) stop("this should not happen")
-        if (tmp_names[i] == "SU90-44") {
-            lon <- -17.910000; lat <- 50.103333
-        } else if (tmp_names[i] == "MD95-2027") {
-            lon <- -47.413200; lat <- 41.744500
-        } else if (tmp_names[i] == "MD95-2037") {
-            lon <- -32.031167; lat <- 37.087167  
-        } else {
-            stop("this should not happen")
-        }
-        years <- tmp[[1]]$data[["Age [ka BP]"]][inds]
-        PaTh <- tmp[[1]]$data[["231Pa/230Th xs,0"]][inds]
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                PaTh <- rev(PaTh)
-            }
-        }
-        years <- years*-1000
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=lon, lat=lat,
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "Pa/Th"=PaTh,
-                          id=tmp_names[i],
-                          text="Gherardi et al. 2009")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    }
-    gherardi_etal_2009 <- list(data=data, 
-                               type="o", col="#377EB8",
-                               lty=1, lwd=1, pch=1, cex=1)
-    if (save_PaTh_list) PaTh_all[[length(PaTh_all)+1]] <- gherardi_etal_2009
-} else {
-    message("enable here to load gherardi et al. 2009 pangaea data ...")
-} # 231Pa/230Th gherardi et al. 2009 
-
-if (F) { # 231Pa/230Th of süfke et al. 2019
-    message("\ndisable here if you do not want to load süfke et al. 2019 data1 pangaea data ...")
-    library(pangaear)
-    pdoi <- c("10.1594/PANGAEA.908149", "10.1594/PANGAEA.908150", "10.1594/PANGAEA.908151", "10.1594/PANGAEA.908152",
-              "10.1594/PANGAEA.908153", # updated GeoB1523-1 of lippold et al. 2016
-              "10.1594/PANGAEA.908154") # updated KNR140-12JPC of lippold et al. 2016
-    data <- vector("list", l=length(pdoi))
-    for (i in seq_along(pdoi)) {
-        tmp <- pg_data(doi=pdoi[i])
-        if (names(tmp[[1]]$metadata$events)[1] == "KNR140-12JPC (KNR140-2-12JPC)") {
-            message("use shorter name \"KNR140-12JPC\" instead of \"", names(tmp[[1]]$metadata$events)[1], "\"")
-            names(tmp[[1]]$metadata$events)[1] <- "KNR140-12JPC"
-        }
-        years <- tmp[[1]]$data[["Age [ka BP]"]] # 4.425  5.547  7.656  8.568  9.763 10.686  ... 21.648 22.251 23.141 24.210
-        PaTh <- tmp[[1]]$data[["231Pa/230Th"]]
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                PaTh <- rev(PaTh)
-            }
-        }
-        years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
-                          lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "Pa/Th"=PaTh,
-                          id=names(tmp[[1]]$metadata$events)[1],
-                          text="Süfke et al. 2019")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    }
-    süfke_etal_2019 <- list(data=data, 
-                            type="o", col="#377EB8",
-                            lty=1, lwd=1, pch=1, cex=1)
-    if (save_PaTh_list) PaTh_all[[length(PaTh_all)+1]] <- süfke_etal_2019
-} else {
-    message("enable here to load süfke et al. 2019 data1 pangaea data ...")
-} # 231Pa/230Th of süfke et al. 2019
-
-if (F) { # 231Pa/230Th of süfke et al. 2019: different data structure than süfke et al. 2019 above
-    message("\ndisable here if you do not want to load süfke et al. 2019 data2 pangaea data ...")
-    library(pangaear)
-    pdoi <- "10.1594/PANGAEA.908155" # updated GeoB1515-1 of lippold et al. 2016
-    data <- vector("list", l=length(pdoi))
-    for (i in seq_along(pdoi)) {
-        tmp <- pg_data(pdoi[i]) # "Age [ka BP]", "231Pa/230Th xs,0"
-        tmp_names <- unique(tmp[[1]]$data$Event)
-        if (length(tmp_names) == 2 && 
-            tmp_names[1] == "GeoB1515-1" && tmp_names[2] == "GeoB1516-2") {
-            message("for simplicity, name two locations GeoB1515-1 and GeoB1516-2 only GeoB1515-1")
-            inds <- which(tmp[[1]]$data$Event == tmp_names[1] | tmp[[1]]$data$Event == tmp_names[2])
-            tmp_names <- "GeoB1515-1"
-        } else {
-            inds <- which(tmp[[1]]$data$Event == tmp_names[i])
-        }
-        if (length(tmp_names) != 1) stop("found more than one event: ", paste(tmp_names, collapse=","))
-        if (length(inds) == 0) stop("this should not happen")
-        if (tmp_names[i] == "GeoB1515-1") {
-            lon <- -43.666667; lat <- 4.238333
-        } else {
-            stop("this should not happen")
-        }
-        years <- tmp[[1]]$data[["Age [ka BP]"]][inds]
-        PaTh <- tmp[[1]]$data[["231Pa/230Th"]][inds]
-        if (pdoi[i] == "10.1594/PANGAEA.908155") {
-            message("instead of erroneous pangaea data:")
-            message(paste(PaTh, collapse=","))
-            message("use values from palo20807-sup-0001-2019pa003737-ts01.xls:")
-            PaTh <- c(0.060,0.047,0.064,0.082,0.090,0.096,0.078,0.070,0.079,0.088,0.073,0.078,0.083,0.081)
-            message(paste(PaTh, collapse=","))
-            if (length(years) != length(PaTh)) stop("years and PaTh are of different length")
-        }
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                PaTh <- rev(PaTh)
-            }
-        }
-        years <- years*-1000
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=lon, lat=lat,
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "Pa/Th"=PaTh,
-                          id=tmp_names,
-                          text="Süfke et al. 2019")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    } # for i pdoi
-    süfke_etal_2019_updated <- list(data=data, 
-                                    type="o", col="#377EB8",
-                                    lty=1, lwd=1, pch=1, cex=1)
-    if (save_PaTh_list) PaTh_all[[length(PaTh_all)+1]] <- süfke_etal_2019_updated
-} else {
-    message("enable here to load süfke et al. 2019 data2 pangaea data ...")
-} # 231Pa/230Th of süfke et al. 2019: updated ones of lippold et al. 2016
-
-if (F) { # 231Pa/230Th of lippold et al. 2016
-    message("\ndisable here if you do not want to load lippold et al. 2016 pangaea data ...")
-    library(pangaear)
-    pdoi <- "10.1594/PANGAEA.863978" 
-    tmp <- pg_data(pdoi) # "Longitude", "Latitude", "Age [ka BP]", "(231Pa/230Th)"
-    tmp_names <- unique(tmp[[1]]$data$Event)
-    if (T) { # use updated values from süfke et al. 2019
-        if (any(tmp_names == "GeoB1515-1")) {
-            message("use GeoB1515-1 of süfke et al. 2019 instead of lippold et al. 2016")
-            tmp_names <- tmp_names[-which(tmp_names == "GeoB1515-1")]
-        }
-        if (any(tmp_names == "GeoB1523-1")) {
-            message("use GeoB1523-1 of süfke et al. 2019 instead of lippold et al. 2016")
-            tmp_names <- tmp_names[-which(tmp_names == "GeoB1523-1")]
-        }
-        if (any(tmp_names == "KNR140-12JPC")) {
-            message("use KNR140-12JPC of süfke et al. 2019 instead of lippold et al. 2016")
-            tmp_names <- tmp_names[-which(tmp_names == "KNR140-12JPC")]
-        }
-    }
-    data <- vector("list", l=length(tmp_names))
-    for (i in seq_along(tmp_names)) {
-        inds <- which(tmp[[1]]$data$Event == tmp_names[i])
-        if (length(inds) == 0) stop("this should not happen")
-        lon <- unique(tmp[[1]]$data$Longitude[inds])
-        if (length(lon) != 1) stop("found more than 1 lon")
-        lat <- unique(tmp[[1]]$data$Latitude[inds])
-        if (length(lat) != 1) stop("found more than 1 lat")
-        years <- tmp[[1]]$data[["Age [ka BP]"]][inds]
-        PaTh <- tmp[[1]]$data[["(231Pa/230Th)"]][inds]
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                PaTh <- rev(PaTh)
-            }
-        }
-        years <- years*-1000
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=lon, lat=lat,
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "Pa/Th"=PaTh,
-                          id=tmp_names[i],
-                          text="Lippold et al. 2016")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    }
-    lippold_etal_2016 <- list(data=data, 
-                              type="o", col="#377EB8",
-                              lty=1, lwd=1, pch=1, cex=1)
-    if (save_PaTh_list) PaTh_all[[length(PaTh_all)+1]] <- lippold_etal_2016
-} else {
-    message("enable here to load lippold et al. 2016 pangaea data ...")
-} # 231Pa/230Th of lippold et al. 2016
-
-if (F) { # 231Pa/230Th of lippold et al. 2012 
-    message("\ndisable here if you do not want to load lippold et al. 2012 pangaea data ...")
-    library(pangaear)
-    pdoi <- "10.1594/PANGAEA.788550"
-    tmp <- pg_data(pdoi) # "Longitude", "Latitude", "Age [ka BP]", "(231Pa/230Th)"
-    tmp_names <- unique(tmp[[1]]$data$Event)
-    if (any(tmp_names == "TN057-13")) {
-        message("throw out very low Pa/Th values at 53.3° south")
-        tmp_names <- tmp_names[-which(tmp_names == "TN057-13")]
-    }
-    if (any(tmp_names == "V22-182")) {
-        message("throw out very high Pa/Th values at -0.533° south")
-        tmp_names <- tmp_names[-which(tmp_names == "V22-182")]
-    }
-    if (any(tmp_names == "177-1089A")) {
-        message("use 177-1089A from lippold et al. 2016")
-        tmp_names <- tmp_names[-which(tmp_names == "177-1089A")]
-    }
-    if (any(tmp_names == "M35003-4")) {
-        message("use M35003-4 from lippold et al. 2016")
-        tmp_names <- tmp_names[-which(tmp_names == "M35003-4")]
-    }
-    if (any(tmp_names == "GeoB1515-1")) {
-        message("use GeoB1515-1 from süfke et al. 2019")
-        tmp_names <- tmp_names[-which(tmp_names == "GeoB1515-1")]
-    }
-    if (any(tmp_names == "GeoB1523-1")) {
-        message("use GeoB1523-1 from süfke et al. 2019")
-        tmp_names <- tmp_names[-which(tmp_names == "GeoB1523-1")]
-    }
-    if (any(tmp_names == "KNR140-12JPC")) {
-        message("use KNR140-12JPC from süfke et al. 2019")
-        tmp_names <- tmp_names[-which(tmp_names == "KNR140-12JPC")]
-    }
-    data <- vector("list", l=length(tmp_names))
-    for (i in seq_along(tmp_names)) {
-        inds <- which(tmp[[1]]$data$Event == tmp_names[i])
-        if (length(inds) == 0) stop("this should not happen")
-        lon <- unique(tmp[[1]]$data$Longitude[inds])
-        if (length(lon) != 1) stop("found more than 1 lon")
-        lat <- unique(tmp[[1]]$data$Latitude[inds])
-        if (length(lat) != 1) stop("found more than 1 lat")
-        years <- tmp[[1]]$data[["Age [ka BP]"]][inds]
-        PaTh <- tmp[[1]]$data[["231Pa/230Th"]][inds]
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                PaTh <- rev(PaTh)
-            }
-        }
-        years <- years*-1000
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=lon, lat=lat,
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "Pa/Th"=PaTh,
-                          id=tmp_names[i],
-                          text="Lippold et al. 2012")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    }
-    lippold_etal_2012 <- list(data=data, 
-                              type="o", col="#377EB8",
-                              lty=1, lwd=1, pch=1, cex=1)
-    if (save_PaTh_list) PaTh_all[[length(PaTh_all)+1]] <- lippold_etal_2012
-} else {
-    message("enable here to load lippold et al. 2012 pangaea data ...")
-} # 231Pa/230Th of lippold et al. 2012
-
-if (F) { # 231Pa/230Th of lippold et al. 2009
-    message("\ndisable here if you do not want to load lippold et al. 2009 pangaea data ...")
-    library(pangaear)
-    pdoi <- "10.1594/PANGAEA.763199"
-    tmp <- pg_data(pdoi) 
-    tmp_names <- unique(tmp[[1]]$data$Event)
-    data <- vector("list", l=length(tmp_names))
-    for (i in seq_along(tmp_names)) {
-        inds <- which(tmp[[1]]$data$Event == tmp_names[i])
-        if (length(inds) == 0) stop("this should not happen")
-        if (tmp_names[i] == "172-1063B") {
-            lon <- -57.614940; lat <- 33.686470
-        } else if (tmp_names[i] == "172-1063D") {
-            lon <- -57.615110; lat <- 33.686190
-        } else {
-            stop("this should not happen")
-        }
-        years <- tmp[[1]]$data[["Age [ka BP]"]][inds]
-        PaTh <- tmp[[1]]$data[["231Pa/230Th xs,0"]][inds]
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                PaTh <- rev(PaTh)
-            }
-        }
-        years <- years*-1000
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=lon, lat=lat,
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "Pa/Th"=PaTh,
-                          id=tmp_names[i],
-                          text="Lippold et al. 2009")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    }
-    lippold_etal_2009 <- list(data=data, 
-                                  type="o", col="#377EB8",
-                                  lty=1, lwd=1, pch=1, cex=1)
-    if (save_PaTh_list) PaTh_all[[length(PaTh_all)+1]] <- lippold_etal_2009
-} else {
-    message("enable here to load lippold et al. 2009 pangaea data ...")
-} # 231Pa/230Th of lippold et al. 2009
-
-if (F) { # 231Pa/230Th of meckler et al. 2013 
-    message("\ndisable here if you do not want to load meckler et al. 2013 pangaea data ...")
-    library(pangaear)
-    pdoi <- "10.1594/PANGAEA.810309"
-    tmp <- pg_data(pdoi) 
-    data <- vector("list", l=length(pdoi))
-    for (i in seq_along(pdoi)) {
-        tmp <- pg_data(doi=pdoi[i])
-        years <- tmp[[1]]$data[["Age model [ka]"]] # 4.425  5.547  7.656  8.568  9.763 10.686  ... 21.648 22.251 23.141 24.210
-        PaTh <- tmp[[1]]$data[["Pa/Th"]]
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                PaTh <- rev(PaTh)
-            }
-        }
-        years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
-                          lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "Pa/Th"=PaTh,
-                          id=names(tmp[[1]]$metadata$events)[1],
-                          text="Meckler et al. 2013")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    }
-    meckler_etal_2013 <- list(data=data, 
-                                  type="o", col="#377EB8",
-                                  lty=1, lwd=1, pch=1, cex=1)
-    if (save_PaTh_list) PaTh_all[[length(PaTh_all)+1]] <- meckler_etal_2013
-} else {
-    message("enable here to load meckler et al. 2013 pangaea data ...")
-} # 231Pa/230Th of meckler et al. 2013
-
-if (F) { # 231Pa/230Th of mulitza et al. 2017 
-    message("\ndisable here if you do not want to load mulitza et al. 2017 pangaea data ...")
-    library(pangaear)
-    pdoi <- "10.1594/PANGAEA.877699"
-    tmp <- pg_data(pdoi) 
-    data <- vector("list", l=length(pdoi))
-    for (i in seq_along(pdoi)) {
-        tmp <- pg_data(doi=pdoi[i])
-        years <- tmp[[1]]$data[["Age [ka BP] (median)"]] # 4.425  5.547  7.656  8.568  9.763 10.686  ... 21.648 22.251 23.141 24.210
-        PaTh <- tmp[[1]]$data[["Pa/Th"]]
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                PaTh <- rev(PaTh)
-            }
-        }
-        years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
-                          lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "Pa/Th"=PaTh,
-                          id=names(tmp[[1]]$metadata$events)[1],
-                          text="Mulitza et al. 2017")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    }
-    mulitza_etal_2017 <- list(data=data, 
-                                  type="o", col="#377EB8",
-                                  lty=1, lwd=1, pch=1, cex=1)
-    if (save_PaTh_list) PaTh_all[[length(PaTh_all)+1]] <- mulitza_etal_2017
-} else {
-    message("enable here to load mulitza et al. 2017 pangaea data ...")
-} # 231Pa/230Th of mulitza et al. 2017
-
-save_silt_list <- F
-if (save_silt_list) { # load all silt into one list
-    silt_all <- list()
-}
-
-if (F) { # silt size from praetorius et al. 2008
-    message("\ndisable here if you do not want to load praetorius et al. 2008 pangaea data ...")
-    library(pangaear)
-    pdoi <- "10.1594/PANGAEA.769648"
-    data <- vector("list", l=length(pdoi))
-    # [1] "DEPTH, sediment/rock [m] (Depth)"                                    
-    # [2] "AGE [ka BP] (Age)"                                                   
-    # [3] "Silt-mean, sortable [µm] (Mean silt s)"                              
-    # [4] "Grain size, mean [µm] (Grain size mean)"                             
-    # [5] "Grain size, mean [µm] (Grain size mean)"                             
-    # [6] "Size fraction (Fraction)"                                            
-    # [7] "Size fraction 0.063-0.010 mm, sortable silt [%] (63-10 µm sort silt)"
-    # [8] "Grain size, mean [µm] (Grain size mean)"                             
-    # [9] "Mean, standard deviation [±] (Mean std dev)"   
-    for (i in seq_along(pdoi)) {
-        tmp <- pg_data(doi=pdoi[i])
-        tmp <- tmp[2] # stores the silt dat
-        years <- tmp[[1]]$data[[2]] # 4.425  5.547  7.656  8.568  9.763 10.686  ... 21.648 22.251 23.141 24.210
-        silt_fraction <- tmp[[1]]$data[[7]]
-        if (length(years) > 1) {
-            if (!all(diff(years) < 0) && !all(diff(years) > 0)) { # if time is not monotonically in-/decreasing
-                message("sort years ", paste(years, collapse=","), " to")
-                sortinds <- sort(years, index.return=T)$ix
-                years <- years[sortinds]
-                message(paste(years, collapse=","))
-                PaTh <- PaTh[sortinds]
-            }
-            if (!all(diff(years) < 0)) { # for make_posixlt_origin(): 1,2,3 ka BP -> 3,2,1 ka BP
-                years <- rev(years)
-                silt_fraction <- rev(silt_fraction)
-            }
-        }
-        years <- years*-1000 # -24210 -23141 -22251 -21648 -20257 ... -11376 -10686  -9763  -8568  -7656  -5547  -4425 
-        timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
-        data[[i]] <- list(lon=as.numeric(tmp[[1]]$metadata$events$LONGITUDE),
-                          lat=as.numeric(tmp[[1]]$metadata$events$LATITUDE),
-                          time=timelt, timen=as.numeric(timelt), origin=timelt$origin,
-                          "silt_fraction"=silt_fraction,
-                          id=names(tmp[[1]]$metadata$events)[1],
-                          text="Praetorius et al. 2008")
-        if (length(timelt) > 1) {
-            meandt <- mean(difftime(timelt[2:length(timelt)], timelt[1:(length(timelt)-1)], units="days"))
-            message("average dt = ", meandt, " days ~ ", meandt/365, " years")
-        }
-    }
-    praetorius_etal_2008 <- list(data=data, 
-                                     type="o", col="#377EB8",
-                                     lty=1, lwd=1, pch=1, cex=1)
-    if (save_silt_list) silt_all[[length(silt_all)+1]] <- praetorius_etal_2008
-} else {
-    message("enable here to load praetorius et al. 2008 pangaea data ...")
-} # silt size from praetorius et al. 2008
-    
 # silt size of hoogakker et al. 2011
 f <- ""
 if (host$machine_tag == "paleosrv") {
@@ -1478,15 +725,6 @@ if (F && file.exists(f)) {
     message("enable here to load thornalley et al. 2013 silt data ...")
 } # silt size change of thornalley et al. 2013
 
-if (F) { # silt data from moffa-sanchez et al. 2015; past 3ka
-    pdoi <- c("10.1594/PANGAEA.899381", "10.1594/PANGAEA.899382")
-
-} # if silt data from moffa-sanchez et al. 2015
-
-if (F) { # silt data from miettinen et al. 2012; past 3ka
-
-} # if silt data from miettinen et al. 2012
-
 # silt data from mjell et al. 2015
 f <- ""
 if (host$machine_tag == "paleosrv") {
@@ -1522,261 +760,6 @@ if (F && file.exists(f)) {
 } else {  # if file.exists(f)
     message("enable here to load mjell et al. 2015 silt data from ...")
 } # if silt data from mjell et al. 2015
-
-# plot silt data
-if (F && save_silt_list) {
-    message("\ndisable here if you do not want to plot silt data ...")
-    x <- y <- list()
-    legend_text <- c()
-    cnt <- 0
-    #silt_from <- -10000
-    silt_from <- -7000
-    for (i in seq_along(silt_all)) {
-        for (j in seq_along(silt_all[[i]]$data)) {
-            cnt <- cnt + 1
-            if (silt_from == "all") {
-                tinds <- seq_along(silt_all[[i]]$data[[j]]$time)
-            } else { 
-                # find all closest values to wanted limit and take the closest in terms of index
-                tinds <- which(abs(silt_all[[i]]$data[[j]]$time$year+1900 - silt_from) == 
-                               min(abs(silt_all[[i]]$data[[j]]$time$year+1900 - silt_from)))
-                if (all(silt_from >= silt_all[[i]]$data[[j]]$time[tinds])) {
-                    tinds <- (tinds[length(tinds)]):length(silt_all[[i]]$data[[j]]$time)
-                } else {
-                    tinds <- 1:tinds[1]
-                }
-            }
-            if (silt_all[[i]]$data[[j]]$text == "Praetorius et al. 2008") {
-                y[[cnt]] <- scale(silt_all[[i]]$data[[j]]$silt_fraction[tinds])
-                legend_text[cnt] <- paste0("A ", silt_all[[i]]$data[[j]]$text)
-            } else if (silt_all[[i]]$data[[j]]$text == "Hoogakker et al. 2011 (Gardar Drift; NEA)") {
-                y[[cnt]] <- filter(scale(silt_all[[i]]$data[[j]]$silt_size[tinds]), filter=rep(1/30, t=30))
-                legend_text[cnt] <- paste0("B ", silt_all[[i]]$data[[j]]$text)
-            } else if (silt_all[[i]]$data[[j]]$text == "Thornalley et al. 2013 (Iceland Basin stack)") {
-                y[[cnt]] <- scale(silt_all[[i]]$data[[j]]$silt_size_change[tinds])
-                legend_text[cnt] <- paste0("C ", silt_all[[i]]$data[[j]]$text)
-            } else if (silt_all[[i]]$data[[j]]$text == "Mjell et al. 2015") {
-                y[[cnt]] <- filter(scale(silt_all[[i]]$data[[j]]$silt_size[tinds]), filter=rep(1/30, t=30))
-                legend_text[cnt] <- paste0("D ", silt_all[[i]]$data[[j]]$text)
-            } else {
-                cnt <- cnt - 1
-                next # data of ref
-            }
-            x[[cnt]] <- silt_all[[i]]$data[[j]]$time[tinds]
-        } # j
-    } # i
-    xlim <- range(lapply(x, as.numeric))
-    ylim <- range(y, na.rm=T)
-    library(RColorBrewer) # https://www.r-bloggers.com/palettes-in-r/
-    cols_silt <- c("black", "#E41A1C", "#377EB8", 
-                   brewer.pal(max(3, length(x)), "Dark2")[1:(length(x)-3)])[seq_along(x)]
-    plotname <- paste0("silt_ts_from", silt_from, ".png")
-    message("\nplot ", plotname, " ...")
-    png(plotname, width=2000, height=1666, res=300)
-    plot(0, t="n", xlim=xlim, ylim=ylim,
-         xlab="year before 1950", ylab="Silt fraction/size/size change Index",
-         xaxt="n", yaxt="n")
-    axis.POSIXct(1, at=pretty(as.POSIXct(xlim, o="1970-1-1", tz="UTC"), n=20))
-    axis(2, at=pretty(ylim, n=8), las=2)
-    abline(h=0, col="gray", lwd=0.5)
-    for (i in seq_along(x)) {
-        lines(x[[i]], y[[i]], col=cols_silt[i])
-    }
-    legend("topright", legend_text, col=cols_silt, lty=1, pch=NA,
-           bty="n", x.intersp=0.2)
-    dev.off()
-} else {
-    message("enable here to plot silt data ...")
-} # if plot silt data
-
-# plot all Pa/Th data
-if (F && save_PaTh_list) {
-    message("\ndisable here if you do not want to plot Pa/Th data ...")
-    #PaTh_from <- "all"
-    #PaTh_from <- -12000
-    #PaTh_from <- -10000
-    PaTh_from <- -7000
-    message("plot all ", length(PaTh_all), " Pa/Th proxy data from ", PaTh_from, " ...") 
-    library(RColorBrewer) # https://www.r-bloggers.com/palettes-in-r/
-    cols_PaTh <- c("black", "#E41A1C", "#377EB8", 
-                   brewer.pal(max(3, length(PaTh_all)), "Dark2")[1:(length(PaTh_all)-3)])
-    tmp <- lonlim <- latlim <- tlim <- zlim <- list()
-    cnt <- 0
-    for (i in seq_along(PaTh_all[[i]])) {
-        for (j in seq_along(PaTh_all[[i]]$data)) {
-            if (PaTh_from == "all") {
-                tinds <- seq_along(PaTh_all[[i]]$data[[j]]$time)
-            } else { 
-                # find all closest values to wanted limit and take the closest in terms of index
-                tinds <- which(abs(PaTh_all[[i]]$data[[j]]$time$year+1900 - PaTh_from) == 
-                               min(abs(PaTh_all[[i]]$data[[j]]$time$year+1900 - PaTh_from)))
-                if (all(PaTh_from >= PaTh_all[[i]]$data[[j]]$time[tinds])) {
-                    tinds <- (tinds[length(tinds)]):length(PaTh_all[[i]]$data[[j]]$time)
-                } else {
-                    tinds <- 1:tinds[1]
-                }
-            }
-            if (length(tinds) > 1) {
-                cnt <- cnt + 1
-                lonlim[[cnt]] <- range(PaTh_all[[i]]$data[[j]]$lon)
-                latlim[[cnt]] <- range(PaTh_all[[i]]$data[[j]]$lat)
-                tlim[[cnt]] <- range(PaTh_all[[i]]$data[[j]]$timen[tinds])
-                zlim[[cnt]] <- range(PaTh_all[[i]]$data[[j]][["Pa/Th"]][tinds], na.rm=T)
-            }
-        }
-    }
-    lonlim <- range(lonlim); latlim <- range(latlim); tlim <- range(tlim); zlim <- rev(range(zlim, na.rm=T))
-    # plot 1: time series of Pa/Th
-    if (F) {
-        tlim <- as.POSIXlt(tlim, o="1970-1-1", tz="UTC")
-        if (PaTh_from == "all") {
-        } else {
-            tlim$year[1] <- PaTh_from - 1900
-        }
-        tlim <- as.numeric(tlim)
-    }
-    plotname <- paste0("PaTh_ts_from", PaTh_from, ".png")
-    message("\nplot ", plotname, " ...")
-    png(plotname, width=2000, height=4000, res=300)
-    plot(0, t="n", xlim=tlim, ylim=zlim,
-         xlab="year before 1950", ylab="Pa/Th",
-         xaxt="n", yaxt="n")
-    axis.POSIXct(1, at=pretty(as.POSIXct(tlim, o="1970-1-1", tz="UTC"), n=20))
-    axis(2, at=pretty(zlim, n=8), las=2)
-    rect(par("usr")[1], 0.04, par("usr")[2], 0.06, 
-         col=rgb(t(col2rgb("blue")/255), alpha=0.1), border=NA) # low Pa/Th values
-    rect(par("usr")[1], 0.08, par("usr")[2], 0.1, 
-         col=rgb(t(col2rgb("red")/255), alpha=0.1), border=NA) # high Pa/Th values
-    abline(h=0.093) # production ratio
-    cnt <- 0
-    legend_names <- legend_ids <- legend_cols <- legend_ltys <- c()
-    for (i in seq_along(PaTh_all[[i]])) {
-        for (j in seq_along(PaTh_all[[i]]$data)) {
-            if (PaTh_from == "all") {
-                tinds <- seq_along(PaTh_all[[i]]$data[[j]]$time)
-            } else {
-                # find all closest values to wanted limit and take the closest in terms of index
-                tinds <- which(abs(PaTh_all[[i]]$data[[j]]$time$year+1900 - PaTh_from) == 
-                               min(abs(PaTh_all[[i]]$data[[j]]$time$year+1900 - PaTh_from)))
-                if (all(PaTh_from >= PaTh_all[[i]]$data[[j]]$time[tinds])) {
-                    tinds <- (tinds[length(tinds)]):length(PaTh_all[[i]]$data[[j]]$time)
-                } else {
-                    tinds <- 1:tinds[1]
-                }
-            }
-            x <- PaTh_all[[i]]$data[[j]]$timen[tinds]
-            y <- PaTh_all[[i]]$data[[j]][["Pa/Th"]][tinds]
-            if (any(is.na(y))) {
-                nainds <- which(is.na(y))
-                x <- x[-nainds]
-                y <- y[-nainds]
-            }
-            if (length(x) > 1) {
-                cnt <- cnt + 1
-                first_time_ind <- which.min(x) 
-                last_time_ind <- which.max(x)
-                if (T) { # color by negative (blue) or positive (red) trend
-                    if (y[last_time_ind] - y[first_time_ind] < 0) {
-                        col <- "red"
-                    } else {
-                        col <- "blue"
-                    }
-                    PaTh_all[[i]]$data[[j]]$trend_col <- col
-                } else { # color by author
-                    col <- cols_PaTh[i]
-                }
-                lines(x, y, 
-                      col=col, 
-                      #type=PaTh_all[[i]]$type,
-                      #lty=PaTh_all[[i]]$lty, 
-                      lty=cnt,
-                      lwd=PaTh_all[[i]]$lwd)
-                # add counter to plot
-                text(x[first_time_ind], y[first_time_ind],
-                     labels=cnt, col=col, cex=0.5)
-                text(x[last_time_ind], y[last_time_ind],
-                     labels=cnt, col=col, cex=0.5)
-                legend_ids[cnt] <- PaTh_all[[i]]$data[[j]]$id 
-                legend_names[cnt] <- paste0(cnt, " (", i, ",", j, ") ", PaTh_all[[i]]$data[[j]]$text, 
-                                            " (", legend_ids[cnt], ")")
-                legend_cols[cnt] <- col
-                legend_ltys[cnt] <- cnt
-            } # if more than 1 timepoint
-        } # j
-    } # i
-    legend("bottomleft", legend=legend_names, ncol=3, 
-           col=legend_cols, lty=legend_ltys, pch=NA, bty="n",
-           x.intersp=0.2, cex=0.45)
-    dev.off()
-    if (any(duplicated(legend_ids))) {
-        message("there are duplicated ids: ", 
-                paste(legend_ids[duplicated(legend_ids)], collapse=","))
-    }
-    # plot 2: map of proxy locations
-    if (exists("praetorius_etal_2008")) {
-        lonlim <- range(lonlim, praetorius_etal_2008$data[[1]]$lon)
-        latlim <- range(latlim, praetorius_etal_2008$data[[1]]$lat) 
-    }
-    if (exists("hoogakker_etal_2011")) {
-        lonlim <- range(lonlim, hoogakker_etal_2011$data[[2]]$lon)
-        latlim <- range(latlim, hoogakker_etal_2011$data[[2]]$lat) 
-    }
-    if (exists("thornalley_etal_2013")) {
-        lonlim <- range(lonlim, thornalley_etal_2013$data[[1]]$lon)
-        latlim <- range(latlim, thornalley_etal_2013$data[[1]]$lat) 
-    }
-    if (exists("mjell_etal_2015")) {
-        lonlim <- range(lonlim, mjell_etal_2015$data[[1]]$lon)
-        latlim <- range(latlim, mjell_etal_2015$data[[1]]$lat) 
-    }
-    cnt <- 0
-    plotname <- paste0("PaTh_map_from", PaTh_from, ".png")
-    message("\nplot ", plotname, " ...")
-    png(plotname, width=1666, height=2000, res=300)
-    plot(0, 0, t="n", xlim=lonlim, ylim=latlim,
-         xlab="lon", ylab="lat", xaxt="n", yaxt="n")
-    axis(1, pretty(lonlim, n=10))
-    axis(2, pretty(latlim, n=10), las=2)
-    map("world", add=T, xlim=lonlim, ylim=latlim, interior=F)
-    for (i in seq_along(PaTh_all)) {
-        for (j in seq_along(PaTh_all[[i]]$data)) {
-            if (T) {
-                if (any(names(PaTh_all[[i]]$data[[j]]) == "trend_col")) {
-                    cnt <- cnt + 1
-                    text(PaTh_all[[i]]$data[[j]]$lon, PaTh_all[[i]]$data[[j]]$lat, 
-                         #labels=paste0(i, ",", j), 
-                         labels=cnt,
-                         col=PaTh_all[[i]]$data[[j]]$trend_col,
-                         cex=0.66)
-                }
-            } else {
-                text(PaTh_all[[i]]$data[[j]]$lon, PaTh_all[[i]]$data[[j]]$lat, 
-                     labels=paste0(i, ",", j), col=cols_PaTh[i],
-                     cex=0.66)
-            }
-        }
-    }
-    # add silt locations
-    if (exists("praetorius_etal_2008")) {
-        text(praetorius_etal_2008$data[[1]]$lon, praetorius_etal_2008$data[[1]]$lat, 
-             labels="A", cex=0.66)
-    }
-    if (exists("hoogakker_etal_2011")) {
-        text(hoogakker_etal_2011$data[[2]]$lon, hoogakker_etal_2011$data[[2]]$lat, 
-             labels="B", cex=0.66)
-    }
-    if (exists("thornalley_etal_2013")) {
-        text(thornalley_etal_2013$data[[1]]$lon, thornalley_etal_2013$data[[1]]$lat, 
-             labels="C", cex=0.66)
-    }
-    if (exists("mjell_etal_2015")) {
-        text(mjell_etal_2015$data[[1]]$lon, mjell_etal_2015$data[[1]]$lat, 
-             labels="D", cex=0.66)
-    }
-    dev.off()
-} else {
-    message("enable here to plot Pa/Th data ...")
-} # if save_PaTh_list
 
 # NOAA monthly station data from https://www.ncdc.noaa.gov/cdo-web/search
 ghcdn_csv <- ""
@@ -1877,7 +860,10 @@ if (F && file.exists(f)) {
     #gnip_ts <- read_gnip()
     #gnip_ts <- read_gnip(files=paste0(dirname(f), "/data/2020-10-16_GNIP_Oct20_finalData.xlsx"))
     gnip_ts <- read_gnip(files=paste0(dirname(f), "/data/2020-10-16_GNIP_Oct20_finalData.xlsx"), 
-                         min_consecutive_complete_yrs=5, timmean_csv_path=NULL)
+                         min_consecutive_complete_yrs=5 
+                         #, timmean_csv_path=NULL
+                         )
+    message("gnip finished\n")
 } else {
     message("enable here to load monthly GNIP data ...")
 } # load GNIP data
@@ -1888,7 +874,7 @@ if (host$machine_tag == "paleosrv") {
     fs <- c("/isibhv/projects/paleo_work/cdanek/data/bartlein_etal_2011/QRec_2013-12_nc/mat_delta_06ka_ALL_grid_2x2_ex.nc",
             "/isibhv/projects/paleo_work/cdanek/data/bartlein_etal_2011/QRec_2013-12_nc/map_delta_06ka_ALL_grid_2x2_ex.nc")
 }
-if (T && any(file.exists(fs))) {
+if (F && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load bartlein et al. 2011 data ...")
     bartlein_etal_2011 <- vector("list", l=length(fs))
     for (i in seq_along(fs)) {
@@ -1931,7 +917,7 @@ if (host$machine_tag == "paleosrv") {
                 "Temp12k_v1_0_0_ts_non-scale_623_records_with_units_degC_and_variableName_temperature_or_temperatureComposite_from_-7000_to_-50_lm_p_lt_0.01_6kyr_trend_ge_-7_and_le_7",
                 ".RData2")
 }
-if (T && file.exists(f)) {
+if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k data ...")
     datnames <- load(f) # = "data"
     kaufman_etal_2020_temp12k <- data
@@ -1963,7 +949,7 @@ if (host$machine_tag == "paleosrv") {
                 "globalHolocene1_0_0_ts_non-scale_110_records_with_units_mm_or_mmyr_and variableName_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-2339.35508193594_and_le_3000",
                 ".RData2")
 }
-if (T && file.exists(f)) {
+if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load global holcene lipd precip data ...")
     datnames <- load(f) # = "data"
     global_holocene_lipd_precip <- data
@@ -1972,21 +958,39 @@ if (T && file.exists(f)) {
     message("enable here to load global holcene lipd data ...")
 } # read global holcene lipd precip data
 
-# read konecky et al. 2020 iso2k data
+# read konecky et al. 2020 iso2k d18o in precip data
 f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/konecky_etal_2020/",
-                "iso2k1_0_0_ts_non-scale_131_records_with_variableName_d18O_from_1967_to_2013_lm_p_lt_0.05",
+                #"iso2k1_0_0_ts_non-scale_131_records_with_variableName_d18O_from_1967_to_2013_lm_p_lt_0.05",
+                "iso2k1_0_0_ts_non-scale_37_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
                 ".RData2")
 }
-if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k data ...")
+
+if (T && file.exists(f)) {
+    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k d18o precip data ...\n")
     datnames <- load(f) # = "data"
-    konecky_etal_2020_iso2k <- data
+    konecky_etal_2020_iso2k_d18o_precip <- data
     rm(data, datnames)
 } else {
-    message("enable here to load konecky et al. 2020 iso2k data ...")
-} # read konecky et al. 2020 iso2k data
+    message("enable here to load konecky et al. 2020 iso2k d18o precip data ...")
+} # read konecky et al. 2020 iso2k d18o precip data
+
+# read konecky et al. 2020 iso2k d18o nonprecip data
+f <- ""
+if (host$machine_tag == "paleosrv") {
+    f <- paste0("/isibhv/projects/paleo_work/cdanek/data/konecky_etal_2020/",
+                "iso2k1_0_0_ts_scale_109_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_lake_or_lagoon_or_ground_or_soil_water_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
+                ".RData2")
+}
+if (T && file.exists(f)) {
+    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k d18o nonprecip data ...\n")
+    datnames <- load(f) # = "data"
+    konecky_etal_2020_iso2k_d18o_nonprecip <- data
+    rm(data, datnames)
+} else {
+    message("enable here to load konecky et al. 2020 iso2k d18o nonprecip data ...")
+} # read konecky et al. 2020 iso2k d18o nonprecip data
 
 # ERA5 time series data
 fs <- ""

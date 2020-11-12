@@ -87,22 +87,26 @@ add_data_right_yaxis_ts_an <- F
 add_cor_data_left_and_right_ts_an <- F
 add_legend_right_yaxis <- T
 add_legend_upper_xaxis <- F
+
 plot_scatter_s1_vs_s2 <- F
 #scatter_s1_vs_s1_varname <- "temp2"
 scatter_s1_vs_s1_varname <- "tsurf"
 #scatter_s1_vs_s1_varname <- "aprt"
 #scatter_s1_vs_s1_varname <- "wisoaprt_d"
+
 plot_scatter_v1_vs_v2 <- T # uses `datas`
-varnamex <- varnamey <- "abc" # default
-varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
+varnamex <- varnamey <- "abc_datas" # default
+#varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
 #varnamex <- "tsurf_datas"
 #varnamex <- "tsurfaprt_datas"
 #varnamex <- "quv_datas"
 #varnamex <- "quv_direction_datasan"
+varnamex <- "lm_temp2_as_time_slope_datas"
 #varnamex <- "aprt_datas"
-varnamey <- "toa_imbalance_datas"
+#varnamey <- "toa_imbalance_datas"
 #varnamey <- "quv_direction_datas"
 #varnamey <- "wisoaprt_d_datas"
+varnamey <- "lm_wisoaprt_d_post_as_time_slope_datas"
 
 # time vs depth:
 add_ts_to_time_vs_depth <- T
@@ -155,7 +159,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -260,9 +264,11 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "srad0d"
     #varnames_in <- "lm_temp2_as_time_slope"
     #varnames_in <- "lm_tsurf_as_time_slope"
-    varnames_in <- "lm_aprt_as_time_slope"
+    #varnames_in <- "lm_aprt_as_time_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp_slope"
+    varnames_in <- "lm_wisoaprt_d_post_as_time_slope"
+    levs <- 2
     #varnames_in <- "quv"
     #varnames_in <- "quv_direction"
     #levsf <- "_int1000-100hPa"
@@ -279,10 +285,10 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "lm_albedo_as_time_slope"
     #varnames_in <- "amoc"
     #codes <- 101
-    modes <- "select"
+    #modes <- "select"
     #modes <- "timmean"
     #modes <- "yseasmean"
-    #modes <- "yearsum"
+    modes <- "yearsum"
     #modes <- "zonmean"
     #modes <- "vertsum"
     #modes <- "fldsum"
@@ -711,7 +717,7 @@ if (F) { # awi-esm-1-1-lr hist
 
 # =====================================
 # 4 settings
-} else if (T) { # awi-esm-1-1-lr deck
+} else if (F) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
     if (F) { # awi-cm-1-1-lr

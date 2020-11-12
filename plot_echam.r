@@ -3,7 +3,7 @@
 #options(warn=2) # stop on warnings
 #options(warn=0) # back to default
 
-if (F) {
+if (T) {
     message("\nrm(list=ls())")
     rm(list=ls())
     # make squeeze default:
@@ -229,14 +229,17 @@ data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 ## load pangaea data if defined 
 if (F) { # todo
-    message("\nload pangaea data sets via load_pangaea_data.r ...")
+    message("\nload pangaea data via load_pangaea_data.r ...")
     source("load_pangaea_data.r")
 }
 
 ## load special data if defined
-message("\nload special data sets via load_special_data.r ...")
+message("\nload special data via load_special_data.r ...")
 source("load_special_data.r")
 
+## plot special data if defined
+message("\nplot special data via load_special_data.r ...")
+source("plot_special_data.r")
 
 
 # read data
@@ -1646,6 +1649,13 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O"[p], " trend [\u2030/7k years]"))))
             data_infos[[i]][[vi]]$units <- "o/oo/7k years"
             if (p$plot_type == "pdf") encoding <- "CP1250"
+            if (T) {
+                message("special unit")
+                data_infos[[i]][[vi]]$offset$operator <- "*"
+                data_infos[[i]][[vi]]$offset$value <- "6/7" # permil/7k years --> permil/6k years
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O"[p], " trend [\u2030/6k years]"))))
+                data_infos[[i]][[vi]]$units <- "o/oo/6k years"
+            }
 
         } else if (varname == "wisoevap_d") {
             data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O evaporation (‰)"))
@@ -3491,7 +3501,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 tmp3 <- vector("list", l=length(tmp2$data))
                 for (i in seq_along(tmp3)) {
                     tmp3[[i]] <- list(lon=tmp2$lonlat$Var1[i], lat=tmp2$lonlat$Var2[i], 
-                                      time=make_posixlt_origin(-6000), # mean of 6k BP
+                                      time=make_posixlt_origin(-6000), # just placeholder
                                       data=tmp2$data[i], 
                                       varname=point_data_varname, fname=point_data_fname,
                                       label=point_data_label, legend=point_data_legend)
@@ -3509,7 +3519,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data_legend <- "K20"
                 tmp <- kaufman_etal_2020_temp12k
                 for (i in seq_along(tmp)) { # add the linear trend as data point
-                    tmp[[i]]$time <- make_posixlt_origin(-6000) # mean of 6k BP
+                    tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
                     tmp[[i]]$data <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     tmp[[i]]$varname <- point_data_varname 
                     tmp[[i]]$fname <- point_data_fname
@@ -3528,7 +3538,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data_legend <- "LiPD"
                 tmp <- global_holocene_lipd_precip
                 for (i in seq_along(tmp)) { # add the linear trend as data point
-                    tmp[[i]]$time <- make_posixlt_origin(-6000) # mean of 6k BP
+                    tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
                     tmp[[i]]$data <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     tmp[[i]]$varname <- point_data_varname 
                     tmp[[i]]$fname <- point_data_fname
@@ -3539,33 +3549,84 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data <- c(point_data, tmp) # add global_holocene_lipd_precip to point_data
                 rm(tmp)
             } # if global_holocene_lipd_precip
-            if (T && exists("konecky_etal_2020_iso2k")) {
-                point_data_fname <- point_data_legend <- "Iso2k"
-                if (zname == "wisoaprt_d") {
-                    point_data_varname <- "O18"
-                    point_data_label <- expression(paste("Iso2k ", delta^{18}, "O"[p], " [‰]"))
+            if (T && exists("konecky_etal_2020_iso2k_d18o_precip")) {
+                point_data_fname <- point_data_legend <- "Iso2k-precip"
+                if (any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
+                    point_data_varname <- "d18Op"
+                    #point_data_label <- expression(paste("Iso2k ", delta^{18}, "O"[p], " [‰]"))
+                    point_data_label <- expression(paste("Proxy ", delta^{18}, "O"[p/nonp], " [‰]"))
                 } else {
                     stop("not defined")
                 }
-                stop("asd")
-                tmp <- list()
-                cnt <- 0
-                for (i in seq_along(gnip_ts)) { 
-                    if (!is.null(gnip_ts[[i]]$data[[point_data_varname]])) {
-                        tmp2 <- list(data=gnip_ts[[i]]$data[[point_data_varname]],
-                                     time=gnip_ts[[i]]$data[[paste0(point_data_varname, "_time")]],
-                                     lon=gnip_ts[[i]]$lon, lat=gnip_ts[[i]]$lat,
-                                     varname=point_data_varname, fname=point_data_fname,
-                                     label=point_data_label, legend=point_data_legend)
-                        cnt <- cnt + 1
-                        tmp[[cnt]] <- tmp2
-                    }
+                tmp <- konecky_etal_2020_iso2k_d18o_precip
+                for (i in seq_along(tmp)) { # add the linear trend as data point
+                    tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
+                    tmp[[i]]$data <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
+                    tmp[[i]]$varname <- point_data_varname 
+                    tmp[[i]]$fname <- point_data_fname
+                    tmp[[i]]$label <- point_data_label
+                    tmp[[i]]$legend <- point_data_legend
                 }
                 message("add ", length(tmp), " ", point_data_fname, "-entries to point_data ...")
                 point_data <- c(point_data, tmp) # add gnip data to point_data
                 rm(tmp)
             } # if konecky_etal_2020_iso2k
-            
+            if (T && exists("konecky_etal_2020_iso2k_d18o_nonprecip")) {
+                point_data_fname <- point_data_legend <- "Iso2k-nonprecip"
+                if (any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
+                    point_data_varname <- "d18Ononp_scaled"
+                    #point_data_label <- expression(paste("Iso2k ", delta^{18}, "O"[nonp], " [‰]"))
+                    point_data_label <- expression(paste("Proxy ", delta^{18}, "O"[p/nonp], " [‰]"))
+                } else {
+                    stop("not defined")
+                }
+                tmp <- konecky_etal_2020_iso2k_d18o_nonprecip
+                for (i in seq_along(tmp)) { # add the linear trend as data point
+                    tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
+                    tmp[[i]]$data <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
+                    tmp[[i]]$varname <- point_data_varname 
+                    tmp[[i]]$fname <- point_data_fname
+                    tmp[[i]]$label <- point_data_label
+                    tmp[[i]]$legend <- point_data_legend
+                }
+                message("add ", length(tmp), " ", point_data_fname, "-entries to point_data ...")
+                point_data <- c(point_data, tmp) # add gnip data to point_data
+                rm(tmp)
+            } # if konecky_etal_2020_iso2k
+            if (T && exists("meyer_etal")) {
+                point_data_fname <- point_data_legend <- "PLOT"
+                if (any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
+                    point_data_varname <- "d18Odiatom_scaled"
+                    #point_data_label <- expression(paste("PLOT ", delta^{18}, "O"[diatom], " [‰]"))
+                    point_data_label <- expression(paste("Proxy ", delta^{18}, "O"[p/nonp], " [‰]"))
+                } else {
+                    stop("not defined")
+                }
+                # calc lm of scaled PLOT time series
+                tmp <- vector("list", l=length(meyer_etal$data))
+                for (i in seq_along(tmp)) {
+                    x <- meyer_etal$data[[i]]$data$time
+                    y <- scale(meyer_etal$data[[i]]$data$d18o_corr_perm)
+                    lm <- lm(y ~ x)
+                    dt <- as.numeric(difftime(max(x), min(x), units="day"))
+                    nyears <- dt/365
+                    slope_per_year <- diff(range(lm$fitted.values))/nyears
+                    if (lm$coefficients[2] < 0) slope_per_year <- -1*slope_per_year
+                    tmp[[i]] <- list(PLOT_lake=names(meyer_etal$data)[i],
+                                     lon=meyer_etal$data[[i]]$lon,
+                                     lat=meyer_etal$data[[i]]$lat,
+                                     time=make_posixlt_origin(-6000), # just placeholder
+                                     data=slope_per_year*6000, # trend/yr --> trend/6k yrs
+                                     varname=point_data_varname,
+                                     fname=point_data_fname,
+                                     label=point_data_label)
+                } # for i
+                message("add ", length(tmp), " ", point_data_fname, "-entries to point_data ...")
+                point_data <- c(point_data, tmp) # add gnip data to point_data
+                rm(tmp)
+            } # if meyer_etal
+
+
             # from here: `point_data` must be list of n lists each 
             #            having (at least) the 7 entries
             #            "lon", "lat", "time", "data", "varname", "fname", "label"
@@ -3573,15 +3634,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # update for all attached point_data 
                 point_data_label <- sapply(point_data, "[[", "label")
-                point_data_label_unique <- c()
                 point_data_label_types <- sapply(point_data_label, typeof)
                 if (any(point_data_label_types == "language")) {
-                    message("special case: point_data label is of type language")
-                    point_data_label_unique <- c(point_data_label_unique, 
-                                                 point_data_label[which(point_data_label_types == "language")[1]])
+                    point_data_labelp <- lapply(point_data_label, deparse)
+                    point_data_labelp <- sapply(point_data_labelp, paste, collapse="")
+                    point_data_label_unique <- unique(point_data_labelp)
+                    point_data_label_unique <- sapply(point_data_label_unique, function(x) parse(text=x))
+                } else {
+                    point_data_label_unique <- unique(point_data_label)
                 }
-                point_data_label_unique <- c(point_data_label_unique, 
-                                             unique(point_data_label[which(point_data_label_types != "language")]))
                 if (length(point_data_label_unique) != 1) {
                     stop("there are ", length(point_data_label_unique), 
                          " different `point_data_label_unique`: \"",
@@ -3735,7 +3796,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             } # for j in point data lon,lat-subset data
                             # save for scatter plot
                             xp[[i]] <- sapply(point_datap, "[[", "data_mean")
+                            attributes(xp[[i]])$lon <- sapply(point_datap, "[[", "lon")
+                            attributes(xp[[i]])$lat <- sapply(point_datap, "[[", "lat")
                             attributes(xp[[i]])$fname <- sapply(point_datap, "[[", "fname")
+                            attributes(xp[[i]])$varname <- sapply(point_datap, "[[", "varname")
+                            attributes(xp[[i]])$label <- sapply(point_datap, "[[", "label")
                             attributes(xp[[i]])$ntimes <- sapply(point_datap, "[[", "data_mean_ntime")
                             attributes(xp[[i]])$ntot <- sum(attributes(xp[[i]])$ntimes)
                             attributes(xp[[i]])$ranges <- sapply(point_datap, "[[", "data_mean_rangetime")
@@ -3771,8 +3836,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                    vars=list(point_datap_lon_var, point_datap_lat_var, 
                                                              point_datap_ntimes_var, point_datap_fname_var, 
                                                              point_datap_var))
-                                ncvar_put(outnc, point_datap_lon_var, sapply(point_datap, "[[", "lon"))
-                                ncvar_put(outnc, point_datap_lat_var, sapply(point_datap, "[[", "lat"))
+                                ncvar_put(outnc, point_datap_lon_var, attributes(xp[[i]])$lon)
+                                ncvar_put(outnc, point_datap_lat_var, attributes(xp[[i]])$lat)
                                 ncvar_put(outnc, point_datap_ntimes_var, attributes(xp[[i]])$ntimes)
                                 ncvar_put(outnc, point_datap_fname_var, point_data_fname)
                                 ncvar_put(outnc, point_datap_var, xp[[i]])
@@ -3783,389 +3848,411 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } # if any point_data lon,lat coords are within model data area
                 } # for i in z
 
-
                 ## scatter plot obs vs model
-                # remove points where either obs or model is NA
-                for (i in seq_along(xp)) {
-                    if (any(is.na(xp[[i]]))) {
-                        inds <- which(is.na(xp[[i]]))
-                        yp[[i]] <- yp[[i]][-inds]
-                        # subsetting [] removes attributes
-                        atts <- attributes(xp[[i]])
-                        atts$fname <- atts$fname[-inds]
-                        atts$ntimes <- atts$ntimes[-inds]
-                        atts$ntot <- sum(atts$ntimes)
-                        atts$ranges <- atts$ranges[,-inds]
-                        atts$rangetot <- range(atts$ranges)
-                        xp[[i]] <- xp[[i]][-inds]
-                        attributes(xp[[i]]) <- atts
-                    }
-                    if (any(is.na(yp[[i]]))) {
-                        inds <- which(is.na(yp[[i]]))
-                        # subsetting [] removes attributes
-                        atts <- attributes(xp[[i]])
-                        atts$fname <- atts$fname[-inds]
-                        atts$ntimes <- atts$ntimes[-inds]
-                        atts$ntot <- sum(atts$ntimes)
-                        atts$ranges <- atts$ranges[,-inds]
-                        atts$rangetot <- range(atts$ranges)
-                        xp[[i]] <- xp[[i]][-inds]
-                        attributes(xp[[i]]) <- atts
-                        yp[[i]] <- yp[[i]][-inds]
-                    }
-                }
-                
-                tlim_scatter <- as.POSIXlt(range(lapply(lapply(xp, attributes), 
-                                                        "[[", "rangetot")), o="1970-1-1")
-                message("\ncompare ", length(yp), " model data and ", 
-                        paste(point_data_fname_unique, collapse=", "), " data from ", 
-                        tlim_scatter[1], " to ", tlim_scatter[2], 
-                        " in one scatter plot ...")
-                
-                # xlim 
-                xlim <- range(xp, na.rm=T)
-                if (all(!is.na(match(point_data_varname_unique, c("map_trend", "precipitation_trend"))))) { 
-                    message("special xlim ...")
-                    xlim <- c(-1000, 650)
-                }
-                message("xlim (", 
-                        paste(paste0(point_data_fname_unique, " ", point_data_varname_unique), 
-                              collapse="; "), ") = ", appendLF=F)
-                dput(xlim)
-                xat <- pretty(xlim, n=10)
-                xlab <- format(xat, trim=T)
+                if (!all(sapply(lapply(xp, is.na), all))) {
 
-                # ylim
-                ylim <- range(yp, na.rm=T)
-                message("ylim (", zname, " of models) = ", appendLF=F)
-                dput(ylim)
-                yat <- pretty(ylim, n=10)
-                ylab <- format(yat, trim=T)
-            
-                width_in <- p$inch #a4_width_in # maximum a4 width as threshold (8.26 in)
-                message("width_in = ", width_in, " ", appendLF=F)
-                asp_width_over_height <- p$scatter_width/p$scatter_height 
-                message("--> aspect ratio = ", round(asp_width_over_height, 3))
-                height_in <- width_in/asp_width_over_height
-                message("height_in = width_in/aspect_ratio = ", 
-                        width_in, "/", round(asp_width_over_height, 3), " = ", 
-                        round(width_in/asp_width_over_height, 4), " = ",
-                        round(height_in, 4), " ", appendLF=F)
-                if (height_in > p$a4_height_in) {
-                    height_in <- p$a4_height_in # take a4 maximum height as threshold (11.58 in)
-                    message("> ", p$a4_height_in, " --> height_in = ", height_in, 
-                            " --> aspect ratio = ", round(width_in/height_in, 3))
-                } else {
-                    message()
-                }
-                pointsize <- p$pointsize*width_in/p$inch # multiple of default
-                if (T) {
-                    message("special: increase pointsize ...")
-                    pointsize <- 1.25*pointsize
-                }
+                    # remove points where either obs or model is NA
+                    for (i in seq_along(xp)) {
+                        if (any(is.na(xp[[i]]))) {
+                            inds <- which(is.na(xp[[i]]))
+                            yp[[i]] <- yp[[i]][-inds]
+                            # subsetting [] removes attributes
+                            atts <- attributes(xp[[i]])
+                            atts$lon <- atts$lon[-inds]
+                            atts$lat <- atts$lat[-inds]
+                            atts$fname <- atts$fname[-inds]
+                            atts$ntimes <- atts$ntimes[-inds]
+                            atts$ntot <- sum(atts$ntimes)
+                            atts$ranges <- atts$ranges[,-inds]
+                            atts$rangetot <- range(atts$ranges)
+                            xp[[i]] <- xp[[i]][-inds]
+                            attributes(xp[[i]]) <- atts
+                        }
+                        if (any(is.na(yp[[i]]))) {
+                            inds <- which(is.na(yp[[i]]))
+                            # subsetting [] removes attributes
+                            atts <- attributes(xp[[i]])
+                            atts$lon <- atts$lon[-inds]
+                            atts$lat <- atts$lat[-inds]
+                            atts$fname <- atts$fname[-inds]
+                            atts$ntimes <- atts$ntimes[-inds]
+                            atts$ntot <- sum(atts$ntimes)
+                            atts$ranges <- atts$ranges[,-inds]
+                            atts$rangetot <- range(atts$ranges)
+                            xp[[i]] <- xp[[i]][-inds]
+                            attributes(xp[[i]]) <- atts
+                            yp[[i]] <- yp[[i]][-inds]
+                        }
+                    } # for i
+                    
+                    # survived point_data names
+                    xp_fname <- unlist(lapply(lapply(xp, attributes), "[[", "fname"))
+                    xp_fname_unique <- unique(xp_fname)
+                    xp_varname <- unlist(lapply(lapply(xp, attributes), "[[", "varname"))
+                    xp_varname_unique <- unique(xp_varname)
+                    xp_n_unique <- rep(NA, t=length(xp_fname_unique))
+                    for (i in seq_along(xp_fname_unique)) {
+                        xp_n_unique[i] <- length(which(xp_fname == xp_fname_unique[i]))
+                    }
 
-                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
-                                   zname, "_", 
-                                   paste0(names_short_p, "_", seasonsp_p, 
-                                          "_", froms_plot_p, "_to_", tos_plot_p, "_", 
-                                          areas_p, collapse="_vs_"), 
-                                   plotname_suffix, 
-                                   "_scatter_", interp_method, "_vs_", 
-                                   paste(paste0(point_data_fname_unique, "_", point_data_varname_unique), 
-                                         collapse="_and_"), 
-                                   ".", p$plot_type)
-                if (nchar(plotname) > nchar_max_foutname) {
+                    tlim_scatter <- as.POSIXlt(range(lapply(lapply(xp, attributes), 
+                                                            "[[", "rangetot")), o="1970-1-1")
+                    message("\ncompare ", length(yp), " model data and ", paste(
+                            paste0(xp_n_unique, " ", xp_fname_unique, " ", xp_varname_unique), 
+                            collapse=" and "), " data from ", 
+                            tlim_scatter[1], " to ", tlim_scatter[2], 
+                            " in one scatter plot ...")
+                    
+                    # xlim 
+                    xlim <- range(xp, na.rm=T)
+                    if (all(!is.na(match(xp_varname_unique, c("map_trend", "precipitation_trend"))))) { 
+                        message("special xlim ...")
+                        xlim <- c(-1000, 650)
+                    }
+                    message("xlim (", 
+                            paste(paste0(xp_fname_unique, " ", xp_varname_unique), 
+                                  collapse="; "), ") = ", appendLF=F)
+                    dput(xlim)
+                    xat <- pretty(xlim, n=10)
+                    xlab <- format(xat, trim=T)
+
+                    # ylim
+                    ylim <- range(yp, na.rm=T)
+                    message("ylim (", zname, " of models) = ", appendLF=F)
+                    dput(ylim)
+                    yat <- pretty(ylim, n=10)
+                    ylab <- format(yat, trim=T)
+                
+                    width_in <- p$inch #a4_width_in # maximum a4 width as threshold (8.26 in)
+                    message("width_in = ", width_in, " ", appendLF=F)
+                    asp_width_over_height <- p$scatter_width/p$scatter_height 
+                    message("--> aspect ratio = ", round(asp_width_over_height, 3))
+                    height_in <- width_in/asp_width_over_height
+                    message("height_in = width_in/aspect_ratio = ", 
+                            width_in, "/", round(asp_width_over_height, 3), " = ", 
+                            round(width_in/asp_width_over_height, 4), " = ",
+                            round(height_in, 4), " ", appendLF=F)
+                    if (height_in > p$a4_height_in) {
+                        height_in <- p$a4_height_in # take a4 maximum height as threshold (11.58 in)
+                        message("> ", p$a4_height_in, " --> height_in = ", height_in, 
+                                " --> aspect ratio = ", round(width_in/height_in, 3))
+                    } else {
+                        message()
+                    }
+                    pointsize <- p$pointsize*width_in/p$inch # multiple of default
+                    if (T) {
+                        message("special: increase pointsize ...")
+                        pointsize <- 1.25*pointsize
+                    }
+
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        zname, "_", 
-                                       paste(unique(names_short_p), collapse="_"), "_",
-                                       paste(unique(seasonsp_p), collapse="_"), "_", 
-                                       paste(unique(froms_plot_p), collapse="_"), "-", 
-                                       paste(unique(tos_plot_p), collapse="_"), "_", 
-                                       paste(unique(areas_p), collapse="_"), 
+                                       paste0(names_short_p, "_", seasonsp_p, 
+                                              "_", froms_plot_p, "_to_", tos_plot_p, "_", 
+                                              areas_p, collapse="_vs_"), 
                                        plotname_suffix, 
-                                       "_scatter_", interp_method, "_vs_", 
-                                       paste(paste0(point_data_fname_unique, "_", point_data_varname_unique),
+                                       "_scatter_", interp_method, "_vs_", paste(
+                                       paste0(xp_n_unique, "_", xp_fname_unique, "_", xp_varname_unique), 
                                              collapse="_and_"), 
                                        ".", p$plot_type)
-                }
-                message("open plot ", plotname, " ...")
-                dir.create(dirname(plotname), recursive=T, showWarnings=F)
-                if (p$plot_type == "png") {
-                    width <- width_in*p$ppi; height <- height_in*p$ppi
-                    png(plotname, width=width, height=height, res=p$ppi, 
-                        family=p$family_png, pointsize=pointsize)
-                } else if (p$plot_type == "pdf") {
-                    pdf(plotname, width=width_in, height=height_in, family=p$family_pdf, 
-                        pointsize=pointsize, encoding=encoding)
-                }
-                 
-                # set plot margins
-                mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
-                mar[4] <- 1 # decrease right margin
-                if (!add_title) mar[3] <- 1 # decrease upper margin
+                    if (nchar(plotname) > nchar_max_foutname) {
+                        plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                           zname, "_", 
+                                           paste(unique(names_short_p), collapse="_"), "_",
+                                           paste(unique(seasonsp_p), collapse="_"), "_", 
+                                           paste(unique(froms_plot_p), collapse="_"), "-", 
+                                           paste(unique(tos_plot_p), collapse="_"), "_", 
+                                           paste(unique(areas_p), collapse="_"), 
+                                           plotname_suffix, 
+                                           "_scatter_", interp_method, "_vs_", paste(
+                                           paste0(xp_n_unique, "_", xp_fname_unique, "_", xp_varname_unique),
+                                                 collapse="_and_"), 
+                                           ".", p$plot_type)
+                    }
+                    message("open plot ", plotname, " ...")
+                    dir.create(dirname(plotname), recursive=T, showWarnings=F)
+                    if (p$plot_type == "png") {
+                        width <- width_in*p$ppi; height <- height_in*p$ppi
+                        png(plotname, width=width, height=height, res=p$ppi, 
+                            family=p$family_png, pointsize=pointsize)
+                    } else if (p$plot_type == "pdf") {
+                        pdf(plotname, width=width_in, height=height_in, family=p$family_pdf, 
+                            pointsize=pointsize, encoding=encoding)
+                    }
+                     
+                    # set plot margins
+                    mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
+                    mar[4] <- 1 # decrease right margin
+                    if (!add_title) mar[3] <- 1 # decrease upper margin
 
-                # open plot
-                par(mar=mar)
-                plot(0, t="n", xlab=NA, ylab=NA, 
-                     xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
-                axis(1, at=xat, labels=xlab, cex.axis=0.9)
-                axis(2, at=yat, labels=ylab, las=1)
+                    # open plot
+                    par(mar=mar)
+                    plot(0, t="n", xlab=NA, ylab=NA, 
+                         xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
+                    axis(1, at=xat, labels=xlab, cex.axis=0.9)
+                    axis(2, at=yat, labels=ylab, las=1)
 
-                # add variable label
-                if (any(zname == c("temp2", "tsurf"))) {
-                    lab <- expression(paste("Model T"["2m"], " [°C]"))
-                } else if (zname == "tsurf") {
-                    lab <- expression(paste("Model T"["surf"], " [°C]"))
-                } else if (zname == "aprt") {
-                    lab <- expression(paste("Model P"["total"], " [mm/month]"))
-                } else if (zname == "wisoaprt_d") {
-                    lab <- expression(paste("Model ", delta^{18}, "O"[p], " [\u2030]"))
-                } else if (zname == "lm_temp2_as_time_slope") {
-                    lab <- expression(paste("Model T"["2m"], " trend [°C/6k years]"))
-                } else if (zname == "lm_tsurf_as_time_slope") {
-                    lab <- expression(paste("Model T"["surf"], " trend [°C/6k years]"))
-                } else if (zname == "lm_aprt_as_time_slope") {
-                    lab <- expression(paste("Model P"["total"], " trend [mm/year/6k years]"))
-                } else {
-                    lab <- paste0("Model ", data_info$label)
-                }
-                mtext(side=1, point_data_label_unique, line=2.75)
-                mtext(side=2, lab, line=3.4)
+                    # add variable label
+                    if (any(zname == c("temp2", "tsurf"))) {
+                        lab <- expression(paste("Model T"["2m"], " [°C]"))
+                    } else if (zname == "tsurf") {
+                        lab <- expression(paste("Model T"["surf"], " [°C]"))
+                    } else if (zname == "aprt") {
+                        lab <- expression(paste("Model P"["total"], " [mm/month]"))
+                    } else if (zname == "wisoaprt_d") {
+                        lab <- expression(paste("Model ", delta^{18}, "O"[p], " [\u2030]"))
+                    } else if (zname == "lm_temp2_as_time_slope") {
+                        lab <- expression(paste("Model T"["2m"], " trend [°C/6k years]"))
+                    } else if (zname == "lm_tsurf_as_time_slope") {
+                        lab <- expression(paste("Model T"["surf"], " trend [°C/6k years]"))
+                    } else if (zname == "lm_aprt_as_time_slope") {
+                        lab <- expression(paste("Model P"["total"], " trend [mm/year/6k years]"))
+                    } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
+                        lab <- eval(substitute(expression(paste("Model ", delta^{18}, "O"[p], " trend [\u2030/6k years]"))))
+                    } else {
+                        lab <- paste0("Model ", data_info$label)
+                    }
+                    mtext(side=1, point_data_label_unique, line=2.75)
+                    mtext(side=2, lab, line=3.4)
 
-                # add zero lines
-                if (add_zeroline) {
-                    #abline(h=0, col="gray", lwd=0.75, lty=2)
-                    #abline(v=0, col="gray", lwd=0.75, lty=2)
-                    abline(h=0, lty=2)
-                    abline(v=0, lty=2)
-                }
+                    # add zero lines
+                    if (add_zeroline) {
+                        #abline(h=0, col="gray", lwd=0.75, lty=2)
+                        #abline(v=0, col="gray", lwd=0.75, lty=2)
+                        abline(h=0, lty=2)
+                        abline(v=0, lty=2)
+                    }
 
-                # add 1:1 line
-                if (add_scatter_1to1_line) {
-                    message("add 1:1 line ...")
-                    #abline(a=0, b=1, col="gray", lwd=1, lty=2) # a=intercept, b=slope
-                    abline(a=0, b=1, lty=2)
-                }
-                
-                # add data to scatter plot colored by time
-                seascols <- rep(NA, t=length(yp))
-                scatterobspchs <- vector("list", l=length(yp))
-                for (i in seq_along(yp)) { # for all models
-                    # which colors?
-                    if (F && any(names(season_check$known_seasons) == seasonsp_p[i])) { # use season cols
-                        # if more than one setting to compare in one scatter plot
-                        if (F && length(yp) > 1) { 
-                            message("use season_check$known_seasons$", seasonsp_p[i], "$col_rgb = ", appendLF=F) 
-                            seascols[i] <- 
-    season_check$known_seasons[[which(names(season_check$known_seasons) == seasonsp_p[i])]]$col_rgb
+                    # add 1:1 line
+                    if (add_scatter_1to1_line) {
+                        message("add 1:1 line ...")
+                        #abline(a=0, b=1, col="gray", lwd=1, lty=2) # a=intercept, b=slope
+                        abline(a=0, b=1, lty=2)
+                    }
+                    
+                    # add data to scatter plot colored by time
+                    seascols <- rep(NA, t=length(yp))
+                    scatterobspchs <- vector("list", l=length(yp))
+                    for (i in seq_along(yp)) { # for all models
+                        # which colors?
+                        if (F && any(names(season_check$known_seasons) == seasonsp_p[i])) { # use season cols
+                            # if more than one setting to compare in one scatter plot
+                            if (F && length(yp) > 1) { 
+                                message("use season_check$known_seasons$", seasonsp_p[i], "$col_rgb = ", appendLF=F) 
+                                seascols[i] <- 
+        season_check$known_seasons[[which(names(season_check$known_seasons) == seasonsp_p[i])]]$col_rgb
+                            } else {
+                                message("use season_check$known_seasons$", seasonsp_p[i], "$col = ", appendLF=F) 
+                                seascols[i] <- 
+        season_check$known_seasons[[which(names(season_check$known_seasons) == seasonsp_p[i])]]$col
+                            }
+                        } else { # use default setting cols
+                            if (F && length(yp) > 1) { # transparent
+                                message("use default cols_rgb_p color = ", appendLF=F)
+                                seascols[i] <- cols_rgb_p[i]
+                            } else { # non-transparent
+                                message("use default cols_p color = ", appendLF=F)
+                                seascols[i] <- cols_p[i]
+                            }
+                        }
+                        message(seascols[i], " for coloring seasonsp_p[", i, "] = ", seasonsp_p[i])
+                        # which pch?
+                        if (F) { # do not distinguish pch per point_data_fname
+                            scatter_labels <- NULL
+                            scatterobspchs[[i]] <- scatterpchs[i]
+                        } else if (T) { # distinguish pch per point_data_fname
+                            if (i == 1) message("distinguish pch per point_data_fname ...")
+                            scatter_labels <- point_data_legend_unique
+                            tmp <- rep(NA, t=length(xp[[i]]))
+                            #pchs <- c(pchs_hollow, seq_len(255)[-pchs_hollow])
+                            pchs <- c(pchs_filled_wout_border, (15:20)[!match(15:20, pchs_filled_wout_border, nomatch=F)])
+                            for (j in seq_along(point_data_fname_unique)) {
+                                inds <- which(attributes(xp[[i]])$fname == point_data_fname_unique[j]) 
+                                tmp[inds] <- pchs[j]
+                                scatter_labels[j] <- paste0(scatter_labels[j], " (n=", length(inds), ")")
+                            }
+                            scatterobspchs[[i]] <- tmp
+                        }
+                        message(paste(point_data_fname_unique, collapse=", "), " from ", 
+                                as.POSIXlt(attributes(xp[[i]])$rangetot[1], o="1970-1-1"), " to ",
+                                as.POSIXlt(attributes(xp[[i]])$rangetot[2], o="1970-1-1"))
+                        if (!all(is.na(xp[[i]]))) { 
+                            points(xp[[i]], yp[[i]],
+                                   col=seascols[i], pch=scatterobspchs[[i]])
                         } else {
-                            message("use season_check$known_seasons$", seasonsp_p[i], "$col = ", appendLF=F) 
-                            seascols[i] <- 
-    season_check$known_seasons[[which(names(season_check$known_seasons) == seasonsp_p[i])]]$col
+                            message("--> cannot add. all xp[[", i, "]] is NA")
                         }
-                    } else { # use default setting cols
-                        if (F && length(yp) > 1) { # transparent
-                            message("use default cols_rgb_p color = ", appendLF=F)
-                            seascols[i] <- cols_rgb_p[i]
-                        } else { # non-transparent
-                            message("use default cols_p color = ", appendLF=F)
-                            seascols[i] <- cols_p[i]
-                        }
-                    }
-                    message(seascols[i], " for coloring seasonsp_p[", i, "] = ", seasonsp_p[i])
-                    # which pch?
-                    if (F) { # do not distinguish pch per point_data_fname
-                        scatter_labels <- NULL
-                        scatterobspchs[[i]] <- scatterpchs[i]
-                    } else if (T) { # distinguish pch per point_data_fname
-                        if (i == 1) message("distinguish pch per point_data_fname ...")
-                        scatter_labels <- point_data_legend_unique
-                        tmp <- rep(NA, t=length(xp[[i]]))
-                        #pchs <- c(pchs_hollow, seq_len(255)[-pchs_hollow])
-                        pchs <- c(pchs_filled_wout_border, (15:20)[!match(15:20, pchs_filled_wout_border, nomatch=F)])
-                        for (j in seq_along(point_data_fname_unique)) {
-                            inds <- which(attributes(xp[[i]])$fname == point_data_fname_unique[j]) 
-                            tmp[inds] <- pchs[j]
-                            scatter_labels[j] <- paste0(scatter_labels[j], " (n=", length(inds), ")")
-                        }
-                        scatterobspchs[[i]] <- tmp
-                    }
-                    message(paste(point_data_fname_unique, collapse=", "), " from ", 
-                            as.POSIXlt(attributes(xp[[i]])$rangetot[1], o="1970-1-1"), " to ",
-                            as.POSIXlt(attributes(xp[[i]])$rangetot[2], o="1970-1-1"))
-                    if (!all(is.na(xp[[i]]))) { 
-                        points(xp[[i]], yp[[i]],
-                               col=seascols[i], pch=scatterobspchs[[i]])
-                    } else {
-                        message("--> cannot add. all xp[[", i, "]] is NA")
-                    }
-                } # for i
-                        
-                # add scatter density to show where the most points are
-                if (any(add_scatter_density)) {
-                    for (i in seq_along(yp)) {
-                        if (add_scatter_density[i]) {
-                            if (!any(search() == "package:KernSmooth")) library(KernSmooth)
-                            if (!all(is.na(xp[[i]]))) { 
-                                # the smaller `bandwidth` (must > 0), the finer the density contour
-                                if (any(zname == c("lm_temp2_as_time_slope", "lm_tsurf_as_time_slope"))) {
-                                   bandwidth <- c(0.5, 0.5) 
-                                   gridsize <- c(100, 100)
-                                } else if (zname == "lm_aprt_as_time_slope") {
-                                   bandwidth <- c(50, 50) 
-                                   gridsize <- c(500, 500)
-                                } else {
-                                    stop("not defined")
-                                }
-                                dens <- KernSmooth::bkde2D(cbind(xp[[i]], yp[[i]]), 
-                                                           bandwidth=bandwidth, gridsize=gridsize)
-                                                           #range.x, truncate = TRUE)
-                                contour(dens$x1, dens$x2, dens$fhat, add=T, 
-                                        drawlabels=F, col=seascols[i])
-                            } # if obs is not all NA
-                        } # if add_scatter_density
                     } # for i
-                } else {
-                    message("all `add_scatter_density`=F")
-                } # if any add_scatter_density
-
-                # add linear trend
-                if (any(add_linear_trend)) {
-                    lm_labels <- rep(NA, t=length(yp))
-                    for (i in seq_along(yp)) {
-                        if (add_linear_trend[i]) {
-                            if (!all(is.na(xp[[i]]))) {
-                                lm <- lm(yp[[i]] ~ xp[[i]]) 
-                                lm_summary <- summary(lm)
-                                #print(lm_summary)
-                                lm_labels[i] <- paste0("r=", round(sqrt(lm_summary$r.squared), 2), ", p")
-                                pval <- get_pval(lm)
-                                if (pval < 1e-5) {
-                                    lm_labels[i] <- paste0(lm_labels[i], "<1e-5")
-                                } else {
-                                    lm_labels[i] <- paste0(lm_labels[i], "=", round(pval, 4)) 
-                                }
-                                lm_labels[i] <- paste0(lm_labels[i], ", df=", lm_summary$fstatistic["dendf"])
-                                message("--> ", lm_labels[i])
-                                # plot regression line within data limits only
-                                if (F) {
-                                    message("draw linear regression line within regression limits only ...")
-                                    lines(xp[[i]], lm$fitted.values, 
-                                          col=seascols[i], lwd=lwds_p[i], lty=ltys_p[i])
-                                # or plot line through whole plot with regression coefficients
-                                } else if (T) {
-                                    message("draw linear regression line through whole plot ...")
-                                    abline(a=lm$coefficients[1], b=lm$coefficients[2],
-                                           col=seascols[i], lwd=lwds_p[i], lty=ltys_p[i])
-                                }
-                            } # if obs not all NA
-                        } # if add_linear_trend
-                    } # for i
-                } else {
-                    message("all `add_linear_trend`=F")
-                } # if any add_linear_trend
-
-                # add legend if wanted
-                if (add_legend) {
-                    message("add legend to scatter plot ...")
-                    le <- list()
-                    if (F && suppressPackageStartupMessages(require(Hmisc))) {
-                        tmp <- Hmisc::largest.empty(x=unlist(xp), y=unlist(yp), method="area")
-                        #rect(tmp$rect$x[1], tmp$rect$y[1], tmp$rect$x[2], tmp$rect$y[3])
-                        le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner if x- and y-coords are both increasing (default)
-                        message("automatically derived Hmisc::largest.empty legend position: ", le$pos[1], ", ", le$pos[2])
-                    } else if (F && suppressPackageStartupMessages(require(adagio))) {
-                        x <- unlist(xp); y <- unlist(yp)
-                        tmp <- adagio::maxempty(x=x, y=y, ax=par("usr")[1:2], ay=par("usr")[3:4])
-                        #rect(tmp$rect[1], tmp$rect[2], tmp$rect[3], tmp$rect[4])
-                        le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
-                        message("automatically derived adagio::maxempty legend position: ", le$pos[1], ", ", le$pos[2])
+                            
+                    # add scatter density to show where the most points are
+                    if (any(add_scatter_density)) {
+                        for (i in seq_along(yp)) {
+                            if (add_scatter_density[i]) {
+                                if (!any(search() == "package:KernSmooth")) library(KernSmooth)
+                                if (!all(is.na(xp[[i]]))) { 
+                                    # the smaller `bandwidth` (must > 0), the finer the density contour
+                                    if (any(zname == c("lm_temp2_as_time_slope", "lm_tsurf_as_time_slope"))) {
+                                       bandwidth <- c(0.5, 0.5) 
+                                       gridsize <- c(100, 100)
+                                    } else if (zname == "lm_aprt_as_time_slope") {
+                                       bandwidth <- c(50, 50) 
+                                       gridsize <- c(500, 500)
+                                    } else {
+                                        stop("not defined")
+                                    }
+                                    dens <- KernSmooth::bkde2D(cbind(xp[[i]], yp[[i]]), 
+                                                               bandwidth=bandwidth, gridsize=gridsize)
+                                                               #range.x, truncate = TRUE)
+                                    contour(dens$x1, dens$x2, dens$fhat, add=T, 
+                                            drawlabels=F, col=seascols[i])
+                                } # if obs is not all NA
+                            } # if add_scatter_density
+                        } # for i
                     } else {
-                        #le$pos <- "topright" 
-                        le$pos <- "bottomright" 
-                    }
-                    le$ncol <- 1
-                    #le$ncol <- 2 
-                    le$cex <- 1
-                    #le$cex <- 0.85
-                    #le$text <- paste0(names_legend, " (n=", sapply(lapply(xp, attributes), "[[", "ntot"), ")")
-                    le$text <- names_legend
-                    le$col <- seascols #"black"
-                    le$lty <- rep(NA, t=length(yp))
-                    le$lwd <- rep(NA, t=length(yp))
-                    #le$pch <- scatterpchs
-                    le$pch <- rep(15, t=length(yp)) # filled square for just showing the color
-                    le$pt.cex <- rep(1.5, t=length(yp))
-                    if (T && !is.null(scatter_labels)) {
-                        message("add point_data legend to model legend ...")
-                        le$text <- c(le$text, scatter_labels)
-                        le$col <- c(le$col, rep("black", t=length(xp)))
-                        le$lty <- c(le$lty, rep(NA, t=length(xp)))
-                        le$lwd <- c(le$lwd, rep(NA, t=length(xp)))
-                        le$pch <- c(le$pch, unique(unlist(scatterobspchs)))
-                        le$pt.cex <- c(le$pt.cex, rep(1, t=length(xp)))
-                    }
-                    if (T) le <- reorder_legend(le)
-                    if (length(le$pos) == 1) {
-                        legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
-                               pch=le$pch, col=le$col, ncol=le$ncol, pt.cex=le$pt.cex,
-                               x.intersp=-0.2, cex=le$cex, bty="n")
-                    } else if (length(le$pos) == 2) {
-                        legend(x=le$pos[1], y=le$pos[2],
-                               legend=le$text, lty=le$lty, lwd=le$lwd,
-                               pch=le$pch, col=le$col, ncol=le$ncol, pt.cex=le$pt.cex,
-                               x.intersp=-0.2, cex=le$cex, bty="n")
-                    }
-                    # add 2nd legend for different point_data 
-                    if (F && !is.null(scatter_labels)) {
-                        message("make extra legend for point_data ...")
-                        #le$pos <- "topright" 
-                        #le$pos <- "bottomleft" 
-                        le$pos <- "bottomright" 
+                        message("all `add_scatter_density`=F")
+                    } # if any add_scatter_density
+
+                    # add linear trend
+                    if (any(add_linear_trend)) {
+                        lm_labels <- rep(NA, t=length(yp))
+                        for (i in seq_along(yp)) {
+                            if (add_linear_trend[i]) {
+                                if (!all(is.na(xp[[i]]))) {
+                                    lm <- lm(yp[[i]] ~ xp[[i]]) 
+                                    lm_summary <- summary(lm)
+                                    #print(lm_summary)
+                                    lm_labels[i] <- paste0("r=", round(sqrt(lm_summary$r.squared), 2), ", p")
+                                    pval <- get_pval(lm)
+                                    if (pval < 1e-5) {
+                                        lm_labels[i] <- paste0(lm_labels[i], "<1e-5")
+                                    } else {
+                                        lm_labels[i] <- paste0(lm_labels[i], "=", round(pval, 4)) 
+                                    }
+                                    lm_labels[i] <- paste0(lm_labels[i], ", df=", lm_summary$fstatistic["dendf"])
+                                    message("--> ", lm_labels[i])
+                                    # plot regression line within data limits only
+                                    if (F) {
+                                        message("draw linear regression line within regression limits only ...")
+                                        lines(xp[[i]], lm$fitted.values, 
+                                              col=seascols[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                    # or plot line through whole plot with regression coefficients
+                                    } else if (T) {
+                                        message("draw linear regression line through whole plot ...")
+                                        abline(a=lm$coefficients[1], b=lm$coefficients[2],
+                                               col=seascols[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                    }
+                                } # if obs not all NA
+                            } # if add_linear_trend
+                        } # for i
+                    } else {
+                        message("all `add_linear_trend`=F")
+                    } # if any add_linear_trend
+
+                    # add legend if wanted
+                    if (add_legend) {
+                        message("add legend to scatter plot ...")
+                        le <- list()
+                        if (F && suppressPackageStartupMessages(require(Hmisc))) {
+                            tmp <- Hmisc::largest.empty(x=unlist(xp), y=unlist(yp), method="area")
+                            #rect(tmp$rect$x[1], tmp$rect$y[1], tmp$rect$x[2], tmp$rect$y[3])
+                            le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner if x- and y-coords are both increasing (default)
+                            message("automatically derived Hmisc::largest.empty legend position: ", le$pos[1], ", ", le$pos[2])
+                        } else if (F && suppressPackageStartupMessages(require(adagio))) {
+                            x <- unlist(xp); y <- unlist(yp)
+                            tmp <- adagio::maxempty(x=x, y=y, ax=par("usr")[1:2], ay=par("usr")[3:4])
+                            #rect(tmp$rect[1], tmp$rect[2], tmp$rect[3], tmp$rect[4])
+                            le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
+                            message("automatically derived adagio::maxempty legend position: ", le$pos[1], ", ", le$pos[2])
+                        } else {
+                            #le$pos <- "topright" 
+                            le$pos <- "bottomright" 
+                        }
                         le$ncol <- 1
                         #le$ncol <- 2 
                         le$cex <- 1
-                        le$text <- scatter_labels
-                        le$col <- "black" #seascols #"black"
-                        le$lty <- NA
-                        le$lwd <- NA
-                        le$pch <- unique(unlist(scatterobspchs)) # todo: is this always the correct order?
+                        #le$cex <- 0.85
+                        #le$text <- paste0(names_legend, " (n=", sapply(lapply(xp, attributes), "[[", "ntot"), ")")
+                        le$text <- names_legend
+                        le$col <- seascols #"black"
+                        le$lty <- rep(NA, t=length(yp))
+                        le$lwd <- rep(NA, t=length(yp))
+                        #le$pch <- scatterpchs
+                        le$pch <- rep(15, t=length(yp)) # filled square for just showing the color
+                        le$pt.cex <- rep(1.5, t=length(yp))
+                        if (T && !is.null(scatter_labels)) {
+                            message("add point_data legend to model legend ...")
+                            le$text <- c(le$text, scatter_labels)
+                            le$col <- c(le$col, rep("black", t=length(xp)))
+                            le$lty <- c(le$lty, rep(NA, t=length(xp)))
+                            le$lwd <- c(le$lwd, rep(NA, t=length(xp)))
+                            le$pch <- c(le$pch, unique(unlist(scatterobspchs)))
+                            le$pt.cex <- c(le$pt.cex, rep(1, t=length(xp)))
+                        }
                         if (T) le <- reorder_legend(le)
                         if (length(le$pos) == 1) {
                             legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
-                                   pch=le$pch, col=le$col, ncol=le$ncol,
+                                   pch=le$pch, col=le$col, ncol=le$ncol, pt.cex=le$pt.cex,
                                    x.intersp=-0.2, cex=le$cex, bty="n")
                         } else if (length(le$pos) == 2) {
                             legend(x=le$pos[1], y=le$pos[2],
                                    legend=le$text, lty=le$lty, lwd=le$lwd,
-                                   pch=le$pch, col=le$col, ncol=le$ncol,
+                                   pch=le$pch, col=le$col, ncol=le$ncol, pt.cex=le$pt.cex,
                                    x.intersp=-0.2, cex=le$cex, bty="n")
                         }
-                    } # if !is.null(scatter_labels)
-                } # if add_legend
-                box()
-                message("save plot ", plotname, " ...")
-                dev.off()
-                if (p$plot_type == "pdf") {
-                    if (T) {
-                        if (F && "extrafont" %in% (.packages())){
-                            message("run `extrafont::embed_fonts()` ...")
-                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        # add 2nd legend for different point_data 
+                        if (F && !is.null(scatter_labels)) {
+                            message("make extra legend for point_data ...")
+                            #le$pos <- "topright" 
+                            #le$pos <- "bottomleft" 
+                            le$pos <- "bottomright" 
+                            le$ncol <- 1
+                            #le$ncol <- 2 
+                            le$cex <- 1
+                            le$text <- scatter_labels
+                            le$col <- "black" #seascols #"black"
+                            le$lty <- NA
+                            le$lwd <- NA
+                            le$pch <- unique(unlist(scatterobspchs)) # todo: is this always the correct order?
+                            if (T) le <- reorder_legend(le)
+                            if (length(le$pos) == 1) {
+                                legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
+                                       pch=le$pch, col=le$col, ncol=le$ncol,
+                                       x.intersp=-0.2, cex=le$cex, bty="n")
+                            } else if (length(le$pos) == 2) {
+                                legend(x=le$pos[1], y=le$pos[2],
+                                       legend=le$text, lty=le$lty, lwd=le$lwd,
+                                       pch=le$pch, col=le$col, ncol=le$ncol,
+                                       x.intersp=-0.2, cex=le$cex, bty="n")
+                            }
+                        } # if !is.null(scatter_labels)
+                    } # if add_legend
+                    box()
+                    message("save plot ", plotname, " ...")
+                    dev.off()
+                    if (p$plot_type == "pdf") {
+                        if (T) {
+                            if (F && "extrafont" %in% (.packages())){
+                                message("run `extrafont::embed_fonts()` ...")
+                                extrafont::embed_fonts(plotname, outfile=plotname)
+                            } else {
+                                message("run `grDevices::embedFonts()` ...")
+                                grDevices::embedFonts(plotname, outfile=plotname)
+                            }
                         } else {
-                            message("run `grDevices::embedFonts()` ...")
-                            grDevices::embedFonts(plotname, outfile=plotname)
+                            message("todo: sometimes pdf font embedding blurrs colors why?")
                         }
-                    } else {
-                        message("todo: sometimes pdf font embedding blurrs colors why?")
                     }
-                }
-                message()
-                # finished plot point data vs model data for all settings in one scatter plot
-                
+                    message()
+                    # finished plot point data vs model data for all settings in one scatter plot
+                    
 
-                # plot model point data vs model data in n scatter plots for nsettings separately
+                    # plot model point data vs model data in n scatter plots for nsettings separately
+                    
+                    # finished plot model point data vs model data in n scatter plots for nsettings separately
                 
-                # finished plot model point data vs model data in n scatter plots for nsettings separately
+                } else {
+                    message("\no point_data found in lonlatlims ...\n")
+                } # if xp is NA or not
 
             } else {
                 message("\nno point_data defined for zname = ", zname, " ...\n")
@@ -4323,9 +4410,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                       names_legend_p[which(names_legend_p != "")])
             }
 
-            # prepare adding further stuff to every subplot
-            polygon_list <- segment_list <- point_list <- cmd_list <- NULL # default
-            
+
+            ## prepare adding further stuff to every subplot
+            polygon_list <- segment_list <- point_list <- text_list <- cmd_list <- NULL # default
+           
+
             if (T && zname == "lm_tsurf_as_time_slope" && !all(sapply(ll_data, is.null))) { # add sea ice trend
                 message("add SICOMO contours")
                 contour_list <- list(x=NULL, y=NULL, z=NULL, levels=NULL)
@@ -4360,59 +4449,92 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 plotname_suffix <- paste0(plotname_suffix, "_poly_THO")
             }
 
-            # add point data to lon,lat plot 
-            if (T && !is.null(point_data)) {
-                message("special: add ", paste(
-                        paste0(point_data_varname_unique, " of ", point_data_fname_unique), 
-                        collapse=" and "), " locations to plot ...")
-                point_list <- vector("list", l=length(z))
+            # add point data to lon,lat plot
+            # --> `point_list` must have at least the 4 entries lon,lat,col,pch
+            if (T && !all(sapply(lapply(xp, is.na), all))) {
+                message("not all `xp` are NA: add ", paste(
+                        paste0(xp_n_unique, " ", xp_fname_unique, " ", xp_varname_unique),
+                        collapse=" and "), " xp to plot ...")
+                point_list <- text_list <- vector("list", l=length(z))
                 for (i in seq_along(z)) {
-                    # default point_data symbols: black cross
-                    point_list[[i]] <- list(x=sapply(point_datap, "[[", "lon"),
-                                            y=sapply(point_datap, "[[", "lat"))
+                    # default xp symbols: black cross
+                    point_list[[i]] <- list(x=attributes(xp[[i]])$lon,
+                                            y=attributes(xp[[i]])$lat)
                     point_list[[i]]$col <- "black" 
                     point_list[[i]]$pch <- 4
-                    # if special color/symbol for point_data 
+                    text_list[[i]] <- list(x=rep(NA, t=length(xp[[i]])),
+                                           x=rep(NA, t=length(xp[[i]])),
+                                           labels=rep(NA, t=length(xp[[i]])),
+                                           col=rep(NA, t=length(xp[[i]])))
+                    # if special color/symbol for xp 
                     if (T) { 
                         if (i == 1) {
-                            message("   also add temporal mean of ", 
-                                    paste(point_data_varname_unique, collapse=", "), 
-                                    "-values in colors ...")
-                            point_datap_z <- sapply(point_datap, "[[", "data_mean")
-                            message("   --> zlim of ", paste(
-                                paste0(point_data_fname_unique, " ", point_data_varname_unique),
+                            message("   add colored symbols for xp[[", i, "]] zlim of ", paste(
+                                paste0(xp_n_unique, " ", xp_fname_unique, " ", xp_varname_unique),
                                                              collapse=" and "),
                                     " mean = ", appendLF=F)
-                            cat(range(point_datap_z, na.rm=T), "\n")
+                            cat(range(xp[[i]], na.rm=T), "\n")
                         }
+                        ## cols
                         if (F) { # constant color
-                            message("color point_data by its sign ...")
-                            cols <- rep("brown", t=length(point_datap_z)) # color for dry trend
-                            if (any(point_datap_z > 0)) cols[which(point_datap_z > 0)] <- "blue" # color for wet trend
+                            message("   --> color xp by its sign ...")
+                            cols <- rep("brown", t=length(xp[[i]])) # color for dry trend
+                            if (any(xp[[i]] > 0)) cols[which(xp[[i]] > 0)] <- "blue" # color for wet trend
                         } else if (T) { # same colors as z
-                            message("color point_data by its value ...")
-                            cols  <- findInterval(x=point_datap_z, vec=ip$levels, all.inside=T)
+                            message("   --> color xp by its value ...")
+                            cols  <- findInterval(x=xp[[i]], vec=ip$levels, all.inside=T)
                             cols <- ip$cols[cols]
+                            if (T && any(xp_varname_unique == "d18Ononp_scaled")) {
+                                message("   --> special d18Ononp_scaled: show red/blue plus/minus")
+                                inds <- which(xp_varname == "d18Ononp_scaled")
+                                cols[inds] <- NA
+                                posinds <- which(xp[[i]][inds] >= 0)
+                                neginds <- which(xp[[i]][inds] < 0)
+                                if (length(posinds) > 0) text_list[[i]]$col[inds][posinds] <- "red"
+                                if (length(neginds) > 0) text_list[[i]]$col[inds][neginds] <- "blue"
+                            }
+                            if (T && any(xp_varname_unique == "d18Odiatom_scaled")) {
+                                message("   --> special d18Odiatom_scaled: show blue/red PLOT letters")
+                                inds <- which(xp_varname == "d18Odiatom_scaled")
+                                cols[inds] <- NA
+                            }
                         }
                         point_list[[i]]$bg <- cols
-                        # default: same symbol for all point_data
+                        ## pchs:
+                        # default: same symbol for all xp
                         point_list[[i]]$pch <- pchs_filled_w_border[1] 
-                        if (T) { # distinguish point_data by pch
-                            message("distinguish point_data by pch ...")
-                            point_datap_fname <- sapply(point_datap, "[[", "fname")
+                        if (T) { # distinguish xp by pch
+                            message("   distinguish xp symbols ...")
+                            fnames_tmp <- attributes(xp[[i]])$fname
                             pchs <- c(pchs_filled_w_border, (21:25)[!match(21:25, pchs_filled_w_border, nomatch=F)])
-                            tmp <- rep(NA, t=length(point_datap_fname))
-                            for (j in seq_along(point_data_fname_unique)) {
-                                tmp[which(point_datap_fname == point_data_fname_unique[j])] <- pchs[j]
+                            tmp <- rep(NA, t=length(fnames_tmp))
+                            for (j in seq_along(xp_fname_unique)) {
+                                tmp[which(fnames_tmp == xp_fname_unique[j])] <- pchs[j]
+                            }
+                            if (T && any(xp_varname_unique == "d18Ononp_scaled")) {
+                                message("   --> special d18Ononp_scaled: show red/blue plus/minus")
+                                inds <- which(xp_varname == "d18Ononp_scaled")
+                                tmp[inds] <- NA
+                                text_list[[i]]$x[inds] <- attributes(xp[[i]])$lon[inds]
+                                text_list[[i]]$y[inds] <- attributes(xp[[i]])$lat[inds]
+                                posinds <- which(xp[[i]][inds] >= 0)
+                                neginds <- which(xp[[i]][inds] < 0)
+                                if (length(posinds) > 0) text_list[[i]]$labels[inds][posinds] <- "+"
+                                if (length(neginds) > 0) text_list[[i]]$labels[inds][neginds] <- "-"
+                            }
+                            if (T && any(xp_varname_unique == "d18Odiatom_scaled")) {
+                                message("   --> special d18Odiatom_scaled: show blue/red PLOT letters")
+                                inds <- which(xp_varname == "d18Odiatom_scaled")
+                                tmp[inds] <- NA
                             }
                             point_list[[i]]$pch <- tmp
                         }
                     }
                 } # for i in z
-                plotname_suffix <- paste0("_", paste(
-                            paste0(point_data_fname_unique, "_", point_data_varname_unique),
-                                                     collapse="_and_"))
-            } # if point_data is defined
+                plotname_suffix <- paste0("_vs_xp_", paste(
+                            paste0(xp_n_unique, "_", xp_fname_unique, "_", xp_varname_unique),
+                                                     collapse="_vs_"))
+            } # if xp is defined
 
             addland_list <- list(data="world", xlim="xlim", ylim="ylim") # default yes since lon,lat plot
             if (mode_p == "area") addland_list <- NULL # fesom
@@ -4519,6 +4641,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            addland_list=addland_list,
                            point_list=point_list,
                            segment_list=segment_list,
+                           text_list=text_list,
                            cmd_list=cmd_list)
             
             message("save plot ", plotname, " ...")
@@ -5307,17 +5430,17 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 add_meyer_etal_xlsx <- T
                 message("\nadd meyer et al. xlsx d18o data ...")
                 if (all(grepl("ladoga", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data[["Lake Ladoga"]]
+                    meyer_etal_tmp <- meyer_etal$data$"ladoga"
                 } else if (all(grepl("shuchye", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data[["Lake Bolshoye Shchuchye unpubl."]]
+                    meyer_etal_tmp <- meyer_etal$data$"shuchye"
                 } else if (all(grepl("emanda", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data[["Lake Emanda unpubl."]]
+                    meyer_etal_tmp <- meyer_etal$data$"emanda"
                 } else if (all(grepl("elgygytgyn", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data[["El'gygytgyn Lake"]]
+                    meyer_etal_tmp <- meyer_etal$data$"elgygytgyn"
                 } else if (all(grepl("two-jurts", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data[["Two Jurts Lake"]]
+                    meyer_etal_tmp <- meyer_etal$data$"two-jurts"
                 } else if (all(grepl("kotokel", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data[["Lake Kotokel"]]
+                    meyer_etal_tmp <- meyer_etal$data$"kotokel"
                 } else {
                     message("no meyer et al. xlsx data available for some of the areas\n",
                             paste(areas, collapse=", "))
@@ -7369,69 +7492,488 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 eval(parse(text=paste0("varx <- ", varnamex)))
                 eval(parse(text=paste0("vary <- ", varnamey)))
-                ndims_varx <- unique(sapply(lapply(lapply(varx, attributes), "[", "dims"), length))
-                ndims_vary <- unique(sapply(lapply(lapply(varx, attributes), "[", "dims"), length))
-                
-                if (ndims_varx == 1 && ndims_vary == 1) {
-                    dim_names_varx <- sapply(lapply(varx, attributes), "[", "dims")
-                    dim_names_vary <- sapply(lapply(varx, attributes), "[", "dims")
+                if (length(varx) != length(vary)) {
+                    stop("varx and vary are of different lengths")
+                }
 
-                    message("plot v1 vs v2 of all settings along time dims ...")
-                    scattercexs <- rep(1, t=length(varx))
-                    scatterpchs <- rep(16, t=length(varx))
+                varx_dims <- lapply(lapply(varx, attributes), "[[", "dims")
+                vary_dims <- lapply(lapply(vary, attributes), "[[", "dims")
 
-                    # "temp2_datas" or "temp2_datasmon" to "temp2"
-                    varnamexp <- regexpr("_datas", varnamex)
-                    varnamexp <- substr(varnamex, 1, varnamexp-1)
-                    varnameyp <- regexpr("_datas", varnamey)
-                    varnameyp <- substr(varnamey, 1, varnameyp-1)
-                    varname <- paste0(varnamexp, "_vs_", varnameyp)
-                    message("varnamex = \"", varnamex, "\"\n",
-                            "varnamey = \"", varnamey, "\"\n",
-                            "varnamexp = \"", varnamexp, "\"\n",
-                            "varnameyp = \"", varnameyp, "\"\n",
-                            "varname = \"", varname, "\"")
-                    eval(parse(text=paste0("varx_infos <- ", varnamexp, "_infos")))
-                    eval(parse(text=paste0("vary_infos <- ", varnameyp, "_infos")))
+                # convert potential n-dim data --> to vector
+                for (i in seq_along(varx)) {
+                    varx[[i]] <- as.vector(varx[[i]])
+                    vary[[i]] <- as.vector(vary[[i]])
+                }
 
-                    if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
-                        message("\nspecial: do ECS/TCR stuff. see https://github.com/ESMValGroup/ESMValTool/issues/1814")
-                        inds <- seq_along(z)
-                        if (length(which(grepl("piControl", names_short))) == 1) {
-                            piind <- which(grepl("piControl", names_short))
-                            inds <- inds[-piind]
-                        } else {
-                            stop("not defined")
+                message("plot v1 vs v2 of all settings along time dims ...")
+                scattercexs <- rep(1, t=length(varx))
+                scatterpchs <- rep(16, t=length(varx))
+
+                # "temp2_datas" or "temp2_datasmon" to "temp2"
+                varnamexp <- regexpr("_datas", varnamex)
+                varnamexp <- substr(varnamex, 1, varnamexp-1)
+                varnameyp <- regexpr("_datas", varnamey)
+                varnameyp <- substr(varnamey, 1, varnameyp-1)
+                varname <- paste0(varnamexp, "_vs_", varnameyp)
+                message("varnamex = \"", varnamex, "\"\n",
+                        "varnamey = \"", varnamey, "\"\n",
+                        "varnamexp = \"", varnamexp, "\"\n",
+                        "varnameyp = \"", varnameyp, "\"\n",
+                        "varname = \"", varname, "\"")
+                eval(parse(text=paste0("varx_infos <- ", varnamexp, "_infos")))
+                eval(parse(text=paste0("vary_infos <- ", varnameyp, "_infos")))
+
+                # special ECS/TCR stuff
+                if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
+                    message("\nspecial: do ECS/TCR stuff. see https://github.com/ESMValGroup/ESMValTool/issues/1814")
+                    inds <- seq_along(z)
+                    if (length(which(grepl("piControl", names_short))) == 1) {
+                        piind <- which(grepl("piControl", names_short))
+                        inds <- inds[-piind]
+                    } else {
+                        stop("not defined")
+                    }
+                    if (F) { # subtract last PI value
+                        message("subtract last PI value from experiments ...")
+                        for (i in inds) {
+                            varx[[i]] <- varx[[i]] - rep(varx[[piind]][length(varx[[piind]])], 
+                                                         t=length(length(varx[[piind]])))
+                            varx_infos[[i]]$label <- "2m temperature increase [K]"
                         }
-                        if (F) { # subtract last PI value
-                            message("subtract last PI value from experiments ...")
-                            for (i in inds) {
-                                varx[[i]] <- varx[[i]] - rep(varx[[piind]][length(varx[[piind]])], 
+                        # last: pi itself
+                        varx[[piind]] <- varx[[piind]] - rep(varx[[piind]][length(varx[[piind]])], 
                                                              t=length(length(varx[[piind]])))
-                                varx_infos[[i]]$label <- "2m temperature increase [K]"
+                        varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                    
+                    } else if (T) { # subtract PI values year by year
+                        message("substract PI values year by year ...")
+                        for (i in inds) {
+                            if (length(varx[[i]]) != length(varx[[piind]])) {
+                                stop("varx[[", i, "]] and varx[[", piind, "]] are of different length")
                             }
-                            # last: pi itself
-                            varx[[piind]] <- varx[[piind]] - rep(varx[[piind]][length(varx[[piind]])], 
-                                                                 t=length(length(varx[[piind]])))
-                            varx_infos[[piind]]$label <- "2m temperature increase [K]"
-                        
-                        } else if (T) { # subtract PI values year by year
-                            message("substract PI values year by year ...")
-                            for (i in inds) {
-                                if (length(varx[[i]]) != length(varx[[piind]])) {
-                                    stop("varx[[", i, "]] and varx[[", piind, "]] are of different length")
-                                }
-                                if (!all(dims[[i]]$timelt$year == dims[[piind]]$timelt$year)) {
-                                    stop("years of setting ", i, " and ", piind, " differ")
-                                }
-                                varx[[i]] <- varx[[i]] - varx[[piind]]
-                                varx_infos[[i]]$label <- "2m temperature increase [K]"
+                            if (!all(dims[[i]]$timelt$year == dims[[piind]]$timelt$year)) {
+                                stop("years of setting ", i, " and ", piind, " differ")
                             }
-                            # last: pi itself
-                            varx[[piind]] <- varx[[piind]] - varx[[piind]] # = all zero
-                            varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                            varx[[i]] <- varx[[i]] - varx[[piind]]
+                            varx_infos[[i]]$label <- "2m temperature increase [K]"
                         }
-                    } # if varname == "temp2_vs_toa_imbalance" do ECS/TCR stuff
+                        # last: pi itself
+                        varx[[piind]] <- varx[[piind]] - varx[[piind]] # = all zero
+                        varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                    }
+                } # if varname == "temp2_vs_toa_imbalance" do ECS/TCR stuff
+
+                xlim <- range(varx, na.rm=T)
+                ylim <- range(vary, na.rm=T)
+                xat <- pretty(xlim, n=10)
+                xlab <- format(xat, trim=T)
+                yat <- pretty(ylim, n=10)
+                ylab <- format(yat, trim=T)
+                message("xlim = ", min(xlim), " / ", max(xlim))
+                message("ylim = ", min(ylim), " / ", max(ylim))
+
+                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                   varname, "_", 
+                                   paste0(names_short, "_", seasonsp, 
+                                          "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
+                                   ".", p$plot_type)
+                dir.create(dirname(plotname), recursive=T, showWarnings=F)
+                if (p$plot_type == "png") {
+                    png(plotname, width=p$scatter_width, height=p$scatter_height,
+                        res=p$ppi, family=p$family_png)
+                } else if (p$plot_type == "pdf") {
+                    pdf(plotname, width=p$inch, height=p$inch,
+                        family=p$family_pdf, encoding=encoding)
+                }
+
+                # set plot margins
+                mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
+                mar[4] <- 1 # decrease right margin
+                if (!add_title) mar[3] <- 1 # decrease upper margin
+                if (add_data_right_yaxis_ts) mar[4] <- mar[2] # same as left  
+
+                # open plot
+                par(mar=mar)
+                plot(varx[[1]], vary[[1]], t="n",
+                     xlab=NA, ylab=NA, 
+                     xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
+                axis(1, at=xat, labels=xlab, cex.axis=1)
+                axis(2, at=yat, labels=ylab, las=1, cex.axis=1)
+
+                # add title
+                if (add_title) {
+                    title <- paste0(paste(unique(areas), collapse=","), 
+                                    " ", mode_p, " ", varname, " ", 
+                                    paste(unique(seasonsp), collapse=","), " ", 
+                                    paste(unique(fromsp), collapse=","), " to ", 
+                                    paste(unique(tosp), collapse=","))
+                    title(title, cex.main=0.5)
+                }
+
+                # add variable label
+                mtext(side=1, varx_infos[[1]]$label, line=3.4)
+                mtext(side=2, vary_infos[[1]]$label, line=3.4)
+
+                # add zero lines
+                if (add_zeroline) {
+                    abline(h=0, col="gray", lwd=0.5)
+                    abline(v=0, col="gray", lwd=0.5)
+                }
+
+                # if add 1:1 line to scatter plot
+                if (add_scatter_1to1_line) {
+                    message("add 1:1 line ...")
+                    abline(a=0, b=1, col="gray") # a=intercept, b=slope
+                }
+
+                # add data to scatter plot
+                message("add data ...")
+                plotorder <- seq_along(varx)
+                
+                # special: change plot order
+                if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
+                    # plot PI last
+                    message("special: change plot order from ", 
+                            paste(plotorder, collapse=","), " to ", appendLF=F)
+                    plotorder <- c(plotorder[-which(grepl("piControl", names_short))],
+                                   which(grepl("piControl", names_short)))
+                    if (length(plotorder) == 0) stop("length(plotorder) new is 0")
+                    message(paste(plotorder, collapse=","), " ...")
+                }
+
+                # special: add gray dots of data first
+                if (T && varname == "temp2_vs_toa_imbalance") {
+                    message("special: add every non-pi data point gray")
+                    for (i in plotorder) {
+                        if (names_short[i] == "piControl") {
+                            # nothing
+                        } else {
+                            points(varx[[i]], vary[[i]], 
+                                   #col=cols_rgb[i], 
+                                   col=rgb(t(col2rgb("gray")/255), alpha=0.2),
+                                   pch=scatterpchs[i], cex=scattercexs[i])
+                        }
+                    }
+                } # if add gray dots of data first
+                
+                # add data 
+                for (i in plotorder) {
+                    if (T && varname == "temp2_vs_toa_imbalance") {
+                        if (grepl("piControl", names_short[i])) {
+                            message("special: plot only time mean for setting ", names_short[i])
+                            points(mean(varx[[i]]), mean(vary[[i]]), 
+                                   #col=cols_rgb[i], 
+                                   col=cols[i],
+                                   pch=scatterpchs[i], cex=scattercexs[i])
+                        } else { # non-PI
+                            message("special: use year as symbols")
+                            #years_of_setting_to_show <- c(1:10, seq(25, 250, b=25))
+                            #years_of_setting_to_show <- c(1:10, 15, seq(20, 100, b=10), seq(125, 250, b=25))
+                            years_of_setting_to_show <- c(1:10, 15, seq(20, 150, b=10), seq(175, 250, b=25))
+                            tmpx <- varx[[i]]
+                            tmpy <- vary[[i]]
+                            tmpx[years_of_setting_to_show] <- NA
+                            tmpy[years_of_setting_to_show] <- NA
+                            #points(tmpx, tmpy, 
+                            #       col=cols_rgb[i], 
+                            #       #col=cols[i],
+                            #       pch=scatterpchs[i], cex=scattercexs[i])
+                            # add wanted years as text
+                            text(varx[[i]][years_of_setting_to_show], 
+                                 vary[[i]][years_of_setting_to_show], 
+                                 labels=years_of_setting_to_show,
+                                 #col=cols_rgb[i], 
+                                 col=cols[i], 
+                                 cex=scattercexs[i])
+                        }
+                        
+                    # else default plotting
+                    } else { 
+                        points(varx[[i]], vary[[i]], 
+                               col=cols_rgb_p[i],
+                               #col=cols_rgb[i], 
+                               #col=cols[i],
+                               pch=scatterpchs[i], cex=scattercexs[i])
+                    } # special plots depending on setting
+                } # finished add data to scatter plot 
+
+                # add linear trend
+                names_legend_p_w_lm <- names_legend_p
+                if (any(add_linear_trend)) {
+                    message("\nadd linear trend in scatterplot varx vs vary ...")
+                    lms_lin <- vector("list", l=length(varx))
+                    lm_text <- c()
+                    for (i in seq_along(varx)) {
+                        if (add_linear_trend[i]) {
+                            message("\nsetting ", i, "/", length(varx), ": ", names_short_p[i])
+                            lms_lin[[i]] <- lm(vary[[i]] ~ varx[[i]])
+                            lm_summary <- summary(lms_lin[[i]])
+                            print(lm_summary)
+                            # linear regression results
+                            intercept <- as.vector(lm_summary$coefficients[1,1])
+                            intercept_error <- as.vector(lm_summary$coefficients[1,2])
+                            intercept_pval <- paste0("=", lm_summary$coefficients[1,4])
+                            if (dim(lm_summary$coefficients)[1] == 1) { # all input NA or lm not succcessfull
+                                slope <- NA
+                                slope_pval <- NA
+                            } else {
+                                slope <- as.vector(lm_summary$coefficients[2,1])
+                                slope_error <- as.vector(lm_summary$coefficients[2,2])
+                                slope_pval <- lm_summary$coefficients[2,4]
+                                if (slope_pval < 1e-5) { 
+                                    slope_pval <- "<1e-5"
+                                } else {
+                                    slope_pval <- paste0("=", format(slope_pval, trim=T))
+                                }
+                                # plot regression line within data limits only
+                                if (F) {
+                                    message("draw linear regression line within regression limits only ...")
+                                    lines(varx[[i]], lms_lin[[i]]$fitted.values, 
+                                          col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                # or plot line through whole plot with regression coefficients
+                                } else if (T || 
+                                           (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i]))) {
+                                    message("draw linear regression line through whole plot ...")
+                                    abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
+                                           col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                }
+                                if (T) {
+                                    message("add linear regression coefficients to legend ...")
+                                    first_part <- names_legend_p[i]
+                                    last_part <- "" # default
+                                    last_part <- eval(substitute(expression(paste(
+                                        "(", alpha, "=", slope, ", p", p, ", r=", r, ")")),
+                                                                 list(slope=round(slope, 2), p=slope_pval, 
+                                                                      r=round(sqrt(lm_summary$r.squared), 2))))
+                                    if (is.expression(last_part)) {
+                                        new <- bquote(.(do.call(substitute, as.list(first_part))) ~ 
+                                                      .(do.call(substitute, as.list(last_part))))
+                                        names_legend_p_w_lm[i] <- eval(substitute(expression(new), list(new=new)))
+                                    }
+                                }
+                            } # if lm sucessfull or not
+                            
+                            # special stuff 
+                            if (T && varname == "temp2_vs_toa_imbalance") {
+                                # transient climate response: TCR after winton et al. 2014
+                                # --> global warming as modeled in the 1pct experiment when the pi CO2 value doubled
+                                if (grepl("1pctCO2", names_short[i]) && exists("co2_hist") && exists("co2_1pct")) {
+                                    message("\nspecial: transient climate response TCR based on `co2_hist` and `co2_1pct` after\n",
+                                            "Winton et al. 2014 (https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1002/2014GL061523):\n",
+                                            "   \"The transient sensitivity is quantified with the transient climate\n",
+                                            "   response (TCR), the global surface warming at CO2 doubling in a 1%/year\n",
+                                            "   CO2 increase experiment.\"\n",
+                                            "and later:\n",
+                                            "   \"The values for the transient climate response (TCR)—the year 61–80 \n",
+                                            "   average global warming—are ...\"\n",
+                                            "--> length(61:80) = ", length(61:80), " years\n",
+                                            "see https://github.com/ESMValGroup/ESMValTool/issues/1901 ...")
+                                    co2_hist_1850_ind <- which(co2_hist$time$year+1900 == 1850)
+                                    if (length(co2_hist_1850_ind) != 1) stop("not defined for current `co2_hist` data")
+                                    co2_hist_1850 <- drop(co2_hist$co2_ppm[co2_hist_1850_ind])
+                                    co2_1pct_doubled_1850_ind <- which.min(abs(co2_1pct$co2_ppm - 2*co2_hist_1850))[1]
+                                    co2_1pct_doubled <- drop(co2_1pct$co2_ppm[co2_1pct_doubled_1850_ind])
+                                    co2_1pct_doubled_time <- co2_1pct$time[co2_1pct_doubled_1850_ind]
+                                    co2_1pct_doubled_1850_model_ind <- difftime(d$time[[i]], 
+                                                                                rep(co2_1pct_doubled_time, t=length(d$time[[i]])))
+                                    co2_1pct_doubled_1850_model_ind <- which.min(abs(co2_1pct_doubled_1850_model_ind))[1]
+                                    deltaT_1pct_co2_doubled <- varx[[i]][co2_1pct_doubled_1850_model_ind]
+                                    message("TCR_{1year} = dT_{modelexp-1pctCO2}[CO2_{1pctCO2}=2xCO2_{piControl}]\n",
+                                            "with CO2_{piControl} from e.g. ", co2_hist$file, "\n",
+                                            "     CO2_{1pctCO2} from e.g. ", co2_1pct$file, "\n",
+                                            "--> CO2_{piControl} = CO2_{historical,year=1850} = ",
+                                            "CO2_{1pctCO2,year=1850} = ", co2_hist_1850, " ppm\n",
+                                            "--> 2 x ", co2_hist_1850, " ppm = ", 2*co2_hist_1850, " ppm\n",
+                                            "--> this CO2 value is from ", co2_hist$time[co2_hist_1850_ind], 
+                                            " (time from ", co2_hist$file, ")\n",
+                                            "--> closest CO2_{1pctCO2} = ", co2_1pct_doubled, 
+                                            " ppm from ", co2_1pct$time[co2_1pct_doubled_1850_ind], 
+                                            " (time from ", co2_1pct$file, ")\n",
+                                            "--> counting from year 1850 (=year number 1), this year ",
+                                            co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, 
+                                            " is year number ",
+                                            co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900-1850+1, " (=",
+                                            co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, "-1850+1)\n",
+                                            "--> the closest 1pctCO2 model-date to this 1pctCO2-date is ",
+                                            "model-date number ", co2_1pct_doubled_1850_model_ind, ": ", 
+                                            d$time[[i]][co2_1pct_doubled_1850_model_ind], "\n",
+                                            "--> dT_{modelexp-1pctCO2,model-year[", co2_1pct_doubled_1850_model_ind, "]=", 
+                                            dims[[i]]$timelt[co2_1pct_doubled_1850_model_ind]$year+1900, "} = ", 
+                                            deltaT_1pct_co2_doubled, " K = ",
+                                            round(deltaT_1pct_co2_doubled, 2), " K = TCR")
+                                    
+                                    # or use model year 61-80 starting from 1850
+                                    # --> 1911-1930 (20 year) mean global warming as in winton et al. 2014
+                                    #TCR_from_to <- c(as.POSIXct("1911-01-01", tz="UTC"),
+                                    #                 as.POSIXct("1931-21-31", tz="UTC"))
+                                    TCR_from_to <- c(as.POSIXct("1910-01-01", tz="UTC"),
+                                                     as.POSIXct("1930-12-31", tz="UTC"))
+                                    year_inds <- which(d$time[[i]] >= TCR_from_to[1] &
+                                                       d$time[[i]] <= TCR_from_to[2])
+                                    if (length(year_inds) == 0) {
+                                        stop("cannot calc TCR between years ", TCR_from_to[1], " and ", TCR_from_to[2], 
+                                                ": out or range of d$time[[", i, "]]")
+                                    }
+                                    average_deltaT_1pct_co2_doubled <- mean(varx[[i]][year_inds])
+                                    message("TCR_{mean} = dT_{modelexp-1pctCO2} mean over model-dates ", 
+                                            min(year_inds), " to ", max(year_inds), ":\n",
+                                            "            ", min(d$time[[i]][year_inds]), " to ",
+                                            max(d$time[[i]][year_inds]), " (n=", 
+                                            length(year_inds), "; n_unique_years=", 
+                                            length(unique(dims[[i]]$timelt[year_inds]$year+1900)), ")\n",
+                                            "--> ", average_deltaT_1pct_co2_doubled, " K = ", 
+                                            round(average_deltaT_1pct_co2_doubled, 2), " K")
+                                    lm_text <- c(lm_text, 
+                                                 eval(substitute(expression(paste(
+            "TCR = ", Delta, "T"["1%"], "(CO"[2], "=2" %*% "CO"[paste("2,PI")], " = ", co2_1pct_doubled, " ppm)")),
+                                                                 list(co2_1pct_doubled=round(co2_1pct_doubled)))),
+                                                 eval(substitute(expression(paste(
+            "    = ", bar(paste(Delta, "T"))["1%"]^"years 61-80", " = ", average_deltaT_1pct_co2_doubled, " K")),
+                                                                 list(average_deltaT_1pct_co2_doubled=round(average_deltaT_1pct_co2_doubled, 2)))))
+                                } # if 1pctCO2 and exists("co2_hist")
+                                
+                                if (grepl("abrupt-4xCO2", names_short[i]) && !is.na(slope)) {
+                                    message("\nspecial: ECS for abrupt-4xCO2 and non-NA regression slope\n",
+                                            "see https://github.com/ESMValGroup/ESMValTool/issues/1814 ...")
+                                    # gregory et al. 2004: equilibrium climate sensitivity (ECS):
+                                    alpha <- slope
+                                    alpha_error <- slope_error
+                                    radiative_forcing_F <- intercept
+                                    radiative_forcing_F_error <- intercept_error
+                                    deltaT_eq_4x <- sort(c((radiative_forcing_F - radiative_forcing_F_error)/(abs(alpha) - alpha_error),
+                                                           (radiative_forcing_F + radiative_forcing_F_error)/(abs(alpha) + alpha_error)))
+                                    deltaT_eq_2x <- deltaT_eq_4x/2
+                                    message("deltaT_eq_4x for setting ", names_short[i], " = (", round(min(deltaT_eq_4x), 2), ",", 
+                                            round(max(deltaT_eq_4x), 2), ") K (gregory et al. 2004)\n",
+                                            " --> deltaT_eq_4x/2 = deltaT_eq_2x = ECS = equilibrium climate sensitivity = ", 
+                                            round(mean(deltaT_eq_2x), 2), " (", 
+                                            round(min(deltaT_eq_2x), 2), "-", round(max(deltaT_eq_2x), 2), ") K")
+                                    Forcing <- abs(alpha)*as.vector(varx[[i]]) # = alpha*dT
+                                    lm_text <- c(lm_text,
+                                                 eval(substitute(expression(paste(
+"F"[paste("4" %*% "")], " = ", radiative_forcing_F, "" %+-% "", radiative_forcing_F_error, " W m"^paste(-2), " (intercept)")),
+                                                                 list(radiative_forcing_F=round(radiative_forcing_F, 2),
+                                                                      radiative_forcing_F_error=round(radiative_forcing_F_error, 2)))),
+                                                 eval(substitute(expression(paste(
+alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste(-2), " K"^paste(-1), " (slope)")), 
+                                                                 list(alph=round(alpha, 2), alpha_error=round(alpha_error, 2)))),
+                                                 eval(substitute(expression(paste(
+"F"[paste("4" %*% "")], "/|", alpha, ""[paste("4" %*% "")], "| = ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_eq_4x_lower, "-", deltaT_eq_4x_upper, " K")),
+                                                                 list(deltaT_eq_4x_lower=round(min(deltaT_eq_4x), 2), 
+                                                                      deltaT_eq_4x_upper=round(max(deltaT_eq_4x), 2)))),
+                                                 eval(substitute(expression(paste(
+"ECS = ", Delta, "T"[paste("eq,2" %*% "")], " = 1/2 ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_mean, " (", deltaT_eq_2x_lower, "-", deltaT_eq_2x_upper, ") K")),
+                                                                 list(deltaT_mean=round(mean(deltaT_eq_2x), 2),
+                                                                      deltaT_eq_2x_lower=round(min(deltaT_eq_2x), 2), 
+                                                                      deltaT_eq_2x_upper=round(max(deltaT_eq_2x), 2)))))
+                                } # if abrupt-4xCO2
+                            } # if temp2_vs_toa_imbalance
+                        } # if add_linear_trend[i]
+                    } # for i in seq_along(varx)
+                    if (exists("deltaT_eq_2x") && exists("average_deltaT_1pct_co2_doubled")) {
+                        CER <- average_deltaT_1pct_co2_doubled/deltaT_eq_2x # climate equilibrium ratio
+                        message("min/max of climate equilibirum ratio CER = TCR/ECS = ", min(CER), "/", max(CER))
+                    }
+                    if (!is.null(lm_text)) {
+                        message("add special linear regression infos to plot")
+                        legend("topright", 
+                               lm_text, col="black", #text.col=text_cols[i], 
+                               lty=NA, pch=NA, lwd=NA, bty="n", 
+                               cex=0.9, y.intersp=1.1)
+                    }
+                } # if any add_linear_trend
+
+                # add non-linear trend
+                if (add_nonlinear_trend) {
+                    message("\nadd non-linear trend ...")
+                    lms_exp <- vector("list", l=length(varx))
+                    library(forecast)
+                    for (i in seq_along(varx)) {
+                        if (any(i == c(2, 3))) {
+                            message("setting ", i, "/", length(varx), ": ", names_short_p[i])
+                            lms_exp[[i]] <- tslm(ts(vary[[i]]) ~ trend, lambda = 0)
+                            print(summary(lms_exp[[i]]))
+                            
+                            # plot regression line within data limits only
+                            if (F) {
+                                lines(varx[[i]], lms_lin[[i]]$fitted.values, 
+                                      col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                
+                            # or plot line through whole plot with regression coefficients
+                            } else if (T) {
+                                abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
+                                       col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                            }
+                        }
+                    }
+                }
+
+                # add legend if wanted
+                if (add_legend) {
+                    message("\nadd default stuff to plot_scatter_v1_vs_v2 legend ...")
+                    le <- list()
+                    #le$pos <- "topright"
+                    le$pos <- "bottomright"
+                    le$ncol <- 1
+                    #le$ncol <- 2 
+                    le$cex <- 1
+                    le$text <- names_legend_p_w_lm # = names_legend_p if no lm
+                    le$col <- cols_p
+                    #le$col <- cols_rgb
+                    #le$col <- cols
+                    le$text_cols <- text_cols_p
+                    le$lty <- NA
+                    le$lwds <- NA
+                    le$pchs <- scatterpchs
+                    #le$pchs <- pchs_p
+                    if (T && varname == "temp2_vs_toa_imbalance") {
+                        message("special legend pchs")
+                        le$pchs <- rep(NA, t=length(varx))
+                    }
+                    # add stuf to legend here
+                    if (F) {
+                        message("add non default stuff to plot_scatter_v1_vs_v2 legend ...")
+
+                    }
+                    # reorder reading direction from R's default top->bottom to left->right
+                    if (T) {
+                        le <- reorder_legend(le)
+                    }
+                    if (length(le$pos) == 1) {
+                        legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
+                               pch=le$pch, col=le$col, text.col=le$text_cols, ncol=le$ncol,
+                               x.intersp=0.2, cex=le$cex, bty="n")
+                    } else if (length(le$pos) == 2) {
+                        legend(x=le$pos[1], y=le$pos[2],
+                               legend=le$text, lty=le$lty, lwd=le$lwd,
+                               pch=le$pch, col=le$col, text.col=le$text_cols, ncol=le$ncol,
+                               x.intersp=0.2, cex=le$cex, bty="n")
+                    }
+                } # if add_legend
+
+                box()
+                message("save v1 vs v2 plot\n   \"", plotname, "\"\n...")
+                dev.off()
+                if (p$plot_type == "pdf") {
+                    if (T) {
+                        if (F && "extrafont" %in% (.packages())){
+                            message("run `extrafont::embed_fonts()` ...")
+                            extrafont::embed_fonts(plotname, outfile=plotname)
+                        } else {
+                            message("run `grDevices::embedFonts()` ...")
+                            grDevices::embedFonts(plotname, outfile=plotname)
+                        }
+                    } else {
+                        message("todo: sometimes pdf font embedding blurrs colors why?")
+                    }
+                }
+
+                ## scatter plot for each setting colored by time or season
+                if (T
+                    && sapply(lapply(varx_dims, "==", c("time")), all)
+                    && sapply(lapply(vary_dims, "==", c("time")), all)) {
+                    message("\nspecial: v1 vs v2 colored by time or seasons for every setting ...")
+                    message("update dinds/vinds")
 
                     xlim <- range(varx, na.rm=T)
                     ylim <- range(vary, na.rm=T)
@@ -7442,575 +7984,159 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     message("xlim = ", min(xlim), " / ", max(xlim))
                     message("ylim = ", min(ylim), " / ", max(ylim))
 
-                    plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
-                                       varname, "_", 
-                                       paste0(names_short, "_", seasonsp, 
-                                              "_", froms_plot, "_to_", tos_plot, "_", areas, collapse="_vs_"), 
-                                       ".", p$plot_type)
-                    dir.create(dirname(plotname), recursive=T, showWarnings=F)
-                    if (p$plot_type == "png") {
-                        png(plotname, width=p$scatter_width, height=p$scatter_height,
-                            res=p$ppi, family=p$family_png)
-                    } else if (p$plot_type == "pdf") {
-                        pdf(plotname, width=p$inch, height=p$inch,
-                            family=p$family_pdf, encoding=encoding)
-                    }
+                    for (i in seq_along(varx)) {
 
-                    # set plot margins
-                    mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
-                    mar[4] <- 1 # decrease right margin
-                    if (!add_title) mar[3] <- 1 # decrease upper margin
-                    if (add_data_right_yaxis_ts) mar[4] <- mar[2] # same as left  
+                        message("varx[[", i, "]] vs vary[[", i, "]] ...")
 
-                    # open plot
-                    par(mar=mar)
-                    plot(varx[[1]], vary[[1]], t="n",
-                         xlab=NA, ylab=NA, 
-                         xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
-                    axis(1, at=xat, labels=xlab, cex.axis=1)
-                    axis(2, at=yat, labels=ylab, las=1, cex.axis=1)
-
-                    # add title
-                    if (add_title) {
-                        title <- paste0(paste(unique(areas), collapse=","), 
-                                        " ", mode_p, " ", varname, " ", 
-                                        paste(unique(seasonsp), collapse=","), " ", 
-                                        paste(unique(fromsp), collapse=","), " to ", 
-                                        paste(unique(tosp), collapse=","))
-                        title(title, cex.main=0.5)
-                    }
-
-                    # add variable label
-                    mtext(side=1, varx_infos[[1]]$label, line=3.4)
-                    mtext(side=2, vary_infos[[1]]$label, line=3.4)
-
-                    # add zero lines
-                    if (add_zeroline) {
-                        abline(h=0, col="gray", lwd=0.5)
-                        abline(v=0, col="gray", lwd=0.5)
-                    }
-
-                    # if add 1:1 line to scatter plot
-                    if (add_scatter_1to1_line) {
-                        message("add 1:1 line ...")
-                        abline(a=0, b=1, col="gray") # a=intercept, b=slope
-                    }
-
-                    # add data to scatter plot
-                    message("add data ...")
-                    plotorder <- seq_along(varx)
-                    
-                    # special: change plot order
-                    if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
-                        # plot PI last
-                        message("special: change plot order from ", 
-                                paste(plotorder, collapse=","), " to ", appendLF=F)
-                        plotorder <- c(plotorder[-which(grepl("piControl", names_short))],
-                                       which(grepl("piControl", names_short)))
-                        if (length(plotorder) == 0) stop("length(plotorder) new is 0")
-                        message(paste(plotorder, collapse=","), " ...")
-                    }
-
-                    # special: add gray dots of data first
-                    if (T && varname == "temp2_vs_toa_imbalance") {
-                        message("special: add every non-pi data point gray")
-                        for (i in plotorder) {
-                            if (names_short[i] == "piControl") {
-                                # nothing
-                            } else {
-                                points(varx[[i]], vary[[i]], 
-                                       #col=cols_rgb[i], 
-                                       col=rgb(t(col2rgb("gray")/255), alpha=0.2),
-                                       pch=scatterpchs[i], cex=scattercexs[i])
+                        if (T) { # monthly
+                            
+                            # color data by time or seasons
+                            if (F) { # by time
+                                message("color v1 vs v2 by time ...")
+                                timecols <- colorRampPalette(c("blue", "red"))(length(varx[[i]]))
+                                scatter_suffix <- "_bytime"
+                            } else if (T) { # by season
+                                message("color v1 vs v2 by season ...")
+                                if (i == 1) scatterpchs_vstime <- 1:4
+                                season_cols <- c(DJF="blue", MAM="darkgreen", JJA="red", SON="brown")
+                                timecols <- rep(NA, t=length(varx[[i]]))
+                                season_pchs <- timecols
+                                timelt <- as.POSIXlt(d$time[[i]])
+                                djf_inds <- which(!is.na(match(timelt$mon+1, c(1, 2, 12))))
+                                mam_inds <- which(!is.na(match(timelt$mon+1, c(3, 4, 5))))
+                                jja_inds <- which(!is.na(match(timelt$mon+1, c(6, 7, 8))))
+                                son_inds <- which(!is.na(match(timelt$mon+1, c(9, 10, 11))))
+                                timecols[djf_inds] <- season_cols["DJF"]
+                                timecols[mam_inds] <- season_cols["MAM"]
+                                timecols[jja_inds] <- season_cols["JJA"]
+                                timecols[son_inds] <- season_cols["SON"]
+                                season_pchs[djf_inds] <- scatterpchs_vstime[1]
+                                season_pchs[mam_inds] <- scatterpchs_vstime[2]
+                                season_pchs[jja_inds] <- scatterpchs_vstime[3]
+                                season_pchs[son_inds] <- scatterpchs_vstime[4]
+                                scatter_suffix <- "_byseason"
                             }
-                        }
-                    } # if add gray dots of data first
-                    
-                    # add data 
-                    for (i in plotorder) {
-                        if (T && varname == "temp2_vs_toa_imbalance") {
-                            if (grepl("piControl", names_short[i])) {
-                                message("special: plot only time mean for setting ", names_short[i])
-                                points(mean(varx[[i]]), mean(vary[[i]]), 
-                                       #col=cols_rgb[i], 
-                                       col=cols[i],
-                                       pch=scatterpchs[i], cex=scattercexs[i])
-                            } else { # non-PI
-                                message("special: use year as symbols")
-                                #years_of_setting_to_show <- c(1:10, seq(25, 250, b=25))
-                                #years_of_setting_to_show <- c(1:10, 15, seq(20, 100, b=10), seq(125, 250, b=25))
-                                years_of_setting_to_show <- c(1:10, 15, seq(20, 150, b=10), seq(175, 250, b=25))
-                                tmpx <- varx[[i]]
-                                tmpy <- vary[[i]]
-                                tmpx[years_of_setting_to_show] <- NA
-                                tmpy[years_of_setting_to_show] <- NA
-                                #points(tmpx, tmpy, 
-                                #       col=cols_rgb[i], 
-                                #       #col=cols[i],
-                                #       pch=scatterpchs[i], cex=scattercexs[i])
-                                # add wanted years as text
-                                text(varx[[i]][years_of_setting_to_show], 
-                                     vary[[i]][years_of_setting_to_show], 
-                                     labels=years_of_setting_to_show,
-                                     #col=cols_rgb[i], 
-                                     col=cols[i], 
-                                     cex=scattercexs[i])
+                            timecols_rgb <- rgb(t(col2rgb(timecols)/255), alpha=alpha_rgb)
+                            
+                            plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                               varname, "_", 
+                                               paste0(names_short_p[i], "_", seasonsp_p[i], "_",
+                                                      froms_plot_p[i], "_to_", tos_plot_p[i], "_", 
+                                                      areas_p[i], collapse="_vs_"), 
+                                               scatter_suffix,
+                                               ".", p$plot_type)
+                            dir.create(dirname(plotname), recursive=T, showWarnings=F)
+                            if (p$plot_type == "png") {
+                                png(plotname, width=p$scatter_width, height=p$scatter_height,
+                                    res=p$ppi, family=p$family_png)
+                            } else if (p$plot_type == "pdf") {
+                                pdf(plotname, width=p$inch, height=p$inch,
+                                    family=p$family_pdf, encoding=encoding)
+                            }
+
+                            # set plot margins
+                            mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
+                            mar[4] <- 1 # decrease right margin
+                            if (!add_title) mar[3] <- 1 # decrease upper margin
+                            if (add_data_right_yaxis_ts) mar[4] <- mar[2] # same as left  
+
+                            # open plot
+                            par(mar=mar)
+                            plot(varx[[i]], vary[[i]], t="n",
+                                 xlab=NA, ylab=NA, 
+                                 xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
+                            axis(1, at=xat, labels=xlab)
+                            axis(2, at=yat, labels=ylab, las=1)
+
+                            # add title
+                            if (add_title) {
+                                title <- paste0(names_short_p[i], " ", 
+                                                paste(unique(areas_p[i]), collapse=","), 
+                                                " ", mode_p, " ", varname, " ", 
+                                                paste(unique(seasonsp_p[i]), collapse=","), " ", 
+                                                paste(unique(froms_plot_p[i]), collapse=","), " to ", 
+                                                paste(unique(tos_plot_p[i]), collapse=","))
+                                title(title, cex.main=0.5)
+                            }
+
+                            # add variable label
+                            mtext(side=1, varx_infos[[1]]$label, line=3.4, cex=0.9)
+                            mtext(side=2, vary_infos[[1]]$label, line=3.4, cex=0.9)
+
+                            # add zero lines
+                            if (add_zeroline) {
+                                abline(h=0, col="gray", lwd=0.5)
+                                abline(v=0, col="gray", lwd=0.5)
+                            }
+
+                            # add 1:1 line
+                            if (add_scatter_1to1_line) {
+                                message("add 1:1 line ...")
+                                abline(a=0, b=1, col="gray") # a=intercept, b=slope
                             }
                             
-                        # else default plotting
-                        } else { 
+                            # add data to scatter plot colored by time
+                            message("add ", names(varx)[i], " data vs seasons ...")
                             points(varx[[i]], vary[[i]], 
-                                   col=cols_rgb_p[i],
-                                   #col=cols_rgb[i], 
-                                   #col=cols[i],
-                                   pch=scatterpchs[i], cex=scattercexs[i])
-                        } # special plots depending on setting
-                    } # finished add data to scatter plot 
+                                   col=timecols,
+                                   #col=timecols_rgb,
+                                   #pch=scatterpchs_vstime[i], 
+                                   pch=season_pchs,
+                                   cex=scattercexs[i])
 
-                    # add linear trend
-                    names_legend_p_w_lm <- names_legend_p
-                    if (any(add_linear_trend)) {
-                        message("\nadd linear trend in scatterplot varx vs vary ...")
-                        lms_lin <- vector("list", l=length(varx))
-                        lm_text <- c()
-                        for (i in seq_along(varx)) {
-                            if (add_linear_trend[i]) {
-                                message("\nsetting ", i, "/", length(varx), ": ", names_short_p[i])
-                                lms_lin[[i]] <- lm(vary[[i]] ~ varx[[i]])
-                                lm_summary <- summary(lms_lin[[i]])
-                                print(lm_summary)
-                                # linear regression results
-                                intercept <- as.vector(lm_summary$coefficients[1,1])
-                                intercept_error <- as.vector(lm_summary$coefficients[1,2])
-                                intercept_pval <- paste0("=", lm_summary$coefficients[1,4])
-                                if (dim(lm_summary$coefficients)[1] == 1) { # all input NA or lm not succcessfull
-                                    slope <- NA
-                                    slope_pval <- NA
+                            # add legend if wanted
+                            if (add_legend) {
+                                le <- list()
+                                #le$pos <- "topleft"
+                                le$pos <- "topright"
+                                le$ncol <- 1
+                                #le$ncol <- 2 
+                                le$cex <- 1
+                                le$cex <- 0.85
+                                le$text <- names(season_cols) #names_legend[i]
+                                le$col <- season_cols #"black"
+                                le$lty <- NA
+                                le$lwds <- NA
+                                #le$pchs <- scatterpchs_vstime[i]
+                                le$pchs <- scatterpchs_vstime
+                                if (T) {
+                                    le <- reorder_legend(le)
+                                }
+                                if (length(le$pos) == 1) {
+                                    legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
+                                           pch=le$pch, col=le$col, ncol=le$ncol,
+                                           x.intersp=0.2, cex=le$cex, bty="n")
+                                } else if (length(le$pos) == 2) {
+                                    legend(x=le$pos[1], y=le$pos[2],
+                                           legend=le$text, lty=le$lty, lwd=le$lwd,
+                                           pch=le$pch, col=le$col, ncol=le$ncol,
+                                           x.intersp=0.2, cex=le$cex, bty="n")
+                                }
+                            } # if add_legend
+
+                            box()
+                            message("save v1 vs v2 plot colored by time or season or ...\n   \"", plotname, "\"\n...")
+                            dev.off()
+                            if (p$plot_type == "pdf") {
+                                if (T) {
+                                    if (F && "extrafont" %in% (.packages())){
+                                        message("run `extrafont::embed_fonts()` ...")
+                                        extrafont::embed_fonts(plotname, outfile=plotname)
+                                    } else {
+                                        message("run `grDevices::embedFonts()` ...")
+                                        grDevices::embedFonts(plotname, outfile=plotname)
+                                    }
                                 } else {
-                                    slope <- as.vector(lm_summary$coefficients[2,1])
-                                    slope_error <- as.vector(lm_summary$coefficients[2,2])
-                                    slope_pval <- lm_summary$coefficients[2,4]
-                                    if (slope_pval < 1e-5) { 
-                                        slope_pval <- "<1e-5"
-                                    } else {
-                                        slope_pval <- paste0("=", format(slope_pval, trim=T))
-                                    }
-                                    # plot regression line within data limits only
-                                    if (F) {
-                                        message("draw linear regression line within regression limits only ...")
-                                        lines(varx[[i]], lms_lin[[i]]$fitted.values, 
-                                              col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
-                                    # or plot line through whole plot with regression coefficients
-                                    } else if (T || 
-                                               (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i]))) {
-                                        message("draw linear regression line through whole plot ...")
-                                        abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
-                                               col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
-                                    }
-                                    if (T) {
-                                        message("add linear regression coefficients to legend ...")
-                                        first_part <- names_legend_p[i]
-                                        last_part <- "" # default
-                                        last_part <- eval(substitute(expression(paste(
-                                            "(", alpha, "=", slope, ", p", p, ", r=", r, ")")),
-                                                                     list(slope=round(slope, 2), p=slope_pval, 
-                                                                          r=round(sqrt(lm_summary$r.squared), 2))))
-                                        if (is.expression(last_part)) {
-                                            new <- bquote(.(do.call(substitute, as.list(first_part))) ~ 
-                                                          .(do.call(substitute, as.list(last_part))))
-                                            names_legend_p_w_lm[i] <- eval(substitute(expression(new), list(new=new)))
-                                        }
-                                    }
-                                } # if lm sucessfull or not
-                                
-                                # special stuff 
-                                if (T && varname == "temp2_vs_toa_imbalance") {
-                                    # transient climate response: TCR after winton et al. 2014
-                                    # --> global warming as modeled in the 1pct experiment when the pi CO2 value doubled
-                                    if (grepl("1pctCO2", names_short[i]) && exists("co2_hist") && exists("co2_1pct")) {
-                                        message("\nspecial: transient climate response TCR based on `co2_hist` and `co2_1pct` after\n",
-                                                "Winton et al. 2014 (https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1002/2014GL061523):\n",
-                                                "   \"The transient sensitivity is quantified with the transient climate\n",
-                                                "   response (TCR), the global surface warming at CO2 doubling in a 1%/year\n",
-                                                "   CO2 increase experiment.\"\n",
-                                                "and later:\n",
-                                                "   \"The values for the transient climate response (TCR)—the year 61–80 \n",
-                                                "   average global warming—are ...\"\n",
-                                                "--> length(61:80) = ", length(61:80), " years\n",
-                                                "see https://github.com/ESMValGroup/ESMValTool/issues/1901 ...")
-                                        co2_hist_1850_ind <- which(co2_hist$time$year+1900 == 1850)
-                                        if (length(co2_hist_1850_ind) != 1) stop("not defined for current `co2_hist` data")
-                                        co2_hist_1850 <- drop(co2_hist$co2_ppm[co2_hist_1850_ind])
-                                        co2_1pct_doubled_1850_ind <- which.min(abs(co2_1pct$co2_ppm - 2*co2_hist_1850))[1]
-                                        co2_1pct_doubled <- drop(co2_1pct$co2_ppm[co2_1pct_doubled_1850_ind])
-                                        co2_1pct_doubled_time <- co2_1pct$time[co2_1pct_doubled_1850_ind]
-                                        co2_1pct_doubled_1850_model_ind <- difftime(d$time[[i]], 
-                                                                                    rep(co2_1pct_doubled_time, t=length(d$time[[i]])))
-                                        co2_1pct_doubled_1850_model_ind <- which.min(abs(co2_1pct_doubled_1850_model_ind))[1]
-                                        deltaT_1pct_co2_doubled <- varx[[i]][co2_1pct_doubled_1850_model_ind]
-                                        message("TCR_{1year} = dT_{modelexp-1pctCO2}[CO2_{1pctCO2}=2xCO2_{piControl}]\n",
-                                                "with CO2_{piControl} from e.g. ", co2_hist$file, "\n",
-                                                "     CO2_{1pctCO2} from e.g. ", co2_1pct$file, "\n",
-                                                "--> CO2_{piControl} = CO2_{historical,year=1850} = ",
-                                                "CO2_{1pctCO2,year=1850} = ", co2_hist_1850, " ppm\n",
-                                                "--> 2 x ", co2_hist_1850, " ppm = ", 2*co2_hist_1850, " ppm\n",
-                                                "--> this CO2 value is from ", co2_hist$time[co2_hist_1850_ind], 
-                                                " (time from ", co2_hist$file, ")\n",
-                                                "--> closest CO2_{1pctCO2} = ", co2_1pct_doubled, 
-                                                " ppm from ", co2_1pct$time[co2_1pct_doubled_1850_ind], 
-                                                " (time from ", co2_1pct$file, ")\n",
-                                                "--> counting from year 1850 (=year number 1), this year ",
-                                                co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, 
-                                                " is year number ",
-                                                co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900-1850+1, " (=",
-                                                co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, "-1850+1)\n",
-                                                "--> the closest 1pctCO2 model-date to this 1pctCO2-date is ",
-                                                "model-date number ", co2_1pct_doubled_1850_model_ind, ": ", 
-                                                d$time[[i]][co2_1pct_doubled_1850_model_ind], "\n",
-                                                "--> dT_{modelexp-1pctCO2,model-year[", co2_1pct_doubled_1850_model_ind, "]=", 
-                                                dims[[i]]$timelt[co2_1pct_doubled_1850_model_ind]$year+1900, "} = ", 
-                                                deltaT_1pct_co2_doubled, " K = ",
-                                                round(deltaT_1pct_co2_doubled, 2), " K = TCR")
-                                        
-                                        # or use model year 61-80 starting from 1850
-                                        # --> 1911-1930 (20 year) mean global warming as in winton et al. 2014
-                                        #TCR_from_to <- c(as.POSIXct("1911-01-01", tz="UTC"),
-                                        #                 as.POSIXct("1931-21-31", tz="UTC"))
-                                        TCR_from_to <- c(as.POSIXct("1910-01-01", tz="UTC"),
-                                                         as.POSIXct("1930-12-31", tz="UTC"))
-                                        year_inds <- which(d$time[[i]] >= TCR_from_to[1] &
-                                                           d$time[[i]] <= TCR_from_to[2])
-                                        if (length(year_inds) == 0) {
-                                            stop("cannot calc TCR between years ", TCR_from_to[1], " and ", TCR_from_to[2], 
-                                                    ": out or range of d$time[[", i, "]]")
-                                        }
-                                        average_deltaT_1pct_co2_doubled <- mean(varx[[i]][year_inds])
-                                        message("TCR_{mean} = dT_{modelexp-1pctCO2} mean over model-dates ", 
-                                                min(year_inds), " to ", max(year_inds), ":\n",
-                                                "            ", min(d$time[[i]][year_inds]), " to ",
-                                                max(d$time[[i]][year_inds]), " (n=", 
-                                                length(year_inds), "; n_unique_years=", 
-                                                length(unique(dims[[i]]$timelt[year_inds]$year+1900)), ")\n",
-                                                "--> ", average_deltaT_1pct_co2_doubled, " K = ", 
-                                                round(average_deltaT_1pct_co2_doubled, 2), " K")
-                                        lm_text <- c(lm_text, 
-                                                     eval(substitute(expression(paste(
-                "TCR = ", Delta, "T"["1%"], "(CO"[2], "=2" %*% "CO"[paste("2,PI")], " = ", co2_1pct_doubled, " ppm)")),
-                                                                     list(co2_1pct_doubled=round(co2_1pct_doubled)))),
-                                                     eval(substitute(expression(paste(
-                "    = ", bar(paste(Delta, "T"))["1%"]^"years 61-80", " = ", average_deltaT_1pct_co2_doubled, " K")),
-                                                                     list(average_deltaT_1pct_co2_doubled=round(average_deltaT_1pct_co2_doubled, 2)))))
-                                    } # if 1pctCO2 and exists("co2_hist")
-                                    
-                                    if (grepl("abrupt-4xCO2", names_short[i]) && !is.na(slope)) {
-                                        message("\nspecial: ECS for abrupt-4xCO2 and non-NA regression slope\n",
-                                                "see https://github.com/ESMValGroup/ESMValTool/issues/1814 ...")
-                                        # gregory et al. 2004: equilibrium climate sensitivity (ECS):
-                                        alpha <- slope
-                                        alpha_error <- slope_error
-                                        radiative_forcing_F <- intercept
-                                        radiative_forcing_F_error <- intercept_error
-                                        deltaT_eq_4x <- sort(c((radiative_forcing_F - radiative_forcing_F_error)/(abs(alpha) - alpha_error),
-                                                               (radiative_forcing_F + radiative_forcing_F_error)/(abs(alpha) + alpha_error)))
-                                        deltaT_eq_2x <- deltaT_eq_4x/2
-                                        message("deltaT_eq_4x for setting ", names_short[i], " = (", round(min(deltaT_eq_4x), 2), ",", 
-                                                round(max(deltaT_eq_4x), 2), ") K (gregory et al. 2004)\n",
-                                                " --> deltaT_eq_4x/2 = deltaT_eq_2x = ECS = equilibrium climate sensitivity = ", 
-                                                round(mean(deltaT_eq_2x), 2), " (", 
-                                                round(min(deltaT_eq_2x), 2), "-", round(max(deltaT_eq_2x), 2), ") K")
-                                        Forcing <- abs(alpha)*as.vector(varx[[i]]) # = alpha*dT
-                                        lm_text <- c(lm_text,
-                                                     eval(substitute(expression(paste(
-    "F"[paste("4" %*% "")], " = ", radiative_forcing_F, "" %+-% "", radiative_forcing_F_error, " W m"^paste(-2), " (intercept)")),
-                                                                     list(radiative_forcing_F=round(radiative_forcing_F, 2),
-                                                                          radiative_forcing_F_error=round(radiative_forcing_F_error, 2)))),
-                                                     eval(substitute(expression(paste(
-    alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste(-2), " K"^paste(-1), " (slope)")), 
-                                                                     list(alph=round(alpha, 2), alpha_error=round(alpha_error, 2)))),
-                                                     eval(substitute(expression(paste(
-    "F"[paste("4" %*% "")], "/|", alpha, ""[paste("4" %*% "")], "| = ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_eq_4x_lower, "-", deltaT_eq_4x_upper, " K")),
-                                                                     list(deltaT_eq_4x_lower=round(min(deltaT_eq_4x), 2), 
-                                                                          deltaT_eq_4x_upper=round(max(deltaT_eq_4x), 2)))),
-                                                     eval(substitute(expression(paste(
-    "ECS = ", Delta, "T"[paste("eq,2" %*% "")], " = 1/2 ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_mean, " (", deltaT_eq_2x_lower, "-", deltaT_eq_2x_upper, ") K")),
-                                                                     list(deltaT_mean=round(mean(deltaT_eq_2x), 2),
-                                                                          deltaT_eq_2x_lower=round(min(deltaT_eq_2x), 2), 
-                                                                          deltaT_eq_2x_upper=round(max(deltaT_eq_2x), 2)))))
-                                    } # if abrupt-4xCO2
-                                } # if temp2_vs_toa_imbalance
-                            } # if add_linear_trend[i]
-                        } # for i in seq_along(varx)
-                        if (exists("deltaT_eq_2x") && exists("average_deltaT_1pct_co2_doubled")) {
-                            CER <- average_deltaT_1pct_co2_doubled/deltaT_eq_2x # climate equilibrium ratio
-                            message("min/max of climate equilibirum ratio CER = TCR/ECS = ", min(CER), "/", max(CER))
-                        }
-                        if (!is.null(lm_text)) {
-                            message("add special linear regression infos to plot")
-                            legend("topright", 
-                                   lm_text, col="black", #text.col=text_cols[i], 
-                                   lty=NA, pch=NA, lwd=NA, bty="n", 
-                                   cex=0.9, y.intersp=1.1)
-                        }
-                    } # if any add_linear_trend
-
-                    # add non-linear trend
-                    if (add_nonlinear_trend) {
-                        message("\nadd non-linear trend ...")
-                        lms_exp <- vector("list", l=length(varx))
-                        library(forecast)
-                        for (i in seq_along(varx)) {
-                            if (any(i == c(2, 3))) {
-                                message("setting ", i, "/", length(varx), ": ", names_short_p[i])
-                                lms_exp[[i]] <- tslm(ts(vary[[i]]) ~ trend, lambda = 0)
-                                print(summary(lms_exp[[i]]))
-                                
-                                # plot regression line within data limits only
-                                if (F) {
-                                    lines(varx[[i]], lms_lin[[i]]$fitted.values, 
-                                          col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
-                                    
-                                # or plot line through whole plot with regression coefficients
-                                } else if (T) {
-                                    abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
-                                           col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                    message("todo: sometimes pdf font embedding blurrs colors why?")
                                 }
                             }
-                        }
-                    }
 
-                    # add legend if wanted
-                    if (add_legend) {
-                        message("\nadd default stuff to plot_scatter_v1_vs_v2 legend ...")
-                        le <- list()
-                        #le$pos <- "topright"
-                        le$pos <- "bottomright"
-                        le$ncol <- 1
-                        #le$ncol <- 2 
-                        le$cex <- 1
-                        le$text <- names_legend_p_w_lm # = names_legend_p if no lm
-                        le$col <- cols_p
-                        #le$col <- cols_rgb
-                        #le$col <- cols
-                        le$text_cols <- text_cols_p
-                        le$lty <- NA
-                        le$lwds <- NA
-                        le$pchs <- scatterpchs
-                        #le$pchs <- pchs_p
-                        if (T && varname == "temp2_vs_toa_imbalance") {
-                            message("special legend pchs")
-                            le$pchs <- rep(NA, t=length(varx))
-                        }
-                        # add stuf to legend here
-                        if (F) {
-                            message("add non default stuff to plot_scatter_v1_vs_v2 legend ...")
+                        } # T monthly
 
-                        }
-                        # reorder reading direction from R's default top->bottom to left->right
-                        if (T) {
-                            le <- reorder_legend(le)
-                        }
-                        if (length(le$pos) == 1) {
-                            legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
-                                   pch=le$pch, col=le$col, text.col=le$text_cols, ncol=le$ncol,
-                                   x.intersp=0.2, cex=le$cex, bty="n")
-                        } else if (length(le$pos) == 2) {
-                            legend(x=le$pos[1], y=le$pos[2],
-                                   legend=le$text, lty=le$lty, lwd=le$lwd,
-                                   pch=le$pch, col=le$col, text.col=le$text_cols, ncol=le$ncol,
-                                   x.intersp=0.2, cex=le$cex, bty="n")
-                        }
-                    } # if add_legend
+                    } # for i nsettings
 
-                    box()
-                    message("save v1 vs v2 plot\n   \"", plotname, "\"\n...")
-                    dev.off()
-                    if (p$plot_type == "pdf") {
-                        if (T) {
-                            if (F && "extrafont" %in% (.packages())){
-                                message("run `extrafont::embed_fonts()` ...")
-                                extrafont::embed_fonts(plotname, outfile=plotname)
-                            } else {
-                                message("run `grDevices::embedFonts()` ...")
-                                grDevices::embedFonts(plotname, outfile=plotname)
-                            }
-                        } else {
-                            message("todo: sometimes pdf font embedding blurrs colors why?")
-                        }
-                    }
-
-                    ## scatter plot for each setting colored by time or season
-                    if (T) {
-                        message("\nspecial: v1 vs v2 colored by time or seasons for every setting ...")
-                        message("update dinds/vinds")
-
-                        xlim <- range(varx, na.rm=T)
-                        ylim <- range(vary, na.rm=T)
-                        xat <- pretty(xlim, n=10)
-                        xlab <- format(xat, trim=T)
-                        yat <- pretty(ylim, n=10)
-                        ylab <- format(yat, trim=T)
-                        message("xlim = ", min(xlim), " / ", max(xlim))
-                        message("ylim = ", min(ylim), " / ", max(ylim))
-
-                        for (i in seq_along(varx)) {
-
-                            message("varx[[", i, "]] vs vary[[", i, "]] ...")
-
-                            if (T) { # monthly
-                                
-                                # color data by time or seasons
-                                if (F) { # by time
-                                    message("color v1 vs v2 by time ...")
-                                    timecols <- colorRampPalette(c("blue", "red"))(length(varx[[i]]))
-                                    scatter_suffix <- "_bytime"
-                                } else if (T) { # by season
-                                    message("color v1 vs v2 by season ...")
-                                    if (i == 1) scatterpchs_vstime <- 1:4
-                                    season_cols <- c(DJF="blue", MAM="darkgreen", JJA="red", SON="brown")
-                                    timecols <- rep(NA, t=length(varx[[i]]))
-                                    season_pchs <- timecols
-                                    timelt <- as.POSIXlt(d$time[[i]])
-                                    djf_inds <- which(!is.na(match(timelt$mon+1, c(1, 2, 12))))
-                                    mam_inds <- which(!is.na(match(timelt$mon+1, c(3, 4, 5))))
-                                    jja_inds <- which(!is.na(match(timelt$mon+1, c(6, 7, 8))))
-                                    son_inds <- which(!is.na(match(timelt$mon+1, c(9, 10, 11))))
-                                    timecols[djf_inds] <- season_cols["DJF"]
-                                    timecols[mam_inds] <- season_cols["MAM"]
-                                    timecols[jja_inds] <- season_cols["JJA"]
-                                    timecols[son_inds] <- season_cols["SON"]
-                                    season_pchs[djf_inds] <- scatterpchs_vstime[1]
-                                    season_pchs[mam_inds] <- scatterpchs_vstime[2]
-                                    season_pchs[jja_inds] <- scatterpchs_vstime[3]
-                                    season_pchs[son_inds] <- scatterpchs_vstime[4]
-                                    scatter_suffix <- "_byseason"
-                                }
-                                timecols_rgb <- rgb(t(col2rgb(timecols)/255), alpha=alpha_rgb)
-                                
-                                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
-                                                   varname, "_", 
-                                                   paste0(names_short_p[i], "_", seasonsp_p[i], "_",
-                                                          froms_plot_p[i], "_to_", tos_plot_p[i], "_", 
-                                                          areas_p[i], collapse="_vs_"), 
-                                                   scatter_suffix,
-                                                   ".", p$plot_type)
-                                dir.create(dirname(plotname), recursive=T, showWarnings=F)
-                                if (p$plot_type == "png") {
-                                    png(plotname, width=p$scatter_width, height=p$scatter_height,
-                                        res=p$ppi, family=p$family_png)
-                                } else if (p$plot_type == "pdf") {
-                                    pdf(plotname, width=p$inch, height=p$inch,
-                                        family=p$family_pdf, encoding=encoding)
-                                }
-
-                                # set plot margins
-                                mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
-                                mar[4] <- 1 # decrease right margin
-                                if (!add_title) mar[3] <- 1 # decrease upper margin
-                                if (add_data_right_yaxis_ts) mar[4] <- mar[2] # same as left  
-
-                                # open plot
-                                par(mar=mar)
-                                plot(varx[[i]], vary[[i]], t="n",
-                                     xlab=NA, ylab=NA, 
-                                     xlim=xlim, ylim=ylim, xaxt="n", yaxt="n")
-                                axis(1, at=xat, labels=xlab)
-                                axis(2, at=yat, labels=ylab, las=1)
-
-                                # add title
-                                if (add_title) {
-                                    title <- paste0(names_short_p[i], " ", 
-                                                    paste(unique(areas_p[i]), collapse=","), 
-                                                    " ", mode_p, " ", varname, " ", 
-                                                    paste(unique(seasonsp_p[i]), collapse=","), " ", 
-                                                    paste(unique(froms_plot_p[i]), collapse=","), " to ", 
-                                                    paste(unique(tos_plot_p[i]), collapse=","))
-                                    title(title, cex.main=0.5)
-                                }
-
-                                # add variable label
-                                mtext(side=1, varx_infos[[1]]$label, line=3.4, cex=0.9)
-                                mtext(side=2, vary_infos[[1]]$label, line=3.4, cex=0.9)
-
-                                # add zero lines
-                                if (add_zeroline) {
-                                    abline(h=0, col="gray", lwd=0.5)
-                                    abline(v=0, col="gray", lwd=0.5)
-                                }
-
-                                # add 1:1 line
-                                if (add_scatter_1to1_line) {
-                                    message("add 1:1 line ...")
-                                    abline(a=0, b=1, col="gray") # a=intercept, b=slope
-                                }
-                                
-                                # add data to scatter plot colored by time
-                                message("add ", names(varx)[i], " data vs seasons ...")
-                                points(varx[[i]], vary[[i]], 
-                                       col=timecols,
-                                       #col=timecols_rgb,
-                                       #pch=scatterpchs_vstime[i], 
-                                       pch=season_pchs,
-                                       cex=scattercexs[i])
-
-                                # add legend if wanted
-                                if (add_legend) {
-                                    le <- list()
-                                    #le$pos <- "topleft"
-                                    le$pos <- "topright"
-                                    le$ncol <- 1
-                                    #le$ncol <- 2 
-                                    le$cex <- 1
-                                    le$cex <- 0.85
-                                    le$text <- names(season_cols) #names_legend[i]
-                                    le$col <- season_cols #"black"
-                                    le$lty <- NA
-                                    le$lwds <- NA
-                                    #le$pchs <- scatterpchs_vstime[i]
-                                    le$pchs <- scatterpchs_vstime
-                                    if (T) {
-                                        le <- reorder_legend(le)
-                                    }
-                                    if (length(le$pos) == 1) {
-                                        legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
-                                               pch=le$pch, col=le$col, ncol=le$ncol,
-                                               x.intersp=0.2, cex=le$cex, bty="n")
-                                    } else if (length(le$pos) == 2) {
-                                        legend(x=le$pos[1], y=le$pos[2],
-                                               legend=le$text, lty=le$lty, lwd=le$lwd,
-                                               pch=le$pch, col=le$col, ncol=le$ncol,
-                                               x.intersp=0.2, cex=le$cex, bty="n")
-                                    }
-                                } # if add_legend
-
-                                box()
-                                message("save v1 vs v2 plot colored by time or season or ...\n   \"", plotname, "\"\n...")
-                                dev.off()
-                                if (p$plot_type == "pdf") {
-                                    if (T) {
-                                        if (F && "extrafont" %in% (.packages())){
-                                            message("run `extrafont::embed_fonts()` ...")
-                                            extrafont::embed_fonts(plotname, outfile=plotname)
-                                        } else {
-                                            message("run `grDevices::embedFonts()` ...")
-                                            grDevices::embedFonts(plotname, outfile=plotname)
-                                        }
-                                    } else {
-                                        message("todo: sometimes pdf font embedding blurrs colors why?")
-                                    }
-                                }
-
-                            } # T monthly
-
-                        } # for i nsettings
-
-                    } # scatter plot for each setting colored by time
+                } # if sapply(lapply(varx_dims, "==", c("time")), all)
                 
-                } else {
-                    message("but (`dim_names_varx` = \"", paste(dim_names_varx, collapse="\", \""), 
-                            "\" && `dim_names_vary` = \"",
-                            paste(dim_names_vary, collapse="\", \""), "\") != (\"time\" && \"time\")")
-                }
-
             } else {
                 message("but `", varnamex, "` and/or `", varnamey, "` do not exist")
             }
