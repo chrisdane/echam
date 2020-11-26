@@ -1,1 +1,12 @@
 ncdf4
+# optional:
+#RColorBrewer 
+#abind
+#pangaear
+#pracma
+#sticky
+#KernSmooth
+#forecast
+#R.matlab
+#xlsx
+#RCurl

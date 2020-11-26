@@ -202,9 +202,9 @@ if (F) { # awi-esm-1-1-lr hist
     #names_legend <- "Hol-Tx10 Elgygytgyn"
     #names_legend <- "Hol-T Elgygytgyn"
     #fromsf <- "0001" # Hol-Tx10
-    fromsf <- "0004" # Hol-T; beginning of chunk 1
+    #fromsf <- "0004" # Hol-T; beginning of chunk 1
     #fromsf <- "0100"
-    #fromsf <- "6971" # last 30 years of Hol-T
+    fromsf <- "6971" # last 30 years of Hol-T
     #tosf <- "0129"
     #tosf <- "5903" # Hol-T; end of chunk 2
     #tosf <- "6173" # 
@@ -231,7 +231,7 @@ if (F) { # awi-esm-1-1-lr hist
     #remove_mean_tos <- -6996
     #remove_mean_froms <- -7000
     #remove_mean_tos <- -7000
-    seasonsf <- "annual"
+    #seasonsf <- "annual"
     #seasonsf <- "Jun"
     #seasonsf <- "Jun"
     #seasonsf <- "Dec"
@@ -255,8 +255,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "aprt"
     #varnames_in <- "aprs"
     #varnames_in <- "wisoaprt_d"
-    #varnames_in <- "wisoaprt_d_post"
-    #levs <- 2
+    varnames_in <- "wisoaprt_d_post"
+    levs <- 2
     #varnames_in <- "temp2aprt"
     #varnames_in <- "tsurfaprt"
     #varnames_in <- "ptemp"
@@ -267,8 +267,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "lm_aprt_as_time_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp_slope"
-    varnames_in <- "lm_wisoaprt_d_post_as_time_slope"
-    levs <- 2
+    #varnames_in <- "lm_wisoaprt_d_post_as_time_slope"
+    #levs <- 2
     #varnames_in <- "quv"
     #varnames_in <- "quv_direction"
     #levsf <- "_int1000-100hPa"
@@ -286,9 +286,9 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "amoc"
     #codes <- 101
     #modes <- "select"
-    #modes <- "timmean"
+    modes <- "timmean"
     #modes <- "yseasmean"
-    modes <- "yearsum"
+    #modes <- "yearsum"
     #modes <- "zonmean"
     #modes <- "vertsum"
     #modes <- "fldsum"

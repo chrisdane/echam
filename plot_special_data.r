@@ -36,6 +36,7 @@ if (F && exists("my_orb_berger")) {
     dev.off()
 } # plot berger orbital parameter for last 800ka
    
+
 # laskar orbital parameter for last 800ka
 if (F && exists("my_orb_laskar")) { # plot laskar
     message("plot ...")
@@ -66,6 +67,7 @@ if (F && exists("my_orb_laskar")) { # plot laskar
     axis(2, at=pretty(my_orb_laskar$angle_of_perihelion_deg_from_vernal_equinox, n=8), las=2)
     dev.off()
 } # plot laskar orbital parameter for last 800ka
+
 
 # compare berger and laskar orb
 if (F && exists("my_orb_berger") && exists("my_orb_laskar")) {
@@ -119,6 +121,7 @@ if (F && exists("my_orb_berger") && exists("my_orb_laskar")) {
     dev.off()
 } # compare berger and laskar orb
 
+
 # compare koehler et al. 2017 vs paul
 if (F && exists("koehler_etal_2017")) { 
     message("\ndisable here if you do not want to compare pauls and koehlers et al. 2017 CO2 ...")
@@ -156,6 +159,7 @@ if (F && exists("koehler_etal_2017")) {
     dev.off()
 } # compare koehler et al. 2017 vs paul
 
+
 if (F && exists("meyer_etal")) { # plot meyer et al data
     for (i in seq_along(meyer_etal$data)) {
         plotname <- gsub(" ", "_", names(meyer_etal$data)[i])
@@ -175,6 +179,7 @@ if (F && exists("meyer_etal")) { # plot meyer et al data
         dev.off()
     } # for all excel sheets
 } # if plot meyer et al data
+
 
 # plot silt data
 if (F && save_silt_list) {
@@ -238,9 +243,8 @@ if (F && save_silt_list) {
     legend("topright", legend_text, col=cols_silt, lty=1, pch=NA,
            bty="n", x.intersp=0.2)
     dev.off()
-} else {
-    message("enable here to plot silt data ...")
 } # if plot silt data
+
 
 # plot all Pa/Th data
 if (F && save_PaTh_list) {
@@ -427,7 +431,5 @@ if (F && save_PaTh_list) {
              labels="D", cex=0.66)
     }
     dev.off()
-} else {
-    message("enable here to plot Pa/Th data ...")
 } # if save_PaTh_list
 

@@ -3,6 +3,7 @@
 # todo: solve dependencies from other repos: make_posixlt_origin()
 #source(paste0(hompath, "/functions/myfunctions.r"))
 
+
 # mpiom land sea mask segments
 if (T) {
     f <- paste0(host$repopath, "/mpiom/mpiom_GR30s_land_sea_mask_segments_lon180.txt")
@@ -19,6 +20,7 @@ if (T) {
 } else {
     message("enable here to load mpiom land sea mask segments ...")
 }
+
 
 # cmip6 co2 hist
 f <- ""
@@ -39,6 +41,7 @@ if (T && file.exists(f)) {
     message("enable here to load hist CO2 ...")
 }
 
+
 # cmip6 co2 1pct
 f <- ""
 if (host$machine_tag == "mistral") {
@@ -58,12 +61,14 @@ if (T && file.exists(f)) {
     message("enable here to load 1pctCO2 CO2 ...")
 }
 
+
 # cmip6 4CO2 
 co2_4co2 <- list(co2_ppm=1137.2679,
                  text="", col="#1B9E77", lty=2, lwd=0.5, pch=NA)
 message("\nset 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
 add_co2_4co2 <- F
 message("set add_co2_4co2=T if you want to add to plot")
+
 
 # koehler et al. 2017 ghg by paul
 f <- ""
@@ -126,6 +131,7 @@ if (T && file.exists(f)) {
     message("enable here to load koehler et al. 2017 ghg forcing from paul ...")
 }
 
+
 # koehler et al. 2017 ghg original data
 f <- ""
 if (host$machine_tag == "stan") {
@@ -163,6 +169,7 @@ if (file.exists(f)) {
     message("enable here to load koehler et al. 2017 ghg forcing ...")
 }
 
+
 # cmip6 historical monthly total solar irradiance 
 f <- ""
 if (host$machine_tag == "mistral") {
@@ -182,6 +189,7 @@ if (T && file.exists(f)) {
 } else {
     message("enable here to load historical monthly total solar irradiance  ...")
 }
+
 
 # cmip6 historical annual total solar irradiance 
 f <- ""
@@ -203,6 +211,7 @@ if (T && file.exists(f)) {
     message("enable here to load historical monthly total solar irradiance ...")
 }
 
+
 # hadcrut4 global monthly temperature anomaly wrt 1961-1990
 f <- ""
 if (host$machine_tag == "mistral") {
@@ -222,6 +231,7 @@ if (T && file.exists(f)) {
 } else {
     message("enable here to load hadcrut4 global monthly SAT anomalies wrt to 1961-1990 from ...")
 }
+
 
 # hadcrut4 global annual temperature anomaly wrt 1961-1990
 f <- ""
@@ -244,6 +254,7 @@ if (T && file.exists(f)) {
 } else {
     message("enable here to load hadcrut4 global annual SAT anomalies wrt to 1961-1990 from ...")
 } # hadcrut4 global annual temperature anomaly wrt 1961-1990
+
 
 # marcott et al temperature anomaly wrt 1961-1990
 f <- ""
@@ -272,6 +283,7 @@ if (F && file.exists(f)) {
     message("enable here to load marcott et al. 2013 temperature anomalies wrt to 1961-1990")
 }
 
+
 # gistempv4 global annual temperature anomaly wrt 1951-1980
 f <- ""
 if (host$machine_tag == "mistral") {
@@ -289,6 +301,7 @@ if (T && file.exists(f)) {
 } else {
     message("enable here to load gistempv4 global annual SAT anomalies wrt to 1951-1980 from ...")
 }
+
 
 # rapid moc
 f <- ""
@@ -330,6 +343,7 @@ if (T && file.exists(f)) {
     message("enable here to load rapid moc from ...")
 } 
 
+
 # monthly nsidc sea ice index northern hemisphere
 f <- ""
 if (host$machine_tag == "mistral") {
@@ -350,6 +364,7 @@ if (T && file.exists(f)) {
     message("enable here to load northern nsidc sea ice index ...")
 }
 
+
 # monthly nsidc sea ice index southern hemisphere
 f <- ""
 if (host$machine_tag == "mistral") {
@@ -369,6 +384,7 @@ if (T && file.exists(f)) {
 } else {
     message("enable here to load monthly southern nsidc sea ice index ...")
 }
+
 
 # annual nsidc sea ice index northern hemisphere
 f <- ""
@@ -395,6 +411,7 @@ if (T && file.exists(f)) {
     message("enable here to load annual northern nsidc sea ice index from ...")
 }
 
+
 # annual nsidc sea ice index southern hemisphere
 f <- ""
 if (host$machine_tag == "mistral") {
@@ -419,6 +436,7 @@ if (T && file.exists(f)) {
 } else {
     message("enable here to load annual southern nsidc sea ice index ...")
 }
+
 
 # berger holocene transient _accelerated_ orbital parameter from paul
 f <- ""
@@ -457,6 +475,7 @@ if (F && file.exists(f)) {
 } else {
     message("enable here to load pauls transient accelerated berger orbital parameters ...")
 }
+
 
 # berger holocene transient _non-accelerated_ orbital parameter from paul
 f <- ""
@@ -498,6 +517,7 @@ if (F && file.exists(f)) {
     message("enable here to load pauls transient non-accelerated berger orbital parameters ...")
 }
 
+
 # berger orbital parameter for last 800ka
 f <- ""
 if (host$machine_tag == "stan") {
@@ -537,6 +557,7 @@ if (F && file.exists(f)) {
 } else {
     message("enable here to load my berger orbital parameters ...")
 }
+
 
 # laskar orbital parameter for last 800ka
 f <- ""
@@ -579,6 +600,7 @@ if (F && file.exists(f)) {
     message("enable here to load laskar orbital parameters ...")
 }
 
+
 # PLOT coords as eval list
 f <- ""
 if (host$machine_tag == "paleosrv") {
@@ -594,7 +616,7 @@ if (T && file.exists(f)) {
         cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
         cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
         cmd <- paste0(cmd, ", labels=\"", LETTERS[lakei], "\", cex=1")
-        if (T) {
+        if (F) {
             if (lakei == 1) message("special: blue")
             cmd <- paste0(cmd, ", col=\"blue\"")
         }
@@ -606,13 +628,14 @@ if (T && file.exists(f)) {
     message("enable here to load PLOT lake coords from and save in `PLOT_coords_cmd_list` ...")
 }
 
+
 # hanno meyer et al. PLOT excel sheet
 f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
     source("/isibhv/projects/paleo_work/cdanek/data/meyer_etal/read_meyer_etal_function.r")
 }
-if (T && file.exists(f)) {
+if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load hanno meyer et al. PLOT data from ", f)
     message("run read_meyer_etal_function() ...")
     #tmp <- read_meyer_etal_function(xlsx_file=f)
@@ -633,6 +656,7 @@ if (T && file.exists(f)) {
 } else {
     message("enable here to load hanno meyer et al. PLOT data excel sheet ...")
 }
+
 
 # silt size of hoogakker et al. 2011
 f <- ""
@@ -694,6 +718,7 @@ if (F && file.exists(f)) {
     message("enable here to load hoogakker et al. 2011 silt data ...")
 } # if silt hoogakker et al. 2011
 
+
 # silt size change of thornalley et al. 2013
 f <- ""
 if (host$machine_tag == "paleosrv") {
@@ -724,6 +749,7 @@ if (F && file.exists(f)) {
 } else {# if file.exists(f)
     message("enable here to load thornalley et al. 2013 silt data ...")
 } # silt size change of thornalley et al. 2013
+
 
 # silt data from mjell et al. 2015
 f <- ""
@@ -761,7 +787,8 @@ if (F && file.exists(f)) {
     message("enable here to load mjell et al. 2015 silt data from ...")
 } # if silt data from mjell et al. 2015
 
-# NOAA monthly station data from https://www.ncdc.noaa.gov/cdo-web/search
+
+# NOAA monthly temp/precip station data from https://www.ncdc.noaa.gov/cdo-web/search
 ghcdn_csv <- ""
 if (host$machine_tag == "ollie") {
     ghcdn_csv <- list.files("/work/ollie/cdanek/data/NOAA/station_data/GHCDN/monthly",
@@ -848,25 +875,21 @@ if (F && file.exists(ghcdn_csv[1])) {
     message("enable here to load NOAA station datasets ...")
 } # if NOAA station data
 
+
 # GNIP monthly station data from https://nucleus.iaea.org/wiser/index.aspx
 f <- ""
 if (host$machine_tag == "paleosrv") {
-    f <- "/isibhv/projects/paleo_work/cdanek/data/iaea_wmo/gnip/read_gnip.r"
+    f <- paste0("/isibhv/projects/paleo_work/cdanek/data/iaea_wmo/gnip/post/",
+                "gnip_ts_O18_H2_H3_H3_err_precip_tair_vapour_pressure_min_5_consecutive_complete_yrs_1953-1-15_to_2019-12-15.RData2"
+                )
 }
-if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load GNIP monthly station data ...")
-    message("source(", f, ") ...")
-    source(f)
-    #gnip_ts <- read_gnip()
-    #gnip_ts <- read_gnip(files=paste0(dirname(f), "/data/2020-10-16_GNIP_Oct20_finalData.xlsx"))
-    gnip_ts <- read_gnip(files=paste0(dirname(f), "/data/2020-10-16_GNIP_Oct20_finalData.xlsx"), 
-                         min_consecutive_complete_yrs=5 
-                         #, timmean_csv_path=NULL
-                         )
-    message("gnip finished\n")
+if (T && file.exists(f)) {
+    message("\ndisable here if you do not want to load GNIP monthly station data ...\n")
+    load(f) # gnip_list 
 } else {
-    message("enable here to load monthly GNIP data ...")
+    message("enable here to load monthly GNIP station data ...")
 } # load GNIP data
+
 
 # read bartlein et al. 2011
 fs <- ""
@@ -910,6 +933,7 @@ if (F && any(file.exists(fs))) {
     message("enable here to load bartlein et al. 2011 data ...")
 } # read bartlein et al. 2011
 
+
 # read kaufman et al. 2020 temp12k
 f <- ""
 if (host$machine_tag == "paleosrv") {
@@ -918,14 +942,18 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k data ...")
-    datnames <- load(f) # = "data"
-    kaufman_etal_2020_temp12k <- data
+    message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k data from ", f, " ...")
+    datnames <- load(f)
+    if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
+                                    paste(datnames, collapse="\", \""), 
+                                    "\". dont know which one to use")
+    eval(parse(text=paste0("kaufman_etal_2020_temp12k <- ", datnames)))
     rm(data, datnames)
 } else {
     message("enable here to load kaufman et al. 2020 temp12k data ...")
 } # read kaufman et al. 2020 temp12k
     
+
 # read global holcene lipd temp data
 f <- ""
 if (host$machine_tag == "paleosrv") {
@@ -934,13 +962,16 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load global holcene lipd temp data ...")
-    datnames <- load(f) # = "data"
-    global_holocene_lipd_temp <- data
-    rm(data, datnames)
+    message("\ndisable here if you do not want to load global holcene lipd temp data from ", f, " ...")
+    datnames <- load(f)
+    if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
+                                    paste(datnames, collapse="\", \""), 
+                                    "\". dont know which one to use")
+    eval(parse(text=paste0("global_holocene_lipd_temp <- ", datnames)))
 } else {
-    message("enable here to load global holcene lipd data ...")
+    message("enable here to load global holcene lipd temp data ...")
 } # read global holcene lipd temp data
+
 
 # read global holcene lipd precip data
 f <- ""
@@ -950,47 +981,75 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load global holcene lipd precip data ...")
-    datnames <- load(f) # = "data"
-    global_holocene_lipd_precip <- data
-    rm(data, datnames)
+    message("\ndisable here if you do not want to load global holcene lipd precip data from ", f, " ...")
+    datnames <- load(f)
+    if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
+                                    paste(datnames, collapse="\", \""), 
+                                    "\". dont know which one to use")
+    eval(parse(text=paste0("global_holocene_lipd_precip <- ", datnames)))
 } else {
-    message("enable here to load global holcene lipd data ...")
+    message("enable here to load global holcene lipd precip data ...")
 } # read global holcene lipd precip data
 
-# read konecky et al. 2020 iso2k d18o in precip data
+
+# read konecky et al. 2020 iso2k d18o_precip data
 f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/konecky_etal_2020/",
                 #"iso2k1_0_0_ts_non-scale_131_records_with_variableName_d18O_from_1967_to_2013_lm_p_lt_0.05",
-                "iso2k1_0_0_ts_non-scale_37_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
+                #"iso2k1_0_0_ts_non-scale_37_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
+                "iso2k1_0_0_ts_non-scale_147_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-100_to_63_from_1950_CE",
                 ".RData2")
 }
-
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k d18o precip data ...\n")
-    datnames <- load(f) # = "data"
-    konecky_etal_2020_iso2k_d18o_precip <- data
-    rm(data, datnames)
+    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k d18o_precip data from ", f, " ...")
+    datnames <- load(f)
+    if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
+                                    paste(datnames, collapse="\", \""), 
+                                    "\". dont know which one to use")
+    eval(parse(text=paste0("konecky_etal_2020_iso2k_d18o_precip <- ", datnames)))
 } else {
-    message("enable here to load konecky et al. 2020 iso2k d18o precip data ...")
-} # read konecky et al. 2020 iso2k d18o precip data
+    message("enable here to load konecky et al. 2020 iso2k d18o_precip data ...")
+} # read konecky et al. 2020 iso2k d18o_precip data
 
-# read konecky et al. 2020 iso2k d18o nonprecip data
+
+# read konecky et al. 2020 iso2k d18o_nonprecip data
 f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/konecky_etal_2020/",
                 "iso2k1_0_0_ts_scale_109_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_lake_or_lagoon_or_ground_or_soil_water_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
                 ".RData2")
 }
-if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k d18o nonprecip data ...\n")
-    datnames <- load(f) # = "data"
-    konecky_etal_2020_iso2k_d18o_nonprecip <- data
-    rm(data, datnames)
+if (F && file.exists(f)) {
+    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k d18o_nonprecip data from ", f, " ...")
+    datnames <- load(f)
+    if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
+                                    paste(datnames, collapse="\", \""), 
+                                    "\". dont know which one to use")
+    eval(parse(text=paste0("konecky_etal_2020_iso2k_d18o_nonprecip <- ", datnames)))
 } else {
-    message("enable here to load konecky et al. 2020 iso2k d18o nonprecip data ...")
-} # read konecky et al. 2020 iso2k d18o nonprecip data
+    message("enable here to load konecky et al. 2020 iso2k d18o_nonprecip data ...")
+} # read konecky et al. 2020 iso2k d18o_nonprecip data
+
+
+# read comas-bru et al. 2020 sisal data
+f <- ""
+if (host$machine_tag == "paleosrv") {
+    f <- paste0("/isibhv/projects/paleo_work/cdanek/data/comas-bru_etal_2020/",
+                "sisal_2.0_53_records_d18O_c_pdb_d18O_c_smow_d18O_w_smow_-100_to_67_from_1950_CE",
+                ".RData2")
+}
+if (T && file.exists(f)) {
+    message("\ndisable here if you do not want to load comas-bru et al. 2020 sisal data from ", f, " ...")
+    datnames <- load(f)
+    if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
+                                    paste(datnames, collapse="\", \""), 
+                                    "\". dont know which one to use")
+    eval(parse(text=paste0("comas_bru_etal_2020_sisal_d18o_precip <- ", datnames)))
+} else {
+    message("enable here to load comas-bru et al. 2020 sisal data ...")
+} # read comas-bru et al. 2020 sisal data
+
 
 # ERA5 time series data
 fs <- ""
@@ -1007,6 +1066,7 @@ if (F && fs != "") {
 } else {
     message("enable here to load ERA5 time series ...")
 } # if ERA5 time series
+
 
 # ERA5 spatial data
 fs <- c("era5_viwv_yseasmean_1990-2010.nc", "era5_viwv_direction_yseasmean_1990-2010.nc")
@@ -1061,6 +1121,7 @@ if (F && any(file.exists(fs))) {
     message("enable here to load ERA5 spatial datasets ...")
 } # if ERA5 spatial data
 
+
 # clean work space fom loading special data sets
 rmobjs <- c("f", "time", "years", "timelt", "nyears_to_originorigin",
             "pdoi", "tmp", "tmp2", "d", "ghcdn_csv", 
@@ -1070,3 +1131,4 @@ rmobjs <- c("f", "time", "years", "timelt", "nyears_to_originorigin",
 suppressWarnings(rm(list=rmobjs))
 
 message("\n... finished reading special data sets via load_special_data.r")
+

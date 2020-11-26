@@ -3,8 +3,8 @@
 rm(list=ls()); graphics.off()
 
 # load necessary libraries
-requirements <- scan("requirements_post.txt", what="char", quiet=T)
-for (r in requirements) library(r, character.only=T)
+requirements <- readLines("requirements_post.txt")
+for (r in requirements) if (substr(r, 1, 1) != "#") library(r, character.only=T)
 
 # load helper functions of this repo
 message("\nload helper_functions.r ...")
