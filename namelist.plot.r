@@ -20,13 +20,13 @@ pchs_filled_wout_border <- c(16, 17, 15, 18) # 1: circle, 2: triangle up, 3: squ
 pchs_filled_w_border <- c(21, 24, 22, 23)
 add_title <- T
 add_legend <- T
-message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-p <- myDefaultPlotOptions(#plot_type="png", 
-                          plot_type="pdf"
-                          #,family_png="Droid Sans Mono", 
-                          #,family_pdf="Droid Sans Mono"
-                          #,family_pdf="CM Roman"
-                          )
+message("\nrun myfunctions.r:setDefaultPlotOptions() ...")
+p <- setDefaultPlotOptions(#plot_type="png", 
+                           #plot_type="pdf"
+                           #,family_png="Droid Sans Mono", 
+                           #,family_pdf="Droid Sans Mono"
+                           #,family_pdf="CM Roman"
+                           )
 # encoding <- getOption("encoding") leads to "failed to load encoding file 'native.enc'"
 encoding <- NULL 
 alpha_rgb <- 0.2 # transparent: 0,1 (0 fully transparent)
@@ -60,7 +60,7 @@ add_smoothed <- T
 add_sd <- F
 add_linear_trend <- T
 add_nonlinear_trend <- F
-add_scatter_1to1_line <- T
+add_scatter_1to1_line <- F
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
 scale_ts <- F
@@ -741,10 +741,10 @@ if (F) { # awi-esm-1-1-lr hist
     }
     text_cols <- c("black", "#E41A1C", "#377EB8", "#1B9E77")
     scatterpchs <- c(4, 16, 16, 16)
-    varnames_in <- rep("temp2", t=4)
+    #varnames_in <- rep("temp2", t=4)
     #codes <- c(167, "", "", "")
     #varnames_in <- rep("srad0", t=4)
-    #varnames_in <- rep("toa_imbalance", t=4)
+    varnames_in <- rep("toa_imbalance", t=4)
     #varnames_in <- rep("tau_aero_550", t=4)
     #codes <- c(11, "", "", "")
     #varnames_in <- rep("srad0d", t=4)
@@ -766,7 +766,7 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("tos", t=4)
     #postpaths <- paste0(workpath, "/post/", models, "/regular_grid/ltm/", mode, "/", varnames_in)
     #reg_dxs <- reg_dys <- rep("0.250", t=4)
-    if (T) { # transient pi last 100
+    if (T) { # transient pi last 150
         if (T) { # my PI
             #fromsf <- c(1855, 1850, 1850, 1850)
             #tosf <- c(1954, 2014, 2099, 2099)
@@ -774,7 +774,7 @@ if (F) { # awi-esm-1-1-lr hist
             fromsf <- c(1942, 1850, 1850, 1850)
             tosf <- c(2091, 2014, 2099, 2099)
             new_origins <- c(1850, NA, NA, NA)
-            tosp <- rep(1999, t=4)
+            tosp <- rep(1999, t=4) # 150 yrs
         } else if (F) { # awi-esm-1-2-lr lars
             fromsf <- c(1016, 1850, 1850, 1850)
             tosf <- c(1045, 2014, 2074, 2021)
@@ -792,6 +792,7 @@ if (F) { # awi-esm-1-1-lr hist
     }
     #remove_mean_froms <- c(1849, 1850, 1850, 1850)
     #remove_mean_tos <- remove_mean_froms
+    add_linear_trend <- c(F, F, F, T)
     modes <- rep("fldmean", t=4)
     seasonsf <- rep("annual", t=4)
     #seasonsp <- rep("JFM", t=4) 

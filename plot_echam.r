@@ -411,7 +411,8 @@ for (i in seq_len(nsettings)) {
             } else {
                 if (length(time_inds) != length(timein_lt)) { 
                     message("found temporal subset of length ", length(time_inds), " out of ", 
-                            length(dims[[i]]$time), " total time points ...")
+                            length(dims[[i]]$time), " total time points:")
+                    ht(time_inds)
                     message("before range(timein_lt) = ", appendLF=F)
                     print(range(timein_lt))
                     timein_lt <- timein_lt[time_inds]
@@ -7854,7 +7855,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # special ECS/TCR stuff
                 if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
-                    message("\nspecial: do ECS/TCR stuff. see https://github.com/ESMValGroup/ESMValTool/issues/1814")
+                    message("\nspecial: calc equilibrium climate sensitivity (ECS): https://github.com/ESMValGroup/ESMValTool/issues/1814")
                     inds <- seq_along(z)
                     if (length(which(grepl("piControl", names_short))) == 1) {
                         piind <- which(grepl("piControl", names_short))
@@ -7863,7 +7864,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         stop("not defined")
                     }
                     if (F) { # subtract last PI value
-                        message("subtract last PI value from experiments ...")
+                        message("case 1: subtract last PI value from experiments ...")
                         for (i in inds) {
                             varx[[i]] <- varx[[i]] - rep(varx[[piind]][length(varx[[piind]])], 
                                                          t=length(length(varx[[piind]])))
@@ -7875,7 +7876,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         varx_infos[[piind]]$label <- "2m temperature increase [K]"
                     
                     } else if (T) { # subtract PI values year by year
-                        message("substract PI values year by year ...")
+                        message("case 2: calc `delta data(year_i) = data_experiment(year_i) minus data_piControl(year_i)` ...")
                         for (i in inds) {
                             if (length(varx[[i]]) != length(varx[[piind]])) {
                                 stop("varx[[", i, "]] and varx[[", piind, "]] are of different length")
@@ -7972,14 +7973,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # special: add gray dots of data first
                 if (T && varname == "temp2_vs_toa_imbalance") {
-                    message("special: add every non-pi data point gray")
+                    message("special: add individual years by gray points")
                     for (i in plotorder) {
-                        if (names_short[i] == "piControl") {
+                        if (F && names_short[i] == "piControl") {
+                            message("special: dont plot individual years if piControl")
                             # nothing
                         } else {
                             points(varx[[i]], vary[[i]], 
                                    #col=cols_rgb[i], 
-                                   col=rgb(t(col2rgb("gray")/255), alpha=0.2),
+                                   col=rgb(t(col2rgb("gray")/255), alpha=0.3),
                                    pch=scatterpchs[i], cex=scattercexs[i])
                         }
                     }
@@ -7988,8 +7990,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # add data 
                 for (i in plotorder) {
                     if (T && varname == "temp2_vs_toa_imbalance") {
-                        if (grepl("piControl", names_short[i])) {
-                            message("special: plot only time mean for setting ", names_short[i])
+                        if (T && grepl("piControl", names_short[i])) {
+                            message("special: plot only time mean for piControl")
                             points(mean(varx[[i]]), mean(vary[[i]]), 
                                    #col=cols_rgb[i], 
                                    col=cols[i],
@@ -8019,12 +8021,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     # else default plotting
                     } else { 
                         points(varx[[i]], vary[[i]], 
-                               col=cols_rgb_p[i],
                                #col=cols_rgb[i], 
-                               #col=cols[i],
+                               col=rgb(t(col2rgb("gray")/255), alpha=0.2),
                                pch=scatterpchs[i], cex=scattercexs[i])
                     } # special plots depending on setting
-                } # finished add data to scatter plot 
+                } # for i in plotorder 
+                # finished add data to scatter plot 
 
                 # add linear trend
                 names_legend_p_w_lm <- names_legend_p
@@ -8169,14 +8171,17 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     alpha_error <- slope_error
                                     radiative_forcing_F <- intercept
                                     radiative_forcing_F_error <- intercept_error
-                                    deltaT_eq_4x <- sort(c((radiative_forcing_F - radiative_forcing_F_error)/(abs(alpha) - alpha_error),
-                                                           (radiative_forcing_F + radiative_forcing_F_error)/(abs(alpha) + alpha_error)))
+                                    deltaT_eq_4x <- radiative_forcing_F/abs(alpha)
+                                    deltaT_eq_4x_error <- sort(c((radiative_forcing_F - radiative_forcing_F_error)/(abs(alpha) - alpha_error),
+                                                                 (radiative_forcing_F + radiative_forcing_F_error)/(abs(alpha) + alpha_error)))
                                     deltaT_eq_2x <- deltaT_eq_4x/2
-                                    message("deltaT_eq_4x for setting ", names_short[i], " = (", round(min(deltaT_eq_4x), 2), ",", 
-                                            round(max(deltaT_eq_4x), 2), ") K (gregory et al. 2004)\n",
+                                    deltaT_eq_2x_error <- deltaT_eq_4x_error/2
+                                    message("deltaT_eq_4x for setting ", names_short[i], " = ", round(deltaT_eq_4x, 2), " (", 
+                                            round(min(deltaT_eq_4x_error), 2), "-", round(max(deltaT_eq_4x_error), 2), 
+                                            ") K (gregory et al. 2004)\n",
                                             " --> deltaT_eq_4x/2 = deltaT_eq_2x = ECS = equilibrium climate sensitivity = ", 
-                                            round(mean(deltaT_eq_2x), 2), " (", 
-                                            round(min(deltaT_eq_2x), 2), "-", round(max(deltaT_eq_2x), 2), ") K")
+                                            round(deltaT_eq_2x, 2), " (", round(min(deltaT_eq_2x_error), 2), "-", 
+                                            round(max(deltaT_eq_2x_error), 2), ") K")
                                     Forcing <- abs(alpha)*as.vector(varx[[i]]) # = alpha*dT
                                     lm_text <- c(lm_text,
                                                  eval(substitute(expression(paste(
@@ -8187,14 +8192,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
 alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste(-2), " K"^paste(-1), " (slope)")), 
                                                                  list(alph=round(alpha, 2), alpha_error=round(alpha_error, 2)))),
                                                  eval(substitute(expression(paste(
-"F"[paste("4" %*% "")], "/|", alpha, ""[paste("4" %*% "")], "| = ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_eq_4x_lower, "-", deltaT_eq_4x_upper, " K")),
-                                                                 list(deltaT_eq_4x_lower=round(min(deltaT_eq_4x), 2), 
-                                                                      deltaT_eq_4x_upper=round(max(deltaT_eq_4x), 2)))),
+"F"[paste("4" %*% "")], "/|", alpha, ""[paste("4" %*% "")], "| = ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_eq_4x, " (", deltaT_eq_4x_lower, "-", deltaT_eq_4x_upper, ") K")),
+                                                                 list(deltaT_eq_4x=round(deltaT_eq_4x, 2),
+                                                                      deltaT_eq_4x_lower=round(min(deltaT_eq_4x_error), 2), 
+                                                                      deltaT_eq_4x_upper=round(max(deltaT_eq_4x_error), 2)))),
                                                  eval(substitute(expression(paste(
-"ECS = ", Delta, "T"[paste("eq,2" %*% "")], " = 1/2 ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_mean, " (", deltaT_eq_2x_lower, "-", deltaT_eq_2x_upper, ") K")),
-                                                                 list(deltaT_mean=round(mean(deltaT_eq_2x), 2),
-                                                                      deltaT_eq_2x_lower=round(min(deltaT_eq_2x), 2), 
-                                                                      deltaT_eq_2x_upper=round(max(deltaT_eq_2x), 2)))))
+"ECS = ", Delta, "T"[paste("eq,2" %*% "")], " = 1/2 ", Delta, "T"[paste("eq,4" %*% "")], " = ", deltaT_eq_2x, " (", deltaT_eq_2x_lower, "-", deltaT_eq_2x_upper, ") K")),
+                                                                 list(deltaT_eq_2x=round(deltaT_eq_2x, 2),
+                                                                      deltaT_eq_2x_lower=round(min(deltaT_eq_2x_error), 2), 
+                                                                      deltaT_eq_2x_upper=round(max(deltaT_eq_2x_error), 2)))))
                                 } # if abrupt-4xCO2
                             } # if temp2_vs_toa_imbalance
                         } # if add_linear_trend[i]
