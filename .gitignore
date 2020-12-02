@@ -14,6 +14,7 @@
 !namelist.loop.plot.r
 !namelist.plot.r
 !namelist.post.r
+!namelist.area.r
 !plot_echam.r
 !plot_loop_echam.r
 !post_echam.r
