@@ -20,13 +20,13 @@ pchs_filled_wout_border <- c(16, 17, 15, 18) # 1: circle, 2: triangle up, 3: squ
 pchs_filled_w_border <- c(21, 24, 22, 23)
 add_title <- T
 add_legend <- T
-message("\nrun myfunctions.r:setDefaultPlotOptions() ...")
-p <- setDefaultPlotOptions(#plot_type="png", 
-                           plot_type="pdf"
-                           #,family_png="Droid Sans Mono", 
-                           #,family_pdf="Droid Sans Mono"
-                           #,family_pdf="CM Roman"
-                           )
+message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
+p <- myDefaultPlotOptions(#plot_type="png", 
+                          plot_type="pdf"
+                          #,family_png="Droid Sans Mono", 
+                          #,family_pdf="Droid Sans Mono"
+                          #,family_pdf="CM Roman"
+                          )
 # encoding <- getOption("encoding") leads to "failed to load encoding file 'native.enc'"
 encoding <- NULL 
 alpha_rgb <- 0.2 # transparent: 0,1 (0 fully transparent)

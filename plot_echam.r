@@ -980,12 +980,14 @@ for (i in seq_len(nsettings)) {
     vars <- vector("list", l=ncin$nvars)
     var_infos <- vars
     for (vi in 1:length(vars)) {
-        message(vi, "/", length(vars), ": \"", vars_per_file[vi], "\"")
+        message(vi, "/", length(vars), ": \"", vars_per_file[vi], "\"", appendLF=F)
         
         # ignore variable
         if (any(ignore_vars == vars_per_file[vi])) {
             message(" --> this variable is included in `ignore_vars` --> ignore this variable ...")
             next # variable of this setting
+        } else {
+            message()
         }
         
         if (vars_per_file[vi] == paste0("var", codes[i])) {
@@ -1017,7 +1019,7 @@ for (i in seq_len(nsettings)) {
             names(dim_lengths) <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[", "name")
             if (any(dim_lengths == 1)) {
                 len1_dim_inds <- which(dim_lengths == 1)
-                message("`squeeze=T` --> drop dims of length 1: \"", 
+                message("`\nsqueeze=T` --> drop dims of length 1: \"", 
                         paste(names(len1_dim_inds), collapse="\", \""), "\" ...")
                 dimids <- dimids[-len1_dim_inds]
                 for (di in seq_along(len1_dim_inds)) {
@@ -4099,21 +4101,30 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                         sapply(gregexpr("\\{", prefs), "[[", 1) + 1,
                                         sapply(gregexpr(",", prefs), "[[", 1) - 1)
                         names(bibtex) <- prefs
+                        if (zname == "wisoaprt_d") {
+                            latex_varname <- "$\\delta^{18}$O$_\\text{p,SMOW}$ [\\textperthousand]"
+                        } else {
+                            stop("not defined")
+                        }
+                        latex_caption <- paste0("References and temporal average periods of ", latex_varname, " data from Pangaea shown in Fig. \\ref{fig:timmean_d18o_pi_gnip_iso2k_sisal_pangaea} and \\ref{fig:scatter_d18o_pi_linear_gnip_iso2k_sisal_pangaea}.")
                         lines <- c("\\begin{table}",
-                                   "\\caption{asdasd}",
+                                   paste0("\\appendcaption{A1}{", latex_caption, "}"),
                                    "\\begin{center}",
                                    "\\begin{footnotesize}",
-                                   "\\begin{tabular}{clccccccl}",
+                                   "\\bgroup",
+                                   "\\def\\arraystretch{0.8} % change rowsize; 1=default",
+                                   "\\begin{tabular}{rlrrrrrrr}",
                                    "\\toprule",
-                                   paste0("\\thead{n} & ",
-                                          "\\thead{Pangaea reference} & ",
-                                          "\\thead{lon [$^{\\circ}$]} & ",
-                                          "\\thead{lat [$^{\\circ}$]} & ",
-                                          "\\thead{Start from \\\\ 1950 CE} & ",
-                                          "\\thead{End from \\\\ 1950 CE} & ",
-                                          "\\thead{Start from \\\\ 0 CE} & ",
-                                          "\\thead{End from \\\\ 0 CE} & ",
-                                          "\\thead{Pangaea DOI}",
+                                   paste0("\\thead{No}",
+                                          " & \\thead{Pangaea reference}",
+                                          " & \\thead{lon [$^{\\circ}$]}",
+                                          " & \\thead{lat [$^{\\circ}$]}",
+                                          " & \\thead{Start from \\\\ 1950 CE}",
+                                          " & \\thead{End from \\\\ 1950 CE}",
+                                          " & \\thead{Start from \\\\ 0 CE}",
+                                          " & \\thead{End from \\\\ 0 CE}",
+                                          " & \\thead{", latex_varname, "}",
+                                          #" & \\thead{Pangaea DOI}",
                                           "\\\\"),
                                    "\\midrule")
                         cnt <- 0
@@ -4155,14 +4166,17 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 line[j] <- paste0(line[j], " & ", fromto_1950[2])
                                 line[j] <- paste0(line[j], " & ", fromto_0[1])
                                 line[j] <- paste0(line[j], " & ", fromto_0[2])
-                                line[j] <- paste0(line[j], " & ")
-                                if (j == 1) {
-                                    if (F) { # url
-                                        line[j] <- paste0(line[j], 
-                                                          "\\href{", pdois_unique[i], "}{", 
-                                                          basename(dirname(pdois_unique[i])), "/", basename(pdois_unique[i]), "}")
-                                    } else if (T) { # just doi
-                                        line[j] <- paste0(line[j], basename(dirname(pdois_unique[i])), "/", basename(pdois_unique[i]))
+                                line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$data_mean, 2))
+                                if (F) { # add pangaea DOI
+                                    if (j == 1) {
+                                        line[j] <- paste0(line[j], " & ")
+                                        if (F) { # complete url
+                                            line[j] <- paste0(line[j], 
+                                                              "\\href{", pdois_unique[i], "}{", 
+                                                              basename(dirname(pdois_unique[i])), "/", basename(pdois_unique[i]), "}")
+                                        } else if (T) { # just doi
+                                            line[j] <- paste0(line[j], basename(dirname(pdois_unique[i])), "/", basename(pdois_unique[i]))
+                                        }
                                     }
                                 }
                                 line[j] <- paste0(line[j], "\\\\")
@@ -4173,6 +4187,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    "\\bottomrule",
                                    "\\label{tab:pangaea}",
                                    "\\end{tabular}",
+                                   "\\egroup",
                                    "\\end{footnotesize}",
                                    "\\end{center}",
                                    "\\end{table}", 

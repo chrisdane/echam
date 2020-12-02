@@ -349,7 +349,7 @@ if (length(pdois) == 0) {
     message("load ", length(pdois), " pangaea dois ...")
     
     for (pgi in seq_along(pdois)) {
-        if (pgi == 1) library(pangaear)
+        if (pgi == 1) suppressPackageStartupMessages(library(pangaear))
         if (pg_verbose) message("*************************************")
         message("load doi ", pgi, "/", length(pdois), appendLF=F)
         if (is.null(pdois[[pgi]]$pdoi)) stop("`pdois[[", pgi, "]]$pdoi` is null")
