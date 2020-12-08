@@ -164,13 +164,21 @@ if (exists("season_names")) {
     }
 }
 if (!exists("sellevels")) sellevels <- rep(NA, t=nsettings)
+if (!exists("sellevsidx")) sellevsidx <- rep(NA, t=nsettings)
+inds <- which(!is.na(sellevels) & !is.na(sellevsidx))
+if (length(inds) > 0) {
+    stop("sellevels[", paste(inds, collapse=","), "] = ", paste(sellevels[inds], collapse=", "),
+         " and sellevsidx[", paste(inds, collapse=","), "] = ", paste(sellevsidx[inds], collapse=", "), 
+         ". decide for one")
+}
 if (!exists("lev_fnames")) lev_fnames <- rep("", t=nsettings)
 if (any(!is.na(sellevels))) {
     lev_fnames[which(!is.na(sellevels))] <- paste0("_sellevel_", sellevels[which(!is.na(sellevels))])
 }
-if (any(is.na(sellevels))) {
-    lev_fnames[which(is.na(sellevels))] <- ""
+if (any(!is.na(sellevsidx))) {
+    lev_fnames[which(!is.na(sellevsidx))] <- paste0("_sellevidx_", sellevsidx[which(!is.na(sellevsidx))])
 }
+
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
 
 # check for new times if wanted
@@ -273,7 +281,8 @@ for (i in 1:nsettings) {
     message("season_name = ", season_names[i])
     message("season_inds = ", paste0(season_inds[[i]], collapse=","))
     message("area_out = ", areas_out[i])
-    if (!is.na(sellevels[i])) message("lev_out = ", sellevels[i])
+    if (!is.na(sellevels[i])) message("sellevel = ", sellevels[i])
+    if (!is.na(sellevsidx[i])) message("sellevidx = ", sellevsidx[i])
     if (!is.null(new_date_list[[i]])) {
         if (!is.null(new_date_list[[i]]$years)) {
             message("new_date_list[[", i, "]]$years = ")
@@ -451,7 +460,7 @@ for (i in 1:nsettings) {
                     }
                     # todo: YYYY_from, YYYY_to, MM_from, MM_to
                 } else {
-                    message("\npattern \"", special_patterns_in_filenames[pati], " occurs ", length(pati_list), 
+                    message("\npattern \"", special_patterns_in_filenames[pati], " occurs ", length(pattern_list), 
                             " times and the values differ from each other:")
                     for (patj in yyyy_list) ht(yyyy_list[[patj]])
                     stop("-> dont know how to interpret this.")
@@ -513,7 +522,8 @@ for (i in 1:nsettings) {
         # todo: same as above with months_filenames
 
         # check if found input years are strange: dt not constant
-        if (length(unique(diff(unique(years_filenames)))) != 1) {
+        if (length(years_filenames) > 1 && 
+            length(unique(diff(unique(years_filenames)))) != 1) {
             warning("found years have non-constant dt. evaulate further with e.g. `diff(unique(years_filenames))`")
         }
 
@@ -831,6 +841,7 @@ for (i in 1:nsettings) {
 
             # check if requested variable is in first found file
             message("\ncheck if requested variable ", appendLF=F)
+
             if (!is.na(codes[i])) { # code not provided
                 cdoselect <- paste0(cdo_select_no_history, " -select,code=", codes[i])
                 message("\"var", codes[i], "\"", appendLF=F)
@@ -839,18 +850,38 @@ for (i in 1:nsettings) {
                 message("\"", fvarnames[i], "\"", appendLF=F)
             }
             message(" is present in first found file ...")
-            varcheck_file <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", files[1])
-            cmd <- paste0(cdoprefix, " ", cdoconvert, " ", cdoselect, " ", datapaths[i], "/", files[1], " ", varcheck_file)
-            message("run `", cmd, "`")
-            check <- system(cmd, intern=T)
             
-            # if requested variable was not found in first found file
+            # 1st (faster) try: `cdo partab`
+            if (T) {
+                cmd <- paste0(cdoprefix, " ", cdo_select_no_history, " partab ", datapaths[i], "/", files[1])
+                message("run `", cmd, "`")
+                check <- system(cmd, intern=T)
+                if (!is.na(codes[i])) { # code not provided
+                    teststring <- paste0("name=var", codes[i])
+                } else {
+                    teststring <- paste0("name=", fvarnames[i])
+                }
+                if (!any(grepl(teststring, check))) { # requested variable not found in files[1]
+                    attributes(check) <- list(status=1)
+                }
+
+            # 2nd (slower) try: `cdo select`
+            } else if (F) {
+                varcheck_file <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", files[1])
+                cmd <- paste0(cdoprefix, " ", cdoconvert, " ", cdoselect, " ", datapaths[i], "/", files[1], " ", varcheck_file)
+                message("run `", cmd, "`")
+                check <- system(cmd, intern=T)
+                if (clean) system(paste0("rm -v ", varcheck_file))
+            }
+            # finished if requested variable was not found in first found file
             
-            if (F) { # test
+
+            if (F) { # for testing
                 message("\n*********** for testing set variable to not found ************\n")
                 attributes(check) <- list(status=1)
             }
             
+
             if (!is.null(attributes(check))) { # requested variable not in first found file
 
                 message("--> requested variable \"", fvarnames[i], "\" was not found in first file:\n",
@@ -982,8 +1013,7 @@ for (i in 1:nsettings) {
                 own_cmd <- F
 
                 # continue with default case -> cdo cmd and not any of `cdo_known_cmds`
-                message("--> requested variable was found in first file")
-                if (clean) system(paste0("rm -v ", varcheck_file))
+                message("--> requested variable \"", fvarnames[i], "\" was found in first file")
             
                 # construct necessary cdo commands
                 message("\nconstruct cdo command chain (cdo version = ", 
@@ -1021,8 +1051,10 @@ for (i in 1:nsettings) {
                 cdosellevel <- "" # default: none
                 if (!is.na(sellevels[i])) {
                     cdosellevel <- paste0("-sellevel,", paste0(sellevels[i], collapse=","))
+                } else if (!is.na(sellevsidx[i])) {
+                    cdosellevel <- paste0("-sellevidx,", paste0(sellevsidx[i], collapse=","))
                 }
-                
+
                 ## sellonlatbox
                 cdoselarea <- "" # default: none
                 if (areas_out[i] != "global") {
@@ -1249,8 +1281,8 @@ for (i in 1:nsettings) {
                     message("\ncdo version ", paste(cdo_version, collapse="."), " >= 1.9.4",
                             " AND `new_date_list[[", i, "]]` is NULL\n",
                             "--> can run a single cdo selection and calculation command as e.g.\n",
-                            "   `[[-t <model>] -f <type> [copy]] -fldmean -sellevel,<lev> -select,name=<varname>`\n",
-                            "   `[[-t <model>] -f <type> [copy]] -fldmean -selmon,<mon> -sellevel,<lev> -select,name=<varname>`\n",
+                            "   `cdo [[-t <model>] -f <type> [copy]] -fldmean -sellevel,<lev> -select,name=<varname>`\n",
+                            "   `cdo [[-t <model>] -f <type> [copy]] -fldmean -selmon,<mon> -sellevel,<lev> -select,name=<varname>`\n",
                             "...")
 
                     cmd <- paste0(cdoprefix, " ", cdoconvert, 

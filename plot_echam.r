@@ -3,7 +3,7 @@
 #options(warn=2) # stop on warnings
 #options(warn=0) # back to default
 
-if (T) {
+if (F) {
     message("\nrm(list=ls())")
     rm(list=ls())
     # make squeeze default:
@@ -228,8 +228,10 @@ data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 
 ## load pangaea data if defined 
-message("\nload pangaea data via load_pangaea_data.r ...")
-source("load_pangaea_data.r")
+if (F) {
+    message("\nload pangaea data via load_pangaea_data.r ...")
+    source("load_pangaea_data.r")
+}
 
 ## load special data if defined
 message("\nload special data via load_special_data.r ...")
@@ -7881,15 +7883,20 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             if (length(varx[[i]]) != length(varx[[piind]])) {
                                 stop("varx[[", i, "]] and varx[[", piind, "]] are of different length")
                             }
+                            if (length(vary[[i]]) != length(vary[[piind]])) {
+                                stop("vary[[", i, "]] and vary[[", piind, "]] are of different length")
+                            }
                             if (!all(dims[[i]]$timelt$year == dims[[piind]]$timelt$year)) {
                                 stop("years of setting ", i, " and ", piind, " differ")
                             }
                             varx[[i]] <- varx[[i]] - varx[[piind]]
                             varx_infos[[i]]$label <- "2m temperature increase [K]"
+                            vary[[i]] <- vary[[i]] - vary[[piind]]
                         }
                         # last: pi itself
                         varx[[piind]] <- varx[[piind]] - varx[[piind]] # = all zero
                         varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                        if (F) vary[[piind]] <- vary[[piind]] - vary[[piind]] # = all zero
                     }
                 } # if varname == "temp2_vs_toa_imbalance" do ECS/TCR stuff
 
@@ -8131,7 +8138,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                             "--> dT_{modelexp-1pctCO2,model-year[", co2_1pct_doubled_1850_model_ind, "]=", 
                                             dims[[i]]$timelt[co2_1pct_doubled_1850_model_ind]$year+1900, "} = ", 
                                             deltaT_1pct_co2_doubled, " K = ",
-                                            round(deltaT_1pct_co2_doubled, 2), " K = TCR")
+                                            round(deltaT_1pct_co2_doubled, 2), " K")
                                     
                                     # or use model year 61-80 starting from 1850
                                     # --> 1911-1930 (20 year) mean global warming as in winton et al. 2014

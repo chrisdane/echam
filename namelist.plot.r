@@ -96,17 +96,17 @@ scatter_s1_vs_s1_varname <- "tsurf"
 
 plot_scatter_v1_vs_v2 <- T # uses `datas`
 varnamex <- varnamey <- "abc_datas" # default
-#varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
+varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
 #varnamex <- "tsurf_datas"
 #varnamex <- "tsurfaprt_datas"
 #varnamex <- "quv_datas"
 #varnamex <- "quv_direction_datasan"
-varnamex <- "lm_temp2_as_time_slope_datas"
+#varnamex <- "lm_temp2_as_time_slope_datas"
 #varnamex <- "aprt_datas"
-#varnamey <- "toa_imbalance_datas"
+varnamey <- "toa_imbalance_datas"
 #varnamey <- "quv_direction_datas"
 #varnamey <- "wisoaprt_d_datas"
-varnamey <- "lm_wisoaprt_d_post_as_time_slope_datas"
+#varnamey <- "lm_wisoaprt_d_post_as_time_slope_datas"
 
 # time vs depth:
 add_ts_to_time_vs_depth <- T
@@ -159,7 +159,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -717,16 +717,16 @@ if (F) { # awi-esm-1-1-lr hist
 
 # =====================================
 # 4 settings
-} else if (F) { # awi-esm-1-1-lr deck
+} else if (T) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
-    if (F) { # awi-cm-1-1-lr
+    if (T) { # awi-cm-1-1-lr
         prefixes <- c("awi-cm-1-1-lr_piControl",
                       "awi-cm-1-1-lr_historical",
                       "awi-cm-1-1-lr_1percCO2",
                       "awi-cm-1-1-lr_4CO2")
         names_short <- paste0("awi-cm-1-1-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
-    } else if (T) { # awi-esm-1-1-lr
+    } else if (F) { # awi-esm-1-1-lr
         prefixes <- c("awi-esm-1-1-lr_piControl",
                       "awi-esm-1-1-lr_historical",
                       "awi-esm-1-1-lr_1percCO2",
@@ -741,10 +741,10 @@ if (F) { # awi-esm-1-1-lr hist
     }
     text_cols <- c("black", "#E41A1C", "#377EB8", "#1B9E77")
     scatterpchs <- c(4, 16, 16, 16)
-    #varnames_in <- rep("temp2", t=4)
+    varnames_in <- rep("temp2", t=4)
     #codes <- c(167, "", "", "")
     #varnames_in <- rep("srad0", t=4)
-    varnames_in <- rep("toa_imbalance", t=4)
+    #varnames_in <- rep("toa_imbalance", t=4)
     #varnames_in <- rep("tau_aero_550", t=4)
     #codes <- c(11, "", "", "")
     #varnames_in <- rep("srad0d", t=4)
@@ -792,7 +792,8 @@ if (F) { # awi-esm-1-1-lr hist
     }
     #remove_mean_froms <- c(1849, 1850, 1850, 1850)
     #remove_mean_tos <- remove_mean_froms
-    add_linear_trend <- c(F, F, F, T)
+    #add_linear_trend <- c(F, F, F, T)
+    add_linear_trend <- c(F, F, T, T)
     modes <- rep("fldmean", t=4)
     seasonsf <- rep("annual", t=4)
     #seasonsp <- rep("JFM", t=4) 
