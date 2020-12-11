@@ -181,6 +181,8 @@ if (any(!is.na(sellevsidx))) {
 
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
 
+if (!exists("cdo_before_calcs")) cdo_before_calcs <- rep("", t=nsettings)
+
 # check for new times if wanted
 message("check if `new_date_list` is set and correct ... ", appendLF=F)
 if (!exists("new_date_list")) {
@@ -256,7 +258,9 @@ if (any(models == "mpiom1")) {
 }
 
 # special filename patterns
-special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>", "<MM>", "<MM_from>", "<MM_to>")
+special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>", 
+                      "<MM>", "<MM_from>", "<MM_to>",
+                      "<DD>", "<DD_from>", "<DD_to>")
 
 message("\nnameslist.post.r checks finished. start running post_echam.r for ", nsettings, 
         " model setup", ifelse(nsettings > 1, "s", ""), " ...")
@@ -352,6 +356,10 @@ for (i in 1:nsettings) {
                         sub_list[[pati]]$replacement_length <- 4
                     } else if (any(pattern == c("<MM>", "<MM_from>", "<MM_to>"))) {
                         sub_list[[pati]]$replacement_length <- 2
+                    } else if (any(pattern == c("<DD>", "<DD_from>", "<DD_to>"))) {
+                        sub_list[[pati]]$replacement_length <- 2
+                    } else {
+                        stop("not pattern \"", pattern, "\" not defined yet")
                     }
                 # all other patterns: replace <pattern> by value of object in the current work space named `pattern`
                 } else { 
@@ -364,7 +372,7 @@ for (i in 1:nsettings) {
                             eval(parse(text=paste0("replacement <- ", obj)))
                         }
                     } else { # no such a variable exists
-                        stop("   did not find an object named \"", obj, " to replace the pattern \"", 
+                        stop("   did not find an object named \"", obj, "\" to replace the pattern \"", 
                              pattern, "\" in `fpatterns[", i, "]`. dont know how to interpret this case.")
                     }
                     message("   replace pattern \"", pattern, "\" by \"", replacement, "\"")
@@ -408,7 +416,7 @@ for (i in 1:nsettings) {
         ticcmd <- Sys.time()
         files <- system(cmd, intern=T)
         toccmd <- Sys.time()
-        if (length(files) == 0) stop("Zero files found. Are `datapaths` and `fpattern` correct?")
+        if (length(files) == 0) stop("Zero files found. Are `datapaths` and `fpatterns` correct?")
         elapsedcmd <- toccmd - ticcmd
         message("`find` of ", length(files), " files took ", elapsedcmd, " ", attributes(elapsedcmd)$units) 
 
@@ -522,7 +530,8 @@ for (i in 1:nsettings) {
         # todo: same as above with months_filenames
 
         # check if found input years are strange: dt not constant
-        if (length(years_filenames) > 1 && 
+        if (length(years_filenames) > 1 &&
+            diff(range(years_filenames)) > 1 && 
             length(unique(diff(unique(years_filenames)))) != 1) {
             warning("found years have non-constant dt. evaulate further with e.g. `diff(unique(years_filenames))`")
         }
@@ -862,6 +871,7 @@ for (i in 1:nsettings) {
                     teststring <- paste0("name=", fvarnames[i])
                 }
                 if (!any(grepl(teststring, check))) { # requested variable not found in files[1]
+                    message("   teststring \"", teststring, "\" not found in partab")
                     attributes(check) <- list(status=1)
                 }
 
@@ -1038,13 +1048,15 @@ for (i in 1:nsettings) {
                 } # which cat/mergetime depending on mode
 
                 ## calculation
-                cdocalc <- paste0("-", modes[i]) # default; e.g. "-fldmean"
                 if (modes[i] == "select") {
                     cdocalc <- "" # variable selection only
                 } else if (modes[i] == "volint") {
                     message("only test")
                     cdocalc <- "-fldsum -vertsum"
+                } else { # else default:
+                    cdocalc <- paste0("-", modes[i]) # default; e.g. "-fldmean"
                 } # which calculation depending on mode
+                if (cdo_before_calcs[i] != "") cdocalc <- paste0(cdocalc, " -", cdo_before_calcs[i])
                 message("`modes[", i, "]` = \"", modes[i], "\" --> `cdocalc` = \"", cdocalc, "\" ...")
 
                 ## sellevel

@@ -3,7 +3,7 @@
 #options(warn=2) # stop on warnings
 #options(warn=0) # back to default
 
-if (F) {
+if (T) {
     message("\nrm(list=ls())")
     rm(list=ls())
     # make squeeze default:
@@ -1562,8 +1562,9 @@ for (i in 1:nsettings) {
         if (scale_ts) data_infos[[i]][[vi]]$label <- paste0(data_infos[[i]][[vi]]$label, " (Index)")
 
         # add variable-specific things
-        data_infos[[i]][[vi]]$units_old <- data_infos[[i]][[vi]]$units # to avoid having this line to often below
-        if (any(varname == c("temp2", "tas"))) {
+        data_infos[[i]][[vi]]$units_old <- data_infos[[i]][[vi]]$units
+        
+        if (any(varname == c("temp2", "tas", "t"))) {
             if (grepl("C", data_infos[[i]][[vi]]$units)) {
                 message("detected a \"C\" in the `units` attribute of ", varname, 
                         " --> assume that data is already in deg C")
@@ -1575,19 +1576,36 @@ for (i in 1:nsettings) {
                 data_infos[[i]][[vi]]$offset$operator <- "-"
                 data_infos[[i]][[vi]]$offset$value <- 273.15
             }
-            data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " [°C]"))
-            if (!is.na(remove_mean_froms[i])) {
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("T"["2m"], " anomaly wrt ", range, " [°C]")),
-                                            list(range=paste(unique(c(remove_mean_froms[i], 
-                                                                      remove_mean_tos[i])), collapse="-"))))
-            }
-            if (!is.na(remove_setting)) {
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("T"["2m"], " anomaly wrt ", set, " [°C]")),
-                                            list(set=remove_setting)))
-            }
-            if (F) { # anomaly:
-                message("*** special label ***")
-                data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " anomaly [°C]"))
+        
+            if (any(varname == c("t"))) {
+                data_infos[[i]][[vi]]$label <- expression(paste("T [°C]"))
+                if (scale_ts) data_infos[[i]][[vi]]$label <- expression(paste("T (Index)"))
+                data_infos[[i]][[vi]]$label <- expression(paste("st [°C]"))
+                if (scale_ts) data_infos[[i]][[vi]]$label <- expression(paste("st (Index)"))
+            
+            } else if (any(varname == c("temp2", "tas"))) {
+                data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " [°C]"))
+                if (T && varname == "temp2") {
+                    data_infos[[i]][[vi]]$label <- expression(paste("temp2 [°C]"))
+                    if (scale_ts) data_infos[[i]][[vi]]$label <- expression(paste("temp2 (Index)"))
+                }
+                if (T && varname == "tas") {
+                    data_infos[[i]][[vi]]$label <- expression(paste("tas [°C]"))
+                    if (scale_ts) data_infos[[i]][[vi]]$label <- expression(paste("tas (Index)"))
+                }
+                if (!is.na(remove_mean_froms[i])) {
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("T"["2m"], " anomaly wrt ", range, " [°C]")),
+                                                list(range=paste(unique(c(remove_mean_froms[i], 
+                                                                          remove_mean_tos[i])), collapse="-"))))
+                }
+                if (!is.na(remove_setting)) {
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("T"["2m"], " anomaly wrt ", set, " [°C]")),
+                                                list(set=remove_setting)))
+                }
+                if (F) { # anomaly:
+                    message("*** special label ***")
+                    data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " anomaly [°C]"))
+                }
             }
         
         } else if (varname == "tsurf") {
@@ -3345,7 +3363,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # time labels
                 tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
-                if (T) {
+                if (F) {
                     message("my special tlablt")
                     tlablt <- make_posixlt_origin(seq(-7000, 0, b=1000)) 
                 }
@@ -3355,43 +3373,88 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # remove lables which are possibly out of limits due to pretty
                 tlab_diff_secs <- as.numeric(diff(range(tlablt)), units="secs") # duration of time labels
                 if (any(tlablt < tlimlt[1])) {
-                    # check if the too early autmatic time labels are negligible
-                    overshoot_diff <- abs(as.numeric(tlablt[tlablt < tlimlt[1]], units="secs") - tlim[1])
-                    overshoot_rel <- overshoot_diff/tlab_diff_secs*100
-                    if (any(overshoot_rel > 1)) { # todo: only change pretty labels if overshoot is > 1% of total time label range  
-                        message("remove some automatic labels < ", tlimlt[1], " ...")
-                        print(tlablt[which(tlablt < tlimlt[1])[overshoot_rel > 1]])
-                        tlablt <- tlablt[-which(tlablt < tlimlt[1])[overshoot_rel > 1]]
+                    if (F) { # remove pretty labels with overshoot > 1% of total time label range  
+                        overshoot_diff <- abs(as.numeric(tlablt[tlablt < tlimlt[1]], units="secs") - tlim[1])
+                        overshoot_rel <- overshoot_diff/tlab_diff_secs*100
+                        if (any(overshoot_rel > 1)) { # todo: only change pretty labels if overshoot is > 1% of total time label range  
+                            message("remove some automatic labels < ", tlimlt[1], " ...")
+                            print(tlablt[which(tlablt < tlimlt[1])[overshoot_rel > 1]])
+                            tlablt <- tlablt[-which(tlablt < tlimlt[1])[overshoot_rel > 1]]
+                        }
+                    } else if (F) { # remove pretty labels < total time label range
+                        inds <- which(tlablt < tlimlt[1])
+                        if (length(inds) == length(tlablt)) {
+                            stop("removing pretty labels < tlimlt[1] would remove all labels")
+                        } else {
+                            tlablt <- tlablt[-inds]
+                        }
+                    } else if (T) { # remove pretty labels whose day & mon & year are != total time label range
+                        inds <- which(tlablt < tlimlt[1])
+                        inds <- inds[which(tlablt$mday[inds] != tlimlt[1]$mday & 
+                                           tlablt$mon[inds] != tlimlt[1]$mon & 
+                                           tlablt$year[inds] != tlimlt[1]$year)]
+                        if (length(inds) > 0) {
+                            if (length(inds) == length(tlablt)) {
+                                stop("removing pretty labels < tlimlt[1] would remove all labels")
+                            } else {
+                                tlablt <- tlablt[-inds]
+                            }
+                        }
                     }
                 }
                 if (any(tlablt > tlimlt[2])) {
-                    # check if the too late automatic time labels are negligible
-                    overshoot_diff <- abs(as.numeric(tlablt[tlablt > tlimlt[2]], units="secs") - tlim[2])
-                    overshoot_rel <- overshoot_diff/tlab_diff_secs*100
-                    if (any(overshoot_rel > 1)) { # todo: only change pretty labels if overshoot is > 1% of total time label range  
-                        message("remove some automatic labels > ", tlimlt[2], " ...")
-                        print(tlablt[which(tlablt > tlimlt[2])[overshoot_rel > 1]])
-                        tlablt <- tlablt[-which(tlablt > tlimlt[2])[overshoot_rel > 1]]
+                    if (F) { # remove pretty labels with overshoot > 1% of total time label range  
+                        overshoot_diff <- abs(as.numeric(tlablt[tlablt > tlimlt[2]], units="secs") - tlim[2])
+                        overshoot_rel <- overshoot_diff/tlab_diff_secs*100
+                        if (any(overshoot_rel > 1)) { 
+                            message("remove some automatic labels > ", tlimlt[2], " ...")
+                            print(tlablt[which(tlablt > tlimlt[2])[overshoot_rel > 1]])
+                            tlablt <- tlablt[-which(tlablt > tlimlt[2])[overshoot_rel > 1]]
+                        }
+                    } else if (F) { # remove pretty labels > total time label range
+                        inds <- which(tlablt > tlimlt[2])
+                        if (length(inds) == length(tlablt)) {
+                            stop("removing pretty labels > tlimlt[2] would remove all labels")
+                        } else {
+                            tlablt <- tlablt[-inds]
+                        }
+                    } else if (T) { # remove pretty labels whose day & mon & year are != total time label range
+                        inds <- which(tlablt > tlimlt[2])
+                        inds <- inds[which(tlablt$mday[inds] != tlimlt[2]$mday & 
+                                           tlablt$mon[inds] != tlimlt[2]$mon & 
+                                           tlablt$year[inds] != tlimlt[2]$year)]
+                        if (length(inds) > 0) {
+                            if (length(inds) == length(tlablt)) {
+                                stop("removing pretty labels < tlimlt[1] would remove all labels")
+                            } else {
+                                tlablt <- tlablt[-inds]
+                            }
+                        }
                     }
                 }
+                if (length(tlablt) == 0) stop("removed all tlablt")
                 tatn <- as.numeric(tlablt)
-
+                
                 # modify time axis labels YYYY-MM-DD depending on range covered:
                 tunit <- "time"
-                if (tlab_diff_secs >= 360*24*60*60) { # do not show days if range of tlim is above 1 year
-                    message("duration of time dim is longer than 1 year --> ",
-                            "use year only as time labels and set `tunit` from \"time\" to \"year\" ...")
-                    tlablt <- tlablt$year + 1900 # YYYY; this destroys POSIX object
-                    tunit <- "year"
-                } else { # decrease label size due to long labels
-                    message("duration of time dim is shorter than 1 year --> ",
-                            "change time label angle ...")
-                    tlabsrt <- 45
+                if (length(tlablt) > 1) {
+                    tlab_dt_secs <- as.numeric(diff(range(tlablt[1:2])), units="secs") # duration of time labels
+                    if (tlab_dt_secs >= 30*24*60*60) { # do not show days if dt >= 1 mon
+                        tlablt <- paste0(tlablt$year+1900, "-", tlablt$mon+1) # YYYY; this destroys POSIX object
+                        if (tlab_dt_secs >= 365*24*60*60) { # do not show months if dt >= 1 yr
+                            tlablt <- tlablt$year+1900 # YYYY; this destroys POSIX object
+                        }
+                    } else { # decrease label size due to long labels
+                        message("duration of time dim is shorter than 1 year --> ",
+                                "change time label angle ...")
+                        tlablt <- paste0(tlablt$year+1900, "-", tlablt$mon+1, "-", tlablt$mday) # YYYY; this destroys POSIX object
+                        tlabsrt <- 45
+                    }
                 }
                 message("final tlablt = ", paste(tlablt, collapse=", "))
 
                 # if all dates < 0 AD, use "abs(dates) BP" instead
-                if (tunit == "year" && all(tlablt <= 0)) {
+                if (all(anlim <= 0)) {
                     message("all times are <= 0 AD --> use `abs(times)` for time labels instead ...")
                     neg_inds <- which(tlablt < 0)
                     tlablt[neg_inds] <- abs(tlablt[neg_inds])
@@ -3403,11 +3466,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 }
                 message("final tunit = \"", tunit, "\"")
-
                 
                 # use years from time for plots versus years 
-                anat <- tlablt
-                anlab <- anat
+                #anlab <- tlablt$year+1900
+                #anat <- as.numeric(as.POSIXct(paste0(anlab, "-1-1"), o="1970-1-1", tz="UTC"))
+                anlab <- tlablt
+                anat <- tatn
 
             } # if any(ntime_per_setting > 1)
 
@@ -6072,9 +6136,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
 
             # special: add first data point
-            if (add_first_data_point) {
+            if (show_first_data_point) {
                 for (i in seq_along(z)) {
-                    if (i == 1) message("\nadd first data point")
+                    if (i == 1) message("\n`show_first_data_point`=T --> show first data point")
                     points(d$time[[i]][1], z[[i]][1], 
                            col=cols_p[i], lty=ltys_p[i], lwd=lwds_p[i], 
                            pch=1)
@@ -6185,10 +6249,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_legend) {
                 message("\nadd default stuff to datas legend here1 ...")
                 le <- list()
-                if (suppressPackageStartupMessages(require(Hmisc))) {
+                if (F && suppressPackageStartupMessages(require(Hmisc))) {
                     tmp <- Hmisc::largest.empty(x=unlist(d$time), y=unlist(z), method="area")
                     le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner
                     message("automatically derived legend position: ", le$pos[1], ", ", le$pos[2])
+                } else if (T && suppressPackageStartupMessages(require(adagio))) {
+                    tmp <- adagio::maxempty(x=unlist(d$time), y=unlist(z), ax=par("usr")[1:2], ay=par("usr")[3:4])
+                    #rect(tmp$rect[1], tmp$rect[2], tmp$rect[3], tmp$rect[4])
+                    le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
+                    message("automatically derived adagio::maxempty legend position: ", le$pos[1], ", ", le$pos[2])
                 } else {
                     le$pos <- "bottom" 
                     #le$pos <- "topleft" 

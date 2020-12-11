@@ -20,13 +20,13 @@ pchs_filled_wout_border <- c(16, 17, 15, 18) # 1: circle, 2: triangle up, 3: squ
 pchs_filled_w_border <- c(21, 24, 22, 23)
 add_title <- T
 add_legend <- T
-message("\nrun myfunctions.r:setDefaultPlotOptions() ...")
-p <- setDefaultPlotOptions(#plot_type="png", 
-                           #plot_type="pdf"
-                           #,family_png="Droid Sans Mono", 
-                           #,family_pdf="Droid Sans Mono"
-                           #,family_pdf="CM Roman"
-                           )
+message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
+p <- myDefaultPlotOptions(plot_type="png", 
+                          #plot_type="pdf"
+                          #,family_png="Droid Sans Mono", 
+                          #,family_pdf="Droid Sans Mono"
+                          #,family_pdf="CM Roman"
+                          )
 # encoding <- getOption("encoding") leads to "failed to load encoding file 'native.enc'"
 encoding <- NULL 
 alpha_rgb <- 0.2 # transparent: 0,1 (0 fully transparent)
@@ -58,7 +58,7 @@ add_zeroline <- T
 add_unsmoothed <- F
 add_smoothed <- T
 add_sd <- F
-add_linear_trend <- T
+add_linear_trend <- F
 add_nonlinear_trend <- F
 add_scatter_1to1_line <- F
 add_scatter_density <- F
@@ -76,7 +76,7 @@ ts_highlight_seasons <- list(#bool=T,
                              #pchs=1:4,
                              pchs=c(16, 16, 16, 16),
                              suffix="_highlight_seasons") 
-add_first_data_point <- F
+show_first_data_point <- T
 ts_plot_each_setting_in_subplot <- F
 add_data_right_yaxis_ts <- T
 add_cor_data_left_and_right_ts <- F
@@ -715,9 +715,19 @@ if (F) { # awi-esm-1-1-lr hist
     modes <- c("select", "select", "select")
     areas <- c("ladoga_remapnn", "ladoga_remapnn", "ladoga_remapnn")
 
+} else if (T) { # echam restart issue
+    models <- rep("echam6", t=3)
+    prefixes <- paste0("awi-cm-1-1-lr_historical_", c("6hr", "day", "mon"))
+    names_short <- c("6hr", "day", "mon")
+    fromsf <- rep(1850, t=3)
+    tosf <- rep(1851, t=3)
+    names_legend <- paste0("temp2 ", names_short)
+    varnames_in <- rep("temp2", t=3)
+    modes <- rep("fldmean", t=3)
+
 # =====================================
 # 4 settings
-} else if (T) { # awi-esm-1-1-lr deck
+} else if (F) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
     if (T) { # awi-cm-1-1-lr
@@ -957,6 +967,23 @@ if (F) { # awi-esm-1-1-lr hist
     cols_samedims <- 1:4 
     ltys_samedims <- rep(1, t=4)
     areas <- rep("global", t=4)
+
+} else if (F) { # echam restart issue
+    models <- rep("echam6", t=4)
+    prefixes <- paste0("awi-cm-1-1-lr_historical_", c("3hr", "6hr", "day", "mon"))
+    names_short <- c("3hr", "6hr", "day", "mon")
+    #prefixes <- paste0("awi-esm-1-1-lr_historical_", c("3hr", "6hrPlev", "day", "Amon"))
+    #names_short <- c("3hr", "6hrPlev", "day", "Amon")
+    fromsf <- rep(1850, t=4)
+    tosf <- rep(1851, t=4)
+    #names_legend <- paste0("st ", names_short)
+    #varnames_in <- rep("st", t=4)
+    #levs <- rep(47, t=4)
+    names_legend <- paste0("lsp ", names_short)
+    varnames_in <- rep("lsp", t=4)
+    #names_legend <- paste0("tas ", names_short)
+    #varnames_in <- rep("tas", t=4)
+    modes <- rep("fldmean", t=4)
 
 # ==================================================
 ## 5 settings 
