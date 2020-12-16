@@ -21,8 +21,8 @@ pchs_filled_w_border <- c(21, 24, 22, 23)
 add_title <- T
 add_legend <- T
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-p <- myDefaultPlotOptions(plot_type="png", 
-                          #plot_type="pdf"
+p <- myDefaultPlotOptions(#plot_type="png", 
+                          plot_type="pdf"
                           #,family_png="Droid Sans Mono", 
                           #,family_pdf="Droid Sans Mono"
                           #,family_pdf="CM Roman"
@@ -560,7 +560,7 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " last 30 years mean minus piControl")))))
     }
 
-} else if (F) { # Hol-7 vs Hol-T with vs without orbital acceleration
+} else if (T) { # Hol-7 vs Hol-T with vs without orbital acceleration
     #prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_wiso_mm", t=3)
     prefixes <- rep("cosmos-aso-wiso_Hol-T_main_mm", t=3)
     #prefixes <- rep("cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area", t=3)
@@ -690,6 +690,7 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- c(1000, 3*500, 500) # Hol-7 mean
     #n_mas <- c(1000, 6*500, 3*500) # Hol-7 mean
     #n_mas <- c(1200, 12000, 1200)
+    regboxes <- lapply(vector("list", l=3), append, list(regbox="NAsiberia"))
 
 } else if (F) { # three vars of qu, qv, quv
     prefixes <- c("cosmos-aso-wiso_Hol-Tx10_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev",
@@ -715,7 +716,7 @@ if (F) { # awi-esm-1-1-lr hist
     modes <- c("select", "select", "select")
     areas <- c("ladoga_remapnn", "ladoga_remapnn", "ladoga_remapnn")
 
-} else if (T) { # echam restart issue
+} else if (F) { # echam restart issue
     models <- rep("echam6", t=3)
     prefixes <- paste0("awi-cm-1-1-lr_historical_", c("6hr", "day", "mon"))
     names_short <- c("6hr", "day", "mon")

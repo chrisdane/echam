@@ -445,7 +445,7 @@ if (host$machine_tag == "paleosrv") {
 }
 if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load pauls transient accelerated berger orbital parameters from ", f, " ...")
-    orb_berger_acc <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precessionobliquity"))
+    orb_berger_acc <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
     years <- orb_berger_acc$year_before_1950 # kyr before 1950 --> 7.00 6.99 6.98 6.97 ... 0.03 0.02 0.01 0.00
     years <- -1*years*1000 # --> -7000 -6990 -6980 -6970 -6960 ... -40 -30 -20 -10   0
     timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
@@ -486,7 +486,7 @@ if (host$machine_tag == "stan") {
 }
 if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load pauls transient non-accelerated berger orbital parameters from ", f, " ...")
-    orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precessionobliquity"))
+    orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
     years <- orb_berger$year_before_1950 # kyr before 1950 --> 6.999, 6.998, 6997, ...
     years <- -1*years*1000 # --> -6999, -6998, -6997, ...
     timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
@@ -600,6 +600,8 @@ if (F && file.exists(f)) {
     message("enable here to load laskar orbital parameters ...")
 }
 
+# berger and laoutre 1999 orbital parameters
+# pdoi = "10.1594/PANGAEA.56040"
 
 # PLOT coords as eval list
 f <- ""

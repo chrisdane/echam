@@ -3357,13 +3357,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 tlimlt <- as.POSIXlt(tlim, origin="1970-1-1", tz="UTC")
                 tlimct <- as.POSIXct(tlimlt)
                 tlabcex <- 0.8
-                tlabsrt <- 0
                 monlim <- range(tlimlt$mon+1)
                 anlim <- range(tlimlt$year+1900)
 
                 # time labels
                 tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
-                if (F) {
+                if (T) {
                     message("my special tlablt")
                     tlablt <- make_posixlt_origin(seq(-7000, 0, b=1000)) 
                 }
@@ -3436,20 +3435,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 tatn <- as.numeric(tlablt)
                 
                 # modify time axis labels YYYY-MM-DD depending on range covered:
-                tunit <- "time"
+                tunit <- "time"; tlabsrt <- 0 # defaults
                 if (length(tlablt) > 1) {
-                    tlab_dt_secs <- as.numeric(diff(range(tlablt[1:2])), units="secs") # duration of time labels
-                    if (tlab_dt_secs >= 30*24*60*60) { # do not show days if dt >= 1 mon
-                        tlablt <- paste0(tlablt$year+1900, "-", tlablt$mon+1) # YYYY; this destroys POSIX object
-                        if (tlab_dt_secs >= 365*24*60*60) { # do not show months if dt >= 1 yr
-                            tlablt <- tlablt$year+1900 # YYYY; this destroys POSIX object
-                        }
-                    } else { # decrease label size due to long labels
-                        message("duration of time dim is shorter than 1 year --> ",
-                                "change time label angle ...")
-                        tlablt <- paste0(tlablt$year+1900, "-", tlablt$mon+1, "-", tlablt$mday) # YYYY; this destroys POSIX object
-                        tlabsrt <- 45
-                    }
+                    tlab_dt_secs <- as.numeric(diff(range(tlablt[1:2])), units="secs") # dt between time labels
+                } else {
+                    tlab_dt_secs <- 1 # sec; placeholder
+                }
+                if (tlab_dt_secs < 30*24*60*60) { # shorter than 1 month: YYYY-MM-DD
+                    tlablt <- paste0(tlablt$year+1900, "-", tlablt$mon+1, "-", tlablt$mday)
+                    tlabsrt <- 45
+                } else if (tlab_dt_secs >= 30*24*60*60 && tlab_dt_secs < 365*24*60*60) { # longer than 1 month and shorter than 1 year: YYYY-MM
+                    tlablt <- paste0(tlablt$year+1900, "-", tlablt$mon+1) 
+                } else if (tlab_dt_secs >= 365*24*60*60) { # longer than 1 year: YYYY
+                    tlablt <- tlablt$year+1900
                 }
                 message("final tlablt = ", paste(tlablt, collapse=", "))
 
@@ -5160,7 +5158,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
 
             # load additional data sets
-            addland_list <- NULL
+            cmd_list <- addland_list <- NULL
 
             message("get global zlim ... ", appendLF=F)
             zlim <- range(z, na.rm=T)
@@ -5196,7 +5194,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
             if (add_mpiom_GR30_lsm_seg) {
                 message("special: add mpiom land sea mask segments to plot ...")
-                addland_list <- list(data=mpiom_GR30_lsm_seg, ylim="ylim")
+                if (F) { # default
+                    addland_list <- list(data=mpiom_GR30_lsm_seg, ylim="ylim")
+                } else if (T) { # use regbox xlims
+                    addland_list <- list(data=mpiom_GR30_lsm_seg, xlim=range(lapply(regboxes, "[[", "lons")), ylim="ylim")
+                }
+            }
+            if (exists("PLOT_coords_cmd_list")) {
+                message("special: add PLOT coords to plot ...")
+                cmd_list <- c(cmd_list, PLOT_coords_cmd_list)
             }
             
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
@@ -5241,6 +5247,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            contour_only=T, contour_posneg_redblue=T,
                            #add_contour=T,
                            addland_list=addland_list,
+                           cmd_list=cmd_list
                            #xlim=tlimct, 
                            , x_at=tatn, x_labels=tlablt, xlab=tunit, 
                            ylab="Latitude [°]",

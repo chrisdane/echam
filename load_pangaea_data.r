@@ -225,6 +225,11 @@ if (T) {
                                                         dims=list("vasilchuk_etal_2020_time"="Comm"))))))
 }
 
+# pollen
+if (F) { # cao et al. 2020 siberia 40k compilation
+    # https://doi.pangaea.de/10.1594/PANGAEA.898616
+}
+
 # pa_th
 if (F) {
     stop("todo")
