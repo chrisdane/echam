@@ -3362,7 +3362,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # time labels
                 tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
-                if (T) {
+                if (F) {
                     message("my special tlablt")
                     tlablt <- make_posixlt_origin(seq(-7000, 0, b=1000)) 
                 }
@@ -7944,17 +7944,29 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     if (F) { # subtract last PI value
                         message("case 1: subtract last PI value from experiments ...")
                         for (i in inds) {
-                            varx[[i]] <- varx[[i]] - rep(varx[[piind]][length(varx[[piind]])], 
-                                                         t=length(length(varx[[piind]])))
+                            varx[[i]] <- varx[[i]] - varx[[piind]][length(varx[[piind]])]
                             varx_infos[[i]]$label <- "2m temperature increase [K]"
+                            vary[[i]] <- vary[[i]] - vary[[piind]][length(vary[[piind]])]
                         }
                         # last: pi itself
-                        varx[[piind]] <- varx[[piind]] - rep(varx[[piind]][length(varx[[piind]])], 
-                                                             t=length(length(varx[[piind]])))
+                        varx[[piind]] <- varx[[piind]] - varx[[piind]][length(varx[[piind]])]
                         varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                        #vary[[piind]] <- vary[[piind]] - vary[[piind]][length(varx[[piind]])]
+                    
+                    } else if (F) { # subtract last 100-yr mean PI value
+                        message("case 2: subtract last 100-yr mean PI value from experiments ...")
+                        for (i in inds) {
+                            varx[[i]] <- varx[[i]] - mean(varx[[piind]])
+                            varx_infos[[i]]$label <- "2m temperature increase [K]"
+                            vary[[i]] <- vary[[i]] - mean(vary[[piind]])
+                        }
+                        # last: pi itself
+                        varx[[piind]] <- varx[[piind]] - mean(varx[[piind]])
+                        varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                        #vary[[piind]] <- vary[[piind]] - mean(vary[[piind]])
                     
                     } else if (T) { # subtract PI values year by year
-                        message("case 2: calc `delta data(year_i) = data_experiment(year_i) minus data_piControl(year_i)` ...")
+                        message("case 3: calc `delta data(year_i) = data_experiment(year_i) minus data_piControl(year_i)` ...")
                         for (i in inds) {
                             if (length(varx[[i]]) != length(varx[[piind]])) {
                                 stop("varx[[", i, "]] and varx[[", piind, "]] are of different length")
@@ -7973,6 +7985,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         varx[[piind]] <- varx[[piind]] - varx[[piind]] # = all zero
                         varx_infos[[piind]]$label <- "2m temperature increase [K]"
                         if (F) vary[[piind]] <- vary[[piind]] - vary[[piind]] # = all zero
+                    } else {
+                        message("did not subtract any PI values")
                     }
                 } # if varname == "temp2_vs_toa_imbalance" do ECS/TCR stuff
 
@@ -8188,19 +8202,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     co2_1pct_doubled_1850_ind <- which.min(abs(co2_1pct$co2_ppm - 2*co2_hist_1850))[1]
                                     co2_1pct_doubled <- drop(co2_1pct$co2_ppm[co2_1pct_doubled_1850_ind])
                                     co2_1pct_doubled_time <- co2_1pct$time[co2_1pct_doubled_1850_ind]
-                                    co2_1pct_doubled_1850_model_ind <- difftime(d$time[[i]], 
-                                                                                rep(co2_1pct_doubled_time, t=length(d$time[[i]])))
-                                    co2_1pct_doubled_1850_model_ind <- which.min(abs(co2_1pct_doubled_1850_model_ind))[1]
+                                    if (F) { # consider real dt (result index is 71)
+                                        co2_1pct_doubled_1850_model_ind <- difftime(d$time[[i]], 
+                                                                                    rep(co2_1pct_doubled_time, t=length(d$time[[i]])))
+                                        co2_1pct_doubled_1850_model_ind <- which.min(abs(co2_1pct_doubled_1850_model_ind))[1]
+                                    } else if (T) { # consider only matching year (result index is 72)
+                                        co2_1pct_doubled_1850_model_ind <- which.min(abs(as.POSIXlt(d$time[[i]])$year - co2_1pct_doubled_time$year))[1]
+                                    }
                                     deltaT_1pct_co2_doubled <- varx[[i]][co2_1pct_doubled_1850_model_ind]
-                                    message("TCR_{1year} = dT_{modelexp-1pctCO2}[CO2_{1pctCO2}=2xCO2_{piControl}]\n",
-                                            "with CO2_{piControl} from e.g. ", co2_hist$file, "\n",
-                                            "     CO2_{1pctCO2} from e.g. ", co2_1pct$file, "\n",
-                                            "--> CO2_{piControl} = CO2_{historical,year=1850} = ",
-                                            "CO2_{1pctCO2,year=1850} = ", co2_hist_1850, " ppm\n",
+                                    message("TCR_{1year} = dT_{modelexp_1pctCO2}[CO2_{CMIP6_1pctCO2}=2xCO2_{CMIP6_piControl}]\n",
+                                            "with CO2_{CMIP6_piControl} from e.g. ", co2_hist$file, "\n",
+                                            "     CO2_{CMIP6_1pctCO2} from e.g. ", co2_1pct$file, "\n",
+                                            "--> CO2_{CMIP6_piControl} = CO2_{CMIP6_historical,year=1850} = ",
+                                            "CO2_{CMIP6_1pctCO2,year=1850} = ", co2_hist_1850, " ppm\n",
                                             "--> 2 x ", co2_hist_1850, " ppm = ", 2*co2_hist_1850, " ppm\n",
-                                            "--> this CO2 value is from ", co2_hist$time[co2_hist_1850_ind], 
-                                            " (time from ", co2_hist$file, ")\n",
-                                            "--> closest CO2_{1pctCO2} = ", co2_1pct_doubled, 
+                                            "--> closest CO2_{CMIP6_1pctCO2} = ", co2_1pct_doubled, 
                                             " ppm from ", co2_1pct$time[co2_1pct_doubled_1850_ind], 
                                             " (time from ", co2_1pct$file, ")\n",
                                             "--> counting from year 1850 (=year number 1), this year ",
@@ -8208,42 +8224,45 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                             " is year number ",
                                             co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900-1850+1, " (=",
                                             co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, "-1850+1)\n",
-                                            "--> the closest 1pctCO2 model-date to this 1pctCO2-date is ",
-                                            "model-date number ", co2_1pct_doubled_1850_model_ind, ": ", 
+                                            "--> the closest 1pctCO2 model year (not date) to this 1pctCO2-year is ",
+                                            "model-year number ", co2_1pct_doubled_1850_model_ind, ": ", 
                                             d$time[[i]][co2_1pct_doubled_1850_model_ind], "\n",
-                                            "--> dT_{modelexp-1pctCO2,model-year[", co2_1pct_doubled_1850_model_ind, "]=", 
+                                            "--> dT_{modelexp_1pctCO2,model-year[", co2_1pct_doubled_1850_model_ind, "]=", 
                                             dims[[i]]$timelt[co2_1pct_doubled_1850_model_ind]$year+1900, "} = ", 
                                             deltaT_1pct_co2_doubled, " K = ",
                                             round(deltaT_1pct_co2_doubled, 2), " K")
                                     
-                                    # or use model year 61-80 starting from 1850
-                                    # --> 1911-1930 (20 year) mean global warming as in winton et al. 2014
-                                    #TCR_from_to <- c(as.POSIXct("1911-01-01", tz="UTC"),
-                                    #                 as.POSIXct("1931-21-31", tz="UTC"))
-                                    TCR_from_to <- c(as.POSIXct("1910-01-01", tz="UTC"),
-                                                     as.POSIXct("1930-12-31", tz="UTC"))
-                                    year_inds <- which(d$time[[i]] >= TCR_from_to[1] &
-                                                       d$time[[i]] <= TCR_from_to[2])
+                                    # use dt averaged over temporal period as TCR 
+                                    #TCR_years_from_to <- c(1910, 1929) # 20-year mean as in winton et al. 2014: years 61-80
+                                    TCR_years_from_to <- c(1910, 1930) # 21-year mean semmler et al. 2020: years 61-81 
+                                    year_inds <- which(as.POSIXlt(d$time[[i]])$year+1900 >= TCR_years_from_to[1] &
+                                                       as.POSIXlt(d$time[[i]])$year+1900 <= TCR_years_from_to[2])
                                     if (length(year_inds) == 0) {
-                                        stop("cannot calc TCR between years ", TCR_from_to[1], " and ", TCR_from_to[2], 
-                                                ": out or range of d$time[[", i, "]]")
+                                        stop("cannot calc TCR between years ", TCR_years_from_to[1], " and ", 
+                                             TCR_years_from_to[2], ": out of range of d$time[[", i, "]]")
                                     }
+                                    if (any(duplicated(year_inds))) stop("some year_inds occur more than once. use annual values here")
                                     average_deltaT_1pct_co2_doubled <- mean(varx[[i]][year_inds])
-                                    message("TCR_{mean} = dT_{modelexp-1pctCO2} mean over model-dates ", 
-                                            min(year_inds), " to ", max(year_inds), ":\n",
-                                            "            ", min(d$time[[i]][year_inds]), " to ",
-                                            max(d$time[[i]][year_inds]), " (n=", 
-                                            length(year_inds), "; n_unique_years=", 
-                                            length(unique(dims[[i]]$timelt[year_inds]$year+1900)), ")\n",
-                                            "--> ", average_deltaT_1pct_co2_doubled, " K = ", 
+                                    message("bar(TCR) = temporal average of dT_{modelexp_1pctCO2} over wanted calendar years from ",
+                                            TCR_years_from_to[1], " to ", TCR_years_from_to[2], "\n",
+                                            "--> closest model-dates are ", d$time[[i]][year_inds[1]], " to ",
+                                            d$time[[i]][year_inds[length(year_inds)]], "\n",
+                                            "--> year indices ", min(year_inds), " to ", max(year_inds), "\n",
+                                            "--> nyears = ", length(unique(as.POSIXlt(d$time[[i]])$year[year_inds])), "\n",
+                                            "--> bar(TCR) = ", average_deltaT_1pct_co2_doubled, " K = ", 
                                             round(average_deltaT_1pct_co2_doubled, 2), " K")
                                     lm_text <- c(lm_text, 
                                                  eval(substitute(expression(paste(
-            "TCR = ", Delta, "T"["1%"], "(CO"[2], "=2" %*% "CO"[paste("2,PI")], " = ", co2_1pct_doubled, " ppm)")),
-                                                                 list(co2_1pct_doubled=round(co2_1pct_doubled)))),
+            "TCR = ", bar(paste(Delta, "T"))["1%CO2"]^paste(nyears, " years"), "(CO"[2], "=2" %*% "CO"[paste("2,PI")], "=", co2_1pct_doubled, " ppm)")),
+                                                                 list(nyears=length(year_inds),
+                                                                      co2_hist_1850=round(co2_hist_1850), co2_1pct_doubled=round(co2_1pct_doubled)))),
                                                  eval(substitute(expression(paste(
-            "    = ", bar(paste(Delta, "T"))["1%"]^"years 61-80", " = ", average_deltaT_1pct_co2_doubled, " K")),
-                                                                 list(average_deltaT_1pct_co2_doubled=round(average_deltaT_1pct_co2_doubled, 2)))))
+            "    = ", bar(paste(Delta, "T"))["1%CO2"]^paste("years", yearindsmin, "-", yearindsmax, "=", yearmin, "-", yearto), " = ", average_deltaT_1pct_co2_doubled, " K")),
+                                                                 list(yearindsmin=min(year_inds), yearindsmax=max(year_inds),
+                                                                      yearmin=as.POSIXlt(d$time[[i]][year_inds[1]])$year+1900,
+                                                                      yearto=as.POSIXlt(d$time[[i]][year_inds[length(year_inds)]])$year+1900,
+                                                                      average_deltaT_1pct_co2_doubled=round(average_deltaT_1pct_co2_doubled, 2))))
+                                                )
                                 } # if 1pctCO2 and exists("co2_hist")
                                 
                                 if (grepl("abrupt-4xCO2", names_short[i]) && !is.na(slope)) {
@@ -8297,7 +8316,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                         legend("topright", 
                                lm_text, col="black", #text.col=text_cols[i], 
                                lty=NA, pch=NA, lwd=NA, bty="n", 
-                               cex=0.9, y.intersp=1.1)
+                               cex=0.8, y.intersp=1.1)
                     }
                 } # if any add_linear_trend
 

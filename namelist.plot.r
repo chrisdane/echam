@@ -21,8 +21,8 @@ pchs_filled_w_border <- c(21, 24, 22, 23)
 add_title <- T
 add_legend <- T
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-p <- myDefaultPlotOptions(#plot_type="png", 
-                          plot_type="pdf"
+p <- myDefaultPlotOptions(plot_type="png", 
+                          #plot_type="pdf"
                           #,family_png="Droid Sans Mono", 
                           #,family_pdf="Droid Sans Mono"
                           #,family_pdf="CM Roman"
@@ -560,7 +560,7 @@ if (F) { # awi-esm-1-1-lr hist
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " last 30 years mean minus piControl")))))
     }
 
-} else if (T) { # Hol-7 vs Hol-T with vs without orbital acceleration
+} else if (F) { # Hol-7 vs Hol-T with vs without orbital acceleration
     #prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_wiso_mm", t=3)
     prefixes <- rep("cosmos-aso-wiso_Hol-T_main_mm", t=3)
     #prefixes <- rep("cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area", t=3)
@@ -728,16 +728,16 @@ if (F) { # awi-esm-1-1-lr hist
 
 # =====================================
 # 4 settings
-} else if (F) { # awi-esm-1-1-lr deck
+} else if (T) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
-    if (T) { # awi-cm-1-1-lr
+    if (F) { # awi-cm-1-1-lr
         prefixes <- c("awi-cm-1-1-lr_piControl",
                       "awi-cm-1-1-lr_historical",
                       "awi-cm-1-1-lr_1percCO2",
                       "awi-cm-1-1-lr_4CO2")
         names_short <- paste0("awi-cm-1-1-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
-    } else if (F) { # awi-esm-1-1-lr
+    } else if (T) { # awi-esm-1-1-lr
         prefixes <- c("awi-esm-1-1-lr_piControl",
                       "awi-esm-1-1-lr_historical",
                       "awi-esm-1-1-lr_1percCO2",
@@ -779,13 +779,19 @@ if (F) { # awi-esm-1-1-lr hist
     #reg_dxs <- reg_dys <- rep("0.250", t=4)
     if (T) { # transient pi last 150
         if (T) { # my PI
-            #fromsf <- c(1855, 1850, 1850, 1850)
-            #tosf <- c(1954, 2014, 2099, 2099)
-            #new_origins <- c(1750, NA, NA, NA) # plot pi before historical on time axis
-            fromsf <- c(1942, 1850, 1850, 1850)
-            tosf <- c(2091, 2014, 2099, 2099)
-            new_origins <- c(1850, NA, NA, NA)
-            tosp <- rep(1999, t=4) # 150 yrs
+            if (F) {
+                #fromsf <- c(1855, 1850, 1850, 1850) # PI-CTRL5 wrong labels
+                #tosf <- c(1954, 2014, 2099, 2099) # PI-CTRL5 wrong labels
+                fromsf <- c(1842, 1850, 1850, 1850) # PI-CTRL5 correct labels
+                tosf <- c(1941, 2014, 2099, 2099) # PI-CTRL5 correct labels
+                new_origins <- c(1750, NA, NA, NA) # plot pi before historical on time axis
+                tosp <- c(NA, NA, rep(1999, t=2))
+            } else if (T) {
+                fromsf <- c(1942, 1850, 1850, 1850) # PI-CTRL6
+                tosf <- c(2091, 2014, 2099, 2099)
+                new_origins <- c(1850, NA, NA, NA)
+                tosp <- c(1999, 1999, 1999, 1999)
+            }
         } else if (F) { # awi-esm-1-2-lr lars
             fromsf <- c(1016, 1850, 1850, 1850)
             tosf <- c(1045, 2014, 2074, 2021)
