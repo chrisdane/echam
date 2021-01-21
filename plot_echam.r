@@ -3,7 +3,7 @@
 #options(warn=2) # stop on warnings
 #options(warn=0) # back to default
 
-if (T) {
+if (F) {
     message("\nrm(list=ls())")
     rm(list=ls())
     # make squeeze default:
@@ -1648,7 +1648,8 @@ for (i in 1:nsettings) {
             #data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip [‰]"))
             data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O"["p,SMOW"], " [\u2030]"))
             #encoding <- get_encoding("‰") # does not work yet
-            if (p$plot_type == "pdf") encoding <- "CP1250"
+            #if (p$plot_type == "pdf") encoding <- "CP1250"
+            if (p$plot_type == "pdf") encoding <- "WinAnsi"
 
             if (scale_ts) {
                 if (T) {
@@ -1669,7 +1670,8 @@ for (i in 1:nsettings) {
             #data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O"[p,SMOW], " trend [‰/7k years]"))))
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O"["p,SMOW"], " trend [\u2030/7k years]"))))
             data_infos[[i]][[vi]]$units <- "o/oo/7k years"
-            if (p$plot_type == "pdf") encoding <- "CP1250"
+            #if (p$plot_type == "pdf") encoding <- "CP1250"
+            if (p$plot_type == "pdf") encoding <- "WinAnsi"
             if (T) {
                 message("special unit")
                 data_infos[[i]][[vi]]$offset$operator <- "*"
@@ -1683,14 +1685,16 @@ for (i in 1:nsettings) {
             if (scale_ts) {
                 data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O evaporation (Index)"))
             }
-            if (p$plot_type == "pdf") encoding <- "CP1250"
+            #if (p$plot_type == "pdf") encoding <- "CP1250"
+            if (p$plot_type == "pdf") encoding <- "WinAnsi"
 
         } else if (varname == "wisope_d") {
             data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O (P-E) (‰)"))
             if (scale_ts) {
                 data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O (P-E) (Index)"))
             }
-            if (p$plot_type == "pdf") encoding <- "CP1250"
+            #if (p$plot_type == "pdf") encoding <- "CP1250"
+            if (p$plot_type == "pdf") encoding <- "WinAnsi"
         
         } else if (varname == "lm_temp2_as_time_slope") {
             data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " trend [°C/7k years]"))
@@ -4636,12 +4640,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     dev.off()
                     if (p$plot_type == "pdf") {
                         if (T) {
-                            if (F && "extrafont" %in% (.packages())){
-                                message("run `extrafont::embed_fonts()` ...")
-                                extrafont::embed_fonts(plotname, outfile=plotname)
-                            } else {
-                                message("run `grDevices::embedFonts()` ...")
+                            message("run `", p$pdf_embed_fun, "()` ...")
+                            if (p$pdf_embed_fun == "grDevices::embedFonts") {
                                 grDevices::embedFonts(plotname, outfile=plotname)
+                            } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                                extrafont::embed_fonts(plotname, outfile=plotname)
                             }
                         } else {
                             message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -5042,12 +5045,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             dev.off()
             if (p$plot_type == "pdf") {
                 if (T) {
-                    if (F && "extrafont" %in% (.packages())){
-                        message("run `extrafont::embed_fonts()` ...")
-                        extrafont::embed_fonts(plotname, outfile=plotname)
-                    } else {
-                        message("run `grDevices::embedFonts()` ...")
+                    message("run `", p$pdf_embed_fun, "()` ...")
+                    if (p$pdf_embed_fun == "grDevices::embedFonts") {
                         grDevices::embedFonts(plotname, outfile=plotname)
+                    } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                        extrafont::embed_fonts(plotname, outfile=plotname)
                     }
                 } else {
                     message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -5108,12 +5110,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     dev.off()
                     if (p$plot_type == "pdf") {
                         if (T) {
-                            if (F && "extrafont" %in% (.packages())){
-                                message("run `extrafont::embed_fonts()` ...")
-                                extrafont::embed_fonts(plotname, outfile=plotname)
-                            } else {
-                                message("run `grDevices::embedFonts()` ...")
+                            message("run `", p$pdf_embed_fun, "()` ...")
+                            if (p$pdf_embed_fun == "grDevices::embedFonts") {
                                 grDevices::embedFonts(plotname, outfile=plotname)
+                            } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                                extrafont::embed_fonts(plotname, outfile=plotname)
                             }
                         } else {
                             message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -5257,12 +5258,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             dev.off()
             if (p$plot_type == "pdf") {
                 if (T) {
-                    if (F && "extrafont" %in% (.packages())){
-                        message("run `extrafont::embed_fonts()` ...")
-                        extrafont::embed_fonts(plotname, outfile=plotname)
-                    } else {
-                        message("run `grDevices::embedFonts()` ...")
+                    message("run `", p$pdf_embed_fun, "()` ...")
+                    if (p$pdf_embed_fun == "grDevices::embedFonts") {
                         grDevices::embedFonts(plotname, outfile=plotname)
+                    } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                        extrafont::embed_fonts(plotname, outfile=plotname)
                     }
                 } else {
                     message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -5337,12 +5337,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             dev.off()
             if (p$plot_type == "pdf") {
                 if (T) {
-                    if (F && "extrafont" %in% (.packages())){
-                        message("run `extrafont::embed_fonts()` ...")
-                        extrafont::embed_fonts(plotname, outfile=plotname)
-                    } else {
-                        message("run `grDevices::embedFonts()` ...")
+                    message("run `", p$pdf_embed_fun, "()` ...")
+                    if (p$pdf_embed_fun == "grDevices::embedFonts") {
                         grDevices::embedFonts(plotname, outfile=plotname)
+                    } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                        extrafont::embed_fonts(plotname, outfile=plotname)
                     }
                 } else {
                     message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -6597,12 +6596,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             dev.off()
             if (p$plot_type == "pdf") {
                 if (T) {
-                    if (F && "extrafont" %in% (.packages())){
-                        message("run `extrafont::embed_fonts()` ...")
-                        extrafont::embed_fonts(plotname, outfile=plotname)
-                    } else {
-                        message("run `grDevices::embedFonts()` ...")
+                    message("run `", p$pdf_embed_fun, "()` ...")
+                    if (p$pdf_embed_fun == "grDevices::embedFonts") {
                         grDevices::embedFonts(plotname, outfile=plotname)
+                    } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                        extrafont::embed_fonts(plotname, outfile=plotname)
                     }
                 } else {
                     message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -7125,12 +7123,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dev.off()
                 if (p$plot_type == "pdf") {
                     if (T) {
-                        if (F && "extrafont" %in% (.packages())){
-                            message("run `extrafont::embed_fonts()` ...")
-                            extrafont::embed_fonts(plotname, outfile=plotname)
-                        } else {
-                            message("run `grDevices::embedFonts()` ...")
+                        message("run `", p$pdf_embed_fun, "()` ...")
+                        if (p$pdf_embed_fun == "grDevices::embedFonts") {
                             grDevices::embedFonts(plotname, outfile=plotname)
+                        } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                            extrafont::embed_fonts(plotname, outfile=plotname)
                         }
                     } else {
                         message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -7571,12 +7568,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dev.off()
                 if (p$plot_type == "pdf") {
                     if (T) {
-                        if (F && "extrafont" %in% (.packages())){
-                            message("run `extrafont::embed_fonts()` ...")
-                            extrafont::embed_fonts(plotname, outfile=plotname)
-                        } else {
-                            message("run `grDevices::embedFonts()` ...")
+                        message("run `", p$pdf_embed_fun, "()` ...")
+                        if (p$pdf_embed_fun == "grDevices::embedFonts") {
                             grDevices::embedFonts(plotname, outfile=plotname)
+                        } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                            extrafont::embed_fonts(plotname, outfile=plotname)
                         }
                     } else {
                         message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -7674,12 +7670,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dev.off()
                 if (p$plot_type == "pdf") {
                     if (T) {
-                        if (F && "extrafont" %in% (.packages())){
-                            message("run `extrafont::embed_fonts()` ...")
-                            extrafont::embed_fonts(plotname, outfile=plotname)
-                        } else {
-                            message("run `grDevices::embedFonts()` ...")
+                        message("run `", p$pdf_embed_fun, "()` ...")
+                        if (p$pdf_embed_fun == "grDevices::embedFonts") {
                             grDevices::embedFonts(plotname, outfile=plotname)
+                        } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                            extrafont::embed_fonts(plotname, outfile=plotname)
                         }
                     } else {
                         message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -7861,12 +7856,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             dev.off()
                             if (p$plot_type == "pdf") {
                                 if (T) {
-                                    if (F && "extrafont" %in% (.packages())){
-                                        message("run `extrafont::embed_fonts()` ...")
-                                        extrafont::embed_fonts(plotname, outfile=plotname)
-                                    } else {
-                                        message("run `grDevices::embedFonts()` ...")
+                                    message("run `", p$pdf_embed_fun, "()` ...")
+                                    if (p$pdf_embed_fun == "grDevices::embedFonts") {
                                         grDevices::embedFonts(plotname, outfile=plotname)
+                                    } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                                        extrafont::embed_fonts(plotname, outfile=plotname)
                                     }
                                 } else {
                                     message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -7933,7 +7927,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # special ECS/TCR stuff
                 if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
-                    message("\nspecial: calc equilibrium climate sensitivity (ECS): https://github.com/ESMValGroup/ESMValTool/issues/1814")
+                    message("\nspecial: prepare equilibrium climate sensitivity (ECS): https://github.com/ESMValGroup/ESMValTool/issues/1814")
                     inds <- seq_along(z)
                     if (length(which(grepl("piControl", names_short))) == 1) {
                         piind <- which(grepl("piControl", names_short))
@@ -7941,31 +7935,35 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } else {
                         stop("not defined")
                     }
-                    if (F) { # subtract last PI value
+                    if (F) { # subtract PI of year 1849 (last year before deck experiments start)
                         message("case 1: subtract last PI value from experiments ...")
                         for (i in inds) {
                             varx[[i]] <- varx[[i]] - varx[[piind]][length(varx[[piind]])]
-                            varx_infos[[i]]$label <- "2m temperature increase [K]"
+                            varx_infos[[i]]$label <- "2m temperature change [K]"
                             vary[[i]] <- vary[[i]] - vary[[piind]][length(vary[[piind]])]
+                            vary_infos[[i]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                         }
                         # last: pi itself
                         varx[[piind]] <- varx[[piind]] - varx[[piind]][length(varx[[piind]])]
-                        varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                        varx_infos[[piind]]$label <- "2m temperature change [K]"
                         #vary[[piind]] <- vary[[piind]] - vary[[piind]][length(varx[[piind]])]
+                        #vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
-                    } else if (F) { # subtract last 100-yr mean PI value
+                    } else if (F) { # subtract last 100-yr mean PI
                         message("case 2: subtract last 100-yr mean PI value from experiments ...")
                         for (i in inds) {
                             varx[[i]] <- varx[[i]] - mean(varx[[piind]])
-                            varx_infos[[i]]$label <- "2m temperature increase [K]"
+                            varx_infos[[i]]$label <- "2m temperature change [K]"
                             vary[[i]] <- vary[[i]] - mean(vary[[piind]])
+                            vary_infos[[i]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                         }
                         # last: pi itself
                         varx[[piind]] <- varx[[piind]] - mean(varx[[piind]])
-                        varx_infos[[piind]]$label <- "2m temperature increase [K]"
+                        varx_infos[[piind]]$label <- "2m temperature change [K]"
                         #vary[[piind]] <- vary[[piind]] - mean(vary[[piind]])
+                        #vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
-                    } else if (T) { # subtract PI values year by year
+                    } else if (T) { # subtract respective PI years 
                         message("case 3: calc `delta data(year_i) = data_experiment(year_i) minus data_piControl(year_i)` ...")
                         for (i in inds) {
                             if (length(varx[[i]]) != length(varx[[piind]])) {
@@ -7978,20 +7976,38 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 stop("years of setting ", i, " and ", piind, " differ")
                             }
                             varx[[i]] <- varx[[i]] - varx[[piind]]
-                            varx_infos[[i]]$label <- "2m temperature increase [K]"
+                            varx_infos[[i]]$label <- "2m temperature change [K]"
                             vary[[i]] <- vary[[i]] - vary[[piind]]
+                            vary_infos[[i]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                         }
                         # last: pi itself
                         varx[[piind]] <- varx[[piind]] - varx[[piind]] # = all zero
-                        varx_infos[[piind]]$label <- "2m temperature increase [K]"
-                        if (F) vary[[piind]] <- vary[[piind]] - vary[[piind]] # = all zero
+                        varx_infos[[piind]]$label <- "2m temperature change [K]"
+                        #vary[[piind]] <- vary[[piind]] - vary[[piind]] # = all zero
+                        vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
+                    
+                    } else if (F) { # subtract linear fit of PI (same as in esmvaltool)
+                        stop("todo")
+                    
                     } else {
                         message("did not subtract any PI values")
                     }
                 } # if varname == "temp2_vs_toa_imbalance" do ECS/TCR stuff
 
                 xlim <- range(varx, na.rm=T)
+                if (T) {
+                    message("special xlim")
+                    xlim <- range(-0.372528076171875, 7.16) # awi-esm-1-1-lr and awi-esm-1-2-lr dT_{eq,4xco2}
+                    # awi-esm-1-1-lr: -0.372528076171875 / 7.16
+                    # awi-esm-1-2-lr: -0.325225830078125 / 7.16
+                }
                 ylim <- range(vary, na.rm=T)
+                if (T) {
+                    message("special ylim")
+                    ylim <- range(-1.83512371778488, 7.87) # largest awi-esm-1-1-lr and awi-esm-1-2-lr dN_{eq_4xco2}
+                    # awi-esm-1-1-lr: -1.69532012939453 / 7.87
+                    # awi-esm-1-2-lr: -1.83512371778488 / 7.87
+                }
                 xat <- pretty(xlim, n=10)
                 xlab <- format(xat, trim=T)
                 yat <- pretty(ylim, n=10)
@@ -8088,11 +8104,17 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 for (i in plotorder) {
                     if (T && varname == "temp2_vs_toa_imbalance") {
                         if (T && grepl("piControl", names_short[i])) {
-                            message("special: plot only time mean for piControl")
-                            points(mean(varx[[i]]), mean(vary[[i]]), 
-                                   #col=cols_rgb[i], 
-                                   col=cols[i],
-                                   pch=scatterpchs[i], cex=scattercexs[i])
+                            if (T) {
+                                message("special: plot only time mean for piControl")
+                                points(mean(varx[[i]]), mean(vary[[i]]), 
+                                       #col=cols_rgb[i], 
+                                       col=cols[i],
+                                       #pch=scatterpchs[i], 
+                                       pch=4,
+                                       cex=scattercexs[i])
+                            } else {
+                                message("special: do not plot piControl")
+                            }
                         } else { # non-PI
                             message("special: use year as symbols")
                             #years_of_setting_to_show <- c(1:10, seq(25, 250, b=25))
@@ -8127,10 +8149,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # add linear trend
                 names_legend_p_w_lm <- names_legend_p
+                lm_text <- c()
                 if (any(add_linear_trend)) {
                     message("\nadd linear trend in scatterplot varx vs vary ...")
                     lms_lin <- vector("list", l=length(varx))
-                    lm_text <- c()
                     for (i in seq_along(varx)) {
                         if (add_linear_trend[i]) {
                             message("\nsetting ", i, "/", length(varx), ": ", names_short_p[i])
@@ -8165,7 +8187,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
                                            col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
                                 }
-                                if (T) {
+                                if (F) {
                                     message("add linear regression coefficients to legend ...")
                                     first_part <- names_legend_p[i]
                                     last_part <- "" # default
@@ -8178,93 +8200,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                       .(do.call(substitute, as.list(last_part))))
                                         names_legend_p_w_lm[i] <- eval(substitute(expression(new), list(new=new)))
                                     }
+                                } else {
+                                    message("do not add linear trend specs to legend")
                                 }
                             } # if lm sucessfull or not
-                            
-                            # special stuff 
+                           
+                            # special stuff after linear regression 
                             if (T && varname == "temp2_vs_toa_imbalance") {
-                                # transient climate response: TCR after winton et al. 2014
-                                # --> global warming as modeled in the 1pct experiment when the pi CO2 value doubled
-                                if (grepl("1pctCO2", names_short[i]) && exists("co2_hist") && exists("co2_1pct")) {
-                                    message("\nspecial: transient climate response TCR based on `co2_hist` and `co2_1pct` after\n",
-                                            "Winton et al. 2014 (https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1002/2014GL061523):\n",
-                                            "   \"The transient sensitivity is quantified with the transient climate\n",
-                                            "   response (TCR), the global surface warming at CO2 doubling in a 1%/year\n",
-                                            "   CO2 increase experiment.\"\n",
-                                            "and later:\n",
-                                            "   \"The values for the transient climate response (TCR)—the year 61–80 \n",
-                                            "   average global warming—are ...\"\n",
-                                            "--> length(61:80) = ", length(61:80), " years\n",
-                                            "see https://github.com/ESMValGroup/ESMValTool/issues/1901 ...")
-                                    co2_hist_1850_ind <- which(co2_hist$time$year+1900 == 1850)
-                                    if (length(co2_hist_1850_ind) != 1) stop("not defined for current `co2_hist` data")
-                                    co2_hist_1850 <- drop(co2_hist$co2_ppm[co2_hist_1850_ind])
-                                    co2_1pct_doubled_1850_ind <- which.min(abs(co2_1pct$co2_ppm - 2*co2_hist_1850))[1]
-                                    co2_1pct_doubled <- drop(co2_1pct$co2_ppm[co2_1pct_doubled_1850_ind])
-                                    co2_1pct_doubled_time <- co2_1pct$time[co2_1pct_doubled_1850_ind]
-                                    if (F) { # consider real dt (result index is 71)
-                                        co2_1pct_doubled_1850_model_ind <- difftime(d$time[[i]], 
-                                                                                    rep(co2_1pct_doubled_time, t=length(d$time[[i]])))
-                                        co2_1pct_doubled_1850_model_ind <- which.min(abs(co2_1pct_doubled_1850_model_ind))[1]
-                                    } else if (T) { # consider only matching year (result index is 72)
-                                        co2_1pct_doubled_1850_model_ind <- which.min(abs(as.POSIXlt(d$time[[i]])$year - co2_1pct_doubled_time$year))[1]
-                                    }
-                                    deltaT_1pct_co2_doubled <- varx[[i]][co2_1pct_doubled_1850_model_ind]
-                                    message("TCR_{1year} = dT_{modelexp_1pctCO2}[CO2_{CMIP6_1pctCO2}=2xCO2_{CMIP6_piControl}]\n",
-                                            "with CO2_{CMIP6_piControl} from e.g. ", co2_hist$file, "\n",
-                                            "     CO2_{CMIP6_1pctCO2} from e.g. ", co2_1pct$file, "\n",
-                                            "--> CO2_{CMIP6_piControl} = CO2_{CMIP6_historical,year=1850} = ",
-                                            "CO2_{CMIP6_1pctCO2,year=1850} = ", co2_hist_1850, " ppm\n",
-                                            "--> 2 x ", co2_hist_1850, " ppm = ", 2*co2_hist_1850, " ppm\n",
-                                            "--> closest CO2_{CMIP6_1pctCO2} = ", co2_1pct_doubled, 
-                                            " ppm from ", co2_1pct$time[co2_1pct_doubled_1850_ind], 
-                                            " (time from ", co2_1pct$file, ")\n",
-                                            "--> counting from year 1850 (=year number 1), this year ",
-                                            co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, 
-                                            " is year number ",
-                                            co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900-1850+1, " (=",
-                                            co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, "-1850+1)\n",
-                                            "--> the closest 1pctCO2 model year (not date) to this 1pctCO2-year is ",
-                                            "model-year number ", co2_1pct_doubled_1850_model_ind, ": ", 
-                                            d$time[[i]][co2_1pct_doubled_1850_model_ind], "\n",
-                                            "--> dT_{modelexp_1pctCO2,model-year[", co2_1pct_doubled_1850_model_ind, "]=", 
-                                            dims[[i]]$timelt[co2_1pct_doubled_1850_model_ind]$year+1900, "} = ", 
-                                            deltaT_1pct_co2_doubled, " K = ",
-                                            round(deltaT_1pct_co2_doubled, 2), " K")
-                                    
-                                    # use dt averaged over temporal period as TCR 
-                                    #TCR_years_from_to <- c(1910, 1929) # 20-year mean as in winton et al. 2014: years 61-80
-                                    TCR_years_from_to <- c(1910, 1930) # 21-year mean semmler et al. 2020: years 61-81 
-                                    year_inds <- which(as.POSIXlt(d$time[[i]])$year+1900 >= TCR_years_from_to[1] &
-                                                       as.POSIXlt(d$time[[i]])$year+1900 <= TCR_years_from_to[2])
-                                    if (length(year_inds) == 0) {
-                                        stop("cannot calc TCR between years ", TCR_years_from_to[1], " and ", 
-                                             TCR_years_from_to[2], ": out of range of d$time[[", i, "]]")
-                                    }
-                                    if (any(duplicated(year_inds))) stop("some year_inds occur more than once. use annual values here")
-                                    average_deltaT_1pct_co2_doubled <- mean(varx[[i]][year_inds])
-                                    message("bar(TCR) = temporal average of dT_{modelexp_1pctCO2} over wanted calendar years from ",
-                                            TCR_years_from_to[1], " to ", TCR_years_from_to[2], "\n",
-                                            "--> closest model-dates are ", d$time[[i]][year_inds[1]], " to ",
-                                            d$time[[i]][year_inds[length(year_inds)]], "\n",
-                                            "--> year indices ", min(year_inds), " to ", max(year_inds), "\n",
-                                            "--> nyears = ", length(unique(as.POSIXlt(d$time[[i]])$year[year_inds])), "\n",
-                                            "--> bar(TCR) = ", average_deltaT_1pct_co2_doubled, " K = ", 
-                                            round(average_deltaT_1pct_co2_doubled, 2), " K")
-                                    lm_text <- c(lm_text, 
-                                                 eval(substitute(expression(paste(
-            "TCR = ", bar(paste(Delta, "T"))["1%CO2"]^paste(nyears, " years"), "(CO"[2], "=2" %*% "CO"[paste("2,PI")], "=", co2_1pct_doubled, " ppm)")),
-                                                                 list(nyears=length(year_inds),
-                                                                      co2_hist_1850=round(co2_hist_1850), co2_1pct_doubled=round(co2_1pct_doubled)))),
-                                                 eval(substitute(expression(paste(
-            "    = ", bar(paste(Delta, "T"))["1%CO2"]^paste("years", yearindsmin, "-", yearindsmax, "=", yearmin, "-", yearto), " = ", average_deltaT_1pct_co2_doubled, " K")),
-                                                                 list(yearindsmin=min(year_inds), yearindsmax=max(year_inds),
-                                                                      yearmin=as.POSIXlt(d$time[[i]][year_inds[1]])$year+1900,
-                                                                      yearto=as.POSIXlt(d$time[[i]][year_inds[length(year_inds)]])$year+1900,
-                                                                      average_deltaT_1pct_co2_doubled=round(average_deltaT_1pct_co2_doubled, 2))))
-                                                )
-                                } # if 1pctCO2 and exists("co2_hist")
-                                
                                 if (grepl("abrupt-4xCO2", names_short[i]) && !is.na(slope)) {
                                     message("\nspecial: ECS for abrupt-4xCO2 and non-NA regression slope\n",
                                             "see https://github.com/ESMValGroup/ESMValTool/issues/1814 ...")
@@ -8303,20 +8245,56 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                                                                  list(deltaT_eq_2x=round(deltaT_eq_2x, 2),
                                                                       deltaT_eq_2x_lower=round(min(deltaT_eq_2x_error), 2), 
                                                                       deltaT_eq_2x_upper=round(max(deltaT_eq_2x_error), 2)))))
+                                    
+                                    if (T) { # add different linear regressions
+                                        message("\nspecial: add different linear regressions")
+                                        lms_special <- vector("list", l=2)
+                                        for (j in seq_len(2)) {
+                                            if (j == 1) time_inds <- which(dims[[i]]$timelt$year+1900 >= 1900) # last 100 years only (1900:1999)
+                                            if (j == 2) time_inds <- which(dims[[i]]$timelt$year+1900 >= 1950) # last 50 years only (1950:1999)
+                                            message("calc lm from ", paste(range(dims[[i]]$timelt[time_inds]), collapse=" to "), 
+                                                    " (", length(unique(dims[[i]]$timelt$year[time_inds])), " years) ...")
+                                            lms_special[[j]] <- list(time=dims[[i]]$timelt[time_inds],
+                                                                     lm=lm(vary[[i]][time_inds] ~ varx[[i]][time_inds]))
+                                            lm_summary <- summary(lms_special[[j]]$lm)
+                                            lms_special[[j]]$lm_summary <- lm_summary
+                                            intercept <- as.vector(lm_summary$coefficients[1,1])
+                                            intercept_error <- as.vector(lm_summary$coefficients[1,2])
+                                            intercept_pval <- paste0("=", lm_summary$coefficients[1,4])
+                                            slope <- as.vector(lm_summary$coefficients[2,1])
+                                            slope_error <- as.vector(lm_summary$coefficients[2,2])
+                                            slope_pval <- lm_summary$coefficients[2,4]
+                                            if (slope_pval < 1e-5) { 
+                                                slope_pval <- "<1e-5"
+                                            } else {
+                                                slope_pval <- paste0("=", format(slope_pval, trim=T))
+                                            }
+                                            message("--> draw intercept = ", intercept, " and slope = ", slope, 
+                                                    " (pval", slope_pval, ", r=", round(sqrt(lm_summary$r.squared), 2), 
+                                                    ") with lty = ", 1+j, " ...")
+                                            abline(a=intercept, b=slope, col=cols_p[i], lwd=lwds_p[i], lty=1+j)
+                                            alpha <- slope
+                                            alpha_error <- slope_error
+                                            radiative_forcing_F <- intercept
+                                            radiative_forcing_F_error <- intercept_error
+                                            deltaT_eq_4x <- radiative_forcing_F/abs(alpha)
+                                            deltaT_eq_4x_error <- sort(c((radiative_forcing_F - radiative_forcing_F_error)/(abs(alpha) - alpha_error),
+                                                                         (radiative_forcing_F + radiative_forcing_F_error)/(abs(alpha) + alpha_error)))
+                                            deltaT_eq_2x <- deltaT_eq_4x/2
+                                            deltaT_eq_2x_error <- deltaT_eq_4x_error/2
+                                            message("--> ECS = ", round(deltaT_eq_2x, 2), " K")
+                                        } # for j
+                                    } # if special
+
                                 } # if abrupt-4xCO2
                             } # if temp2_vs_toa_imbalance
+                            
                         } # if add_linear_trend[i]
+                                
                     } # for i in seq_along(varx)
                     if (exists("deltaT_eq_2x") && exists("average_deltaT_1pct_co2_doubled")) {
                         CER <- average_deltaT_1pct_co2_doubled/deltaT_eq_2x # climate equilibrium ratio
                         message("min/max of climate equilibirum ratio CER = TCR/ECS = ", min(CER), "/", max(CER))
-                    }
-                    if (!is.null(lm_text)) {
-                        message("add special linear regression infos to plot")
-                        legend("topright", 
-                               lm_text, col="black", #text.col=text_cols[i], 
-                               lty=NA, pch=NA, lwd=NA, bty="n", 
-                               cex=0.8, y.intersp=1.1)
                     }
                 } # if any add_linear_trend
 
@@ -8343,6 +8321,98 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                             }
                         }
                     }
+                }
+                
+                # special: transient climate response TCR after winton et al. 2014
+                # --> global warming as modeled in the 1pct experiment when the pi CO2 value doubled
+                for (i in seq_along(varx)) {
+                    if (grepl("1pctCO2", names_short[i]) && exists("co2_hist") && exists("co2_1pct")) {
+                        message("\nspecial: transient climate response TCR based on `co2_hist` and `co2_1pct` after\n",
+                                "Winton et al. 2014 (https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1002/2014GL061523):\n",
+                                "   \"The transient sensitivity is quantified with the transient climate\n",
+                                "   response (TCR), the global surface warming at CO2 doubling in a 1%/year\n",
+                                "   CO2 increase experiment.\"\n",
+                                "and later:\n",
+                                "   \"The values for the transient climate response (TCR)—the year 61–80 \n",
+                                "   average global warming—are ...\"\n",
+                                "--> length(61:80) = ", length(61:80), " years used by Winton et al. 2014\n",
+                                "see https://github.com/ESMValGroup/ESMValTool/issues/1901 ...")
+                        co2_hist_1850_ind <- which(co2_hist$time$year+1900 == 1850)
+                        if (length(co2_hist_1850_ind) != 1) stop("not defined for current `co2_hist` data")
+                        co2_hist_1850 <- drop(co2_hist$co2_ppm[co2_hist_1850_ind])
+                        co2_1pct_doubled_1850_ind <- which.min(abs(co2_1pct$co2_ppm - 2*co2_hist_1850))[1]
+                        co2_1pct_doubled <- drop(co2_1pct$co2_ppm[co2_1pct_doubled_1850_ind])
+                        co2_1pct_doubled_time <- co2_1pct$time[co2_1pct_doubled_1850_ind]
+                        if (F) { # consider real dt (result index is 71)
+                            co2_1pct_doubled_1850_model_ind <- difftime(d$time[[i]], 
+                                                                        rep(co2_1pct_doubled_time, t=length(d$time[[i]])))
+                            co2_1pct_doubled_1850_model_ind <- which.min(abs(co2_1pct_doubled_1850_model_ind))[1]
+                        } else if (T) { # consider only matching year (result index is 72)
+                            co2_1pct_doubled_1850_model_ind <- which.min(abs(as.POSIXlt(d$time[[i]])$year - co2_1pct_doubled_time$year))[1]
+                        }
+                        deltaT_1pct_co2_doubled <- varx[[i]][co2_1pct_doubled_1850_model_ind]
+                        message("TCR_{1year} = dT_{modelexp_1pctCO2}[CO2_{CMIP6_1pctCO2}=2xCO2_{CMIP6_piControl}]\n",
+                                "with CO2_{CMIP6_piControl} from e.g. ", co2_hist$file, "\n",
+                                "     CO2_{CMIP6_1pctCO2} from e.g. ", co2_1pct$file, "\n",
+                                "--> CO2_{CMIP6_piControl} = CO2_{CMIP6_historical,year=1850} = ",
+                                "CO2_{CMIP6_1pctCO2,year=1850} = ", co2_hist_1850, " ppm\n",
+                                "--> 2 x ", co2_hist_1850, " ppm = ", 2*co2_hist_1850, " ppm\n",
+                                "--> closest CO2_{CMIP6_1pctCO2} = ", co2_1pct_doubled, 
+                                " ppm from ", co2_1pct$time[co2_1pct_doubled_1850_ind], 
+                                " (time from ", co2_1pct$file, ")\n",
+                                "--> counting from year 1850 (=year number 1), this year ",
+                                co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, 
+                                " is year number ",
+                                co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900-1850+1, " (=",
+                                co2_1pct$time[co2_1pct_doubled_1850_ind]$year+1900, "-1850+1)\n",
+                                "--> the closest 1pctCO2 model year (not date) to this 1pctCO2-year is ",
+                                "model-year number ", co2_1pct_doubled_1850_model_ind, ": ", 
+                                d$time[[i]][co2_1pct_doubled_1850_model_ind], "\n",
+                                "--> dT_{modelexp_1pctCO2,model-year[", co2_1pct_doubled_1850_model_ind, "]=", 
+                                dims[[i]]$timelt[co2_1pct_doubled_1850_model_ind]$year+1900, "} = ", 
+                                deltaT_1pct_co2_doubled, " K = ",
+                                round(deltaT_1pct_co2_doubled, 2), " K")
+                        
+                        # use dt averaged over temporal period as TCR 
+                        #TCR_years_from_to <- c(1910, 1929) # 20-year mean as in winton et al. 2014: years 61-80
+                        TCR_years_from_to <- c(1910, 1930) # 21-year mean semmler et al. 2020: years 61-81 
+                        year_inds <- which(as.POSIXlt(d$time[[i]])$year+1900 >= TCR_years_from_to[1] &
+                                           as.POSIXlt(d$time[[i]])$year+1900 <= TCR_years_from_to[2])
+                        if (length(year_inds) == 0) {
+                            stop("cannot calc TCR between years ", TCR_years_from_to[1], " and ", 
+                                 TCR_years_from_to[2], ": out of range of d$time[[", i, "]]")
+                        }
+                        if (any(duplicated(year_inds))) stop("some year_inds occur more than once. use annual values here")
+                        average_deltaT_1pct_co2_doubled <- mean(varx[[i]][year_inds])
+                        message("bar(TCR) = temporal average of dT_{modelexp_1pctCO2} over wanted calendar years from ",
+                                TCR_years_from_to[1], " to ", TCR_years_from_to[2], "\n",
+                                "--> closest model-dates are ", d$time[[i]][year_inds[1]], " to ",
+                                d$time[[i]][year_inds[length(year_inds)]], "\n",
+                                "--> year indices ", min(year_inds), " to ", max(year_inds), "\n",
+                                "--> nyears = ", length(unique(as.POSIXlt(d$time[[i]])$year[year_inds])), "\n",
+                                "--> bar(TCR) = ", average_deltaT_1pct_co2_doubled, " K = ", 
+                                round(average_deltaT_1pct_co2_doubled, 2), " K")
+                        lm_text <- c(lm_text, 
+                                     eval(substitute(expression(paste(
+    "TCR = ", bar(paste(Delta, "T"))["1%CO2"]^paste(nyears, " years"), "(CO"[2], "=2" %*% "CO"[paste("2,PI")], "=", co2_1pct_doubled, " ppm)")),
+                                                     list(nyears=length(year_inds),
+                                                          co2_hist_1850=round(co2_hist_1850), co2_1pct_doubled=round(co2_1pct_doubled)))),
+                                     eval(substitute(expression(paste(
+    "    = ", bar(paste(Delta, "T"))["1%CO2"]^paste("years", yearindsmin, "-", yearindsmax, "=", yearmin, "-", yearto), " = ", average_deltaT_1pct_co2_doubled, " K")),
+                                                     list(yearindsmin=min(year_inds), yearindsmax=max(year_inds),
+                                                          yearmin=as.POSIXlt(d$time[[i]][year_inds[1]])$year+1900,
+                                                          yearto=as.POSIXlt(d$time[[i]][year_inds[length(year_inds)]])$year+1900,
+                                                          average_deltaT_1pct_co2_doubled=round(average_deltaT_1pct_co2_doubled, 2))))
+                                    )
+                    } # TCR: if 1pctCO2 and exists("co2_hist")
+                } # for i in seq_along(varx)
+                
+                if (!is.null(lm_text)) {
+                    message("add special linear regression infos to plot")
+                    legend("topright", 
+                           lm_text, col="black", #text.col=text_cols[i], 
+                           lty=NA, pch=NA, lwd=NA, bty="n", 
+                           cex=0.8, y.intersp=1.1)
                 }
 
                 # add legend if wanted
@@ -8393,12 +8463,11 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                 dev.off()
                 if (p$plot_type == "pdf") {
                     if (T) {
-                        if (F && "extrafont" %in% (.packages())){
-                            message("run `extrafont::embed_fonts()` ...")
-                            extrafont::embed_fonts(plotname, outfile=plotname)
-                        } else {
-                            message("run `grDevices::embedFonts()` ...")
+                        message("run `", p$pdf_embed_fun, "()` ...")
+                        if (p$pdf_embed_fun == "grDevices::embedFonts") {
                             grDevices::embedFonts(plotname, outfile=plotname)
+                        } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                            extrafont::embed_fonts(plotname, outfile=plotname)
                         }
                     } else {
                         message("todo: sometimes pdf font embedding blurrs colors why?")
@@ -8556,12 +8625,11 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                             dev.off()
                             if (p$plot_type == "pdf") {
                                 if (T) {
-                                    if (F && "extrafont" %in% (.packages())){
-                                        message("run `extrafont::embed_fonts()` ...")
-                                        extrafont::embed_fonts(plotname, outfile=plotname)
-                                    } else {
-                                        message("run `grDevices::embedFonts()` ...")
+                                    message("run `", p$pdf_embed_fun, "()` ...")
+                                    if (p$pdf_embed_fun == "grDevices::embedFonts") {
                                         grDevices::embedFonts(plotname, outfile=plotname)
+                                    } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                                        extrafont::embed_fonts(plotname, outfile=plotname)
                                     }
                                 } else {
                                     message("todo: sometimes pdf font embedding blurrs colors why?")

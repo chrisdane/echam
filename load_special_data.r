@@ -180,7 +180,8 @@ if (T && file.exists(f)) {
     tsi_hist_ncin <- nc_open(f)
     time <- tsi_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*86400, origin="1850-01-01", tz="UTC")
-    tsi_hist_monthly <- list(tsi_hist=ncvar_get(tsi_hist_ncin, "TSI"), time=timelt, timen=time,
+    tsi_hist_monthly <- list(file=f,
+                             tsi_hist=ncvar_get(tsi_hist_ncin, "TSI"), time=timelt, timen=time,
                              col="orange2",
                              col_rgb=rgb(t(col2rgb("orange2")/255), alpha=0.5),
                              text="TSI", lty=1, lwd=0.5, pch=NA) 
@@ -201,7 +202,8 @@ if (T && file.exists(f)) {
     tsi_hist_ncin <- nc_open(f)
     time <- tsi_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*86400, origin="1850-01-01", tz="UTC")
-    tsi_hist_annual <- list(tsi_hist=ncvar_get(tsi_hist_ncin, "TSI"), time=timelt, timen=time,
+    tsi_hist_annual <- list(file=f,
+                            tsi_hist=ncvar_get(tsi_hist_ncin, "TSI"), time=timelt, timen=time,
                             col="orange2",
                             col_rgb=rgb(t(col2rgb("orange2")/255), alpha=0.5),
                             text="TSI", lty=1, lwd=0.5, pch=NA) 

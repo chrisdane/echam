@@ -1,6 +1,9 @@
-## r
+# r
 
 rm(list=ls()); graphics.off()
+
+options(warn=2) # stop on warnings
+#options(warn=0) # back to default
 
 # load necessary libraries
 requirements <- readLines("requirements_post.txt")
@@ -350,8 +353,8 @@ for (i in 1:nsettings) {
                 sub_list[[pati]]$pattern_inds <- c(pattern_inds_open[pati], pattern_inds_closed[pati])
                 # special patterns: replace <YYYY*>, <MM*>, etc. with "*"
                 if (pattern %in% special_patterns) {
-                    message("   replace special pattern \"", pattern, "\" by \"*\"")
-                    sub_list[[pati]]$replacement <- "*"
+                    message("   replace special pattern \"", pattern, "\" by \"?\"")
+                    sub_list[[pati]]$replacement <- "?"
                     if (any(pattern == c("<YYYY>", "<YYYY_from>", "<YYYY_to>"))) {
                         sub_list[[pati]]$replacement_length <- 4
                     } else if (any(pattern == c("<MM>", "<MM_from>", "<MM_to>"))) {
@@ -385,7 +388,9 @@ for (i in 1:nsettings) {
             # apply replacements of patterns one by one (thats why `sub()` and not `gsub()`; the latter would replace all occurences at once)
             fpattern <- fpatterns[i]
             for (pati in seq_along(sub_list)) {
-                fpattern <- sub(sub_list[[pati]]$pattern, sub_list[[pati]]$replacement, fpattern)
+                fpattern <- sub(pattern=sub_list[[pati]]$pattern, 
+                                replacement=paste(rep(sub_list[[pati]]$replacement, t=sub_list[[pati]]$replacement_length), collapse=""),
+                                x=fpattern)
             }
             message("   -> \"", fpattern, "\"")
             
@@ -466,7 +471,7 @@ for (i in 1:nsettings) {
                     } else if (special_patterns_in_filenames[pati] == "<MM>") {
                         months_filenames <- as.integer(df$MM)
                     }
-                    # todo: YYYY_from, YYYY_to, MM_from, MM_to
+                    # todo: MM_from, MM_to
                 } else {
                     message("\npattern \"", special_patterns_in_filenames[pati], " occurs ", length(pattern_list), 
                             " times and the values differ from each other:")
@@ -533,62 +538,9 @@ for (i in 1:nsettings) {
         if (length(years_filenames) > 1 &&
             diff(range(years_filenames)) > 1 && 
             length(unique(diff(unique(years_filenames)))) != 1) {
-            warning("found years have non-constant dt. evaulate further with e.g. `diff(unique(years_filenames))`")
+            message("found years have non-constant dt. evaulate further with e.g. `diff(unique(years_filenames))`")
         }
 
-        # update files which were mistakenly included in by given fpattern:
-        # "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
-        # "NUDGING_ERA5_T127L95_echam6_<YYYY>.atmo.monmean.wiso.nc
-        # --> "NUDGING_ERA5_T127L95_echam6_*.monmean.wiso.nc" finds both
-        if (length(files) > 1 && !is.null(sub_list)) {
-            message("\ncheck if any of the ", length(files), " found files do not match given\n",
-                    "   `fpatterns[", i, "]` = \"", fpatterns[i], "\"\n... ", appendLF=F)
-            
-            # construct file names that should be found based on `fpatterns` with all given <patterns>
-            filesp <- rep(fpatterns[i], t=length(files))
-
-            # apply replacements one by one (thats why `str_replace()` and not `str_replace_all()`)  
-            # vectorized (thats why stringr and not base package) and take care of special patterns <YYYY*>, <MM*>, etc. 
-            for (pati in seq_along(sub_list)) {
-                if (any(sub_list[[pati]]$pattern %in% special_patterns)) { # special patterns
-                    filesp <- stringr::str_replace(string=filesp,
-                                                   pattern=sub_list[[pati]]$pattern, 
-                                                   replacement=as.character(df[[sub(">", "", sub("<", "", sub_list[[pati]]$pattern))]]))
-                } else { # all other patterns
-                    filesp <- stringr::str_replace(string=filesp,
-                                                   pattern=sub_list[[pati]]$pattern, 
-                                                   replacement=sub_list[[pati]]$replacement)
-                }
-            } # for pati in sub_list
-
-            # identify and throw out fount files that do not fit to given `fpatterns` 
-            if (any(!(files %in% filesp))) {
-                wrong_file_inds <- which(!files %in% filesp)
-                message("these ", length(wrong_file_inds), " files differ from wanted `fpatterns[", i, "]` = ", fpatterns[i], ":")
-                ht(files[wrong_file_inds])
-                if (length(wrong_file_inds) == length(files)) {
-                    stop("removing them would yield zero files. something with the given fpattern is maybe strange?")
-                }
-                message("remove them ...")
-                files <- files[-wrong_file_inds]
-                df <- df[-wrong_file_inds,]
-                years_filenames <- years_filenames[-wrong_file_inds]
-                if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[-wrong_file_inds]
-            } else { # if any found files differ from wanted `fpatterns[i]` or not
-                message("ok")
-            }
-        } # if length(files) > 1
-
-        # verbose
-        if (verbose > 0) {
-            message("\nfinal ", length(years_filenames), " `years_filenames`:")
-            ht(years_filenames, n=30)
-            if (grepl("<MM>", fpatterns[i])) {
-                message("\nfinal ", length(months_filenames), " `months_filenames`:")
-                ht(months_filenames, n=30)
-            }
-        }
-        
         ## remove found years (which were found based on the file names) out of wanted years
         # wanted years
         #from <- as.POSIXlt(paste0(froms[i], "-01-01"), tz="UTC")
@@ -629,7 +581,7 @@ for (i in 1:nsettings) {
             if (length(files) == length(years_filenames)) { 
                 message("   case a) length(files) = ", length(files), " == length(years_filenames) = ", 
                         length(years_filenames), "\n",
-                        "      --> assume that data of one year is saved in one file\n",
+                        "      --> assume that data of one year max is saved in one file\n",
                         "      --> remove ", length(outside_years_inds), " file",
                         ifelse(length(outside_years_inds) > 1, "s", ""),
                         " outside of wanted years defined by froms[", i, "] = ", 
@@ -2314,4 +2266,6 @@ if (!interactive()) {
     message("grep this log file for lines that begin with \"error\": grep -n \"^error\" <logfile>", 
             "\nbe happy if nothing is returned\n")
 }
+
+options(warn=0) # back to default
 

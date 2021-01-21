@@ -18,15 +18,15 @@ message("\nthese variables will be ignored:\n",
 pchs_hollow <- c(1, 2, 0, 5) # bring hollow, filled wout borders and filled with borders in same order
 pchs_filled_wout_border <- c(16, 17, 15, 18) # 1: circle, 2: triangle up, 3: square, 4: diamond
 pchs_filled_w_border <- c(21, 24, 22, 23)
-add_title <- T
+add_title <- F
 add_legend <- T
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-p <- myDefaultPlotOptions(plot_type="png", 
+p <- myDefaultPlotOptions(#plot_type="png", 
                           #plot_type="pdf"
                           #,family_png="Droid Sans Mono", 
                           #,family_pdf="Droid Sans Mono"
                           #,family_pdf="CM Roman"
-                          )
+                          , verbose=T)
 # encoding <- getOption("encoding") leads to "failed to load encoding file 'native.enc'"
 encoding <- NULL 
 alpha_rgb <- 0.2 # transparent: 0,1 (0 fully transparent)
@@ -81,7 +81,6 @@ ts_plot_each_setting_in_subplot <- F
 add_data_right_yaxis_ts <- T
 add_cor_data_left_and_right_ts <- F
 add_data_upper_xaxis_ts <- F
-#add_title <- F
 add_data_right_yaxis_ts_mon <- F
 add_data_right_yaxis_ts_an <- F
 add_cor_data_left_and_right_ts_an <- F
@@ -752,10 +751,10 @@ if (F) { # awi-esm-1-1-lr hist
     }
     text_cols <- c("black", "#E41A1C", "#377EB8", "#1B9E77")
     scatterpchs <- c(4, 16, 16, 16)
-    varnames_in <- rep("temp2", t=4)
+    #varnames_in <- rep("temp2", t=4)
     #codes <- c(167, "", "", "")
     #varnames_in <- rep("srad0", t=4)
-    #varnames_in <- rep("toa_imbalance", t=4)
+    varnames_in <- rep("toa_imbalance", t=4)
     #varnames_in <- rep("tau_aero_550", t=4)
     #codes <- c(11, "", "", "")
     #varnames_in <- rep("srad0d", t=4)
@@ -777,25 +776,26 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- rep("tos", t=4)
     #postpaths <- paste0(workpath, "/post/", models, "/regular_grid/ltm/", mode, "/", varnames_in)
     #reg_dxs <- reg_dys <- rep("0.250", t=4)
-    if (T) { # transient pi last 150
-        if (T) { # my PI
-            if (F) {
+    if (T) { # transient deck first 150 years
+        if (T) { # awi-esm-1-1-lr
+            if (F) { # pi before deck
                 #fromsf <- c(1855, 1850, 1850, 1850) # PI-CTRL5 wrong labels
                 #tosf <- c(1954, 2014, 2099, 2099) # PI-CTRL5 wrong labels
                 fromsf <- c(1842, 1850, 1850, 1850) # PI-CTRL5 correct labels
                 tosf <- c(1941, 2014, 2099, 2099) # PI-CTRL5 correct labels
                 new_origins <- c(1750, NA, NA, NA) # plot pi before historical on time axis
                 tosp <- c(NA, NA, rep(1999, t=2))
-            } else if (T) {
+            } else if (T) { # pi and deck
                 fromsf <- c(1942, 1850, 1850, 1850) # PI-CTRL6
                 tosf <- c(2091, 2014, 2099, 2099)
                 new_origins <- c(1850, NA, NA, NA)
                 tosp <- c(1999, 1999, 1999, 1999)
             }
         } else if (F) { # awi-esm-1-2-lr lars
-            fromsf <- c(1016, 1850, 1850, 1850)
-            tosf <- c(1045, 2014, 2074, 2021)
-            new_origins <- c(1820, NA, NA, NA) # plot pi before historical on time axis
+            fromsf <- c(1046, 1850, 1850, 1850)
+            tosf <- c(1195, 2014, 1999, 1999)
+            new_origins <- c(1850, NA, NA, NA)
+            tosp <- c(NA, 1999, NA, NA)
         }
     } else if (F) { # tranient pi last 30
         fromsf <- c(1912, 1850, 1850, 1850)
@@ -809,8 +809,8 @@ if (F) { # awi-esm-1-1-lr hist
     }
     #remove_mean_froms <- c(1849, 1850, 1850, 1850)
     #remove_mean_tos <- remove_mean_froms
-    #add_linear_trend <- c(F, F, F, T)
-    add_linear_trend <- c(F, F, T, T)
+    add_linear_trend <- c(F, F, F, T)
+    #add_linear_trend <- c(F, F, T, T)
     modes <- rep("fldmean", t=4)
     seasonsf <- rep("annual", t=4)
     #seasonsp <- rep("JFM", t=4) 

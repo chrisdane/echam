@@ -88,7 +88,8 @@ if (F) { # old hist
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/historical/r1i1p1f1/day/tas/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/historical/r1i1p1f1/Eday/ta/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/historical/r1i1p1f1/SIday/sitemptop/gn/v20200212"
-    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/historical/r1i1p1f1/Amon/tas/gn/v20200212"
+    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/historical/r1i1p1f1/AERmon/od550aer/gn/v20200212"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/historical/r1i1p1f1/Amon/tas/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/midHolocene/r1i1p1f1/Amon/tas/gn/v20200212" # 3106:3205
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/midHolocene/r1i1p1f1/day/tas/gn/v20200212" # 3106:3205
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/lgm/r1i1p1f1/Omon/tob/gn/v20200212"
@@ -113,7 +114,8 @@ if (F) { # old hist
     #fpatterns <- "<fvarnames>_6hrPlev_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>01010300-<YYYY_to>12312100.nc"
     #fpatterns <- "<fvarnames>_6hrLev_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>01010600-<YYYY_to>01010000.nc"
     #fpatterns <- "<fvarnames>_day_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    fpatterns <- "<fvarnames>_AERmon_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Eday_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
     #fpatterns <- "<fvarnames>_SIday_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
     #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
@@ -141,7 +143,8 @@ if (F) { # old hist
     #prefixes <- "awi-esm-1-1-lr_historical_6hrPlev"
     #prefixes <- "awi-esm-1-1-lr_historical_6hrLev"
     #prefixes <- "awi-esm-1-1-lr_historical_day"
-    prefixes <- "awi-esm-1-1-lr_historical_Amon"
+    prefixes <- "awi-esm-1-1-lr_historical_AERmon"
+    #prefixes <- "awi-esm-1-1-lr_historical_Amon"
     #prefixes <- "awi-esm-1-1-lr_piControl_day"
     #prefixes <- "awi-esm-1-1-lr_piControl_Eday"
     #prefixes <- "awi-esm-1-1-lr_piControl_SIday"
@@ -163,10 +166,11 @@ if (F) { # old hist
     #codes <- 184
     #fvarnames <- "tau_aero_550_pt"
     #codes <- 11
+    fvarnames <- "od550aer" 
     #fvarnames <- "tsi"
     #codes <- 102
     #fvarnames <- "toa_imbalance"
-    fvarnames <- "tas" # 2m
+    #fvarnames <- "tas" # 2m
     #fvarnames <- "ta"
     #cdo_before_calcs <- "ml2pl,50000"
     #fvarnames <- "ts" # = cmor tsurf
@@ -187,14 +191,14 @@ if (F) { # old hist
     #froms <- 1955 # piControl 1850 wrong filestamp
     #froms <- 3106 # awi-esm-1-1-lr midHolocene on esgf
     #froms <- "3901"
-    tos <- 1851
+    #tos <- 1851
     #tos <- 1853
     #tos <- 1859
     #tos <- 1869 # 1percCO2: 1850-1869.nc
     #tos <- 1872 # 4CO2: 1850-1872.nc
     #tos <- 1941 # awi-cm/esm-1-1-lr piControl correct filestamp
     #tos <- 1954 # awi-cm/esm-1-1-lr piControl wrong filestamp
-    #tos <- 2014
+    tos <- 2014
     #tos <- 2099
     #tos <- 2091 # awi-cm/esm-1-1-lr piControl 2000 correct filestamp
     #tos <- 2104 # awi-cm/esm-1-1-lr piControl 2000 wrong filestamp
@@ -313,7 +317,7 @@ if (F) { # old hist
     tos <- 1851
     modes <- "fldmean"
 
-} else if (T) { # echam restart issue
+} else if (F) { # echam restart issue
     models <- "echam6"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/historical/outdata/echam"
     #fpatterns <- "historical_echam6_echam3hr_<YYYY><MM>.grb"
@@ -410,15 +414,65 @@ if (F) { # old hist
     tos <- 1851
     modes <- "fldmean"
 
-} else if (F) { # lars
+} else if (T) { # lars
+    # PI_LA04_cont02: 1016:1054 --> DECK branched from year 1045
+    # PI_LA04_cont03: 1055:1363 (ignore the 1364:1367 files)
+    #   -> 105501:114912 monthly files
+    #   ->   1150:1251   annual files
+    #   -> 125201:136312 monthly files
+    # PI_LA04_cont04: 1364:1517
+    # -> piControl 1850:1858 = PI_LA04_cont02 1046:1054
+    # ->           1859:1953 = PI_LA04_cont03 1055:1149 (monthly files)
+    # ->           1954:1999 = PI_LA04_cont03 1150:1195 (annual files)
+    # ->           2000:2055 = PI_LA04_cont03 1196:1251 (annual files)
+    # ->           2056:2099 = PI_LA04_cont03 1252:1295 (monthly files)
     models <- "echam6"
+    #datapaths <- "/work/ba0989/a270124/CMIP6_PMIP4/PI_LA04_cont02/outdata/echam"
+    #datapaths <- "/work/ba0989/a270124/CMIP6_PMIP4/PI_LA04_cont03/outdata/echam"
+    #datapaths <- "/work/ba0989/a270124/CMIP6_PMIP4/PI_LA04_cont04/outdata/echam"
     datapaths <- "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_HIST/outdata/echam"
-    fpatterns <- "CMIP6_HIST_echam6_echamday_<YYYY><MM>.grb"
-    prefixes <- "awi-esm-1-2-lr_historical_day"
-    fvarnames <- "temp2"
+    #datapaths <- "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_4CO2/outdata/echam"
+    #datapaths <- "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_1percCO2/outdata/echam"
+    #fpatterns <- "PI_LA04_cont02_echam6_echam_<YYYY><MM>.grb"
+    #fpatterns <- "PI_LA04_cont02_echam6_echammon_<YYYY><MM>.grb"
+    #fpatterns <- "PI_LA04_cont03_echam6_echam_<YYYY><MM>.grb"
+    #fpatterns <- "PI_LA04_cont03_echam6_echam_<YYYY>.grb"
+    #fpatterns <- "PI_LA04_cont03_echam6_echammon_<YYYY><MM>.grb"
+    #fpatterns <- "PI_LA04_cont03_echam6_echammon_<YYYY>.grb"
+    #fpatterns <- "PI_LA04_cont04_echam6_echammon_<YYYY><MM>.grb"
+    #fpatterns <- "CMIP6_HIST_echam6_echamday_<YYYY><MM>.grb"
+    fpatterns <- "CMIP6_HIST_echam6_echam_<YYYY><MM>.grb"
+    #fpatterns <- "CMIP6_HIST_echam6_echammon_<YYYY><MM>.grb"
+    #fpatterns <- "CMIP6_4CO2_echam6_echam_<YYYY><MM>.grb"
+    #fpatterns <- "CMIP6_1percCO2_echam6_echam_<YYYY><MM>.grb"
+    #prefixes <- "awi-esm-1-2-lr_piControl"
+    prefixes <- "awi-esm-1-2-lr_historical"
+    #prefixes <- "awi-esm-1-2-lr_historical_day"
+    #prefixes <- "awi-esm-1-2-lr_4CO2"
+    #prefixes <- "awi-esm-1-2-lr_1percCO2"
+    #codes <- 167
+    #fvarnames <- "temp2"
     #fvarnames <- "tsi"
-    froms <- 1851
-    tos <- 1859
+    #codes <- 178
+    #fvarnames <- "srad0"
+    #codes <- 179
+    #fvarnames <- "trad0"
+    fvarnames <- "toa_imbalance"
+    #froms <- 1016
+    #froms <- 1046
+    #froms <- 1055
+    #froms <- 1150
+    #froms <- 1252
+    #froms <- 1364
+    froms <- 1850
+    #tos <- 1054
+    #tos <- 1149
+    #tos <- 1195
+    #tos <- 1251
+    #tos <- 1363
+    #tos <- 1517
+    #tos <- 1999
+    tos <- 2014
     modes <- "fldmean"
 
 } else if (F) { # Hol-Tx10 on paleosrv, Hol-T on stan, Hol-7 on stan
