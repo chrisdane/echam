@@ -193,7 +193,10 @@ if (!exists("new_date_list")) {
     new_date_list <- NULL
 } else {
     message("-> `new_date_list` is not NULL")
-    for (i in 1:nsettings) {
+    # check sticky requirement of functions:make_posixlt_origin() 
+    message("load sticky package for functions:make_posixlt_origin() ...")
+    library(sticky)
+    for (i in seq_len(nsettings)) {
         if (is.null(new_date_list[[i]]$years)) {
             # user did not provide final years to use 
             if (!is.null(new_date_list[[i]]$year_origin) && 
@@ -760,26 +763,25 @@ for (i in 1:nsettings) {
         message("\nget input file format from first found file ...")
         cmd <- paste0("cdo showformat ", datapaths[i], "/", files[1])
         input_file_type <- cdo_get_filetype(paste0(datapaths[i], "/", files[1]))
-        if ((input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) ||
-            !is.null(new_date_list[[i]])) { # conversion to nc is needed and/or wanted
-            # being overly verbose here:
-            if ((input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) &&
-                !is.null(new_date_list[[i]])) {
-                message("--> input is non-nc and `cdo_convert_grb2nc`=T and new_date_list[[", i, 
-                        "]] is not null --> convert non-nc postprocessing result to nc since its wanted and new dates are wanted")
-            } else if ((input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) &&
-                       is.null(new_date_list[[i]])) {
-                message("--> input is non-nc and `cdo_convert_grb2nc`=T --> convert non-nc postprocessing result to nc")
-            } else if (!(input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) &&
-                       !is.null(new_date_list[[i]])) {
-                message("--> input is ", input_file_type$file_type, " and `cdo_convert_grb2nc`=", cdo_convert_grb2nc,
-                        " but new_date_list[[", i, "]] is not null --> ", 
-                        "convert postprocessing result to nc to apply new dates with nco ncap2")
+        # conversion is needed if:
+        if ((input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) || # case1: wanted
+            (input_file_type$file_type == "non-nc" && !is.null(new_date_list[[i]]))) { # case2: needed
+            if (verbose > 0) {
+                message("--> input is not of type nc and ", appendLF=F)
+                if (cdo_convert_grb2nc && !is.null(new_date_list[[i]])) {
+                    message("`cdo_convert_grb2nc`=T and new_date_list[[", i, 
+                            "]] is not null --> convert non-nc postprocessing result to nc since its wanted and new dates are wanted")
+                } else if (cdo_convert_grb2nc && is.null(new_date_list[[i]])) {
+                    message("`cdo_convert_grb2nc`=T --> convert non-nc postprocessing result to nc")
+                } else if (!cdo_convert_grb2nc && !is.null(new_date_list[[i]])) {
+                    message("`cdo_convert_grb2nc`=F but new_date_list[[", i, "]] is not null --> ", 
+                            " have to convert postprocessing result to nc to apply new dates with nco ncap2")
+                }
             }
             convert_to_nc <- T
         } else { # conversion is not needded and/or wanted
-            message("--> input is ", input_file_type$file_type, " and `cdo_convert_grb2nc`=", cdo_convert_grb2nc, 
-                    " and no new dates are wanted --> conversion of postprocessing result to nc not needed and/or wanted")
+            message("--> input is ", input_file_type$file_type, 
+                    " --> conversion of postprocessing result to nc not necessary")
         }
 
         # construct cdo command (chained cdo commands will be executed from right to left)
@@ -1830,20 +1832,16 @@ for (i in 1:nsettings) {
                         message("\nconstruct new times values with `new_date_list[[", 
                                 i, "]]$nc_time_units` = \"", new_date_list[[i]]$nc_time_units, "\":")
                         if (cdo_set_rel_time) {
-                            if (F) { # old
-                                dates_out_ncap <- as.POSIXlt(dates_out, tz="UTC") # old
-                            } else if (T) { # new
-                                message("run `make_posixlt_origin(years_out=c(",
-                                        paste(c(head(years_out), "...", tail(years_out)), collapse=","), "))` ...")
-                                dates_out_ncap <- make_posixlt_origin(years_out)
-                                dates_out_ncap$mon <- months_out - 1 # posix months start counting from zero
-                                dates_out_ncap$mday <- days_out
-                            }
+                            message("run `make_posixlt_origin(years_out=c(",
+                                    paste(c(head(years_out), "...", tail(years_out)), collapse=","), "))` ...")
+                            dates_out_ncap <- make_posixlt_origin(years_out)
+                            dates_out_ncap$mon <- months_out - 1 # posix months start counting from zero
+                            dates_out_ncap$mday <- days_out
                             tmp <- difftime(dates_out_ncap[1], 
                                             as.POSIXlt(paste0(new_date_list[[i]]$nc_time_origin, "-01-01"), tz="UTC"), 
                                             units="days")
                             tmp <- as.numeric(tmp) # days since first date
-                            if (cdo_ntime_fout > 1){
+                            if (cdo_ntime_fout > 1) {
                                 dates_out_ncap <- difftime(dates_out_ncap[2:length(dates_out_ncap)], 
                                                            dates_out_ncap[1:(length(dates_out_ncap) - 1)], 
                                                            units="days")
