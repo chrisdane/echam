@@ -7887,8 +7887,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
         ## plot var1 vs var2 of `datas`
         if (plot_scatter_v1_vs_v2) {
 
-            message("\n****************** `plot_scatter_v1_vs_v2`=T --> scatterplot varx vs vary *******************\n",
-                    "`varnamex = \"", varnamex, "\", varnamey = \"", varnamey, "\"")
+            message("\n****************** `plot_scatter_v1_vs_v2`=T --> scatterplot varx vs vary *******************")
+            message("\n`varnamex` = \"", varnamex, "\", `varnamey` = \"", varnamey, "\"")
 
             if (exists(varnamex) && exists(varnamey)) {
 
@@ -7926,8 +7926,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 eval(parse(text=paste0("vary_infos <- ", varnameyp, "_infos")))
 
                 # special ECS/TCR stuff
-                if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
-                    message("\nspecial: prepare equilibrium climate sensitivity (ECS): https://github.com/ESMValGroup/ESMValTool/issues/1814")
+                if (T && any(varname == c("temp2_vs_toa_imbalance", "tas_vs_toa_imbalance")) && 
+                    any(grepl("piControl", names_short))) {
+                    message("\nspecial: prepare equilibrium climate sensitivity (ECS): ",
+                            "see https://github.com/ESMValGroup/ESMValTool/issues/1814")
                     inds <- seq_along(z)
                     if (length(which(grepl("piControl", names_short))) == 1) {
                         piind <- which(grepl("piControl", names_short))
@@ -7936,7 +7938,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         stop("not defined")
                     }
                     if (F) { # subtract PI of year 1849 (last year before deck experiments start)
-                        message("case 1: subtract last PI value from experiments ...")
+                        message("case 1: subtract last PI value from 4CO2 experiments ...")
                         for (i in inds) {
                             varx[[i]] <- varx[[i]] - varx[[piind]][length(varx[[piind]])]
                             varx_infos[[i]]$label <- "2m temperature change [K]"
@@ -7950,7 +7952,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         #vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
                     } else if (F) { # subtract last 100-yr mean PI
-                        message("case 2: subtract last 100-yr mean PI value from experiments ...")
+                        message("case 2: subtract last 100-yr mean PI value from 4CO2 experiments ...")
                         for (i in inds) {
                             varx[[i]] <- varx[[i]] - mean(varx[[piind]])
                             varx_infos[[i]]$label <- "2m temperature change [K]"
@@ -7963,8 +7965,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         #vary[[piind]] <- vary[[piind]] - mean(vary[[piind]])
                         #vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
-                    } else if (T) { # subtract respective PI years 
-                        message("case 3: calc `delta data(year_i) = data_experiment(year_i) minus data_piControl(year_i)` ...")
+                    } else if (F) { # subtract respective PI years 
+                        message("case 3: calc `delta data(year_i) = data_4CO2(year_i) minus data_piControl(year_i)` ...")
                         for (i in inds) {
                             if (length(varx[[i]]) != length(varx[[piind]])) {
                                 stop("varx[[", i, "]] and varx[[", piind, "]] are of different length")
@@ -7986,11 +7988,49 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         #vary[[piind]] <- vary[[piind]] - vary[[piind]] # = all zero
                         vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
-                    } else if (F) { # subtract linear fit of PI (same as in esmvaltool)
-                        stop("todo")
+                    } else if (T) { # subtract linear fit of PI (same as in esmvaltool)
+                        message("case 4: calc `delta data = data_4CO2 minus lm(data_piControl)` as in \n",
+                                "ESMValTool: https://github.com/ESMValGroup/ESMValTool/issues/1814#issuecomment-691939774\n",
+                                "--> who refer to Figure 9.42 of AR5 who refer to refer Andrews et al. 2012:\n",
+                                "--> \"We calculate differences between the abrupt4xCO2 and piControl experiments by subtracting ",
+                                "a linear fit of the corresponding control timeseries from the perturbation run, removing any ",
+                                "model drift without adding control noise.\"")
+                        # piControl fit
+                        varx_lm <- lm(varx[[piind]] ~ dims[[piind]]$time)
+                        vary_lm <- lm(vary[[piind]] ~ dims[[piind]]$time)
+                        message("linear trend of ", names_short[piind], " xdata ", varnamex, " = ", 
+                                varx_lm$fitted.values[length(varx[[piind]])] - varx_lm$fitted.values[1], 
+                                " ", varx_infos[[piind]]$units, " / ",
+                                length(unique(dims[[piind]]$timelt$year+1900)), " years (from ",
+                                min(d$time[[piind]]), " to ", max(d$time[[piind]]), ")")
+                        message("linear trend of ", names_short[piind], " ydata ", varnamey, " = ", 
+                                vary_lm$fitted.values[length(vary[[piind]])] - vary_lm$fitted.values[1], 
+                                " ", vary_infos[[piind]]$units, " / ",
+                                length(unique(dims[[piind]]$timelt$year+1900)), " years (from ",
+                                min(d$time[[piind]]), " to ", max(d$time[[piind]]), ")")
+                        for (i in inds) {
+                            if (length(varx[[i]]) != length(varx_lm$fitted.values)) {
+                                stop("varx[[", i, "]] and varx_lm$fitted.values are of different length")
+                            }
+                            if (length(vary[[i]]) != length(vary_lm$fitted.values)) {
+                                stop("vary[[", i, "]] and vary_lm$fitted.values are of different length")
+                            }
+                            if (!all(dims[[i]]$timelt$year == dims[[piind]]$timelt$year)) {
+                                stop("years of setting ", i, " and ", piind, " differ")
+                            }
+                            varx[[i]] <- varx[[i]] - varx_lm$fitted.values
+                            varx_infos[[i]]$label <- "2m temperature change [K]"
+                            vary[[i]] <- vary[[i]] - vary_lm$fitted.values
+                            vary_infos[[i]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
+                        }
+                        # last: pi itself
+                        varx[[piind]] <- varx[[piind]] - varx_lm$fitted.values # = fluctuation around zero
+                        varx_infos[[piind]]$label <- "2m temperature change [K]"
+                        #vary[[piind]] <- vary[[piind]] - vary_lm$fitted.values # = fluctuation around zero
+                        vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
                     } else {
-                        message("did not subtract any PI values")
+                        warning("did not subtract any piControl values for ECS calculation. this is rather not ok!")
                     }
                 } # if varname == "temp2_vs_toa_imbalance" do ECS/TCR stuff
 
@@ -8074,7 +8114,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 plotorder <- seq_along(varx)
                 
                 # special: change plot order
-                if (T && varname == "temp2_vs_toa_imbalance" && any(grepl("piControl", names_short))) {
+                if (T && any(varname == c("temp2_vs_toa_imbalance", "tas_vs_toa_imbalance")) && 
+                    any(grepl("piControl", names_short))) {
                     # plot PI last
                     message("special: change plot order from ", 
                             paste(plotorder, collapse=","), " to ", appendLF=F)
@@ -8085,7 +8126,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 # special: add gray dots of data first
-                if (T && varname == "temp2_vs_toa_imbalance") {
+                if (T && any(varname == c("temp2_vs_toa_imbalance", "tas_vs_toa_imbalance"))) {
                     message("special: add individual years by gray points")
                     for (i in plotorder) {
                         if (F && names_short[i] == "piControl") {
@@ -8102,7 +8143,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add data 
                 for (i in plotorder) {
-                    if (T && varname == "temp2_vs_toa_imbalance") {
+                    if (T && any(varname == c("temp2_vs_toa_imbalance", "tas_vs_toa_imbalance"))) {
                         if (T && grepl("piControl", names_short[i])) {
                             if (T) {
                                 message("special: plot only time mean for piControl")
@@ -8182,7 +8223,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                           col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
                                 # or plot line through whole plot with regression coefficients
                                 } else if (T || 
-                                           (varname == "temp2_vs_toa_imbalance" && grepl("abrupt-4xCO2", names_short[i]))) {
+                                           (any(varname == c("temp2_vs_toa_imbalance", "tas_vs_toa_imbalance")) && 
+                                            grepl("abrupt-4xCO2", names_short[i]))) {
                                     message("draw linear regression line through whole plot ...")
                                     abline(a=lms_lin[[i]]$coefficients[1], b=lms_lin[[i]]$coefficients[2],
                                            col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
@@ -8206,7 +8248,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             } # if lm sucessfull or not
                            
                             # special stuff after linear regression 
-                            if (T && varname == "temp2_vs_toa_imbalance") {
+                            if (T && any(varname == c("temp2_vs_toa_imbalance", "tas_vs_toa_imbalance"))) {
                                 if (grepl("abrupt-4xCO2", names_short[i]) && !is.na(slope)) {
                                     message("\nspecial: ECS for abrupt-4xCO2 and non-NA regression slope\n",
                                             "see https://github.com/ESMValGroup/ESMValTool/issues/1814 ...")
@@ -8246,7 +8288,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                                                                       deltaT_eq_2x_lower=round(min(deltaT_eq_2x_error), 2), 
                                                                       deltaT_eq_2x_upper=round(max(deltaT_eq_2x_error), 2)))))
                                     
-                                    if (T) { # add different linear regressions
+                                    if (F) { # add different linear regressions
                                         message("\nspecial: add different linear regressions")
                                         lms_special <- vector("list", l=2)
                                         for (j in seq_len(2)) {
@@ -8433,7 +8475,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                     le$lwds <- NA
                     le$pchs <- scatterpchs
                     #le$pchs <- pchs_p
-                    if (T && varname == "temp2_vs_toa_imbalance") {
+                    if (T && any(varname == c("temp2_vs_toa_imbalance", "tas_vs_toa_imbalance"))) {
                         message("special legend pchs")
                         le$pchs <- rep(NA, t=length(varx))
                     }

@@ -356,11 +356,11 @@ for (i in 1:nsettings) {
                     message("   replace special pattern \"", pattern, "\" by \"?\"")
                     sub_list[[pati]]$replacement <- "?"
                     if (any(pattern == c("<YYYY>", "<YYYY_from>", "<YYYY_to>"))) {
-                        sub_list[[pati]]$replacement_length <- 4
+                        sub_list[[pati]]$replacement_times <- 4
                     } else if (any(pattern == c("<MM>", "<MM_from>", "<MM_to>"))) {
-                        sub_list[[pati]]$replacement_length <- 2
+                        sub_list[[pati]]$replacement_times <- 2
                     } else if (any(pattern == c("<DD>", "<DD_from>", "<DD_to>"))) {
-                        sub_list[[pati]]$replacement_length <- 2
+                        sub_list[[pati]]$replacement_times <- 2
                     } else {
                         stop("not pattern \"", pattern, "\" not defined yet")
                     }
@@ -380,17 +380,19 @@ for (i in 1:nsettings) {
                     }
                     message("   replace pattern \"", pattern, "\" by \"", replacement, "\"")
                     sub_list[[pati]]$replacement <- replacement
-                    sub_list[[pati]]$replacement_length <- nchar(replacement)
+                    #sub_list[[pati]]$replacement_times <- nchar(replacement)
+                    sub_list[[pati]]$replacement_times <- 1 # dont repeat replacement pattern in this default case
                 } # special or default <pattern>
+                sub_list[[pati]]$replacement <- paste(rep(sub_list[[pati]]$replacement, t=sub_list[[pati]]$replacement_times),
+                                                      collapse="")
+                sub_list[[pati]]$replacement_length <- nchar(sub_list[[pati]]$replacement)
                 sub_list[[pati]]$nchar_diff <- sub_list[[pati]]$replacement_length - nchar(sub_list[[pati]]$pattern)
             } # for pati n <patterns> to replace
 
             # apply replacements of patterns one by one (thats why `sub()` and not `gsub()`; the latter would replace all occurences at once)
             fpattern <- fpatterns[i]
             for (pati in seq_along(sub_list)) {
-                fpattern <- sub(pattern=sub_list[[pati]]$pattern, 
-                                replacement=paste(rep(sub_list[[pati]]$replacement, t=sub_list[[pati]]$replacement_length), collapse=""),
-                                x=fpattern)
+                fpattern <- sub(pattern=sub_list[[pati]]$pattern, replacement=sub_list[[pati]]$replacement, x=fpattern)
             }
             message("   -> \"", fpattern, "\"")
             
@@ -473,10 +475,11 @@ for (i in 1:nsettings) {
                     }
                     # todo: MM_from, MM_to
                 } else {
-                    message("\npattern \"", special_patterns_in_filenames[pati], " occurs ", length(pattern_list), 
-                            " times and the values differ from each other:")
-                    for (patj in yyyy_list) ht(yyyy_list[[patj]])
-                    stop("-> dont know how to interpret this.")
+                    message("pattern \"", special_patterns_in_filenames[pati], "\" occurs ", length(pattern_list), 
+                            " times in `fpatterns[", i, "]` but their respective values differ from each other:")
+                    for (patj in seq_along(pattern_list)) ht(pattern_list[[patj]])
+                    stop("dont know how to interpret this. maybe changing to one of \"", 
+                         paste(special_patterns, collapse="\", \""), "\" helps")
                 }
             } # for pati all special patterns in fnames
 

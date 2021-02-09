@@ -76,7 +76,7 @@ ts_highlight_seasons <- list(#bool=T,
                              #pchs=1:4,
                              pchs=c(16, 16, 16, 16),
                              suffix="_highlight_seasons") 
-show_first_data_point <- T
+show_first_data_point <- F
 ts_plot_each_setting_in_subplot <- F
 add_data_right_yaxis_ts <- T
 add_cor_data_left_and_right_ts <- F
@@ -95,7 +95,8 @@ scatter_s1_vs_s1_varname <- "tsurf"
 
 plot_scatter_v1_vs_v2 <- T # uses `datas`
 varnamex <- varnamey <- "abc_datas" # default
-varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
+#varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
+varnamex <- "tas_datas"
 #varnamex <- "tsurf_datas"
 #varnamex <- "tsurfaprt_datas"
 #varnamex <- "quv_datas"
@@ -731,28 +732,29 @@ if (F) { # awi-esm-1-1-lr hist
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
     if (F) { # awi-cm-1-1-lr
-        prefixes <- c("awi-cm-1-1-lr_piControl",
-                      "awi-cm-1-1-lr_historical",
-                      "awi-cm-1-1-lr_1percCO2",
-                      "awi-cm-1-1-lr_4CO2")
+        prefixes <- paste0("awi-cm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("awi-cm-1-1-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
-    } else if (T) { # awi-esm-1-1-lr
-        prefixes <- c("awi-esm-1-1-lr_piControl",
-                      "awi-esm-1-1-lr_historical",
-                      "awi-esm-1-1-lr_1percCO2",
-                      "awi-esm-1-1-lr_4CO2")
+    } else if (F) { # awi-esm-1-1-lr
+        prefixes <- paste0("awi-esm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("awi-esm-1-1-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
     } else if (F) { # awi-esm-1-2-lr
-        prefixes <- c("awi-esm-1-2-lr_piControl",
-                      "awi-esm-1-2-lr_historical",
-                      "awi-esm-1-2-lr_1percCO2",
-                      "awi-esm-1-2-lr_4CO2")
+        prefixes <- paste0("awi-esm-1-2-lr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("awi-esm-1-2-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
+    } else if (F) { # awi-cm-1-1-mr
+        prefixes <- paste0("awi-cm-1-1-mr_", c("piControl", "historical", "1percCO2", "4CO2"))
+        names_short <- paste0("awi-cm-1-1-hr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
+    } else if (F) { # mpi-esm1-2-lr
+        prefixes <- paste0("mpi-esm1-2-lr_", c("piControl", "historical", "1percCO2", "4CO2"))
+        names_short <- paste0("mpi-esm1-2-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
+    } else if (T) { # mpi-esm1-2-hr
+        prefixes <- paste0("mpi-esm1-2-hr_", c("piControl", "historical", "1percCO2", "4CO2"))
+        names_short <- paste0("mpi-esm1-2-hr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
     }
     text_cols <- c("black", "#E41A1C", "#377EB8", "#1B9E77")
     scatterpchs <- c(4, 16, 16, 16)
     #varnames_in <- rep("temp2", t=4)
     #codes <- c(167, "", "", "")
+    #varnames_in <- rep("tas", t=4)
     #varnames_in <- rep("srad0", t=4)
     varnames_in <- rep("toa_imbalance", t=4)
     #varnames_in <- rep("tau_aero_550", t=4)
@@ -777,7 +779,7 @@ if (F) { # awi-esm-1-1-lr hist
     #postpaths <- paste0(workpath, "/post/", models, "/regular_grid/ltm/", mode, "/", varnames_in)
     #reg_dxs <- reg_dys <- rep("0.250", t=4)
     if (T) { # transient deck first 150 years
-        if (T) { # awi-esm-1-1-lr
+        if (F) { # awi-esm-1-1-lr
             if (F) { # pi before deck
                 #fromsf <- c(1855, 1850, 1850, 1850) # PI-CTRL5 wrong labels
                 #tosf <- c(1954, 2014, 2099, 2099) # PI-CTRL5 wrong labels
@@ -795,6 +797,15 @@ if (F) { # awi-esm-1-1-lr hist
             fromsf <- c(1046, 1850, 1850, 1850)
             tosf <- c(1195, 2014, 1999, 1999)
             new_origins <- c(1850, NA, NA, NA)
+            tosp <- c(NA, 1999, NA, NA)
+        } else if (F) { # awi-cm-1-1-mr
+            fromsf <- c(2650, 1850, 1850, 1850)
+            tosf <- c(2799, 2014, 1999, 1999)
+            new_origins <- c(1850, NA, NA, NA)
+            tosp <- c(NA, 1999, NA, NA)
+        } else if (T) { # mpi-esm1-2-lr and mpi-esm1-2-hr
+            fromsf <- c(1850, 1850, 1850, 1850)
+            tosf <- c(1999, 2014, 1999, 1999)
             tosp <- c(NA, 1999, NA, NA)
         }
     } else if (F) { # tranient pi last 30
