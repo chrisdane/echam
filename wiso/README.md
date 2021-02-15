@@ -1,10 +1,10 @@
 # wiso
 
 In wiso, `nwiso` water isotopologues are calculated and saved in the `level` dimension of `wiso*` variables in `*wiso*` files:
-1.  <sup>1</sub>H<sub>2</sub><sup>16</sup>O = `{}^{1}H_{2}{}^{16}O` = `H$_{2}{}^{16}$O`
-2. `{}^{1}H_{2}{}^{18}O` = `H_{2}{}^{18}O`
-3. `{}^{1}H{}^{2}H{}^{16}O` = `HD^{16}O`
-4. `{}^{1}H_{2}{}^{17}O` = `H_{2}{}^{17}O` (not tested)
+1. <sup>1</sup>H<sub>2</sub><sup>16</sup>O = H<sub>2</sub><sup>16</sup>O = `{}^{1}H_{2}{}^{16}O` = `H$_{2}{}^{16}$O`
+2. <sup>1</sup>H<sub>2</sub><sup>18</sup>O = H<sub>2</sub><sup>18</sup>O = `{}^{1}H_{2}{}^{18}O` = `H_{2}{}^{18}O`
+3. <sup>1</sup>H<sup>2</sup>H<sup>16</sup>O = HD<sup>16</sup>O = `{}^{1}H{}^{2}H{}^{16}O` = `HD^{16}O`
+4. <sup>1</sup>H<sub>2</sub><sup>17</sup>O = H<sub>2</sub><sup>17</sup>O = `{}^{1}H_{2}{}^{17}O` = `H_{2}{}^{17}O` (not tested)
 
 The abundances of the stable hydrogen and oxygen isotopes with respect to SMOV are calculated either online via `/ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh`:
 ```bash
