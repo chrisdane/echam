@@ -5,7 +5,7 @@ pg_baseurl <- "https://doi.pangaea.de/"
 pdois <- list()
 
 # d18O_* data from antaractic ice core
-if (T) {
+if (F) {
     pdois <- c(pdois, 
                list("holme_etal_2019"=
                     list(pdoi="10.1594/PANGAEA.901844",
@@ -69,7 +69,7 @@ if (F) { # in Iso2k
                          vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW]", 
                                                       dims=list("kyr_before_1950"="Age [ka BP]"))))))
 }
-if (F) { # included in Iso2k
+if (F) { # in Iso2k
     pdois <- c(pdois, 
                list("weißbach_etal_2016"=
                     list(pdoi="10.1594/PANGAEA.849156",
@@ -118,21 +118,21 @@ if (F) { # in Iso2k
                          vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW]", 
                                                       dims=list("kyr_before_1950"="Age [ka BP]"))))))
 }
-if (T) {
+if (F) {
     pdois <- c(pdois, 
                list("vinther_etal_2010"=
                     list(pdoi="10.1594/PANGAEA.786356",
                          vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW] (annual)", 
                                                       dims=list("kyr_before_1950"="Age [ka BP]"))))))
 }
-if (T) {
+if (F) {
     pdois <- c(pdois, 
                list("vinther_etal_2010"=
                     list(pdoi="10.1594/PANGAEA.786354",
                          vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW] (annual)", 
                                                       dims=list("kyr_before_1950"="Age [ka BP]"))))))
 }
-if (T) {
+if (F) {
     pdois <- c(pdois, 
                list("vinther_etal_2010"=
                     list(pdoi="10.1594/PANGAEA.786302",
@@ -153,21 +153,21 @@ if (F) { # in Iso2k
                          vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW]", 
                                                       dims=list("kyr_before_1950"="Age [ka BP]"))))))
 }
-if (T) {
+if (F) {
     pdois <- c(pdois, 
                list("white_etal_2009"=
                     list(pdoi="10.1594/PANGAEA.716878",
                          vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW]", 
                                                       dims=list("kyr_before_1950"="Age [ka BP]"))))))
 }
-if (T) {
+if (F) {
     pdois <- c(pdois, 
                list("rasmussen_etal_2007"=
                     list(pdoi="10.1594/PANGAEA.586860",
                          vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW]", 
                                                       dims=list("kyr_before_1950"="Age [ka BP]"))))))
 }
-if (T) {
+if (F) {
     pdois <- c(pdois, 
                list("rasmussen_etal_2007"=
                     list(pdoi="10.1594/PANGAEA.586863",
@@ -213,7 +213,7 @@ if (F) {
 }
 
 # d18O from ice wedges
-if (T) {
+if (F) {
     pdois <- c(pdois, 
                list("vasilchuk_etal_2020"=
                     list(pdoi="10.1594/PANGAEA.917714",
@@ -224,10 +224,24 @@ if (T) {
                                    "T_air_win_deg"=list(inputname="T win [°C]",
                                                         dims=list("vasilchuk_etal_2020_time"="Comm"))))))
 }
+if (F) { # no age provided wtf?!
+    pdois <- c(pdois, 
+               list("vasilchuk_etal_2020"=
+                    list(pdoi="10.1594/PANGAEA.915930",
+                         vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW]", 
+                                                      dims=list("kyr_before_1950"=NA))))))
+}
+if (F) {
+    pdois <- c(pdois, 
+               list("vasilchuk_etal_2020"=
+                    list(pdoi="10.1594/PANGAEA.917711",
+                         vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW] (Mean (VSMOW))", 
+                                                      dims=list("yr_from_0"="Year [a AD]"))))))
+}
 
 # pollen
-if (F) { # cao et al. 2020 siberia 40k compilation
-    # https://doi.pangaea.de/10.1594/PANGAEA.898616
+if (F) { # cao et al. 2020 siberia 40k compilation: taxa only
+    #"10.1594/PANGAEA.898616",
 }
 
 # pa_th
@@ -343,14 +357,32 @@ if (F) {
     # miettinen et al. 2012
 } # silt
 
-#################################################
+
+# automated test
+if (F) {
+    search_query <- "parameter:\"δ18O, water\""
+    search_count <- 500
+    if (search_count > 500) {
+        message("search_count must be <= 500")
+        search_count <- 500
+    }
+    for (i in seq_len(10)) {
+        search_offset <- (i-1)*search_count
+        message("run pangaea::pg_search(query=\"", search_query, "\") from ", 
+                search_offset, " to ", search_offset + search_count - 1, " ...")
+        res <- pg_search(query=search_query, count=search_count, offset=search_offset, bbox=c(-65, 30, 180, 90))
+        res <- pg_search_es(query=search_query, count=search_count, offset=search_offset, bbox=c(-65, 30, 180, 90))
+    }
+}
+
+########################## end user input #######################
 
 pg <- list()
 if (length(pdois) == 0) {
     message("`length(pdois)=0`. nothing to do")
 
 } else {
-    # step 1/2: load data and save in lipd-like format
+    # step 1/3: load data and save in lipd-like format
     message("load ", length(pdois), " pangaea dois ...")
     
     for (pgi in seq_along(pdois)) {
@@ -678,53 +710,69 @@ if (length(pdois) == 0) {
     } # for pgi in pdois
     message("\nfinished loading ", length(pdois), " pangaea dois:")
     cat(capture.output(str(pg, max.level=2)), sep="\n")
-    
-    # step 2/2: modify dimensions if necessary
-    message("\ncheck/modify dims/data of ", length(pdois), " pangaea dois. this may take some moments ...")
+    #stop("asd")
+
+    # step 2/3: modify dimensions if necessary
+    message("\ncheck/modify dims/data of ", length(pg), " different variables from ", 
+            length(pdois), " pangaea dois. this may take some moments ...")
     for (vi in seq_along(pg)) {
         for (pdoi in seq_along(pg[[vi]])) {
             for (eventi in seq_along(pg[[vi]][[pdoi]])) {
                 for (dimi in seq_along(pg[[vi]][[pdoi]][[eventi]]$dims)) {
                     
-                    dimin <- names(pg[[vi]][[pdoi]][[eventi]]$dims)[dimi]
-                    dimvals <- data <- NULL # default: nothing to do
-                    
-                    # convert `kyr_before_1950` --> `year from 1950 CE`
-                    if (dimin == "kyr_before_1950") {
-                        dimout <- "time"
-                        dimvals <- pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]]
-                        if (all(diff(dimvals) > 0)) { # flip timevals and time-dim of data
-                            dimvals <- rev(dimvals)
-                            data <- pg[[vi]][[pdoi]][[eventi]]$data
-                            timedimind <- which(dim(data) == length(dimvals))
-                            if (length(timedimind) != 1) {
-                                stop("rare case that more than one dims of data `pg[[pvari]][[pdois=", 
-                                     pdoi, "]][[eventi=", eventi, 
-                                     "]]$data` are of length ", 
-                                     length(dimvals), 
-                                     "(the length of the time-dimvals). solve manually")
-                            }
-                            cmd <- rep(",", t=length(dim(data)))
-                            cmd[timedimind] <- paste0(length(dimvals), ":1")
-                            cmd <- paste(cmd, collapse="")
-                            cmd <- paste0("data <- data[", cmd, "]")
-                            #message("   run `", cmd, "` ...")
-                            eval(parse(text=cmd))
-                        } # if flip
-                        dimvals <- -1000*dimvals
-                        dimvals <- make_posixlt_origin(dimvals, origin_in=1950, origin_out=1950)
-                    
-                    # convert `"Modern` --> `0 from 1950 CE` and "Holocene"` --> `-6000 from 1950 CE`
-                    } else if (dimin == "vasilchuk_etal_2020_time") {
-                        dimout <- "time"
-                        dimvals <- pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]]
-                        if (any(dimvals == "Modern")) dimvals[which(dimvals == "Modern")] <- 0
-                        if (any(dimvals == "Holocene")) dimvals[which(dimvals == "Holocene")] <- -6000
-                        dimvals <- as.numeric(dimvals)
-                        dimvals <- make_posixlt_origin(dimvals, origin_in=1950, origin_out=1950)
-                    } # do dimin == "..." dim-specific things
+                    # original dimension values (can be anything; pangaea is unbelievable in terms of SI units)
+                    dimvals <- pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]]
+                    data <- NULL # default: do not change data values
+                   
+                    # all dimension values of current dim are NA
+                    if (all(is.na(dimvals))) {
+                        dimvals <- NULL # do not change dim values
 
-                    # replace original dims/data with modified
+                    } else if (any(!is.na(dimvals))) {
+                        dimin <- names(pg[[vi]][[pdoi]][[eventi]]$dims)[dimi] # my dimension names
+                        
+                        # convert `kyr_before_1950` --> `year from 1950 CE`
+                        if (dimin == "kyr_before_1950") {
+                            dimout <- "time"
+                            if (all(diff(dimvals) > 0)) { # flip both time-dim vals AND data
+                                dimvals <- rev(dimvals)
+                                data <- pg[[vi]][[pdoi]][[eventi]]$data
+                                timedimind <- which(dim(data) == length(dimvals))
+                                if (length(timedimind) != 1) {
+                                    stop("rare case that more than one dims of data `pg[[pvari]][[pdoi=", 
+                                         pdoi, "]][[eventi=", eventi, "]]$data` are of length ", 
+                                         length(dimvals), "(the length of the time-dimvals). solve manually")
+                                }
+                                cmd <- rep(",", t=length(dim(data)))
+                                cmd[timedimind] <- paste0(length(dimvals), ":1") # revers actual data
+                                cmd <- paste(cmd, collapse="")
+                                cmd <- paste0("data <- data[", cmd, "]")
+                                #message("   run `", cmd, "` ...")
+                                eval(parse(text=cmd))
+                            } # if flip
+                            dimvals <- -1000*dimvals
+                            dimvals <- make_posixlt_origin(dimvals, origin_in=1950, origin_out=1950)
+                        
+                        # convert `"Modern` --> `0 from 1950 CE` and "Holocene"` --> `-6000 from 1950 CE`
+                        } else if (dimin == "vasilchuk_etal_2020_time") {
+                            dimout <- "time"
+                            dimvals <- pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]]
+                            if (any(dimvals == "Modern")) dimvals[which(dimvals == "Modern")] <- 0
+                            if (any(dimvals == "Holocene")) dimvals[which(dimvals == "Holocene")] <- -6000
+                            dimvals <- as.numeric(dimvals)
+                            dimvals <- make_posixlt_origin(dimvals, origin_in=1950, origin_out=1950)
+                        
+                        } else if (dimin == "yr_from_0") {
+                            dimout <- "time"
+                            dimvals <- make_posixlt_origin(dimvals, origin_in=0, origin_out=1950)
+
+                        } else {
+                            stop("dimin = \"", dimin, "\" not defined")
+                        } # do dimin == "..." dim-specific things
+                    
+                    } # if any dim values are not NA
+
+                    # replace original dim and/or data values with modified values
                     if (!is.null(dimvals)) {
                         pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]] <- dimvals
                         names(pg[[vi]][[pdoi]][[eventi]]$dims)[dimi] <- dimout
@@ -737,10 +785,37 @@ if (length(pdois) == 0) {
             } # for eventi
         } # for pdoi
     } # for vi
-    
-    message("\nfinished modifying ", length(pdois), " pangaea dois")
+
+    # step 3/3: check final data
+    # check if all values of all dimensions of a variable are NA --> remove data
+    message("\nfinal check of ", length(pg), " pangaea variables ...")
+    for (vi in seq_along(pg)) {
+        for (pdoi in seq_along(pg[[vi]])) {
+            for (eventi in seq_along(pg[[vi]][[pdoi]])) {
+                if (all(sapply(lapply(pg[[vi]][[pdoi]][[eventi]]$dims, is.na), all))) {
+                    message("all values of the \"", 
+                            paste(names(pg[[vi]][[pdoi]][[eventi]]$dims), collapse="\", \""), 
+                            "\" dimension", ifelse(length(pg[[vi]][[pdoi]][[eventi]]$dims) > 1, "s", ""),
+                            " of variable \"", names(pg)[vi], "\" are NA --> ",
+                            "remove ", names(pg[[vi]])[pdoi], " event \"",
+                             names(pg[[vi]][[pdoi]])[eventi], "\" (", pg[[vi]][[pdoi]][[eventi]]$doi, ") ...")
+                    pg[[vi]][[pdoi]][[eventi]] <- NA # set whole event to NA
+                } # if all values of all dimensions of current variable are NA
+            } # for eventi
+        } # for pdoi
+    } # for vi
+    for (vi in seq_along(pg)) {
+        for (pdoi in seq_along(pg[[vi]])) {
+            if (any(sapply(pg[[vi]][pdoi], is.na))) {
+                nainds <- which(sapply(pg[[vi]][pdoi], is.na))
+                pg[[vi]][[pdoi]][nainds] <- NULL
+            }
+        } # for pdoi
+    } # for vi
 
     # todo: check double entries
+    
+    message("\nfinished modifying ", length(pdois), " pangaea dois")
 
 } # if length(pdois) > 0
 

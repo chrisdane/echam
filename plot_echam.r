@@ -3,7 +3,7 @@
 #options(warn=2) # stop on warnings
 #options(warn=0) # back to default
 
-if (F) {
+if (T) {
     message("\nrm(list=ls())")
     rm(list=ls())
     # make squeeze default:
@@ -229,18 +229,27 @@ data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 ## load pangaea data if defined 
 if (F) {
-    message("\nload pangaea data via load_pangaea_data.r ...")
+    message("\ndisable here if you do not want to load pangaea data via load_pangaea_data.r ...")
     source("load_pangaea_data.r")
+} else {
+    message("\nenable here to load pangaea data via load_pangaea_data.r ...")
 }
 
 ## load special data if defined
-message("\nload special data via load_special_data.r ...")
-source("load_special_data.r")
+if (T) {
+    message("\ndisable here if you do not want to load special data via load_special_data.r ...")
+    source("load_special_data.r")
+} else {
+    message("\nenable here to load special data via load_special_data.r ...")
+}
 
 ## plot special data if defined
-message("\nplot special data via load_special_data.r ...")
-source("plot_special_data.r")
-
+if (F) {
+    message("\ndisable here if you do not want to plot special data via plot_special_data.r ...")
+    source("plot_special_data.r")
+} else {
+    message("\nenable here to plot special data via plot_special_data.r ...")
+}
 
 # read data
 message("\n===================================\nread model data ...")
@@ -1561,7 +1570,7 @@ for (i in 1:nsettings) {
         data_infos[[i]][[vi]]$label <- label
         if (scale_ts) data_infos[[i]][[vi]]$label <- paste0(data_infos[[i]][[vi]]$label, " (Index)")
 
-        # add variable-specific things
+        # add my special variable-specific things
         data_infos[[i]][[vi]]$units_old <- data_infos[[i]][[vi]]$units
         
         if (any(varname == c("temp2", "tas", "t"))) {
@@ -1673,7 +1682,7 @@ for (i in 1:nsettings) {
             #if (p$plot_type == "pdf") encoding <- "CP1250"
             if (p$plot_type == "pdf") encoding <- "WinAnsi"
             if (T) {
-                message("special unit")
+                message("special unit lm_wisoaprt_d_post_as_time_slope")
                 data_infos[[i]][[vi]]$offset$operator <- "*"
                 data_infos[[i]][[vi]]$offset$value <- "6/7" # permil/7k years --> permil/6k years
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O"["p,SMOW"], " trend [\u2030/6k years]"))))
@@ -1700,14 +1709,14 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " trend [°C/7k years]"))
             data_infos[[i]][[vi]]$units <- "°C/7k years"
             if (F) {
-                message("special: *-1")
+                message("special: lm_temp2_as_time_slope*-1")
                 data_infos[[i]][[vi]]$offset$operator <- "*"
                 data_infos[[i]][[vi]]$offset$value <- -1
                 data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " trend 7ka - PI [°C]"))
                 data_infos[[i]][[vi]]$units <- "°C"
             }
             if (T) {
-                message("special unit")
+                message("special unit lm_temp2_as_time_slope")
                 data_infos[[i]][[vi]]$offset$operator <- "*"
                 data_infos[[i]][[vi]]$offset$value <- "6/7" # °C/7k years --> °C/6k years
                 data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " trend [°C/6k years]"))
@@ -1718,7 +1727,7 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$label <- expression(paste("T"["surf"], " trend [°C/7k years]"))
             data_infos[[i]][[vi]]$units <- "°C/7k years"
             if (T) {
-                message("special unit")
+                message("special unit lm_tsurf_as_time_slope")
                 data_infos[[i]][[vi]]$offset$operator <- "*"
                 data_infos[[i]][[vi]]$offset$value <- "6/7" # °C/7k years --> °C/6k years
                 data_infos[[i]][[vi]]$label <- expression(paste("T"["surf"], " trend [°C/6k years]"))
@@ -1736,14 +1745,27 @@ for (i in 1:nsettings) {
             data_infos[[i]][[vi]]$label <- "sea ice fraction trend [fraction/7k years]"
 
         } else if (varname == "lm_aprt_as_time_slope") {
-            data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/month/7k years]"))
-            data_infos[[i]][[vi]]$units <- "mm/month 7k years"
-            if (T) {
-                message("special unit")
-                data_infos[[i]][[vi]]$offset$operator <- c("*", "*")
-                data_infos[[i]][[vi]]$offset$value <- c(12, "6/7") # mm/month/7k years -> mm/year/6k years
-                data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/year/6k years]"))
-                data_infos[[i]][[vi]]$units <- "mm/month 6k years"
+            if (modes[i] == "select") {
+                data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/month/7k years]"))
+                data_infos[[i]][[vi]]$units <- "mm/month/7k years"
+                if (T) {
+                    message("special unit lm_aprt_as_time_slope")
+                    data_infos[[i]][[vi]]$offset$operator <- "*"
+                    data_infos[[i]][[vi]]$offset$value <- "6/7" # mm/month/7k years -> mm/month/6k years
+                    data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/month/6k years]"))
+                    data_infos[[i]][[vi]]$units <- "mm/month 6k years"
+                }
+            } else if (modes[i] == "yearsum") {
+                data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/a/7k years]"))
+                data_infos[[i]][[vi]]$units <- "mm/a/7k years"
+                if (T) {
+                    message("special unit lm_aprt_as_time_slope")
+                    data_infos[[i]][[vi]]$offset$operator <- "*"
+                    data_infos[[i]][[vi]]$offset$value <- "6/7" # mm/a/7k years -> mm/a/6k years
+                    data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/a/6k years]"))
+                    data_infos[[i]][[vi]]$units <- "mm/a 6k years"
+                }
+            
             }
 
         } else if (varname == "lm_act_fpc_as_time_slope") {
@@ -3554,15 +3576,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     point_data_label <- "Proxy temperature trend [°C/6k years]"
                     point_data_legend <- "B11"
                     tmp <- bartlein_etal_2011$mat_MH_minus_PI
-                    tmp$data <- tmp$data*-1 # convert anomaly to trend
                 } else if (zname == "lm_aprt_as_time_slope") {
                     point_data_varname <- "map_trend"
                     #point_data_label <- "B11 MAP trend [mm/year/6k years]" 
                     point_data_label <- "Proxy precipitation trend [mm/year/6k years]" 
                     point_data_legend <- "B11"
                     tmp <- bartlein_etal_2011$map_MH_minus_PI
-                    tmp$data <- tmp$data*-1 # convert anomaly to trend
                 }
+                # convert anomaly (MH minus PI) to trend; e.g. anom = 2K --> trend = -2K/6k years
+                tmp$data <- tmp$data*-1 
                 # convert bartlein et al 2011 data from 2d-lon,lat-data to point-data for scatter plot
                 tmp2 <- tmp
                 tmp2$data <- as.vector(tmp2$data)
@@ -3573,13 +3595,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     tmp2$lonlat <- tmp2$lonlat[inds,]
                 }
                 tmp3 <- vector("list", l=length(tmp2$data))
-                stop("update for data")
                 for (i in seq_along(tmp3)) {
-                    tmp3[[i]] <- list(lon=tmp2$lonlat$Var1[i], lat=tmp2$lonlat$Var2[i], 
-                                      time=make_posixlt_origin(-6000), # just placeholder
-                                      data=tmp2$data[i], 
-                                      varname=point_data_varname, fname=point_data_fname,
-                                      label=point_data_label, legend=point_data_legend)
+                    tmp4 <- list(lon=tmp2$lonlat$Var1[i], lat=tmp2$lonlat$Var2[i], 
+                                 time=make_posixlt_origin(-6000), # just placeholder
+                                 colno=1, pchno=1,
+                                 varname=point_data_varname, fname=point_data_fname,
+                                 label=point_data_label, legend=point_data_legend)
+                    tmp4[[point_data_varname]] <- tmp2$data[i]
+                    tmp3[[i]] <- tmp4
                 }
                 message("add ", length(tmp3), " ", point_data_varname, " from ", 
                         point_data_fname, " to point_data ...")
@@ -3594,35 +3617,38 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data_label <- "Proxy temperature trend [°C/6k years]" # mean annual precip
                 point_data_legend <- "K20"
                 tmp <- kaufman_etal_2020_temp12k
-                stop("update for data")
                 for (i in seq_along(tmp)) { # add the linear trend as data point
+                    tmp[[i]]$time_ts <- tmp[[i]]$time # save ts time
                     tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
-                    tmp[[i]]$data <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
+                    tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     tmp[[i]]$varname <- point_data_varname 
                     tmp[[i]]$fname <- point_data_fname
                     tmp[[i]]$label <- point_data_label
                     tmp[[i]]$legend <- point_data_legend
+                    tmp[[i]]$colno <- 2
+                    tmp[[i]]$pchno <- 2
                 }
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
                         point_data_fname, " to point_data ...")
                 point_data <- c(point_data, tmp) # add kaufman et al. 2020 temp12k to point_data
                 rm(tmp)
             } # if kaufman_etal_2020_temp12k
-            if (T && exists("global_holocene_lipd_precip") && 
-                zname == "lm_aprt_as_time_slope") {
+            if (T && exists("global_holocene_lipd_precip") && zname == "lm_aprt_as_time_slope") {
                 point_data_fname <- "global_holocene_lipd_precip"
                 point_data_varname <- "precipitation_trend"
                 point_data_label <- "Proxy precipitation trend [mm/year/6k years]" # mean annual temperature
                 point_data_legend <- "LiPD"
                 tmp <- global_holocene_lipd_precip
-                stop("update for data")
                 for (i in seq_along(tmp)) { # add the linear trend as data point
-                    tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
-                    tmp[[i]]$data <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
+                    tmp[[i]]$time_ts <- tmp[[i]]$time # save ts time
+                    tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder for point data
+                    tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     tmp[[i]]$varname <- point_data_varname 
                     tmp[[i]]$fname <- point_data_fname
                     tmp[[i]]$label <- point_data_label
                     tmp[[i]]$legend <- point_data_legend
+                    tmp[[i]]$colno <- 2
+                    tmp[[i]]$pchno <- 2
                 }
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
                         point_data_fname, " to point_data ...")
@@ -3928,7 +3954,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     axis.POSIXct(1, at=as.POSIXct(pretty(range(x, na.rm=T), n=15), o="1970-1-1", tz="UTC"))
                                     axis(2, at=pretty(range(y, na.rm=T), n=10), las=2)
                                     for (k in seq_along(inds)) {
-                                        lines(x[[k]], y[[k]], col=k, lty=k)
+                                        if (length(x[[k]]) == 1) {
+                                            points(x[[k]], y[[k]], col=k)
+                                        } else {
+                                            lines(x[[k]], y[[k]], col=k, lty=k)
+                                        }
                                     }
                                     legend <- paste0("i=", inds, "_", fnames, "_", varnames)
                                     legend("topleft", legend=legend, col=seq_along(inds), lty=seq_along(inds))
@@ -4148,12 +4178,92 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     xp_varname_unique <- unique(xp_varname)
                     xp_legend <- unlist(lapply(lapply(xp, attributes), "[[", "legend"))
                     xp_legend_unique <- unique(xp_legend)
+                    xp_tlims <- lapply(lapply(xp, attributes), "[[", "ranges")[[1]] # dims = (2,nxp) 
                    
+                    # special: save survived LiPD data urls as latex table
+                    if (any(xp_legend_unique == "LiPD")) {
+                        message("\nspecial: save survived LiPD dois as latex table")
+                        inds <- which(xp_legend == "LiPD")
+                        if (zname == "lm_aprt_as_time_slope") {
+                            latex_varname <- "$P$"
+                            latex_varname_thead <- "$P$\\\\trend"
+                            latex_unit <- "mm/year/6k years"
+                        } else {
+                            stop("not defined")
+                        }
+                        latex_caption <- paste0("LiPD (Linked Paleo Data) data sets used for linear trends of ",
+                                                "annual precipitation ", latex_varname, " (in ", latex_unit, ") shown in Fig. ",
+                                                "\\ref{fig:trend_tsurf_aprt_annual_bartlein_kaufman_lipd} ",
+                                                "and \\ref{fig:scatter_linear_midHolocene_bartlein_kaufman_lipd}. ",
+                                                "Only those proxy records were included whose database fields ",
+                                                "\\textit{variableName} = \"precipitation\", \\textit{units} = \"mm\" ",
+                                                "or \"mm/yr\", \\textit{seasonality} = \"annual\", ",
+                                                "which cover a period of at least 2000 years and where the p-value of ",
+                                                "the least square trend from 7k BP to 1950 CE is smaller than 0.01. ",
+                                                "The LiPD reference denotes the suffix to the URL ",
+                                                "\\href{https://lipdverse.org/globalHolocene/1_0_0/}",
+                                                "{https://lipdverse.org/globalHolocene/1\\_0\\_0/$<$LiPD reference$>$.html}, ",
+                                                "maintained by Nicholas McKay. Duplicate LiPD references denote different samples per site. ",
+                                                "Start and End columns provide years before 1950 CE.")
+                        lines <- c("\\fontsize{9}{6}\\selectfont",
+                                   "\\begin{longtable}{@{}rlrrrrrr@{}}",
+                                   paste0("\\caption{", latex_caption, "}\\label{tab:appendix_lipd}\\\\"),
+                                   "\\toprule",
+                                   "\\thead{No}",
+                                   " & \\thead{LiPD reference}",
+                                   " & \\thead{lon [$^{\\circ}$]}",
+                                   " & \\thead{lat [$^{\\circ}$]}",
+                                   " & \\thead{Start}",
+                                   " & \\thead{End}",
+                                   " & \\thead{", latex_varname_thead, "}",
+                                   " & \\thead{Trend\\\\summary}",
+                                   "\\\\",
+                                   "\\midrule")
+                        for (i in seq_along(inds)) {
+                            line <- paste0(i, " &")
+                            lipd_ref <- tools::file_path_sans_ext(basename(point_datap[[inds[i]]]$lipd$lipdverseLink))
+                            #if (grepl("yCorMontana", lipd_ref)) stop("asdasd")
+                            if (grepl("_", lipd_ref)) {
+                                lipd_ref <- sub("_", "\\\\_", lipd_ref)
+                            }
+                            line <- paste0(line, " \\href{", point_datap[[inds[i]]]$lipd$lipdverseLink, 
+                                           "}{", lipd_ref, "}")
+                            line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lon, 3))
+                            line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lat, 3))
+                            o <- attributes(point_datap[[inds[i]]]$time_ts)$origin
+                            if (o == 1950) {
+                                fromto_1950 <- abs(range(point_datap[[inds[i]]]$time_ts$year + 1900)) # years before 1950
+                                #fromto_1950 <- as.Date(fromto_1950)
+                            } else if (o == 0) {
+                                stop("not defined")
+                            } else {
+                                stop("not defined")
+                            }
+                            line <- paste0(line, " & ", fromto_1950[1])
+                            line <- paste0(line, " & ", fromto_1950[2])
+                            line <- paste0(line, " & ", round(point_datap[[inds[i]]]$data_mean))
+                            lm_summary <- point_datap[[inds[i]]]$lm_label
+                            if (grepl("<", lm_summary)) {
+                                lm_summary <- sub("<", "$<$", lm_summary)
+                            }
+                            line <- paste0(line, " & ", lm_summary)
+                            line <- paste0(line, "\\\\")
+                            lines <- c(lines, line)
+                        } # for i inds
+                        lines <- c(lines, 
+                                   "\\bottomrule",
+                                   "\\end{longtable}", 
+                                   "\\normalsize")
+                        fout <- paste0("LiPD_", zname, "_table.txt")
+                        message("save ", fout, " ...")
+                        writeLines(lines, con=fout)
+                    } # save LiPD precip entres as latex table
+
                     # special: save survived pangaea dois as latex table
                     # one multi-row per unique pangaea bibtex entry (and not DOI) because:
                     # different pangaea DOIs may have the same bibtex entry! 
                     if (any(xp_legend_unique == "Pangaea")) {
-                        message("special: save survived pangaea dois as latex table")
+                        message("\nspecial: save survived pangaea dois as latex table")
                         inds <- which(xp_legend == "Pangaea")
                         pdois <- sapply(point_datap[inds], "[[", "doi")
                         pdois_unique <- unique(pdois)
@@ -4171,30 +4281,28 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                         sapply(gregexpr(",", prefs), "[[", 1) - 1)
                         names(bibtex) <- prefs
                         if (zname == "wisoaprt_d") {
-                            latex_varname <- "$\\delta^{18}$O$_\\text{p,SMOW}$ [\\textperthousand]"
+                            latex_varname <- "$\\delta^{18}$O$_\\text{p,SMOW}$"
+                            latex_unit <- "\\textperthousand"
                         } else {
                             stop("not defined")
                         }
-                        latex_caption <- paste0("References and temporal average periods of ", latex_varname, " data from Pangaea shown in Fig. \\ref{fig:timmean_d18o_pi_gnip_iso2k_sisal_pangaea} and \\ref{fig:scatter_d18o_pi_linear_gnip_iso2k_sisal_pangaea}.")
-                        lines <- c("\\begin{table}",
-                                   paste0("\\appendcaption{A1}{", latex_caption, "}"),
-                                   "\\begin{center}",
-                                   "\\begin{footnotesize}",
-                                   "\\bgroup",
-                                   "\\def\\arraystretch{0.8} % change rowsize; 1=default",
-                                   "\\begin{tabular}{rlrrrrrrr}",
+                        latex_caption <- paste0("Pangaea data sets used for temporal mean calculation of ", 
+                                                latex_varname, " (in ", latex_unit, ") shown in Fig. ",
+                                                "\\ref{fig:timmean_d18o_pi_gnip_iso2k_sisal_pangaea} and ",
+                                                "\\ref{fig:scatter_d18o_pi_linear_gnip_iso2k_sisal_pangaea}. ",
+                                                "Start and End columns provide years from 0 CE.")
+                        lines <- c("\\fontsize{9}{6}\\selectfont",
+                                   "\\begin{longtable}{@{}rlrrrrrr@{}}",
+                                   paste0("\\caption{", latex_caption, "}\\label{tab:appendix_pangaea}\\\\"),
                                    "\\toprule",
-                                   paste0("\\thead{No}",
-                                          " & \\thead{Pangaea reference}",
-                                          " & \\thead{lon [$^{\\circ}$]}",
-                                          " & \\thead{lat [$^{\\circ}$]}",
-                                          " & \\thead{Start from \\\\ 1950 CE}",
-                                          " & \\thead{End from \\\\ 1950 CE}",
-                                          " & \\thead{Start from \\\\ 0 CE}",
-                                          " & \\thead{End from \\\\ 0 CE}",
-                                          " & \\thead{", latex_varname, "}",
-                                          #" & \\thead{Pangaea DOI}",
-                                          "\\\\"),
+                                   "\\mythead{No}",
+                                   " & \\mythead{Pangaea reference}",
+                                   " & \\mythead{lon [$^{\\circ}$]}",
+                                   " & \\mythead{lat [$^{\\circ}$]}",
+                                   " & \\mythead{Start}",
+                                   " & \\mythead{End}",
+                                   paste0(" & \\mythead{", latex_varname, "}"),
+                                   "\\\\",
                                    "\\midrule")
                         cnt <- 0
                         for (i in seq_along(pdois_unique)) {
@@ -4207,32 +4315,23 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             for (j in seq_along(inds2)) {
                                 cnt <- cnt + 1
                                 line[j] <- paste0(cnt, " &")
-                                if (j == 1) {
+                                if (j == 1) { # add authors only for first record
                                     line[j] <- paste0(line[j], " \\citet{", names(bibtex)[i], "}")
+                                } else {
+                                    line[j] <- paste0(line[j], " \\dittotikz")
                                 }
                                 line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$lon, 3))
                                 line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$lat, 3))
                                 o <- attributes(point_datap[[inds2[j]]]$time)$origin
                                 if (o == 1950) {
                                     fromto_1950 <- as.POSIXlt(point_datap[[inds2[j]]]$data_mean_rangetime, o="1970-1-1", tz="UTC")
-                                    fromto_0 <- fromto_1950
-                                    #fromto_1950 <- as.Date(fromto_1950)
                                     fromto_1950 <- fromto_1950$year + 1900
-                                    fromto_0$year <- fromto_0$year + 1950
-                                    #fromto_0 <- as.Date(fromto_0)
-                                    fromto_0 <- fromto_0$year + 1900
+                                    fromto_0 <- fromto_1950 + 1950
                                 } else if (o == 0) {
-                                    fromto_0 <- as.POSIXlt(point_datap[[inds2[j]]]$data_mean_rangetime, o="1970-1-1", tz="UTC")
-                                    fromto_1950 <- fromto_0
-                                    fromto_0 <- as.Date(fromto_0)
-                                    stop("continue")
-                                    fromto_1950$year <- fromto_1950$year + 1950
-                                    fromto_1950 <- as.Date(fromto_1950)
+                                    stop("not defined")
                                 } else {
                                     stop("not defined")
                                 }
-                                line[j] <- paste0(line[j], " & ", fromto_1950[1])
-                                line[j] <- paste0(line[j], " & ", fromto_1950[2])
                                 line[j] <- paste0(line[j], " & ", fromto_0[1])
                                 line[j] <- paste0(line[j], " & ", fromto_0[2])
                                 line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$data_mean, 2))
@@ -4254,12 +4353,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         } # for i pdois_unique
                         lines <- c(lines, 
                                    "\\bottomrule",
-                                   "\\label{tab:pangaea}",
-                                   "\\end{tabular}",
-                                   "\\egroup",
-                                   "\\end{footnotesize}",
-                                   "\\end{center}",
-                                   "\\end{table}", 
+                                   "\\end{longtable}", 
+                                   "\\normalsize",
                                    "")
                         for (i in seq_along(bibtex)) lines <- c(lines, bibtex[[i]])
                         fout <- paste0("pangaea_table_", paste(prefs, collapse="_"), ".txt")
@@ -4270,6 +4365,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
 
                     # group point_data by?
+                    message("\ngroup point_data xp/yp by what?")
                     scatterobscols <- scatterobspchs <- vector("list", l=length(xp))
                     for (i in seq_along(xp)) {
 
@@ -4327,6 +4423,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             inds <- which(xp_fname == xp_fname_unique[i])
                             scatterobsle$text[i] <- paste0(xp_fname_unique[i], " (n=", length(inds), ")")
                         }
+                        # tlim per point_datap dataset
+                        tlim <- range(xp_tlims[,inds])
+                        tlim <- as.POSIXlt(tlim, o="1970-1-1", tz="UTC")
+                        message(scatterobsle$text[i], " from ", tlim[1], " to ", tlim[2])
                         xp_n_unique[i] <- length(inds)
                         tmp <- unlist(scatterobscols)[inds]
                         if (length(unique(tmp)) != 1) stop("should be 1")
@@ -4341,9 +4441,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     point_datap_suffix <- paste(paste0(xp_n_unique, "_", 
                                                        gsub(" ", "", xp_legend_unique)),
                                                 collapse="_vs_")
-
                     tlim_scatter <- as.POSIXlt(range(lapply(lapply(xp, attributes), 
-                                                            "[[", "rangetot")), o="1970-1-1")
+                                                            "[[", "rangetot")), o="1970-1-1", tz="UTC")
                     message("\ncompare ", length(yp), " model data and\n", 
                             point_datap_suffix, "\ndata from ", 
                             tlim_scatter[1], " to ", tlim_scatter[2], 
@@ -4352,7 +4451,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     # xlim 
                     xlim <- range(xp, na.rm=T)
                     if (all(!is.na(match(xp_varname_unique, c("map_trend", "precipitation_trend"))))) { 
-                        message("special xlim ...")
+                        message("special map_trend and/or precipitation_trend xlim ...")
                         xlim <- c(-1000, 650)
                     }
                     message("xlim (", paste(xp_varname_unique, collapse=", "), 
@@ -4796,7 +4895,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.5), zlim[2]) # deg C / 7k yrs
                 palname <- "colormaps_jaisnd"
             } else if (T && zname == "lm_aprt_as_time_slope") {
-                message("special zlim")
+                message("special zlim lm_aprt_as_time_slope")
                 # Hol-T and Hol-Tx10 annual: -404.457947500465 233.716296217084
                 #zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=25), zlim[2]) # mm/month / 7k yrs
                 zlevels <- c(-500, -200, -100, -50, -20, 0, 20, 50, 100, 200, 500) # bartlein et al. 2011 Fig. 6
@@ -4859,7 +4958,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # add point data to lon,lat plot
             # --> `point_list` must have at least the 4 entries lon,lat,col,pch
-            if (T && !all(sapply(lapply(xp, is.na), all))) {
+            if (T && exists("xp") && !all(sapply(lapply(xp, is.na), all))) {
                 message("not all `xp` are NA: add ", 
                         point_datap_suffix, " xp to plot ...")
                 point_list <- text_list <- vector("list", l=length(z))

@@ -58,9 +58,9 @@ add_zeroline <- T
 add_unsmoothed <- F
 add_smoothed <- T
 add_sd <- F
-add_linear_trend <- F
+add_linear_trend <- T
 add_nonlinear_trend <- F
-add_scatter_1to1_line <- F
+add_scatter_1to1_line <- T
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
 scale_ts <- F
@@ -159,7 +159,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -167,8 +167,8 @@ if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
-    prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101"
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area"
@@ -202,9 +202,9 @@ if (F) { # awi-esm-1-1-lr hist
     #names_legend <- "Hol-Tx10 Elgygytgyn"
     #names_legend <- "Hol-T Elgygytgyn"
     #fromsf <- "0001" # Hol-Tx10
-    #fromsf <- "0004" # Hol-T; beginning of chunk 1
+    fromsf <- "0004" # Hol-T; beginning of chunk 1
     #fromsf <- "0100"
-    fromsf <- "6971" # last 30 years of Hol-T
+    #fromsf <- "6971" # last 30 years of Hol-T
     #tosf <- "0129"
     #tosf <- "5903" # Hol-T; end of chunk 2
     #tosf <- "6173" # 
@@ -231,7 +231,7 @@ if (F) { # awi-esm-1-1-lr hist
     #remove_mean_tos <- -6996
     #remove_mean_froms <- -7000
     #remove_mean_tos <- -7000
-    #seasonsf <- "annual"
+    seasonsf <- "annual"
     #seasonsf <- "Jun"
     #seasonsf <- "Jun"
     #seasonsf <- "Dec"
@@ -255,14 +255,14 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "aprt"
     #varnames_in <- "aprs"
     #varnames_in <- "wisoaprt_d"
-    varnames_in <- "wisoaprt_d_post"
-    levs <- 2
+    #varnames_in <- "wisoaprt_d_post"
+    #levs <- 2
     #varnames_in <- "temp2aprt"
     #varnames_in <- "tsurfaprt"
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
     #varnames_in <- "srad0d"
-    #varnames_in <- "lm_temp2_as_time_slope"
+    varnames_in <- "lm_temp2_as_time_slope"
     #varnames_in <- "lm_tsurf_as_time_slope"
     #varnames_in <- "lm_aprt_as_time_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2_slope"
@@ -285,8 +285,9 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "lm_albedo_as_time_slope"
     #varnames_in <- "amoc"
     #codes <- 101
-    #modes <- "select"
-    modes <- "timmean"
+    modes <- "select"
+    #modes <- "timmean"
+    #modes <- "timmean_yearsum"
     #modes <- "yseasmean"
     #modes <- "yearsum"
     #modes <- "zonmean"
@@ -728,7 +729,7 @@ if (F) { # awi-esm-1-1-lr hist
 
 # =====================================
 # 4 settings
-} else if (T) { # awi-esm-1-1-lr deck
+} else if (F) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
     if (F) { # awi-cm-1-1-lr

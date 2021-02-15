@@ -901,7 +901,7 @@ if (host$machine_tag == "paleosrv") {
     fs <- c("/isibhv/projects/paleo_work/cdanek/data/bartlein_etal_2011/QRec_2013-12_nc/mat_delta_06ka_ALL_grid_2x2_ex.nc",
             "/isibhv/projects/paleo_work/cdanek/data/bartlein_etal_2011/QRec_2013-12_nc/map_delta_06ka_ALL_grid_2x2_ex.nc")
 }
-if (F && any(file.exists(fs))) {
+if (T && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load bartlein et al. 2011 data ...")
     bartlein_etal_2011 <- vector("list", l=length(fs))
     for (i in seq_along(fs)) {
@@ -942,10 +942,10 @@ if (F && any(file.exists(fs))) {
 f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/kaufman_etal_2020_temp12k/",
-                "Temp12k_v1_0_0_ts_non-scale_623_records_with_units_degC_and_variableName_temperature_or_temperatureComposite_from_-7000_to_-50_lm_p_lt_0.01_6kyr_trend_ge_-7_and_le_7",
+                "Temp12k_v1_0_0_ts_non-scale_216_records_with_units_degC_and_variableName_temperature_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01_6kyr_trend_ge_-7_and_ge_7",
                 ".RData2")
 }
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
@@ -981,7 +981,8 @@ if (F && file.exists(f)) {
 f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/lipd/global_holocene/",
-                "globalHolocene1_0_0_ts_non-scale_110_records_with_units_mm_or_mmyr_and variableName_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-2339.35508193594_and_le_3000",
+                #"globalHolocene1_0_0_ts_non-scale_110_records_with_units_mm_or_mmyr_and variableName_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-2339.35508193594_and_le_3000",
+                "globalHolocene1_0_0_ts_non-scale_150_records_with_units_mm_or_mmyr_and_variableName_precipitation_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_p_lt_0.01",
                 ".RData2")
 }
 if (F && file.exists(f)) {
@@ -1002,7 +1003,8 @@ if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/konecky_etal_2020/",
                 #"iso2k1_0_0_ts_non-scale_131_records_with_variableName_d18O_from_1967_to_2013_lm_p_lt_0.05",
                 #"iso2k1_0_0_ts_non-scale_37_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
-                "iso2k1_0_0_ts_non-scale_147_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-100_to_63_from_1950_CE",
+                #"iso2k1_0_0_ts_non-scale_147_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-100_to_63_from_1950_CE",
+                "iso2k1_0_0_ts_non-scale_121_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_and_seasonality_annual_from_-100_to_61_from_1950_CE",
                 ".RData2")
 }
 if (T && file.exists(f)) {
@@ -1043,7 +1045,7 @@ if (host$machine_tag == "paleosrv") {
                 "sisal_2.0_53_records_d18O_c_pdb_d18O_c_smow_d18O_w_smow_-100_to_67_from_1950_CE",
                 ".RData2")
 }
-if (T && file.exists(f)) {
+if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load comas-bru et al. 2020 sisal data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
