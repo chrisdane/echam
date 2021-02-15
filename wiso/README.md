@@ -32,21 +32,17 @@ ${cdo} -s -f nc -setmisstoc,0. -ifthen -nec,0. aprt wisoaprt dummy; mv dummy wis
 
 # calculate delta values of all water isotope fields (reference standard: SMOW) 
 # - the SMOW values have to be stored in the file SMOW_FAC (with the correct grid size & order of isotope values!)
-${cdo} -s -f nc -chvar,wisoaprt,wisoaprt_d     -chcode,50,10 -mulc,1000 -subc,1. -div -div wisoaprt   aprt   ${SMOW_FAC} wisoaprt_d
+${cdo} -s -f nc -chvar,wisoaprt,wisoaprt_d -chcode,50,10 -mulc,1000 -subc,1. -div -div wisoaprt   aprt   ${SMOW_FAC} wisoaprt_d
 
 precipitation-weighted temperature:
-cdo -s -f nc -chvar,temp2,ptemp -chcode,167,170  -div -mul -yearsum temp2 -yearsum aprt -yearsum aprt ptemp.yearmean
+cdo -s -f nc -chvar,temp2,ptemp -chcode,167,170 -div -mul -yearsum temp2 -yearsum aprt -yearsum aprt ptemp.yearmean
 ```
 or during postprocessing as (see `https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_calc_wiso_echam5_yearmean.sh`)
 ```bash
-cdo -s -f nc -chvar,wisoaprt,wisoaprt_d     -chcode,50,10 -mulc,1000. -subc,1. -div -div 
-yearsum wisoaprt   -yearsum aprt   $SMOW_FAC_file wisoaprt_d.yearmean
+cdo -s -f nc -chvar,wisoaprt,wisoaprt_d -chcode,50,10 -mulc,1000. -subc,1. -div -div yearsum wisoaprt -yearsum aprt $SMOW_FAC_file wisoaprt_d.yearmean
+```
 
-```
--->
-```
-d* = [ (heavy/light)_sample / (heavy/light)_standard - 1 ] x 1000
-```
+--> `d* = [ (heavy/light)_sample / (heavy/light)_standard - 1 ] x 1000`
 
 The natural isotope distributions according to SMOW are saved in the correspoding `level` dimension of the `SMOW.FAC.*.nc` files (see also `znat` or `tnat` in `setwiso.f90`):
 1. H<sub>2</sub><sup>16</sup>O: `1.0`
