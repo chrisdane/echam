@@ -1,6 +1,6 @@
 # wiso
 
-In wiso, `nwiso` water isotopologues (water molecules with different isotopic compositions) are calculated and saved in the `level` dimension of `wiso*` variables in `*wiso*` files (in kg m<sup>-2</sup> s<sup>-1</sup> or mm month<sup>-1</sup>):
+In the wiso model, `nwiso` water isotopologues (water molecules with different compositions of hydrogen and oxygen isotopes) are calculated and saved in the `level` dimension of `wiso*` variables (e.g. liquid meteoric water, water vapour, snow fall and cover, runoff, ocean surface water) in `*wiso*` files (in kg m<sup>-2</sup> s<sup>-1</sup> or mm month<sup>-1</sup>):
 No | Water isotopologue | Molecular weight | Latex notation
 ---|--------------------|------------------|---------------
 1 | <sup>1</sup>H<sub>2</sub><sup>16</sup>O = H<sub>2</sub><sup>16</sup>O | 18 | `${}^{1}$H$_{2}{}^{16}$O` = `H$_{2}{}^{16}$O`
@@ -8,7 +8,7 @@ No | Water isotopologue | Molecular weight | Latex notation
 3 | <sup>1</sup>H<sup>2</sup>H<sup>16</sup>O = HD<sup>16</sup>O | 19 | `${}^{1}$H${}^{2}$H${}^{16}$O` = `HD${}^{16}$O`
 4\* | <sup>1</sup>H<sub>2</sub><sup>17</sup>O = H<sub>2</sub><sup>17</sup>O | 19 | `${}^{1}$H$_{2}{}^{17}$O` = `H$_{2}{}^{17}$O`
 
-<sup>\*H<sub>2</sub><sup>17</sup>O not tested yet</sup>
+<sup>\*not tested yet</sup>
 
 From these, the abundances of the stable hydrogen and oxygen isotopes with respect to SMOV, `δ` (in permil), are calculated following the general formular
 <pre>
