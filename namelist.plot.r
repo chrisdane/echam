@@ -60,7 +60,7 @@ add_smoothed <- T
 add_sd <- F
 add_linear_trend <- T
 add_nonlinear_trend <- F
-add_scatter_1to1_line <- T
+add_1to1_line <- F
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
 scale_ts <- F
@@ -159,7 +159,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -729,7 +729,7 @@ if (F) { # awi-esm-1-1-lr hist
 
 # =====================================
 # 4 settings
-} else if (F) { # awi-esm-1-1-lr deck
+} else if (T) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
     if (F) { # awi-cm-1-1-lr
@@ -741,13 +741,13 @@ if (F) { # awi-esm-1-1-lr hist
     } else if (F) { # awi-esm-1-2-lr
         prefixes <- paste0("awi-esm-1-2-lr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("awi-esm-1-2-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
-    } else if (F) { # awi-cm-1-1-mr
+    } else if (T) { # awi-cm-1-1-mr
         prefixes <- paste0("awi-cm-1-1-mr_", c("piControl", "historical", "1percCO2", "4CO2"))
-        names_short <- paste0("awi-cm-1-1-hr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
+        names_short <- paste0("awi-cm-1-1-mr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
     } else if (F) { # mpi-esm1-2-lr
         prefixes <- paste0("mpi-esm1-2-lr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("mpi-esm1-2-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
-    } else if (T) { # mpi-esm1-2-hr
+    } else if (F) { # mpi-esm1-2-hr
         prefixes <- paste0("mpi-esm1-2-hr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("mpi-esm1-2-hr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
     }
@@ -799,12 +799,12 @@ if (F) { # awi-esm-1-1-lr hist
             tosf <- c(1195, 2014, 1999, 1999)
             new_origins <- c(1850, NA, NA, NA)
             tosp <- c(NA, 1999, NA, NA)
-        } else if (F) { # awi-cm-1-1-mr
+        } else if (T) { # awi-cm-1-1-mr
             fromsf <- c(2650, 1850, 1850, 1850)
             tosf <- c(2799, 2014, 1999, 1999)
             new_origins <- c(1850, NA, NA, NA)
             tosp <- c(NA, 1999, NA, NA)
-        } else if (T) { # mpi-esm1-2-lr and mpi-esm1-2-hr
+        } else if (F) { # mpi-esm1-2-lr and mpi-esm1-2-hr
             fromsf <- c(1850, 1850, 1850, 1850)
             tosf <- c(1999, 2014, 1999, 1999)
             tosp <- c(NA, 1999, NA, NA)

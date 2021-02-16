@@ -3,7 +3,7 @@
 #options(warn=2) # stop on warnings
 #options(warn=0) # back to default
 
-if (T) {
+if (F) {
     message("\nrm(list=ls())")
     rm(list=ls())
     # make squeeze default:
@@ -523,7 +523,11 @@ for (i in seq_len(nsettings)) {
     } # if nc file has time dim
     froms_plot[i] <- fromsf[i] # default
     tos_plot[i] <- tosf[i]
-    if (!is.na(fromsp[i])) froms_plot[i] <- fromsp[i]
+    if (is.na(fromsp[i]) && !is.na(new_origins[i])) {
+        froms_plot[i] <- new_origins[i]
+    } else if (!is.na(fromsp[i])) {
+        froms_plot[i] <- fromsp[i]
+    }
     if (!is.na(tosp[i])) tos_plot[i] <- tosp[i]
     # finfished time dim stuff
     #stop("asd")
@@ -4566,7 +4570,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
 
                     # add 1:1 line
-                    if (add_scatter_1to1_line) {
+                    if (add_1to1_line) {
                         message("add 1:1 line ...")
                         #abline(a=0, b=1, col="gray", lwd=1, lty=2) # a=intercept, b=slope
                         abline(a=0, b=1, lty=2)
@@ -7906,7 +7910,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             }
 
                             # add 1:1 line
-                            if (add_scatter_1to1_line) {
+                            if (add_1to1_line) {
                                 message("add 1:1 line ...")
                                 abline(a=0, b=1, col="gray") # a=intercept, b=slope
                             }
@@ -8037,7 +8041,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         stop("not defined")
                     }
                     if (F) { # subtract PI of year 1849 (last year before deck experiments start)
-                        message("case 1: subtract last PI value from 4CO2 experiments ...")
+                        message("case 1: anomaly `delta data = data_experiment minus data_piControl(ntime)` ...")
                         for (i in inds) {
                             varx[[i]] <- varx[[i]] - varx[[piind]][length(varx[[piind]])]
                             varx_infos[[i]]$label <- "2m temperature change [K]"
@@ -8051,7 +8055,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         #vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
                     } else if (F) { # subtract last 100-yr mean PI
-                        message("case 2: subtract last 100-yr mean PI value from 4CO2 experiments ...")
+                        message("case 2: anomaly `delta data = data_experiment minus mean(data_piControl)` ...")
                         for (i in inds) {
                             varx[[i]] <- varx[[i]] - mean(varx[[piind]])
                             varx_infos[[i]]$label <- "2m temperature change [K]"
@@ -8064,8 +8068,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         #vary[[piind]] <- vary[[piind]] - mean(vary[[piind]])
                         #vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
-                    } else if (F) { # subtract respective PI years 
-                        message("case 3: calc `delta data(year_i) = data_4CO2(year_i) minus data_piControl(year_i)` ...")
+                    } else if (T) { # subtract respective annual PI years 
+                        message("case 3: anomaly `delta data(year_i) = data_experiment(year_i) minus data_piControl(year_i)` ...")
                         for (i in inds) {
                             if (length(varx[[i]]) != length(varx[[piind]])) {
                                 stop("varx[[", i, "]] and varx[[", piind, "]] are of different length")
@@ -8087,8 +8091,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         #vary[[piind]] <- vary[[piind]] - vary[[piind]] # = all zero
                         vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
-                    } else if (T) { # subtract linear fit of PI (same as in esmvaltool)
-                        message("case 4: calc `delta data = data_4CO2 minus lm(data_piControl)` as in \n",
+                    } else if (F) { # subtract linear fit of PI (same as in esmvaltool)
+                        message("case 4: anomaly `delta data = data_experiment minus lm(data_piControl)` as in \n",
                                 "ESMValTool: https://github.com/ESMValGroup/ESMValTool/issues/1814#issuecomment-691939774\n",
                                 "--> who refer to Figure 9.42 of AR5 who refer to refer Andrews et al. 2012:\n",
                                 "--> \"We calculate differences between the abrupt4xCO2 and piControl experiments by subtracting ",
@@ -8131,6 +8135,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } else {
                         warning("did not subtract any piControl values for ECS calculation. this is rather not ok!")
                     }
+                    message()
                 } # if varname == "temp2_vs_toa_imbalance" do ECS/TCR stuff
 
                 xlim <- range(varx, na.rm=T)
@@ -8203,7 +8208,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 # if add 1:1 line to scatter plot
-                if (add_scatter_1to1_line) {
+                if (add_1to1_line) {
                     message("add 1:1 line ...")
                     abline(a=0, b=1, col="gray") # a=intercept, b=slope
                 }
@@ -8515,8 +8520,8 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                                 round(deltaT_1pct_co2_doubled, 2), " K")
                         
                         # use dt averaged over temporal period as TCR 
-                        #TCR_years_from_to <- c(1910, 1929) # 20-year mean as in winton et al. 2014: years 61-80
-                        TCR_years_from_to <- c(1910, 1930) # 21-year mean semmler et al. 2020: years 61-81 
+                        TCR_years_from_to <- c(1910, 1929) # 20-year mean as in winton et al. 2014: years 61-80
+                        #TCR_years_from_to <- c(1910, 1930) # 21-year mean semmler et al. 2020: years 61-81 
                         year_inds <- which(as.POSIXlt(d$time[[i]])$year+1900 >= TCR_years_from_to[1] &
                                            as.POSIXlt(d$time[[i]])$year+1900 <= TCR_years_from_to[2])
                         if (length(year_inds) == 0) {
@@ -8717,7 +8722,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                             }
 
                             # add 1:1 line
-                            if (add_scatter_1to1_line) {
+                            if (add_1to1_line) {
                                 message("add 1:1 line ...")
                                 abline(a=0, b=1, col="gray") # a=intercept, b=slope
                             }
