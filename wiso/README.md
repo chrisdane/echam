@@ -59,7 +59,7 @@ In both cases the δ values are calculated as e.g.
 <pre>
 δ18O = { [ (sum_season(H2-18O)_model / sum_season(H2-O)_model) / (H2-18O/H2-16O)_SMOW ] - 1 } * 1000
 </pre>
-with `H2-18O` and `H2-16O` for H<sub>2</sub><sup>18</sup>O and H<sub>2</sub><sup>16</sup>O, and `H2-O` for H<sub>2</sub>O, the complete modeled water mass, consisting of the `nwiso` modeled water isotopologues (in nature, water consists of 9 different isotopologues; see section 4.2 of [Sharp 2017](https://digitalrepository.unm.edu/unm_oer/1/)). Hence these δ values are precipitation-weighted over season `seas` (can be an arbitrary time period, also a year).
+with `H2-18O` and `H2-16O` for H<sub>2</sub><sup>18</sup>O and H<sub>2</sub><sup>16</sup>O, and `H2-O` for H<sub>2</sub>O, the complete modeled water mass consisting of the `nwiso` modeled water isotopologues (in nature, water consists of 9 different isotopologues; see section 4.2 of [Sharp 2017](https://digitalrepository.unm.edu/unm_oer/1/)). Hence, these δ values are precipitation-weighted over season `seas` (can be an arbitrary time period, e.g. a year).
 
 The natural isotope distributions according to SMOW (the standard) are saved in the correspoding `level` dimension of the `SMOW.FAC.*.nc` files (see also `znat` or `tnat` in `setwiso.f90`):
 1. H<sub>2</sub><sup>16</sup>O: `1.0`
