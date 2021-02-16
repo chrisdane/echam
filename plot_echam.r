@@ -8068,7 +8068,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         #vary[[piind]] <- vary[[piind]] - mean(vary[[piind]])
                         #vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
-                    } else if (T) { # subtract respective annual PI years 
+                    } else if (F) { # subtract respective annual PI years 
                         message("case 3: anomaly `delta data(year_i) = data_experiment(year_i) minus data_piControl(year_i)` ...")
                         for (i in inds) {
                             if (length(varx[[i]]) != length(varx[[piind]])) {
@@ -8091,7 +8091,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         #vary[[piind]] <- vary[[piind]] - vary[[piind]] # = all zero
                         vary_infos[[piind]]$label <- eval(substitute(expression(paste("TOA imbalance change [W m"^paste(-2), "]"))))
                     
-                    } else if (F) { # subtract linear fit of PI (same as in esmvaltool)
+                    } else if (T) { # subtract linear fit of PI (same as in esmvaltool)
                         message("case 4: anomaly `delta data = data_experiment minus lm(data_piControl)` as in \n",
                                 "ESMValTool: https://github.com/ESMValGroup/ESMValTool/issues/1814#issuecomment-691939774\n",
                                 "--> who refer to Figure 9.42 of AR5 who refer to refer Andrews et al. 2012:\n",

@@ -741,13 +741,13 @@ if (F) { # awi-esm-1-1-lr hist
     } else if (F) { # awi-esm-1-2-lr
         prefixes <- paste0("awi-esm-1-2-lr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("awi-esm-1-2-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
-    } else if (T) { # awi-cm-1-1-mr
+    } else if (F) { # awi-cm-1-1-mr
         prefixes <- paste0("awi-cm-1-1-mr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("awi-cm-1-1-mr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
     } else if (F) { # mpi-esm1-2-lr
         prefixes <- paste0("mpi-esm1-2-lr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("mpi-esm1-2-lr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
-    } else if (F) { # mpi-esm1-2-hr
+    } else if (T) { # mpi-esm1-2-hr
         prefixes <- paste0("mpi-esm1-2-hr_", c("piControl", "historical", "1percCO2", "4CO2"))
         names_short <- paste0("mpi-esm1-2-hr_", c("piControl", "hist", "1pctCO2", "abrupt-4xCO2")) 
     }
@@ -792,22 +792,25 @@ if (F) { # awi-esm-1-1-lr hist
                 fromsf <- c(1942, 1850, 1850, 1850) # PI-CTRL6
                 tosf <- c(2091, 2014, 2099, 2099)
                 new_origins <- c(1850, NA, NA, NA)
-                tosp <- c(1999, 1999, 1999, 1999)
+                #tosp <- rep(1999, t=4) # ECS
+                tosp <- rep(1989, t=4) # TCR
             }
         } else if (F) { # awi-esm-1-2-lr lars
             fromsf <- c(1046, 1850, 1850, 1850)
             tosf <- c(1195, 2014, 1999, 1999)
             new_origins <- c(1850, NA, NA, NA)
             tosp <- c(NA, 1999, NA, NA)
-        } else if (T) { # awi-cm-1-1-mr
+        } else if (F) { # awi-cm-1-1-mr
             fromsf <- c(2650, 1850, 1850, 1850)
             tosf <- c(2799, 2014, 1999, 1999)
             new_origins <- c(1850, NA, NA, NA)
-            tosp <- c(NA, 1999, NA, NA)
-        } else if (F) { # mpi-esm1-2-lr and mpi-esm1-2-hr
+            #tosp <- c(NA, 1999, NA, NA) # ECS
+            tosp <- rep(1989, t=4) # TCR
+        } else if (T) { # mpi-esm1-2-lr and mpi-esm1-2-hr
             fromsf <- c(1850, 1850, 1850, 1850)
             tosf <- c(1999, 2014, 1999, 1999)
-            tosp <- c(NA, 1999, NA, NA)
+            #tosp <- c(NA, 1999, NA, NA) ECS
+            tosp <- rep(1989, t=4) # TCR
         }
     } else if (F) { # tranient pi last 30
         fromsf <- c(1912, 1850, 1850, 1850)
