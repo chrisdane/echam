@@ -5,7 +5,7 @@ No | Water isotopologue | Molecular weight | Latex notation
 ---|--------------------|------------------|---------------
 1 | <sup>1</sup>H<sub>2</sub><sup>16</sup>O = H<sub>2</sub><sup>16</sup>O | 18 | `${}^{1}$H$_{2}{}^{16}$O` = `H$_{2}{}^{16}$O`
 2 | <sup>1</sup>H<sub>2</sub><sup>18</sup>O = H<sub>2</sub><sup>18</sup>O | 20 | `${}^{1}$H$_{2}{}^{18}$O` = `H$_{2}{}^{18}$O`
-3 | <sup>1</sup>H<sup>2</sup>H<sup>16</sup>O = HD<sup>16</sup>O | 19 | `${}^{1}$H${}^{2}$H${}^{16}$O` = `HD$^{16}$O`
+3 | <sup>1</sup>H<sup>2</sup>H<sup>16</sup>O = HD<sup>16</sup>O | 19 | `${}^{1}$H${}^{2}$H${}^{16}$O` = `HD${}^{16}$O`
 4\* | <sup>1</sup>H<sub>2</sub><sup>17</sup>O = H<sub>2</sub><sup>17</sup>O | 19 | `${}^{1}$H$_{2}{}^{17}$O` = `H$_{2}{}^{17}$O`
 
 <sup>\*H<sub>2</sub><sup>17</sup>O not tested yet</sup>
