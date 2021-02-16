@@ -67,7 +67,7 @@ The natural isotope distributions according to SMOW (the standard) are saved in 
 3. HD<sup>16</sup>O: `19/18 * 2 * 155.76 * 1e-3 = 0.3288267`
 4. H<sub>2</sub><sup>17</sup>O: `379.9 * 1e-3 = 0.3799` (not yet included in `SMOW.FAC.*.nc`)
 
-For H<sub>2</sub><sup>16</sup>O, the `1.0` yields δ<sup>16</sup>O = 0, since <sup>16</sup>O is already to light oxygen isotope. The actual SMOW standards for δ<sup>18</sup>O and δD are `2005.2 * 1e-6 = 0.0020052` and `155.76 * 1e-6 = 0.00015576`, respectively (Tab. 2.5 of [Sharp 2017](https://digitalrepository.unm.edu/unm_oer/1/)). However, the wiso model simulates water isotopologues, and not the oxygen and hydrogen isotopes directly. Hence, the SMOW values need to be multiplied by the mass ratios of the heavy to light water isotopologues:
+For H<sub>2</sub><sup>16</sup>O, the `1.0` yields δ<sup>16</sup>O = 0, since <sup>16</sup>O is already the light oxygen isotope. The actual <sup>18</sup>O/<sup>16</sup>O and D/H SMOW ratios are `2005.2 * 1e-6 = 0.0020052` and `155.76 * 1e-6 = 0.00015576`, respectively (Tab. 2.5 of [Sharp 2017](https://digitalrepository.unm.edu/unm_oer/1/)). However, the wiso model simulates water isotopologues, and not the oxygen and hydrogen isotopes directly. Hence, the SMOW values need to be multiplied by the mass ratios of the heavy to light water isotopologues:
 1. H<sub>2</sub><sup>18</sup>O/H<sub>2</sub><sup>16</sup>O = 20/18
 2. HD<sup>16</sup>O/H<sub>2</sub><sup>16</sup>O = 19/18
 
