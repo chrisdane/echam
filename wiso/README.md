@@ -1,6 +1,6 @@
 # wiso
 
-In wiso, `nwiso` water isotopologues (water molecules with different isotopic compositions) are calculated and saved in the `level` dimension of `wiso*` variables in `*wiso*` files:
+In wiso, `nwiso` water isotopologues (water molecules with different isotopic compositions) are calculated and saved in the `level` dimension of `wiso*` variables in `*wiso*` files (in kg m<sup>-2</sup> s<sup>-1</sup> or mm month<sup>-1</sup>):
 No | Water isotopologue | Molecular weight | Latex notation
 ---|--------------------|------------------|---------------
 1 | <sup>1</sup>H<sub>2</sub><sup>16</sup>O = H<sub>2</sub><sup>16</sup>O | 18 | `${}^{1}$H$_{2}{}^{16}$O` = `H$_{2}{}^{16}$O`
@@ -11,14 +11,14 @@ No | Water isotopologue | Molecular weight | Latex notation
 <sup>\*H<sub>2</sub><sup>17</sup>O not tested yet</sup>
 
 From these, the abundances of the stable hydrogen and oxygen isotopes with respect to SMOV, `δ` (in permil), are calculated following the general formular
-```
-δ* = [ (heavy/light)_sample / (heavy/light)_standard - 1 ] * 1000,
-```
+<pre>
+δ = [ (heavy/light)_sample / (heavy/light)_standard - 1 ] * 1000,
+</pre>
 e.g.
-```
+<pre>
 δ18O = [ (18O/16O)_sample / (18O/16O)_standard - 1 ] * 1000,
 δD   = [ (  D/H  )_sample / (  D/H  )_standard - 1 ] * 1000.
-```
+</pre>
 
 These calculations are done either during the model run via `/ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh`:
 ```bash
@@ -55,7 +55,11 @@ or postprocessed via `https://gitlab.awi.de/paleodyn/model-analysis/blob/master/
 ```bash
 cdo -s -f nc -chvar,wisoaprt,wisoaprt_d -chcode,50,10 -mulc,1000. -subc,1. -div -div yearsum wisoaprt -yearsum aprt $SMOW_FAC_file wisoaprt_d.yearmean
 ```
-The latter calculation yields precipitation-weighted δ values (through the `yearsum`).
+In both cases the δ values are calculated as e.g.
+<pre>
+δ18O = { [ (sum_season(H2-18O)_model / sum_season(H2-O)_model) / (H2-18O/H2-16O)_SMOW ] - 1 } * 1000
+</pre>
+with `H2-18O` and `H2-16O` for H<sub>2</sub><sup>18</sup>O and H<sub>2</sub><sup>16</sup>O, and `H2-O` for H<sub>2</sub>O, the complete modeled water mass, consisting of the `nwiso` modeled water isotopologues (in nature, water consists of 9 different isotopologues; see section 4.2 of [Sharp 2017](https://digitalrepository.unm.edu/unm_oer/1/)). Hence these δ values are precipitation-weighted over season `seas` (can be an arbitrary time period, also a year).
 
 The natural isotope distributions according to SMOW (the standard) are saved in the correspoding `level` dimension of the `SMOW.FAC.*.nc` files (see also `znat` or `tnat` in `setwiso.f90`):
 1. H<sub>2</sub><sup>16</sup>O: `1.0`
@@ -63,7 +67,7 @@ The natural isotope distributions according to SMOW (the standard) are saved in 
 3. HD<sup>16</sup>O: `19/18 * 2 * 155.76 * 1e-3 = 0.3288267`
 4. H<sub>2</sub><sup>17</sup>O: `379.9 * 1e-3 = 0.3799` (not yet included in `SMOW.FAC.*.nc`)
 
-For H<sub>2</sub><sup>16</sup>O, the `1.0` yields δ<sup>16</sup>O = 0, since <sup>16</sup>O is already to light isotope. The actual SMOW standards for δ<sup>18</sup>O and δD are `2005.2 * 1e-6 = 0.0020052` and `155.76 * 1e-6 = 0.00015576`, respectively (Tab. 2.5 of [Sharp 2017](https://digitalrepository.unm.edu/unm_oer/1/)). However, the wiso model simulates water isotopologues, and not the oxygen and hydrogen isotopes directly. Hence, the SMOW values need to be multiplied by the mass ratios of the heavy to light water isotopologues:
+For H<sub>2</sub><sup>16</sup>O, the `1.0` yields δ<sup>16</sup>O = 0, since <sup>16</sup>O is already to light oxygen isotope. The actual SMOW standards for δ<sup>18</sup>O and δD are `2005.2 * 1e-6 = 0.0020052` and `155.76 * 1e-6 = 0.00015576`, respectively (Tab. 2.5 of [Sharp 2017](https://digitalrepository.unm.edu/unm_oer/1/)). However, the wiso model simulates water isotopologues, and not the oxygen and hydrogen isotopes directly. Hence, the SMOW values need to be multiplied by the mass ratios of the heavy to light water isotopologues:
 1. H<sub>2</sub><sup>18</sup>O/H<sub>2</sub><sup>16</sup>O = 20/18
 2. HD<sup>16</sup>O/H<sub>2</sub><sup>16</sup>O = 19/18
 
