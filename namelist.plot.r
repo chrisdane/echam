@@ -60,7 +60,7 @@ add_smoothed <- T
 add_sd <- F
 add_linear_trend <- T
 add_nonlinear_trend <- F
-add_1to1_line <- F
+add_1to1_line <- T
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
 scale_ts <- F
@@ -159,7 +159,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -167,8 +167,8 @@ if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T"
-    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101"
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area"
@@ -262,13 +262,13 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
     #varnames_in <- "srad0d"
-    varnames_in <- "lm_temp2_as_time_slope"
+    #varnames_in <- "lm_temp2_as_time_slope"
     #varnames_in <- "lm_tsurf_as_time_slope"
     #varnames_in <- "lm_aprt_as_time_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp_slope"
-    #varnames_in <- "lm_wisoaprt_d_post_as_time_slope"
-    #levs <- 2
+    varnames_in <- "lm_wisoaprt_d_post_as_time_slope"
+    levs <- 2
     #varnames_in <- "quv"
     #varnames_in <- "quv_direction"
     #levsf <- "_int1000-100hPa"
@@ -285,11 +285,11 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "lm_albedo_as_time_slope"
     #varnames_in <- "amoc"
     #codes <- 101
-    modes <- "select"
+    #modes <- "select"
     #modes <- "timmean"
     #modes <- "timmean_yearsum"
     #modes <- "yseasmean"
-    #modes <- "yearsum"
+    modes <- "yearsum"
     #modes <- "zonmean"
     #modes <- "vertsum"
     #modes <- "fldsum"
@@ -392,7 +392,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("albedo", "albedo")
     #varnames_in <- c("wisoaprt_d", "wisoaprt_d")
     #varnames_in <- c("wisoaprt_d_post", "wisoaprt_d_post")
-    #levs <- c(2, 2)
+    varnames_in <- c("lm_wisoaprt_d_post_as_time_slope", "lm_wisoaprt_d_post_as_time_slope")
+    levs <- c(2, 2)
     #varnames_in <- c("tsurfaprt", "tsurfaprt")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptemp", "lm_wisoaprt_d_sellevel_2_as_ptemp")
@@ -400,7 +401,7 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_ptsurf", "lm_wisoaprt_d_sellevel_2_as_ptsurf")
     #varnames_in <- c("lm_temp2_as_time_slope", "lm_temp2_as_time_slope")
     #varnames_in <- c("lm_tsurf_as_time_slope", "lm_tsurf_as_time_slope")
-    varnames_in <- c("lm_aprt_as_time_slope", "lm_aprt_as_time_slope")
+    #varnames_in <- c("lm_aprt_as_time_slope", "lm_aprt_as_time_slope")
     #varnames_in <- c("lm_wind10_as_time_slope", "lm_wind10_as_time_slope")
     #varnames_in <- c("c204_ICEARE_GLO", "c204_ICEARE_GLO")
     #varnames_in <- c("c205_ICEVOL_GLO", "c205_ICEVOL_GLO")
@@ -425,8 +426,8 @@ if (F) { # awi-esm-1-1-lr hist
     #levsf <- c("_int1000-100hPa", "_int1000-100hPa")
     #varnames_out_samedims <- "quv"
     #names_legend_samedims <- c("qu", "qv")
-    modes <- rep("select", t=2)
-    #modes <- rep("yearsum", t=2)
+    #modes <- rep("select", t=2)
+    modes <- rep("yearsum", t=2)
     #modes <- rep("seassum", t=2)
     #areas <- rep("moc45to60N", t=2)
     #levs <- rep("-285to-2180m", t=2)
@@ -469,7 +470,7 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- c(120*12, 20*12) # seasons
     #remove_mean_froms <- c(-179, 0)
     #remove_mean_tos <- c(-179, 0)
-    regboxes <- lapply(vector("list", l=2), append, list(regbox="NAsiberia"))
+    regboxes <- lapply(vector("list", l=2), base::append, list(regbox="NAsiberia"))
 
 } else if (F) { # two vars of qu, qv, quv
     prefixes <- c("cosmos-aso-wiso_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_Hol-Tx10_wiso_mm")
@@ -691,7 +692,7 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- c(1000, 3*500, 500) # Hol-7 mean
     #n_mas <- c(1000, 6*500, 3*500) # Hol-7 mean
     #n_mas <- c(1200, 12000, 1200)
-    regboxes <- lapply(vector("list", l=3), append, list(regbox="NAsiberia"))
+    regboxes <- lapply(vector("list", l=3), base::append, list(regbox="NAsiberia"))
 
 } else if (F) { # three vars of qu, qv, quv
     prefixes <- c("cosmos-aso-wiso_Hol-Tx10_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev",
@@ -729,7 +730,7 @@ if (F) { # awi-esm-1-1-lr hist
 
 # =====================================
 # 4 settings
-} else if (T) { # awi-esm-1-1-lr deck
+} else if (F) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
     if (F) { # awi-cm-1-1-lr
@@ -1109,8 +1110,8 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("elgygytgyn_remapnn", t=5)
     #areas <- rep("two-jurts_remapnn", t=5)
     #areas <- rep("kotokel_remapnn", t=5)
-    #regboxes <- lapply(vector("list", l=5), append, list(regbox="N30-90"))
-    regboxes <- lapply(vector("list", l=5), append, list(regbox="NAsiberia"))
+    #regboxes <- lapply(vector("list", l=5), base::append, list(regbox="N30-90"))
+    regboxes <- lapply(vector("list", l=5), base::append, list(regbox="NAsiberia"))
 
 # ==================================================
 # 6 settings

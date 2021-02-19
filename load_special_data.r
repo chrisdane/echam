@@ -3,6 +3,32 @@
 # todo: solve dependencies from other repos: make_posixlt_origin()
 #source(paste0(hompath, "/functions/myfunctions.r"))
 
+# echam SLF
+
+# echam OROMEA (= `elevation` of jsbach input)
+if (T) {
+    f <- paste0(host$repopath, "/echam/T31GR30_OROMEA.nc")
+    if (file.exists(f)) {
+        message("\ndisable here if you do not want to load echam OROMEA from ", f, " ...")
+        ncin <- nc_open(f)
+        data360 <- ncvar_get(ncin, "OROMEA")
+        lon360 <- ncin$dim$lon$vals
+        # convert lons
+        data180 <- convert_lon_360_to_180(lon360=lon360, data360=data360, data360_lonind=1)
+        # flip lats
+        data180$data180 <- data180$data180[,dim(data360)[2]:1] 
+        echam_TR31GR30_oromea <- list(lon=data180$lon180, lat=rev(ncin$dim$lat$vals),
+                                      OROMEA=data180$data180)
+        add_echam_TR31GR30_oromea_contour <- T
+        rm(data360, lon360)
+        message("set add_echam_TR31GR30_oromea_contour=T if you want to add to lon,lat plot ...\n")
+    } else {
+        message("file ", f, " does not exist. cannot load echam OROMEA from ...")
+    }
+} else {
+    message("enable here to load echam OROMEA ...")
+}
+
 
 # mpiom land sea mask segments
 if (T) {
@@ -614,16 +640,19 @@ if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
     lakes_table <- read.table(f, header=T, stringsAsFactors=F)
     PLOT_coords_cmd_list <- NULL
-    lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-jurts", "elgygytgyn")
+    if (F) {
+        lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-jurts", "elgygytgyn")
+        col <- "black"
+    } else if (T) { # blue letters for significant negative holocene trends
+        lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-jurts")
+        col <- "blue"
+    }
     for (lakei in seq_along(lakes)) {
         cmd <- "text("
         cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
         cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
         cmd <- paste0(cmd, ", labels=\"", LETTERS[lakei], "\", cex=1")
-        if (F) {
-            if (lakei == 1) message("special: blue")
-            cmd <- paste0(cmd, ", col=\"blue\"")
-        }
+        cmd <- paste0(cmd, ", col=\"", col, "\"")
         cmd <- paste0(cmd, ") # ", lakes[lakei])
         PLOT_coords_cmd_list[[lakei]] <- cmd 
     }
@@ -639,7 +668,7 @@ if (host$machine_tag == "paleosrv") {
     f <- "/isibhv/projects/paleo_work/cdanek/data/meyer_etal/PLOT-project_Lacustrine diatom oxygen isotope_Kotokel.xlsx"
     source("/isibhv/projects/paleo_work/cdanek/data/meyer_etal/read_meyer_etal_function.r")
 }
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load hanno meyer et al. PLOT data from ", f)
     message("run read_meyer_etal_function() ...")
     #tmp <- read_meyer_etal_function(xlsx_file=f)
@@ -945,7 +974,7 @@ if (host$machine_tag == "paleosrv") {
                 "Temp12k_v1_0_0_ts_non-scale_216_records_with_units_degC_and_variableName_temperature_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01_6kyr_trend_ge_-7_and_ge_7",
                 ".RData2")
 }
-if (T && file.exists(f)) {
+if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
@@ -957,6 +986,25 @@ if (T && file.exists(f)) {
     message("enable here to load kaufman et al. 2020 temp12k data ...")
 } # read kaufman et al. 2020 temp12k
     
+# read kaufman et al. 2020 temp12k isotope
+f <- ""
+if (host$machine_tag == "paleosrv") {
+    f <- paste0("/isibhv/projects/paleo_work/cdanek/data/kaufman_etal_2020_temp12k/",
+                "Temp12k_v1_0_0_ts_non-scale_13_records_with_archiveType_LakeSediment_Ice-other_GlacierIce_proxy_d18O_and_units_permil_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
+                ".RData2")
+}
+if (T && file.exists(f)) {
+    message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k isotope data from ", f, " ...")
+    datnames <- load(f)
+    if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
+                                    paste(datnames, collapse="\", \""), 
+                                    "\". dont know which one to use")
+    eval(parse(text=paste0("kaufman_etal_2020_temp12k_d18o <- ", datnames)))
+    rm(data, datnames)
+} else {
+    message("enable here to load kaufman et al. 2020 temp12k isotope data ...")
+} # read kaufman et al. 2020 temp12k isotope
+
 
 # read global holcene lipd temp data
 f <- ""
@@ -981,8 +1029,7 @@ if (F && file.exists(f)) {
 f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/lipd/global_holocene/",
-                #"globalHolocene1_0_0_ts_non-scale_110_records_with_units_mm_or_mmyr_and variableName_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-2339.35508193594_and_le_3000",
-                "globalHolocene1_0_0_ts_non-scale_150_records_with_units_mm_or_mmyr_and_variableName_precipitation_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_p_lt_0.01",
+                "globalHolocene1_0_0_ts_non-scale_150_records_with_units_mm_or_mmyr_and_variableName_precipitation_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
                 ".RData2")
 }
 if (F && file.exists(f)) {
@@ -1004,7 +1051,8 @@ if (host$machine_tag == "paleosrv") {
                 #"iso2k1_0_0_ts_non-scale_131_records_with_variableName_d18O_from_1967_to_2013_lm_p_lt_0.05",
                 #"iso2k1_0_0_ts_non-scale_37_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
                 #"iso2k1_0_0_ts_non-scale_147_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-100_to_63_from_1950_CE",
-                "iso2k1_0_0_ts_non-scale_121_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_and_seasonality_annual_from_-100_to_61_from_1950_CE",
+                #"iso2k1_0_0_ts_non-scale_121_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_and_seasonality_annual_from_-100_to_61_from_1950_CE",
+                "iso2k1_0_0_ts_non-scale_9_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
                 ".RData2")
 }
 if (T && file.exists(f)) {
@@ -1023,10 +1071,11 @@ if (T && file.exists(f)) {
 f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/konecky_etal_2020/",
-                "iso2k1_0_0_ts_scale_109_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_lake_or_lagoon_or_ground_or_soil_water_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
+                #"iso2k1_0_0_ts_scale_109_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_lake_or_lagoon_or_ground_or_soil_water_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
+                "iso2k1_0_0_ts_scale_14_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_lake_or_lagoon_or_ground_or_soil_water_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
                 ".RData2")
 }
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load konecky et al. 2020 iso2k d18o_nonprecip data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
@@ -1042,10 +1091,11 @@ if (F && file.exists(f)) {
 f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/comas-bru_etal_2020/",
-                "sisal_2.0_53_records_d18O_c_pdb_d18O_c_smow_d18O_w_smow_-100_to_67_from_1950_CE",
+                #"sisal_2.0_53_records_d18O_c_pdb_d18O_c_smow_d18O_w_smow_-100_to_67_from_1950_CE",
+                "sisal_2.0_80_records_d18O_c_pdb_d18O_c_smow_d18O_w_smow_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
                 ".RData2")
 }
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load comas-bru et al. 2020 sisal data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",

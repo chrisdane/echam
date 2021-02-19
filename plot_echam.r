@@ -3,7 +3,7 @@
 #options(warn=2) # stop on warnings
 #options(warn=0) # back to default
 
-if (F) {
+if (T) {
     message("\nrm(list=ls())")
     rm(list=ls())
     # make squeeze default:
@@ -3534,6 +3534,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             point_data <- point_datap <- point_data_fname <- 
                 point_data_varname <- point_data_label <- point_data_legend <- NULL
             message("\ncheck for point_data ...")
+            
             if (T && exists("gnip_list") && 
                 any(zname == c("temp2", "tsurf", "aprt", "wisoaprt_d"))) {
                 point_data_fname <- point_data_legend <- "GNIP"
@@ -3570,9 +3571,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data <- c(point_data, tmp) # add gnip data to point_data
                 rm(tmp)
             } # if gnip_list
+            
             if (T && exists("bartlein_etal_2011") && 
-                any(zname == c("lm_temp2_as_time_slope", "lm_tsurf_as_time_slope",
-                               "lm_aprt_as_time_slope"))) {
+                any(zname == c("lm_temp2_as_time_slope", "lm_tsurf_as_time_slope", "lm_aprt_as_time_slope"))) {
                 point_data_fname <- "bartlein_etal_2011"
                 if (any(zname == c("lm_temp2_as_time_slope", "lm_tsurf_as_time_slope"))) {
                     point_data_varname <- "mat_trend"
@@ -3613,6 +3614,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data <- c(point_data, tmp3) # add bartlein et al. 2011 to point_data
                 rm(tmp, tmp2, tmp3)
             } # if bartlein_etal_2011
+            
             if (T && exists("kaufman_etal_2020_temp12k") && 
                 any(zname == c("lm_temp2_as_time_slope", "lm_tsurf_as_time_slope"))) {
                 point_data_fname <- "kaufman_etal_2020_temp12k"
@@ -3629,7 +3631,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     tmp[[i]]$fname <- point_data_fname
                     tmp[[i]]$label <- point_data_label
                     tmp[[i]]$legend <- point_data_legend
-                    tmp[[i]]$colno <- 2
+                    tmp[[i]]$colno <- 1 # 1 2
                     tmp[[i]]$pchno <- 2
                 }
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
@@ -3637,6 +3639,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data <- c(point_data, tmp) # add kaufman et al. 2020 temp12k to point_data
                 rm(tmp)
             } # if kaufman_etal_2020_temp12k
+            
             if (T && exists("global_holocene_lipd_precip") && zname == "lm_aprt_as_time_slope") {
                 point_data_fname <- "global_holocene_lipd_precip"
                 point_data_varname <- "precipitation_trend"
@@ -3651,7 +3654,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     tmp[[i]]$fname <- point_data_fname
                     tmp[[i]]$label <- point_data_label
                     tmp[[i]]$legend <- point_data_legend
-                    tmp[[i]]$colno <- 2
+                    tmp[[i]]$colno <- 1 # 1 2
                     tmp[[i]]$pchno <- 2
                 }
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
@@ -3659,6 +3662,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data <- c(point_data, tmp) # add global_holocene_lipd_precip to point_data
                 rm(tmp)
             } # if global_holocene_lipd_precip
+            
             if (T && exists("konecky_etal_2020_iso2k_d18o_precip") && 
                 any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
                 point_data_fname <- "iso2k-precip"
@@ -3670,7 +3674,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 #point_data_label <- expression(paste("Iso2k ", delta^{18}, "O"["p,SMOW"], " [‰]"))
                 #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
-                point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
+                point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
+                #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
                 tmp <- konecky_etal_2020_iso2k_d18o_precip
                 for (i in seq_along(tmp)) { # add the linear trend as data point
                     if (zname == "wisoaprt_d") {
@@ -3679,58 +3684,78 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         tmp[[i]]$time <- make_posixlt_origin(-6000) # placeholder for trend
                         tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     }
-                    tmp[[i]]$colno <- 2
-                    tmp[[i]]$pchno <- 2
                     tmp[[i]]$varname <- point_data_varname 
                     tmp[[i]]$fname <- point_data_fname
                     tmp[[i]]$label <- point_data_label
                     tmp[[i]]$legend <- point_data_legend
+                    tmp[[i]]$colno <- 1 #2
+                    tmp[[i]]$pchno <- 1 #2
                 }
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
                         point_data_fname, " to point_data ...")
                 point_data <- c(point_data, tmp) # add data to point_data
                 rm(tmp)
-            } # if konecky_etal_2020_iso2k
-            if (F && exists("konecky_etal_2020_iso2k_d18o_nonprecip") && 
+            } # if konecky_etal_2020_iso2k_d18o_precip
+            
+            if (T && exists("konecky_etal_2020_iso2k_d18o_nonprecip") && 
                 any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
-                point_data_fname <- point_data_legend <- "Iso2k-nonprecip"
-                point_data_varname <- "d18Ononp_scaled"
+                point_data_fname <- "iso2k-nonprecip"
+                point_data_legend <- "Iso2k-nonprecip"
+                if (zname == "wisoaprt_d") {
+                    point_data_varname <- "d18Ononp_scaled"
+                } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
+                    point_data_varname <- "d18Ononp_scaled_trend"
+                }
                 #point_data_label <- expression(paste("Iso2k ", delta^{18}, "O"["nonp,SMOW"], " [‰]"))
-                point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
+                #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
+                point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
                 tmp <- konecky_etal_2020_iso2k_d18o_nonprecip
-                stop("update for data")
                 for (i in seq_along(tmp)) { # add the linear trend as data point
                     if (zname == "wisoaprt_d") {
-                        tmp[[i]]$time <- mean(tmp[[i]]$time, na.rm=T)
-                        tmp[[i]]$data <- mean(tmp[[i]], na.rm=T)
+                        # nothing to do
+                        if (F) {
+                            if (i == 1) message("use timmean of konecky_etal_2020_iso2k_d18o_nonprecip ...")
+                            tmp[[i]]$time <- mean(tmp[[i]]$time, na.rm=T)
+                            tmp[[i]][[point_data_varname]] <- mean(tmp[[i]], na.rm=T)
+                        }
                     } else  if (zname == "lm_wisoaprt_d_post_as_time_slope") {
-                        stop("todo")
-                        #tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
-                        #tmp[[i]]$data <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
+                        tmp[[i]]$time <- make_posixlt_origin(-6000) # placeholder for trend
+                        tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     }
                     tmp[[i]]$varname <- point_data_varname 
                     tmp[[i]]$fname <- point_data_fname
                     tmp[[i]]$label <- point_data_label
                     tmp[[i]]$legend <- point_data_legend
+                    tmp[[i]]$colno <- 3 #2
+                    tmp[[i]]$pchno <- 3 #2
                 }
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
                         point_data_fname, " to point_data ...")
                 point_data <- c(point_data, tmp) # add data to point_data
                 rm(tmp)
-            } # if konecky_etal_2020_iso2k
+            } # if konecky_etal_2020_iso2k_d18o_nonprecip
+            
             if (T && exists("comas_bru_etal_2020_sisal_d18o_precip") && 
                 any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
                 point_data_fname <- "sisal"
                 #point_data_legend <- "Speleothems (SISAL 2.0)"
                 point_data_legend <- "SISAL 2.0"
-                point_data_varname <- "d18O_w_smow"
+                if (zname == "wisoaprt_d") {
+                    point_data_varname <- "d18O_w_smow"
+                } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
+                    point_data_varname <- "d18O_w_smow_trend"
+                }
                 #point_data_label <- expression(paste("SISAL ", delta^{18}, "O"["p,SMOW"], " [‰]"))
-                point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
+                #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
+                #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
+                point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
                 tmp <- comas_bru_etal_2020_sisal_d18o_precip
                 for (i in seq_along(comas_bru_etal_2020_sisal_d18o_precip)) {
-                    timeinds <- seq_along(tmp[[i]][[point_data_varname]]) # default: all
-                    if (F) { # PI mean: cauquoin et al. 2019: "defined as the interval 1850–1990 CE" 
-                             #--> from -100 before 1950 CE to 40 from 1950 CE
+                    timeinds <- seq_along(tmp[[i]]$time) # default: all
+                    if (F) { 
+                        if (i == 1) message("use only PI from comas_bru_etal_2020_sisal_d18o_precip")
+                        # PI mean: cauquoin et al. 2019: "defined as the interval 1850–1990 CE" 
+                        #--> from -100 before 1950 CE to 40 from 1950 CE
                         if (attributes(tmp[[i]]$time)$origin == 1950) {
                             timeinds <- which(tmp[[i]]$time$year+1900 >= -100 &
                                               tmp[[i]]$time$year+1900 <= 40)
@@ -3745,14 +3770,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             # add linear trend as data point
                             tmp[[i]]$time <- make_posixlt_origin(-6000) # placeholder for trend
                             tmp[[i]][[point_data_varname]] <- 
-                                tmp[[i]][[paste0("lm_", point_data_varname)]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
+                                tmp[[i]][[point_data_varname]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                         }
-                        tmp[[i]]$colno <- 3
-                        tmp[[i]]$pchno <- 3
                         tmp[[i]]$varname <- point_data_varname
                         tmp[[i]]$fname <- point_data_fname
                         tmp[[i]]$label <- point_data_label
                         tmp[[i]]$legend <- point_data_legend
+                        tmp[[i]]$colno <- 2 #3
+                        tmp[[i]]$pchno <- 2 #3
                     } else {
                         tmp[[i]] <- NA
                     } # if timeinds
@@ -3764,38 +3789,58 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data <- c(point_data, tmp) # add ata to point_data
                 rm(tmp)
             } # if comas_bru_etal_2020_sisal_d18o_precip
-            if (F && exists("meyer_etal") && 
+            
+            if (T && exists("meyer_etal") && 
                 any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
                 point_data_fname <- point_data_legend <- "PLOT"
-                point_data_varname <- "d18Odiatom_scaled"
+                if (zname == "wisoaprt_d") {
+                    point_data_varname <- "d18Odiatom_scaled"
+                } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
+                    point_data_varname <- "d18Odiatom_scaled_trend"
+                }
                 #point_data_label <- expression(paste("PLOT ", delta^{18}, "O"["diatom,SMOW"], " [‰]"))
-                point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
+                #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
+                point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
                 # calc lm of scaled PLOT time series
                 tmp <- vector("list", l=length(meyer_etal$data))
-                for (i in seq_along(tmp)) {
-                    x <- meyer_etal$data[[i]]$data$time
-                    y <- scale(meyer_etal$data[[i]]$data$d18o_corr_perm)
-                    lm <- lm(y ~ x)
-                    dt <- as.numeric(difftime(max(x), min(x), units="day"))
-                    nyears <- dt/365
-                    slope_per_year <- diff(range(lm$fitted.values))/nyears
-                    if (lm$coefficients[2] < 0) slope_per_year <- -1*slope_per_year
-                    stop("update for data")
+                for (i in seq_along(tmp)) { # loop through lakes
                     tmp[[i]] <- list(PLOT_lake=names(meyer_etal$data)[i],
                                      lon=meyer_etal$data[[i]]$lon,
                                      lat=meyer_etal$data[[i]]$lat,
-                                     time=make_posixlt_origin(-6000), # just placeholder
-                                     data=slope_per_year*6000, # trend/yr --> trend/6k yrs
                                      varname=point_data_varname,
                                      fname=point_data_fname,
                                      label=point_data_label,
-                                     legend=point_data_legend)
+                                     legend=point_data_legend,
+                                     colno=4, pchno=4)
+                    x <- meyer_etal$data[[i]]$data$time
+                    y <- scale(meyer_etal$data[[i]]$data$d18o_corr_perm)
+                    if (zname == "wisoaprt_d") {
+                        tmp[[i]]$time <- x
+                        tmp[[i]][[point_data_varname]] <- y
+                    } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
+                        lm <- lm(y ~ x)
+                        pval <- summary(lm)$coefficients[2,4] #get_pval(lm)
+                        if (pval > 0.01) {
+                            message("lake ", i, " ", tmp[[i]]$PLOT_lake, " has trend pval = ", 
+                                    pval, " > 0.01 --> ignore this lake") 
+                            tmp[[i]] <- NA
+                        } else {
+                            nyears <- diff(range(as.POSIXlt(x)$year)) # --> zero if all data points from same year
+                            slope_per_year <- diff(range(lm$fitted.values))/nyears
+                            if (lm$coefficients[2] < 0) slope_per_year <- -1*slope_per_year
+                            tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
+                            tmp[[i]][[point_data_varname]] <- slope_per_year*6000 # trend/yr --> trend/6k yrs
+                        }
+                    }
                 } # for i
+                nainds <- which(is.na(tmp))
+                if (length(nainds) > 0) tmp <- tmp[-nainds]
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
                         point_data_fname, " to point_data ...")
                 point_data <- c(point_data, tmp) # add data to point_data
                 rm(tmp)
             } # if meyer_etal
+            
             if (T && exists("pg")) {
                 if (zname == "wisoaprt_d" && any(names(pg) == "d18o_w_smow")) {
                     point_data_varname <- "d18o_w_smow"
@@ -3935,8 +3980,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 varnames <- sapply(point_datap[inds], "[[", "varname")
                                 plotname <- paste0("tmp/lon=", lons[j], "_lat=", lats[j], "_", 
                                                    paste(inds, collapse="_"), "_",
-                                                   paste(unique(fnames), collapse="_"), "_",
-                                                   paste(unique(varnames), collapse="_"), ".pdf")
+                                                   paste(unique(paste0(fnames, "_", varnames)), collapse="_"),
+                                                   ".pdf")
                                 if (!file.exists(plotname)) { # not already covered before
                                     message("****************************************************",
                                             "\nlon,lat-combination ", j, "/", length(point_datap), 
@@ -4174,20 +4219,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 if (!all(sapply(lapply(xp, is.na), all))) {
 
                     # survived point_datap
-                    xp_colno <- unlist(lapply(lapply(xp, attributes), "[[", "colno"))
-                    xp_pchno <- unlist(lapply(lapply(xp, attributes), "[[", "pchno"))
-                    xp_fname <- unlist(lapply(lapply(xp, attributes), "[[", "fname"))
-                    xp_fname_unique <- unique(xp_fname)
-                    xp_varname <- unlist(lapply(lapply(xp, attributes), "[[", "varname"))
-                    xp_varname_unique <- unique(xp_varname)
-                    xp_legend <- unlist(lapply(lapply(xp, attributes), "[[", "legend"))
-                    xp_legend_unique <- unique(xp_legend)
-                    xp_tlims <- lapply(lapply(xp, attributes), "[[", "ranges")[[1]] # dims = (2,nxp) 
-                   
+                    xp_colno <- lapply(lapply(xp, attributes), "[[", "colno") # list of length nsettings
+                    xp_pchno <- lapply(lapply(xp, attributes), "[[", "pchno")
+                    xp_fname <- lapply(lapply(xp, attributes), "[[", "fname")
+                    xp_fname_unique <- lapply(xp_fname, unique)
+                    xp_varname <- lapply(lapply(xp, attributes), "[[", "varname")
+                    xp_varname_unique <- lapply(xp_varname, unique)
+                    xp_legend <- lapply(lapply(xp, attributes), "[[", "legend")
+                    xp_legend_unique <- lapply(xp_legend, unique)
+                    xp_tlims <- lapply(lapply(xp, attributes), "[[", "ranges") # list of length nsettings, each having dims = (2,nxp) 
+                  
+
                     # special: save survived LiPD data urls as latex table
-                    if (any(xp_legend_unique == "LiPD")) {
+                    if (length(xp) == 1 && any(xp_legend_unique[[1]] == "LiPD")) {
                         message("\nspecial: save survived LiPD dois as latex table")
-                        inds <- which(xp_legend == "LiPD")
+                        inds <- which(xp_legend[[1]] == "LiPD")
                         if (zname == "lm_aprt_as_time_slope") {
                             latex_varname <- "$P$"
                             latex_varname_thead <- "$P$\\\\trend"
@@ -4195,7 +4241,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         } else {
                             stop("not defined")
                         }
-                        latex_caption <- paste0("LiPD (Linked Paleo Data) data sets used for linear trends of ",
+                        latex_caption <- paste0("Linked Paleo Data (LiPD) records used for linear trends of ",
                                                 "annual precipitation ", latex_varname, " (in ", latex_unit, ") shown in Fig. ",
                                                 "\\ref{fig:trend_tsurf_aprt_annual_bartlein_kaufman_lipd} ",
                                                 "and \\ref{fig:scatter_linear_midHolocene_bartlein_kaufman_lipd}. ",
@@ -4203,25 +4249,31 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                 "\\textit{variableName} = \"precipitation\", \\textit{units} = \"mm\" ",
                                                 "or \"mm/yr\", \\textit{seasonality} = \"annual\", ",
                                                 "which cover a period of at least 2000 years and where the p-value of ",
-                                                "the least square trend from 7k BP to 1950 CE is smaller than 0.01. ",
+                                                "the least square trend from 7k to 0 BP is smaller than 0.01. ",
                                                 "The LiPD reference denotes the suffix to the URL ",
                                                 "\\href{https://lipdverse.org/globalHolocene/1_0_0/}",
                                                 "{https://lipdverse.org/globalHolocene/1\\_0\\_0/$<$LiPD reference$>$.html}, ",
                                                 "maintained by Nicholas McKay. Duplicate LiPD references denote different samples per site. ",
-                                                "Start and End columns provide years before 1950 CE.")
+                                                "Start and End columns provide years before 0 BP.")
+                        columns <- paste0("\\thead{No}",
+                                          " & \\theadl{LiPD reference}",
+                                          " & \\thead{lon [$^{\\circ}$]}",
+                                          " & \\thead{lat [$^{\\circ}$]}",
+                                          " & \\thead{Start}",
+                                          " & \\thead{End}",
+                                          " & \\thead{", latex_varname_thead, "}",
+                                          " & \\thead{Trend\\\\summary}",
+                                          "\\\\")
                         lines <- c("\\fontsize{9}{6}\\selectfont",
                                    "\\begin{longtable}{@{}rlrrrrrr@{}}",
                                    paste0("\\caption{", latex_caption, "}\\label{tab:appendix_lipd}\\\\"),
                                    "\\toprule",
-                                   "\\thead{No}",
-                                   " & \\thead{LiPD reference}",
-                                   " & \\thead{lon [$^{\\circ}$]}",
-                                   " & \\thead{lat [$^{\\circ}$]}",
-                                   " & \\thead{Start}",
-                                   " & \\thead{End}",
-                                   " & \\thead{", latex_varname_thead, "}",
-                                   " & \\thead{Trend\\\\summary}",
-                                   "\\\\",
+                                   columns,
+                                   "\\endfirsthead",
+                                   "\\toprule",
+                                   columns,
+                                   "\\midrule",
+                                   "\\endhead",
                                    "\\midrule")
                         for (i in seq_along(inds)) {
                             line <- paste0(i, " &")
@@ -4266,7 +4318,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     # special: save survived pangaea dois as latex table
                     # one multi-row per unique pangaea bibtex entry (and not DOI) because:
                     # different pangaea DOIs may have the same bibtex entry! 
-                    if (any(xp_legend_unique == "Pangaea")) {
+                    if (length(xp) == 1 && any(xp_legend_unique[[1]] == "Pangaea")) {
                         message("\nspecial: save survived pangaea dois as latex table")
                         inds <- which(xp_legend == "Pangaea")
                         pdois <- sapply(point_datap[inds], "[[", "doi")
@@ -4295,18 +4347,24 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                 "\\ref{fig:timmean_d18o_pi_gnip_iso2k_sisal_pangaea} and ",
                                                 "\\ref{fig:scatter_d18o_pi_linear_gnip_iso2k_sisal_pangaea}. ",
                                                 "Start and End columns provide years from 0 CE.")
+                        columns <- paste0("\\mythead{No}",
+                                          " & \\mytheadl{Pangaea reference}",
+                                          " & \\mythead{lon [$^{\\circ}$]}",
+                                          " & \\mythead{lat [$^{\\circ}$]}",
+                                          " & \\mythead{Start}",
+                                          " & \\mythead{End}",
+                                          paste0(" & \\mythead{", latex_varname, "}"),
+                                          "\\\\")
                         lines <- c("\\fontsize{9}{6}\\selectfont",
                                    "\\begin{longtable}{@{}rlrrrrrr@{}}",
                                    paste0("\\caption{", latex_caption, "}\\label{tab:appendix_pangaea}\\\\"),
                                    "\\toprule",
-                                   "\\mythead{No}",
-                                   " & \\mythead{Pangaea reference}",
-                                   " & \\mythead{lon [$^{\\circ}$]}",
-                                   " & \\mythead{lat [$^{\\circ}$]}",
-                                   " & \\mythead{Start}",
-                                   " & \\mythead{End}",
-                                   paste0(" & \\mythead{", latex_varname, "}"),
-                                   "\\\\",
+                                   columns,
+                                   "\\endfirsthead",
+                                   "\\toprule",
+                                   columns,
+                                   "\\midrule",
+                                   "\\endhead",
                                    "\\midrule")
                         cnt <- 0
                         for (i in seq_along(pdois_unique)) {
@@ -4364,12 +4422,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         fout <- paste0("pangaea_table_", paste(prefs, collapse="_"), ".txt")
                         message("save ", fout, " ...")
                         writeLines(lines, con=fout)
-                    } # if any(xp_legend_unique == "Pangaea")
+                    } # if any(xp_legend_unique[[1]] == "Pangaea")
                     # finished special: save survived pangaea dois as latex table 
 
-
-                    # group point_data by?
-                    message("\ngroup point_data xp/yp by what?")
+                    # group scatter point_data by?
+                    message("\ngroup color and pch of point_data xp/yp by what?")
                     scatterobscols <- scatterobspchs <- vector("list", l=length(xp))
                     for (i in seq_along(xp)) {
 
@@ -4381,84 +4438,88 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             scatterobscols[[i]] <- rep(
                     season_check$known_seasons[[which(names(season_check$known_seasons) == seasonsp_p[i])]]$col,
                                                        t=length(xp[[i]]))
-                        # else color by xp_fname_unique
-                        } else if (T) { 
+                        # color by xp_fname_unique
+                        } else if (F) { 
                             if (i == 1) message("color scatter by xp_fname_unique ...")
-                            scatterobscols[[i]] <- mycols(max(xp_colno))[xp_colno]
-                        # else color by model setting i
-                        } else if (F) {
+                            scatterobscols[[i]] <- mycols(max(xp_colno[[i]]))[xp_colno[[i]]]
+                        
+                        # color by model setting i
+                        } else if (T) {
                             if (i == 1) message("color scatter by model setting cols ...")
                             scatterobscols[[i]] <- rep(cols_p[i], t=length(xp[[i]]))
                         }
+
                         # use transparent colors
                         if (F) {
-                            if (i == 1) message("special: use transparent colors")
+                            if (i == 1) message("use transparent colors for scatter")
                             scatterobscols[[i]] <- col2rgba(scatterobscols[[i]], alpha=alpha_rgb)
                         }
 
                         ## pch
                         if (T) {
-                            if (i == 1) message("pch scatter by xp_pchno ...")
-                            xp_pchno_unique <- unique(xp_pchno)
                             if (T) { # hollow symbols
-                                pchs <- c(pchs_hollow, seq_len(255)[-pchs_hollow])
+                                if (i == 1) message("pch scatter hollow by xp_pchno ...")
+                                pchs <- c(pchs_hollow, seq_len(255)[-pchs_hollow]) # declare
                             } else if (F) { # filled symbols 
+                                if (i == 1) message("pch scatter filled wout border by xp_pchno ...")
                                 pchs <- c(pchs_filled_wout_border, 
-                                          (15:20)[!match(15:20, pchs_filled_wout_border, nomatch=F)])
+                                          (15:20)[!match(15:20, pchs_filled_wout_border, nomatch=F)]) # declare
                             }
+                            xp_pchno_unique <- unique(xp_pchno[[i]])
                             tmp <- rep(NA, t=length(xp[[i]]))
                             for (j in seq_along(xp_pchno_unique)) {
-                                inds <- which(xp_pchno == xp_pchno_unique[j]) 
+                                inds <- which(xp_pchno[[i]] == xp_pchno_unique[j]) 
                                 tmp[inds] <- pchs[xp_pchno_unique[j]]
                             }
                             scatterobspchs[[i]] <- tmp
                         }
                         
                     } # for i in xp
-                    scatterobsle <- list()
-                    xp_n_unique <- rep(NA, t=length(xp_legend_unique))
-                    for (i in seq_along(xp_legend_unique)) {
-                        if (T) {
-                            if (i == 1) message("group point_data by `legend`")
-                            inds <- which(xp_legend == xp_legend_unique[i])
-                            scatterobsle$text[i] <- paste0(xp_legend_unique[i], " (n=", length(inds), ")")
-                        } else if (F) {
-                            if (i == 1) message("group point_data by `fname`")
-                            inds <- which(xp_fname == xp_fname_unique[i])
-                            scatterobsle$text[i] <- paste0(xp_fname_unique[i], " (n=", length(inds), ")")
-                        }
-                        # tlim per point_datap dataset
-                        tlim <- range(xp_tlims[,inds])
-                        tlim <- as.POSIXlt(tlim, o="1970-1-1", tz="UTC")
-                        message(scatterobsle$text[i], " from ", tlim[1], " to ", tlim[2])
-                        xp_n_unique[i] <- length(inds)
-                        tmp <- unlist(scatterobscols)[inds]
-                        if (length(unique(tmp)) != 1) stop("should be 1")
-                        scatterobsle$col[i] <- unique(tmp)
-                        tmp <- unlist(scatterobspchs)[inds]
-                        if (length(unique(tmp)) != 1) stop("should be 1")
-                        scatterobsle$pch[i] <- unique(tmp)
-                    } # for i in xp_legend_unique
+                    
+                    # scatter point_datap legend
+                    scatterobsle <- list(text=unique(unlist(xp_legend)))
+                    if (T) {
+                        scatterobsle$col <- rep(unique(unlist(scatterobscols))[1], t=length(xp))
+                        message("scatter legend cols by first obs col = ", scatterobsle$col[1])
+                    }
+                    if (T) {
+                        scatterobsle$pch <- unique(scatterobspchs[[1]])
+                        message("scatter legend pchs by first ", length(xp), " pchs = ", 
+                                paste(scatterobsle$pch, collapse=", "))
+                    }
                     scatterobsle$lty <- rep(NA, t=length(scatterobsle$pch))
                     scatterobsle$lwd <- rep(NA, t=length(scatterobsle$pch))
+                   
+                    #tlim_scatter <- as.POSIXlt(range(lapply(lapply(xp, attributes), 
+                    #                                        "[[", "rangetot")), o="1970-1-1", tz="UTC")
                     
-                    point_datap_suffix <- paste(paste0(xp_n_unique, "_", 
-                                                       gsub(" ", "", xp_legend_unique)),
-                                                collapse="_vs_")
-                    tlim_scatter <- as.POSIXlt(range(lapply(lapply(xp, attributes), 
-                                                            "[[", "rangetot")), o="1970-1-1", tz="UTC")
-                    message("\ncompare ", length(yp), " model data and\n", 
-                            point_datap_suffix, "\ndata from ", 
-                            tlim_scatter[1], " to ", tlim_scatter[2], 
-                            " in one scatter plot ...")
+                    message("\nscatterplot point_datap versus ", length(yp), " model data:")
+                    point_datap_suffix <- rep("", t=length(xp))
+                    point_datap_n <- rep(0, t=length(xp))
+                    for (modeli in seq_along(xp)) {
+                        message(names_short[modeli], " versus:")
+                        for (i in seq_along(xp_fname_unique[[modeli]])) {
+                            inds <- which(xp_fname[[modeli]] == xp_fname_unique[[modeli]][i])
+                            point_datap_n[modeli] <- point_datap_n[modeli] + length(inds)
+                            point_datap_suffix[modeli] <- paste0(point_datap_suffix[modeli], 
+                                                                 "_", length(inds), "_", xp_fname_unique[[modeli]][i])
+                            tlim <- range(xp_tlims[[modeli]][,inds])
+                            tlim <- as.POSIXlt(tlim, o="1970-1-1", tz="UTC")
+                            message("   ", length(inds), " ", xp_fname_unique[[modeli]][i], 
+                                    " ", xp_varname_unique[[modeli]][i], 
+                                    " from ", tlim[1], " to ", tlim[2])
+                        }
+                        message("   --> ", point_datap_n[modeli], " point_datap")
+                    }
+                    point_datap_suffix <- paste(unique(point_datap_suffix), collapse="_and_")
                     
                     # xlim 
                     xlim <- range(xp, na.rm=T)
-                    if (all(!is.na(match(xp_varname_unique, c("map_trend", "precipitation_trend"))))) { 
+                    if (all(!is.na(match(unique(unlist(xp_varname_unique)), c("map_trend", "precipitation_trend"))))) { 
                         message("special map_trend and/or precipitation_trend xlim ...")
                         xlim <- c(-1000, 650)
                     }
-                    message("xlim (", paste(xp_varname_unique, collapse=", "), 
+                    message("xlim (", paste(unique(unlist(xp_varname_unique)), collapse=", "), 
                             " of point_data) = ", appendLF=F)
                     dput(xlim)
                     xat <- pretty(xlim, n=10)
@@ -4499,7 +4560,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                               "_", froms_plot_p, "_to_", tos_plot_p, "_", 
                                               areas_p, collapse="_vs_"), 
                                        plotname_suffix, 
-                                       "_scatter_", interp_method, "_vs_", 
+                                       "_scatter_", interp_method, "_vs", 
                                        point_datap_suffix,
                                        ".", p$plot_type)
                     if (nchar(plotname) > nchar_max_foutname) {
@@ -4511,7 +4572,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                            paste(unique(tos_plot_p), collapse="_"), "_", 
                                            paste(unique(areas_p), collapse="_"), 
                                            plotname_suffix, 
-                                           "_scatter_", interp_method, "_vs_", 
+                                           "_scatter_", interp_method, "_vs", 
                                            point_datap_suffix,
                                            ".", p$plot_type)
                     }
@@ -4572,7 +4633,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     # add 1:1 line
                     if (add_1to1_line) {
                         message("add 1:1 line ...")
-                        #abline(a=0, b=1, col="gray", lwd=1, lty=2) # a=intercept, b=slope
+                        #abline(a=0, b=1, col="gray", lty=2) # a=intercept, b=slope
                         abline(a=0, b=1, lty=2)
                     }
                     
@@ -4666,9 +4727,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
                             message("automatically derived adagio::maxempty legend position: ", le$pos[1], ", ", le$pos[2])
                         } else {
-                            le$pos <- "topleft" 
+                            #le$pos <- "topleft" 
                             #le$pos <- "topright" 
-                            #le$pos <- "bottomright" 
+                            le$pos <- "bottomright" 
                         }
                         le$ncol <- 1
                         #le$ncol <- 2 
@@ -4683,7 +4744,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch <- rep(15, t=length(yp)) # filled square for just showing the color
                         le$pt.cex <- rep(1.5, t=length(yp))
                         if (T && length(scatterobsle) > 0) {
-                            if (T) {
+                            if (F) {
                                 message("specialllll legendddddd")
                                 le$text <- scatterobsle$text
                                 le$col <- scatterobsle$col
@@ -4778,28 +4839,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
             }
            
-            # load further data to add to lon,lat plot 
-            polygon_list <- contour_list <- quiver_list <- NULL # default: add nothing to lon,lat plot
+            ## add stuff lon,lat plot before zlim
+            contour_list <- polygon_list <- quiver_list <- segment_list <- point_list <- text_list <- cmd_list <- NULL # default
 
-            if (exists("varnames_uv")) {
-                if (plot_groups[plot_groupi] == "samevars") {
-                    message("zuv_samevars:")
-                    cat(capture.output(str(zuv_samevars)), sep="\n")
-                    if (zname %in% names(varnames_uv)) { # if current variable is defined by u,v-components
-                        znameu <- varnames_uv[[zname]]["u"]
-                        znamev <- varnames_uv[[zname]]["v"]
-                        message("prepare u,v-components for quivers: take variables \"", znameu, 
-                                "\" and \"", znamev, "\" as u and v components ")  
-                        quiver_list <- list(u=zuv_samevars[[znameu]], v=zuv_samevars[[znamev]])
-                        quiver_list$nx_fac <- rep(0.5, t=length(quiver_list$u))
-                        quiver_list$ny_fac <- rep(0.75, t=length(quiver_list$u))
-                        quiver_list$const <- rep(T, t=length(quiver_list$u))
-                    }
-                }
-            }
-            # finished prepare u,v components if needed
-            
-            # add special data to z
+           
+            # add special quiver data to lon,lat plot
             if (any(zname == c("quv", "quv_direction"))) {
                 if (exists("era5_spatial")) {
                     message("\ntodo: transfer this block to the appending z_samevars/z_samedims section")
@@ -4922,9 +4966,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
 
 
-            ## prepare adding further stuff to every subplot
-            polygon_list <- segment_list <- point_list <- text_list <- cmd_list <- NULL # default
-           
+            ## add stuff to every lon,lat plot after zlim
+            
+            # add quiver model data to lon,lat plot
+            if (exists("varnames_uv")) {
+                if (plot_groups[plot_groupi] == "samevars") {
+                    message("zuv_samevars:")
+                    cat(capture.output(str(zuv_samevars)), sep="\n")
+                    if (zname %in% names(varnames_uv)) { # if current variable is defined by u,v-components
+                        znameu <- varnames_uv[[zname]]["u"]
+                        znamev <- varnames_uv[[zname]]["v"]
+                        message("prepare u,v-components for quivers: take variables \"", znameu, 
+                                "\" and \"", znamev, "\" as u and v components ")  
+                        quiver_list <- list(u=zuv_samevars[[znameu]], v=zuv_samevars[[znamev]])
+                        quiver_list$nx_fac <- rep(0.5, t=length(quiver_list$u))
+                        quiver_list$ny_fac <- rep(0.75, t=length(quiver_list$u))
+                        quiver_list$const <- rep(T, t=length(quiver_list$u))
+                    }
+                }
+            }
+            # finished prepare u,v components if needed
 
             if (T && zname == "lm_tsurf_as_time_slope" && !all(sapply(ll_data, is.null))) { # add sea ice trend
                 message("add SICOMO contours")
@@ -4964,80 +5025,92 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # --> `point_list` must have at least the 4 entries lon,lat,col,pch
             if (T && exists("xp") && !all(sapply(lapply(xp, is.na), all))) {
                 message("not all `xp` are NA: add ", 
-                        point_datap_suffix, " xp to plot ...")
+                        point_datap_suffix, " xp to lon,lat plot via `point_list` ...")
                 point_list <- text_list <- vector("list", l=length(z))
                 for (i in seq_along(z)) {
-                    # default xp symbols: black cross
-                    point_list[[i]] <- list(x=attributes(xp[[i]])$lon,
-                                            y=attributes(xp[[i]])$lat)
-                    point_list[[i]]$col <- rep("black", t=length(point_list[[i]]$x))
-                    point_list[[i]]$pch <- rep(4, t=length(point_list[[i]]$x))
-                    text_list[[i]] <- list(x=rep(NA, t=length(xp[[i]])),
-                                           y=rep(NA, t=length(xp[[i]])),
-                                           labels=rep(NA, t=length(xp[[i]])),
-                                           col=rep(NA, t=length(xp[[i]])))
-                    # if special color/symbol for xp 
-                    if (T) { 
+                    if (!all(is.na(xp[[i]]))) {
                         
-                        ## cols
+                        point_list[[i]] <- list(x=attributes(xp[[i]])$lon,
+                                                y=attributes(xp[[i]])$lat)
+                        # default xp symbols: black cross
+                        point_list[[i]]$col <- rep("black", t=length(point_list[[i]]$x))
+                        point_list[[i]]$pch <- rep(4, t=length(point_list[[i]]$x))
+                        # declare empty text_list
+                        text_list[[i]] <- list(x=rep(NA, t=length(xp[[i]])),
+                                               y=rep(NA, t=length(xp[[i]])),
+                                               labels=rep(NA, t=length(xp[[i]])),
+                                               col=rep(NA, t=length(xp[[i]])))
+                        
+                        # special cols
+                        cols <- NULL
                         if (F) { # constant color
                             message("   --> color xp by its sign ...")
                             cols <- rep("brown", t=length(xp[[i]])) # color for dry trend
                             if (any(xp[[i]] > 0)) cols[which(xp[[i]] > 0)] <- "blue" # color for wet trend
                         } else if (T) { # same colors as z
-                            message("   --> color xp by its value ...")
+                            message("   --> color `point_list[[", i, "]]` by the values of xp[[", i, "]] ...")
                             cols <- findInterval(x=xp[[i]], vec=ip$levels, all.inside=T)
                             cols <- ip$cols[cols]
-                            if (T && any(xp_varname_unique == "d18Ononp_scaled")) {
-                                message("   --> special d18Ononp_scaled: show red/blue plus/minus")
-                                inds <- which(xp_varname == "d18Ononp_scaled")
+                            if (T && any(xp_varname_unique[[i]] == "d18Ononp_scaled_trend")) {
+                                message("   --> special d18Ononp_scaled: show red/blue symbols")
+                                inds <- which(xp_varname[[i]] == "d18Ononp_scaled_trend")
                                 cols[inds] <- NA
                                 posinds <- which(xp[[i]][inds] >= 0)
                                 neginds <- which(xp[[i]][inds] < 0)
                                 if (length(posinds) > 0) text_list[[i]]$col[inds][posinds] <- "red"
                                 if (length(neginds) > 0) text_list[[i]]$col[inds][neginds] <- "blue"
-                            } else if (T && any(xp_varname_unique == "d18Odiatom_scaled")) {
-                                message("   --> special d18Odiatom_scaled: show blue/red PLOT letters")
+                            } else if (T && any(xp_varname_unique[[i]]  == "d18Odiatom_scaled_trend")) {
+                                message("   --> special d18Odiatom_scaled: show red/blue symbols")
                                 inds <- which(xp_varname == "d18Odiatom_scaled")
-                                cols[inds] <- NA
+                                cols[inds] <- NA # dont show symbols on lon,lat plot; use the PLOT letters instead
                             }
                         }
-                        point_list[[i]]$bg <- cols
+                        if (!is.null(cols)) point_list[[i]]$bg <- cols
                         
-                        ## pchs:
-                        # default: same symbol for all xp
-                        point_list[[i]]$pch <- pchs_filled_w_border[1] 
+                        # special pchs
+                        pchs <- NULL
                         if (T) { # distinguish xp by pch
-                            message("   distinguish xp symbols ...")
-                            pchs <- c(pchs_filled_w_border, (21:25)[!match(21:25, pchs_filled_w_border, nomatch=F)])
-                            tmp <- rep(NA, t=length(xp_pchno))
-                            for (j in seq_along(xp_pchno_unique)) {
-                                tmp[which(xp_pchno == xp_pchno_unique[j])] <- pchs[xp_pchno_unique[j]]
-                            }
-                            if (T && any(xp_varname_unique == "d18Ononp_scaled")) {
-                                message("   --> special d18Ononp_scaled: show red/blue plus/minus")
-                                inds <- which(xp_varname == "d18Ononp_scaled")
-                                tmp[inds] <- NA
+                            message("   --> pch `point_list[[", i, "]]` by the pchs of xp[[", i, "]] (use filled pchs) ...")
+                            pchs_unique <- c(pchs_filled_w_border, (21:25)[!match(21:25, pchs_filled_w_border, nomatch=F)]) # declare
+                            pchs <- pchs_unique[xp_pchno[[i]]]
+                            if (T && any(xp_varname_unique[[i]]  == "d18Ononp_scaled_trend")) {
+                                message("   --> special d18Ononp_scaled_trend: show plus/minus")
+                                inds <- which(xp_varname[[i]]  == "d18Ononp_scaled_trend")
+                                pchs[inds] <- NA
                                 text_list[[i]]$x[inds] <- attributes(xp[[i]])$lon[inds]
                                 text_list[[i]]$y[inds] <- attributes(xp[[i]])$lat[inds]
                                 posinds <- which(xp[[i]][inds] >= 0)
                                 neginds <- which(xp[[i]][inds] < 0)
                                 if (length(posinds) > 0) text_list[[i]]$labels[inds][posinds] <- "+"
                                 if (length(neginds) > 0) text_list[[i]]$labels[inds][neginds] <- "-"
-                            } else if (T && any(xp_varname_unique == "d18Odiatom_scaled")) {
-                                message("   --> special d18Odiatom_scaled: show blue/red PLOT letters")
-                                inds <- which(xp_varname == "d18Odiatom_scaled")
-                                tmp[inds] <- NA
                             }
-                            point_list[[i]]$pch <- tmp
+                            if (T && any(xp_varname_unique[[i]]  == "d18Odiatom_scaled_trend")) {
+                                message("   --> special d18Odiatom_scaled: show PLOT letters")
+                                inds <- which(xp_varname[[i]]  == "d18Odiatom_scaled_trend")
+                                pchs[inds] <- NA # dont show symbols on lon,lat plot; use the PLOT letters instead
+                            }
                         }
-                    }
+                        if (!is.null(pchs)) point_list[[i]]$pch <- pchs
+
+                    } # if not all xp[[i]] are NA
                 } # for i in z
-                plotname_suffix <- paste0("_vs_xp_", point_datap_suffix) 
+                plotname_suffix <- paste0("_vs_point_datap", point_datap_suffix) 
             } # if xp is defined
 
             addland_list <- list(data="world", xlim="xlim", ylim="ylim") # default yes since lon,lat plot
             if (mode_p == "area") addland_list <- NULL # fesom
+            
+            if (add_echam_TR31GR30_oromea_contour) {
+                message("special: add echam oromea contours to plot ...")
+                levels <- image.plot.pre(zlim=range(echam_TR31GR30_oromea$OROMEA), nlevels=5)$levels
+                contour_list <- list(x=NULL, y=NULL, z=NULL, levels=levels, drawlabels=F)
+                for (i in seq_along(z)) {
+                    contour_list$x[[i]] <- echam_TR31GR30_oromea$lon
+                    contour_list$y[[i]] <- echam_TR31GR30_oromea$lat
+                    contour_list$z[[i]] <- echam_TR31GR30_oromea$OROMEA
+                }
+            }
+            
             if (add_mpiom_GR30_lsm_seg) {
                 message("special: add mpiom land sea mask segments to plot ...")
                 segment_list <- mpiom_GR30_lsm_seg
