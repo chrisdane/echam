@@ -6,7 +6,7 @@
 # echam SLF
 
 # echam OROMEA (= `elevation` of jsbach input)
-if (T) {
+if (F) {
     f <- paste0(host$repopath, "/echam/T31GR30_OROMEA.nc")
     if (file.exists(f)) {
         message("\ndisable here if you do not want to load echam OROMEA from ", f, " ...")
@@ -1072,7 +1072,8 @@ f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/konecky_etal_2020/",
                 #"iso2k1_0_0_ts_scale_109_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_lake_or_lagoon_or_ground_or_soil_water_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
-                "iso2k1_0_0_ts_scale_14_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_lake_or_lagoon_or_ground_or_soil_water_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
+                #"iso2k1_0_0_ts_scale_14_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_lake_or_lagoon_or_ground_or_soil_water_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
+                "iso2k1_0_0_ts_non-scale_14_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_lake_or_lagoon_or_ground_or_soil_water_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
                 ".RData2")
 }
 if (T && file.exists(f)) {

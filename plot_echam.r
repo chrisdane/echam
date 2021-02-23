@@ -3663,7 +3663,33 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 rm(tmp)
             } # if global_holocene_lipd_precip
             
-            if (T && exists("konecky_etal_2020_iso2k_d18o_precip") && 
+            if (T && exists("kaufman_etal_2020_temp12k_d18o") && 
+                any(zname == c("lm_wisoaprt_d_post_as_time_slope"))) {
+                point_data_fname <- "kaufman_etal_2020_temp12k_d18o"
+                point_data_legend <- "Temp12k 1.0.0"
+                point_data_varname <- "d18O_trend"
+                #point_data_label <- expression(paste("Iso2k ", delta^{18}, "O"["p,SMOW"], " [‰]"))
+                #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
+                point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
+                #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
+                tmp <- kaufman_etal_2020_temp12k_d18o
+                for (i in seq_along(tmp)) { # add the linear trend as data point
+                    tmp[[i]]$time <- make_posixlt_origin(-6000) # placeholder for trend
+                    tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
+                    tmp[[i]]$varname <- point_data_varname 
+                    tmp[[i]]$fname <- point_data_fname
+                    tmp[[i]]$label <- point_data_label
+                    tmp[[i]]$legend <- point_data_legend
+                    tmp[[i]]$colno <- 1
+                    tmp[[i]]$pchno <- 1
+                }
+                message("add ", length(tmp), " ", point_data_varname, " from ", 
+                        point_data_fname, " to point_data ...")
+                point_data <- c(point_data, tmp) # add data to point_data
+                rm(tmp)
+            } # if konecky_etal_2020_iso2k_d18o_precip
+            
+            if (F && exists("konecky_etal_2020_iso2k_d18o_precip") && 
                 any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
                 point_data_fname <- "iso2k-precip"
                 point_data_legend <- "Iso2k 1.0.0"
@@ -3702,9 +3728,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data_fname <- "iso2k-nonprecip"
                 point_data_legend <- "Iso2k-nonprecip"
                 if (zname == "wisoaprt_d") {
-                    point_data_varname <- "d18Ononp_scaled"
+                    point_data_varname <- "d18Ononp"
+                    #point_data_varname <- "d18Ononp_scaled"
                 } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
-                    point_data_varname <- "d18Ononp_scaled_trend"
+                    point_data_varname <- "d18Ononp_trend"
+                    #point_data_varname <- "d18Ononp_scaled_trend"
                 }
                 #point_data_label <- expression(paste("Iso2k ", delta^{18}, "O"["nonp,SMOW"], " [‰]"))
                 #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
@@ -5100,7 +5128,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             addland_list <- list(data="world", xlim="xlim", ylim="ylim") # default yes since lon,lat plot
             if (mode_p == "area") addland_list <- NULL # fesom
             
-            if (add_echam_TR31GR30_oromea_contour) {
+            if (exists("add_echam_TR31GR30_oromea_contour") && add_echam_TR31GR30_oromea_contour) {
                 message("special: add echam oromea contours to plot ...")
                 levels <- image.plot.pre(zlim=range(echam_TR31GR30_oromea$OROMEA), nlevels=5)$levels
                 contour_list <- list(x=NULL, y=NULL, z=NULL, levels=levels, drawlabels=F)
