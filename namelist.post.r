@@ -591,11 +591,11 @@ if (F) { # old hist
     #fpatterns <- "Hol-T_jsbach_veg_mm_<YYYY><MM>.grb" 
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-7_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
-    prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_echam5_wiso" # steffens files
     #prefixes <- "cosmos-aso-wiso_Hol-7_timeser_ext"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_timeser_ext"
@@ -623,7 +623,7 @@ if (F) { # old hist
     #fvarnames <- "srad0"
     #fvarnames <- "srad0d"
     #fvarnames <- "trad0"
-    fvarnames <- "aprt"
+    #fvarnames <- "aprt"
     #fvarnames <- "aprl"
     #fvarnames <- "aprc"
     #fvarnames <- "aprs"
@@ -638,6 +638,7 @@ if (F) { # old hist
     #fvarnames <- "geosp"
     #fvarnames <- "q"
     #fvarnames <- "aps"
+    fvarnames <- "sealevelpressure"
     #fvarnames <- "lm_aps_as_time"
     #fvarnames <- "quv_direction"
     #lev_fnames <- "int1000-100hPa"
@@ -744,8 +745,8 @@ if (F) { # old hist
                                           )
     #fvarnames <- "act_fpc"
     #codes <- 31
-    #modes <- "select"
-    modes <- "timmean"
+    modes <- "select"
+    #modes <- "timmean"
     #modes <- "yearmean"
     #modes <- "monmean"
     #modes <- "ymonmean"
@@ -769,7 +770,7 @@ if (F) { # old hist
     #froms <- "6971" # Hol-T links: pi mean beginning
     #tos <- "0011"
     #tos <- "0013" 
-    tos <- "0033"
+    #tos <- "0033"
     #tos <- "0129"
     #tos <- "0809"
     #tos <- "1014" # Hol-T links: 6k mean end
@@ -778,7 +779,7 @@ if (F) { # old hist
     #tos <- "3601" # Hol-Tx10 raw: end
     #tos <- "5903" # Hol-T links: end of chunk 2
     #tos <- "6821"
-    #tos <- "7000" # Hol-T links: end of chunk 3
+    tos <- "7000" # Hol-T links: end of chunk 3
     #tos <- "7001" # Hol-Tx10 links: end counting from 1 
     if (grepl("Hol-Tx10_", fpatterns[1])) {
         if (modes[1] == "timmean") {
@@ -1047,7 +1048,9 @@ if (F) { # old hist
 
 # https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_calc_wiso_echam5_monmean.sh
 # /ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh
-cdo_known_cmds <- list(#"toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
+cdo_known_cmds <- list("psl"=list(cmd=c("<cdo> merge <aps> <geosp> <t>",
+                                        "<cdo> sealevelpressure")),
+                       #"toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
                        "toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -enssum <rsdt> -mulc,-1.0 <rsut> -mulc,-1.0 <rlut>"),
                        "quv_direction"=list(cmd=c("<cdo> -setname,quv_direction -divc,3.141593 -mulc,180 -atan2 <qv> <qu>",
                                                   "<nco_ncatted> -O -a long_name,quv_direction,o,c,\"direction of water vapor transport\"",

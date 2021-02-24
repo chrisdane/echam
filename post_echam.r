@@ -892,14 +892,17 @@ for (i in 1:nsettings) {
                             for (cmdj in seq_along(replace_inds_open)) {
                                 # check if a variable in the current workspace exists with the same name
                                 pattern <- substr(cmdsin[cmdi], replace_inds_open[cmdj] + 1, replace_inds_close[cmdj] - 1)
-                                if (exists(eval(pattern))) { # case 1/2: variable with the name of the pattern exists
+                                if (exists(eval(pattern)) && 
+                                    !any(class(eval(parse(text=pattern))) == c("function", "standardGeneric"))) { 
+                                    # case 1/2: variable with the name of the pattern exists and its not a function
                                     eval(parse(text=paste0("length_of_pattern_var <- length(", pattern, ")")))
                                     if (length_of_pattern_var == nsettings) { # assume that the entry of setting i should be replaced
                                         eval(parse(text=paste0("replacement <- ", pattern, "[i]")))
                                     } else {
                                         eval(parse(text=paste0("replacement <- ", pattern)))
                                     }
-                                } else { # case 2/2: no variable named `pattern` exists in current work space
+                                } else { 
+                                    # case 2/2: no variable named `pattern` exists in current work space
                                     if (pattern == "nco_ncatted") { # special case 2a
                                         message("   detected special pattern \"<", pattern, ">\" --> run system(\"which ncatted\") ...")
                                         replacement <- system("which ncatted", intern=T)
@@ -952,9 +955,10 @@ for (i in 1:nsettings) {
                     } # run all (possibly modifed) user commands
 
                     if (clean) { 
+                        message()
                         for (fi in cmdout_files) {
                             if (file.exists(fi)) {
-                                if (verbose > 0) message("run `rm -v ", fi, "`")
+                                if (verbose > 0) message("`clean`=T --> run `rm -v ", fi, "`")
                                 system(paste0("rm -v ", fi))
                             }
                         }
