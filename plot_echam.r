@@ -381,7 +381,11 @@ for (i in seq_len(nsettings)) {
             message("by `shift_by` = ", 
                     new_origins[i], " - ", timein_lt$year[1] + 1900, #" - 1 ", 
                     " = ", shift_by, " years") 
+            if (any(is.na(timein_lt))) stop("some NA in timein_lt before shift_by")
             timein_lt$year <- timein_lt$year + shift_by
+            # maybe necessary:
+            #timein_lt$year[] <- timein_lt$year[] + shift_by
+            if (any(is.na(timein_lt))) stop("some NA in timein_lt after shift_by")
             message("new timein_lt:")
             ht(timein_lt, n=20)
             message("--> new range(timein_lt) = ", appendLF=F)

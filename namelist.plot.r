@@ -231,7 +231,7 @@ if (F) { # awi-esm-1-1-lr hist
     #remove_mean_tos <- -6996
     #remove_mean_froms <- -7000
     #remove_mean_tos <- -7000
-    seasonsf <- "annual"
+    #seasonsf <- "annual"
     #seasonsf <- "Jun"
     #seasonsf <- "Jun"
     #seasonsf <- "Dec"
@@ -249,7 +249,7 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- "MAM"
     #seasonsp <- "JJA"
     #seasonsp <- "SON"
-    #varnames_in <- "temp2"
+    varnames_in <- "temp2"
     #varnames_in <- "tsurf"
     #varnames_in <- "tslm1"
     #varnames_in <- "aprt"
@@ -267,8 +267,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "lm_aprt_as_time_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp_slope"
-    varnames_in <- "lm_wisoaprt_d_post_as_time_slope"
-    levs <- 2
+    #varnames_in <- "lm_wisoaprt_d_post_as_time_slope"
+    #levs <- 2
     #varnames_in <- "quv"
     #varnames_in <- "quv_direction"
     #levsf <- "_int1000-100hPa"
@@ -287,9 +287,10 @@ if (F) { # awi-esm-1-1-lr hist
     #codes <- 101
     #modes <- "select"
     #modes <- "timmean"
+    modes <- "fldmean"
     #modes <- "timmean_yearsum"
     #modes <- "yseasmean"
-    modes <- "yearsum"
+    #modes <- "yearsum"
     #modes <- "zonmean"
     #modes <- "vertsum"
     #modes <- "fldsum"
@@ -307,7 +308,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- "moc26.5N"
     #levs <- "-0to-5420m"
     #regboxes <- list(list(regbox="northeast_europe"))
-    regboxes <- list(list(regbox="NAsiberia"))
+    #regboxes <- list(list(regbox="NAsiberia"))
 
 # =====================================
 # 2 settings
