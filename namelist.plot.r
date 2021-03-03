@@ -14,6 +14,18 @@ ignore_vars <- c("time_bnds", "timestamp",
 message("\nthese variables will be ignored:\n",
 		"\"", paste(ignore_vars, collapse="\", \""), "\"")
 
+# general script options
+squeeze <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
+nchar_max_foutname <- 255
+
+# stats options
+ttest_alternative <- "two.sided" # differences in means
+ttest_significance <- 0.05 # % p-value
+
+# calc options
+calc_monhtly_and_annual_climatology <- F
+calc_ttest_lon_lat_time <- T
+
 # plot options
 pchs_hollow <- c(1, 2, 0, 5) # bring hollow, filled wout borders and filled with borders in same order
 pchs_filled_wout_border <- c(16, 17, 15, 18) # 1: circle, 2: triangle up, 3: square, 4: diamond
@@ -21,7 +33,7 @@ pchs_filled_w_border <- c(21, 24, 22, 23)
 add_title <- F
 add_legend <- T
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-p <- myDefaultPlotOptions(#plot_type="png", 
+p <- myDefaultPlotOptions(plot_type="png", 
                           #plot_type="pdf"
                           #,family_png="Droid Sans Mono", 
                           #,family_pdf="Droid Sans Mono"
@@ -31,21 +43,21 @@ p <- myDefaultPlotOptions(#plot_type="png",
 encoding <- NULL 
 alpha_rgb <- 0.2 # transparent: 0,1 (0 fully transparent)
 
-season_check <- list(string="DJFMAMJJASOND", inds=c(12, 1:12), names=month.abb[1:12],
-                     known_seasons=list("DJF"=list(inds=c(12,1,2), col="blue"),
-                                        "MAM"=list(inds=3:5, col="darkgreen"),
-                                        "JJA"=list(inds=6:8, col="red"),
-                                        "SON"=list(inds=9:11, col="brown"),
-                                        "Jan-Dec"=list(inds=1:12, col="black")))
+known_seasons <- list("DJF"=list(inds=c(12, 1, 2), col="blue"),
+                      "MAM"=list(inds=3:5, col="darkgreen"),
+                      "JJA"=list(inds=6:8, col="red"),
+                      "SON"=list(inds=9:11, col="brown"),
+                      "NDJFM"=list(inds=c(11:12, 1:3), col="black"),
+                      "Jan-Dec"=list(inds=1:12, col="black"))
 # defaultseascols: "blue", "darkgreen", "red", "brown"
 # myseascols: blue: "#377EB8", green: "#1B9E77", red: "#E41A1C", brown: "#D95F02"
-season_check$known_seasons$annual <- season_check$known_seasons[["Jan-Dec"]]
-season_check$known_seasons$DJFmean <- season_check$known_seasons$DJF
-season_check$known_seasons$MAMmean <- season_check$known_seasons$MAM
-season_check$known_seasons$JJAmean <- season_check$known_seasons$JJA
-season_check$known_seasons$SONmean <- season_check$known_seasons$SON
-for (i in seq_along(season_check$known_seasons)) {
-    season_check$known_seasons[[i]]$col_rgb <- rgb(t(col2rgb(season_check$known_seasons[[i]]$col)/255), alpha=alpha_rgb)
+for (i in seq_along(known_seasons)) {
+    if (names(known_seasons)[i] != "Jan-Dec") {
+        known_seasons[[paste0(names(known_seasons)[i], "mean")]] <- known_seasons[[i]]
+    } else if (names(known_seasons)[i] == "Jan-Dec") {
+        known_seasons$annual <- known_seasons[["Jan-Dec"]]
+    }
+    known_seasons[[i]]$col_rgb <- rgb(t(col2rgb(known_seasons[[i]]$col)/255), alpha=alpha_rgb)
 }
 
 # time series plot options
@@ -122,10 +134,6 @@ add_grid <- F
 respect_asp <- T
 aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for plot
 
-# general script options
-squeeze <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
-nchar_max_foutname <- 255
-
 # clear work space if non-clean restart of plot_echam.r (i.e. without rm of everything)
 objs <- c("postpaths", "plotpath", 
           "names_legend", 
@@ -159,7 +167,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -167,8 +175,8 @@ if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
-    prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101"
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area"
@@ -215,6 +223,7 @@ if (F) { # awi-esm-1-1-lr hist
     #new_origins <- -5050 # Hol-Tx10 plus 1950
     new_origins <- -6996 # Hol-T; model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
     time_ref <- 1950 # any string, e.g. "BP", or number
+    n_mas <- 1
     #n_mas <- 30
     #n_mas <- 5*12
     #n_mas <- 100
@@ -222,7 +231,7 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- 20/3*12
     #n_mas <- 10*12
     #n_mas <- 20*12
-    n_mas <- 3*90
+    #n_mas <- 3*90
     #n_mas <- 30*12
     #n_mas <- 100*12
     #remove_mean_froms <- -827
@@ -236,6 +245,7 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsf <- "Jun"
     #seasonsf <- "Dec"
     #seasonsf <- "yearsum"
+    seasonsf <- "NDJFM"
     #seasonsp <- "Feb" # cdo's default season timestamps: DJF->Feb, MAM->May, JJA->Aug, SON->Nov
     #seasonsp <- "Mar"
     #seasonsp <- "May"
@@ -249,9 +259,11 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- "MAM"
     #seasonsp <- "JJA"
     #seasonsp <- "SON"
-    varnames_in <- "temp2"
+    seasonsp <- "NDJFMmean"
+    #varnames_in <- "temp2"
     #varnames_in <- "tsurf"
     #varnames_in <- "tslm1"
+    varnames_in <- "psl"
     #varnames_in <- "aprt"
     #varnames_in <- "aprs"
     #varnames_in <- "wisoaprt_d"
@@ -285,9 +297,9 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "lm_albedo_as_time_slope"
     #varnames_in <- "amoc"
     #codes <- 101
-    #modes <- "select"
+    modes <- "select"
     #modes <- "timmean"
-    modes <- "fldmean"
+    #modes <- "fldmean"
     #modes <- "timmean_yearsum"
     #modes <- "yseasmean"
     #modes <- "yearsum"
@@ -506,9 +518,32 @@ if (F) { # awi-esm-1-1-lr hist
     areas <- c("ladoga_remapnn", "ladoga_remapnn")
     #areas <- c("ladoga_remapnn", "ladogaLand_remapnn")
 
+} else if (T) { # positive/negative north pacific index NPI in Hol-T
+    models <- c("echam5", "echam5")
+    prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm", "cosmos-aso-wiso_Hol-T_main_mm")
+    #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "cosmos-aso-wiso_Hol-T_wiso_mm")
+    names_short <- c("Hol-T_above1.5sd", "Hol-T_below1.5sd")
+    fromsf <- c("0004", "0004")
+    tosf <- c(7000, 7000)
+    new_origins <- c(-6996, -6996)
+    time_ref <- 1950
+    #varnames_in <- c("psl_gt_1.5_sd_NPI", "psl_lt_1.5_sd_NPI")
+    varnames_in <- c("temp2_gt_1.5_sd_NPI", "temp2_lt_1.5_sd_NPI")
+    #varnames_in <- c("aprt_gt_1.5_sd_NPI", "aprt_lt_1.5_sd_NPI")
+    #varnames_in <- c("wind10_gt_1.5_sd_NPI", "wind10_lt_1.5_sd_NPI")
+    #varnames_in <- c("wisoaprt_d_post_gt_1.5_sd_NPI", "wisoaprt_d_post_lt_1.5_sd_NPI")
+    #levs <- c(2, 2)
+    modes <- c("select", "select")
+    #modes <- c("timmean", "timmean")
+    #modes <- c("yearsum", "yearsum")
+    seasonsf <- c("annual", "annual")
+    #seasonsf <- c("NDJFMmean", "NDJFMmean")
+    #seasonsf <- c("yearsum", "yearsum")
+    regboxes <- lapply(vector("list", l=2), base::append, list(regbox="NAsiberia"))
+
 } else if (F) { # recT106erai vs recT127era5
-    prefixes <- c("echam5_recT106erai_wiso", "echam6_recT127era5_wiso")
     models <- c("echam5", "echam6")
+    prefixes <- c("echam5_recT106erai_wiso", "echam6_recT127era5_wiso")
     names_short <- c("recT106erai", "recT127era5")
     names_legend <- c("T106 ERA-I", "T127 ERA5")
     fromsf <- c(1958, 1979)
@@ -696,28 +731,37 @@ if (F) { # awi-esm-1-1-lr hist
     regboxes <- lapply(vector("list", l=3), base::append, list(regbox="NAsiberia"))
 
 } else if (F) { # three vars of qu, qv, quv
-    prefixes <- c("cosmos-aso-wiso_Hol-Tx10_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev",
-                  "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")
     models <- c("echam5", "echam5", "echam5")
-    names_short <- c("Hol-Tx10", "Hol-Tx10", "Hol-Tx10")
-    names_legend <- c("Ladoga Hol-Tx10", "Ladoga Hol-Tx10", "Ladoga Hol-Tx10")
-    fromsf <- c("0001", "0001", "0001") # Hol-Tx10
-    tosf <- c("7001", "7001", "7001") # Hol-Tx10
-    new_origins <- c(-7000, -7000, -7000) # Hol-Tx10
+    prefixes <- rep("cosmos-aso-wiso_Hol-T_main_mm", t=3)
+    #prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_main_mm_plev", t=3)
+    names_short <- rep("Hol-T", t=3)
+    #names_short <- rep("Hol-Tx10", t=3)
+    #names_legend <- rep("Ladoga Hol-Tx10", t=3)
+    #fromsf <- rep("0001", t=3) # Hol-Tx10
+    fromsf <- rep("0004", t=3) # Hol-T
+    tosf <- rep("7000", t=3) # Hol-T
+    #tosf <- rep("7001", t=3) # Hol-Tx10
+    new_origins <- rep(-6996, t=3) # Hol-Tx10
+    #new_origins <- rep(-7000, t=3) # Hol-Tx10
     time_ref <- 1950 # any string, e.g. "BP", or number
     n_mas <- c(120, 120, 120)
+    seasonsf <- rep("annual", t=3)
     #seasonsp <- "Feb" # cdo's default season timestamps: Feb, May, Aug, Nov
     #seasonsp <- "May"
     #seasonsp <- "Jun"
     #seasonsp <- "Aug"
     #seasonsp <- "Nov"
     #seasonsp <- "Dec"
-    varnames_in <- c("qu", "qv", "quv")
-    levsf <- c("_int1000-100hPa", "_int1000-100hPa", "_int1000-100hPa")
-    varnames_out_samedims <- "quv"
-    names_legend_samedims <- c("qu", "qv", "quv")
-    modes <- c("select", "select", "select")
-    areas <- c("ladoga_remapnn", "ladoga_remapnn", "ladoga_remapnn")
+    varnames_in <- c("wind10_gt_1.5_sd_NPI", "u10_gt_1.5_sd_NPI", "v10_gt_1.5_sd_NPI")
+    varnames_uv <- list("wind10"=c(u="u10", v="v10"))
+    #varnames_in <- c("qu", "qv", "quv")
+    #levsf <- c("_int1000-100hPa", "_int1000-100hPa", "_int1000-100hPa")
+    #varnames_out_samedims <- "quv"
+    #names_legend_samedims <- c("qu", "qv", "quv")
+    #modes <- rep("select", t=3)
+    modes <- rep("timmean", t=3)
+    #areas <- rep("ladoga_remapnn", t=3)
+    regboxes <- lapply(vector("list", l=3), base::append, list(regbox="NAsiberia"))
 
 } else if (F) { # echam restart issue
     models <- rep("echam6", t=3)
@@ -1167,6 +1211,23 @@ if (F) { # awi-esm-1-1-lr hist
                                "Hol-Tx10 aprt (total)", "Hol-Tx10 aprl (large-scale)", "Hol-Tx10 aprc (convection)")
     ltys_samedims <- c(rep(1, t=3), rep(2, t=3))
     cols_samedims <- rep(c("black", "#E41A1C", "#377EB8"), t=2)
+
+} else if (F) { # positive/negative north pacific index NPI in Hol-T
+    models <- rep("echam5", t=6)
+    prefixes <- rep("cosmos-aso-wiso_Hol-T_main_mm", t=6)
+    names_short <- c(rep("Hol-T_above1.5sd", t=3), rep("Hol-T_below1.5sd", t=3))
+    fromsf <- rep("0004", t=6)
+    tosf <- rep(7000, t=6)
+    new_origins <- rep(-6996, t=6)
+    time_ref <- 1950
+    varnames_in <- c("wind10_gt_1.5_sd_NPI", "u10_gt_1.5_sd_NPI", "v10_gt_1.5_sd_NPI",
+                     "wind10_lt_1.5_sd_NPI", "u10_lt_1.5_sd_NPI", "v10_lt_1.5_sd_NPI")
+    varnames_uv <- list(list(uv=1, u=2, v=3),
+                        list(uv=4, u=5, v=6))
+    varnames_out_samedims <- "wind10_u10_v10"
+    modes <- rep("timmean", t=6)
+    seasonsf <- rep("annual", t=6)
+    #regboxes <- lapply(vector("list", l=6), base::append, list(regbox="NAsiberia"))
 
 # ==================================================
 # 7 settings

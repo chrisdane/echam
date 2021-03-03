@@ -632,19 +632,16 @@ if (F && file.exists(f)) {
 # pdoi = "10.1594/PANGAEA.56040"
 
 # PLOT coords as eval list
-f <- ""
-if (host$machine_tag == "paleosrv") {
-    f <- "~/scripts/r/PLOT/lakes/lake_coords.txt"
-}
+f <- "~/awi/PLOT/git/PLOT/lakes/lake_coords.txt"
 if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
     lakes_table <- read.table(f, header=T, stringsAsFactors=F)
     PLOT_coords_cmd_list <- NULL
-    if (F) {
-        lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-jurts", "elgygytgyn")
+    if (T) {
+        lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-yurts", "elgygytgyn")
         col <- "black"
-    } else if (T) { # blue letters for significant negative holocene trends
-        lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-jurts")
+    } else if (F) { # blue letters for significant negative holocene trends
+        lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-yurts")
         col <- "blue"
     }
     for (lakei in seq_along(lakes)) {
