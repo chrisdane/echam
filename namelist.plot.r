@@ -20,7 +20,7 @@ nchar_max_foutname <- 255
 
 # stats options
 ttest_alternative <- "two.sided" # differences in means
-ttest_significance <- 0.05 # % p-value
+ttest_significance <- 0.05 # p-value (*100 for %)
 
 # calc options
 calc_monhtly_and_annual_climatology <- F
@@ -33,7 +33,7 @@ pchs_filled_w_border <- c(21, 24, 22, 23)
 add_title <- F
 add_legend <- T
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-p <- myDefaultPlotOptions(plot_type="png", 
+p <- myDefaultPlotOptions(#plot_type="png", 
                           #plot_type="pdf"
                           #,family_png="Droid Sans Mono", 
                           #,family_pdf="Droid Sans Mono"
@@ -70,12 +70,12 @@ add_zeroline <- T
 add_unsmoothed <- F
 add_smoothed <- T
 add_sd <- F
-add_linear_trend <- T
+add_linear_trend <- F
 add_nonlinear_trend <- F
 add_1to1_line <- T
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
-scale_ts <- F
+scale_ts <- T
 ts_highlight_seasons <- list(#bool=T,
                              bool=F,
                              seasons=c("DJF", "MAM", "JJA", "SON"),
@@ -90,7 +90,7 @@ ts_highlight_seasons <- list(#bool=T,
                              suffix="_highlight_seasons") 
 show_first_data_point <- F
 ts_plot_each_setting_in_subplot <- F
-add_data_right_yaxis_ts <- T
+add_data_right_yaxis_ts <- F
 add_cor_data_left_and_right_ts <- F
 add_data_upper_xaxis_ts <- F
 add_data_right_yaxis_ts_mon <- F
@@ -315,7 +315,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- "taymyr_remapnn"
     #areas <- "emanda_remapnn"
     #areas <- "elgygytgyn_remapnn"
-    #areas <- "two-jurts_remapnn"
+    #areas <- "two-yurts_remapnn"
     #areas <- "kotokel_remapnn"
     #areas <- "moc26.5N"
     #levs <- "-0to-5420m"
@@ -367,7 +367,7 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (F) { # Hol-T with vs without orbital acceleration
+} else if (T) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_Hol-T", "cosmos-aso-wiso_Hol-Tx10")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")
@@ -404,8 +404,8 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- c("srad0d", "srad0d")
     #varnames_in <- c("albedo", "albedo")
     #varnames_in <- c("wisoaprt_d", "wisoaprt_d")
-    #varnames_in <- c("wisoaprt_d_post", "wisoaprt_d_post")
-    varnames_in <- c("lm_wisoaprt_d_post_as_time_slope", "lm_wisoaprt_d_post_as_time_slope")
+    varnames_in <- c("wisoaprt_d_post", "wisoaprt_d_post")
+    #varnames_in <- c("lm_wisoaprt_d_post_as_time_slope", "lm_wisoaprt_d_post_as_time_slope")
     levs <- c(2, 2)
     #varnames_in <- c("tsurfaprt", "tsurfaprt")
     #varnames_in <- c("lm_wisoaprt_d_sellevel_2_as_temp2", "lm_wisoaprt_d_sellevel_2_as_temp2")
@@ -452,14 +452,14 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("LSeaSouthmld", "LSeaSouthmld")
     #areas <- c("GINmld", "GINmld")
     #areas <- c("weddelmld", "weddelmld")
-    #areas <- c("ladoga_remapnn", "ladoga_remapnn")
+    areas <- c("ladoga_remapnn", "ladoga_remapnn")
     #areas <- c("shuchye_remapnn", "shuchye_remapnn")
     #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapnn")
     #areas <- c("taymyr_remapnn", "taymyr_remapnn")
     #areas <- c("emanda_remapnn", "emanda_remapnn")
     #areas <- c("kotokel_remapnn", "kotokel_remapnn")
     #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
-    #areas <- c("two-jurts_remapnn", "two-jurts_remapnn")
+    #areas <- c("two-yurts_remapnn", "two-yurts_remapnn")
     seasonsf <- rep("annual", t=2)
     #seasonsf <- rep("yearsum", t=2)
     #seasonsf <- rep("seassum", t=2)
@@ -483,7 +483,7 @@ if (F) { # awi-esm-1-1-lr hist
     #n_mas <- c(120*12, 20*12) # seasons
     #remove_mean_froms <- c(-179, 0)
     #remove_mean_tos <- c(-179, 0)
-    regboxes <- lapply(vector("list", l=2), base::append, list(regbox="NAsiberia"))
+    #regboxes <- lapply(vector("list", l=2), base::append, list(regbox="NAsiberia"))
 
 } else if (F) { # two vars of qu, qv, quv
     prefixes <- c("cosmos-aso-wiso_Hol-Tx10_wiso_mm", "cosmos-aso-wiso_Hol-Tx10_wiso_mm")
@@ -518,7 +518,7 @@ if (F) { # awi-esm-1-1-lr hist
     areas <- c("ladoga_remapnn", "ladoga_remapnn")
     #areas <- c("ladoga_remapnn", "ladogaLand_remapnn")
 
-} else if (T) { # positive/negative north pacific index NPI in Hol-T
+} else if (F) { # positive/negative north pacific index NPI in Hol-T
     models <- c("echam5", "echam5")
     prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm", "cosmos-aso-wiso_Hol-T_main_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_wiso_mm", "cosmos-aso-wiso_Hol-T_wiso_mm")
@@ -559,7 +559,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("taymyr_remapnn", t=2)
     #areas <- rep("emanda_remapnn", t=2)
     #areas <- rep("elgygytgyn_remapnn", t=2)
-    areas <- rep("two-jurts_remapnn", t=2)
+    areas <- rep("two-yurts_remapnn", t=2)
     #areas <- rep("kotokel_remapnn", t=2)
 
 # =====================================
@@ -714,7 +714,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("taymyr_remapnn", t=3)
     #areas <- rep("emanda_remapnn", t=3)
     #areas <- rep("elgygytgyn_remapnn", t=3)
-    #areas <- rep("two-jurts_remapnn", t=3)
+    #areas <- rep("two-yurts_remapnn", t=3)
     #areas <- rep("kotokel_remapnn", t=3)
     #levs <- rep(2, t=3)
     n_mas <- rep(100, t=3)
@@ -1153,7 +1153,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("taymyr_remapnn", t=5)
     #areas <- rep("emanda_remapnn", t=5)
     #areas <- rep("elgygytgyn_remapnn", t=5)
-    #areas <- rep("two-jurts_remapnn", t=5)
+    #areas <- rep("two-yurts_remapnn", t=5)
     #areas <- rep("kotokel_remapnn", t=5)
     #regboxes <- lapply(vector("list", l=5), base::append, list(regbox="N30-90"))
     regboxes <- lapply(vector("list", l=5), base::append, list(regbox="NAsiberia"))

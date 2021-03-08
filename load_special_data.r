@@ -147,7 +147,7 @@ if (T && file.exists(f)) {
                                    #text="Köhler et al. 2017 (paul)", 
                                    text="GHG forcing anomaly (Köhler et al. 2017)", 
                                    col="red", lty=2, lwd=1, pch=NA)
-    add_koehler_etal_2017_paul <- T
+    add_koehler_etal_2017_paul <- F
     message("set add_koehler_etal_2017_paul=", !add_koehler_etal_2017_paul, 
             " if you ", ifelse(add_koehler_etal_2017_paul, 
                                "dont want (or set add_data_right_yaxis_ts=F)", 
@@ -669,8 +669,8 @@ if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load hanno meyer et al. PLOT data from ", f)
     message("run read_meyer_etal_function() ...")
     #tmp <- read_meyer_etal_function(xlsx_file=f)
-    tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
-    #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
+    #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
+    tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
     #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
     #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
     #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
@@ -896,7 +896,7 @@ if (F && file.exists(ghcdn_csv[1])) {
             } else if (names(noaa_ghcdn)[i] == "RSM00030731_GORJACINSK_RS") {
                 noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(kotokel)=24 km")
             } else if (names(noaa_ghcdn)[i] == "RSM00032389_KLJUCHI_RS") {
-                noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(two-jurts)=72 km")
+                noaa_ghcdn[[i]]$text <- paste0("WMO ", d$STATION[1], "; dist(two-yurts)=72 km")
             }
         } # special legend labels
     } # for i ghdcn csv files; one file per station

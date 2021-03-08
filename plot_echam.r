@@ -1805,7 +1805,8 @@ for (i in 1:nsettings) {
             if (scale_ts) {
                 if (T) {
                     message("special diatom label")
-                    data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O diatom/precip (Index)"))
+                    #data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O diatom/precip (Index)"))
+                    data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O"["diatom/p,SMOW"], " [std. dev.]"))
                 } else {
                     data_infos[[i]][[vi]]$label <- expression(paste(delta^{18}, "O precip (Index)"))
                 }
@@ -6242,8 +6243,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     meyer_etal_tmp <- meyer_etal$data$"emanda"
                 } else if (all(grepl("elgygytgyn", areas))) {
                     meyer_etal_tmp <- meyer_etal$data$"elgygytgyn"
-                } else if (all(grepl("two-jurts", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data$"two-jurts"
+                } else if (all(grepl("two-yurts", areas))) {
+                    meyer_etal_tmp <- meyer_etal$data$"two-yurts"
                 } else if (all(grepl("kotokel", areas))) {
                     meyer_etal_tmp <- meyer_etal$data$"kotokel"
                 } else {
@@ -6264,7 +6265,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         # shuchye: c(-3.31588729672117, 5.07708695323018)
                         # emanda: c(-1.69386684350292, 0.902706467116598)
                         # elgygytgyn: c(-0.859484244878168, 0.837003798075255)
-                        # two-jurts: c(-2.05770537576561, 1.94485402526289)
+                        # two-yurts: c(-2.05770537576561, 1.94485402526289)
                         # kotokel: c(-4.32039527896077, 2.06724117367673)
                         message("special ylim")
                         ylim <- c(-4.32039527896077, 5.07708695323018)
@@ -6276,16 +6277,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         # emanda: c(-1.98885622964664, 2.40795779371568)
                         # kotokel: c(-3.08014665995613, 1.35190103264372)
                         # elgygytgyn: c(-1.47405790466153, 1.61041540752816)
-                        # two-jurts: c(-2.1518519172735, 2.0338372598759)
+                        # two-yurts: c(-2.1518519172735, 2.0338372598759)
                         # hol-t, hol-tx10; n_mas 250, 50
                         # ladoga: c(-2.85126486366215, 2.32484231975009)
                         # shuchye: c(-2.85992909997141, 2.44526416112507)
                         # emanda: c(-2.06748945256795, 2.55525657817665)
                         # kotokel: c(-2.60277676884169, 2.96409565621687)
                         # elgygytgyn: c(-2.37444352133196, 3.04432535587108)
-                        # two-jurts: c(-2.70199788713988, 3.21519386227393) 
-                        message("special ylim")
-                        ylim <- c(-3.08014665995613,3.215193862273933)
+                        # two-yurts: c(-2.70199788713988, 3.21519386227393) 
+                        message("special ylim: scale lims of 6 plot lakes incl. diatom data")
+                        ylim <- c(-3.08014665995613, 3.215193862273933)
                     }
                     message("ylim after: c(", ylim[1], ", ", ylim[2], ")")
                 } # if add_meyer_etal_xlsx
@@ -6308,7 +6309,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         noaa_ghcdn_tmp <- noaa_ghcdn$RSM00024671_TOMPO_RS
                     } else if (all(grepl("elgygytgyn", areas))) {
                         noaa_ghcdn_tmp <- noaa_ghcdn$RSM00025248_ILIRNEJ_RS
-                    } else if (all(grepl("two-jurts", areas))) {
+                    } else if (all(grepl("two-yurts", areas))) {
                         noaa_ghcdn_tmp <- noaa_ghcdn$RSM00032389_KLJUCHI_RS
                     } else if (all(grepl("kotokel", areas))) {
                         noaa_ghcdn_tmp <- noaa_ghcdn$RSM00030731_GORJACINSK_RS
@@ -6739,20 +6740,30 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 if (add_meyer_etal_xlsx) {
                     message("\nadd meyer et al. xlsx to datas legend ...")
-                    if (all(grepl("ladoga", areas))) le$pos <- "top"
-                    if (all(grepl("shuchye", areas))) le$pos <- "top"
+                    if (all(grepl("ladoga", areas))) le$pos <- "topleft"
+                    if (all(grepl("shuchye", areas))) le$pos <- "topright"
                     if (all(grepl("emanda", areas))) le$pos <- "topright"
-                    if (all(grepl("kotokel", areas))) le$pos <- "top"
-                    if (all(grepl("elgygytgyn", areas))) le$pos <- "top"
-                    if (all(grepl("two-jurts", areas))) le$pos <- "top"
+                    if (all(grepl("kotokel", areas))) le$pos <- "topleft"
+                    if (all(grepl("elgygytgyn", areas))) le$pos <- "bottomleft"
+                    if (all(grepl("two-yurts", areas))) le$pos <- "bottomleft"
                     if (all(grepl("kotokel", areas))) le$pos <- "bottom"
-                    le$cex <- 0.7
-                    le$text <- c(le$text, meyer_etal_tmp$text)
-                    le$col <- c(le$col, meyer_etal$col)
-                    le$lty <- c(le$lty, meyer_etal$lty)
-                    le$lwd <- c(le$lwd, meyer_etal$lwd)
-                    le$pch <- c(le$pch, meyer_etal$pch)
-                }
+                    #le$cex <- 0.7
+                    if (all(grepl("ladoga", areas))) { # add PLOT to legend
+                        message("--> add to model legend")
+                        le$text <- c(le$text, meyer_etal_tmp$text)
+                        le$col <- c(le$col, meyer_etal$col)
+                        le$lty <- c(le$lty, meyer_etal$lty)
+                        le$lwd <- c(le$lwd, meyer_etal$lwd)
+                        le$pch <- c(le$pch, meyer_etal$pch)
+                    } else { # replace legend with PLOT
+                        message("--> replace model legend")
+                        le$text <- meyer_etal_tmp$text
+                        le$col <- meyer_etal$col
+                        le$lty <- meyer_etal$lty
+                        le$lwd <- meyer_etal$lwd
+                        le$pch <- meyer_etal$pch
+                    }
+                } # if add_meyer_etal_xlsx
                 if (T && exists("noaa_ghcdn")) {
                     if (any(varname == c("temp2", "tsurf", "aprt"))) {
                         message("\nadd noadd ghcdn monthly data to legend ...")
