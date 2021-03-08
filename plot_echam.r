@@ -7190,6 +7190,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             message("\n", zname, " ", mode_p, " plot lon vs lat vs time ...")
 
+            # if 2 settings
             if (length(z) == 2) {
 
                 # calc t-test for differences of means of two 3d data lon vs lat vs time
@@ -7210,63 +7211,71 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                    conf.level=1 - ttest_significance)
                             if (ttest$p.value < ttest_significance) {
                                 ttest_mean[loni,lati] <- diff(ttest$estimate) # = mean(y) - mean(x)
-                                ttest_mean_lower[loni,lati] <- ttest$conf.int[1]
-                                ttest_mean_upper[loni,lati] <- ttest$conf.int[2]
+                                ttest_mean_lower[loni,lati] <- ttest$conf.int[1] # lower bound of (mean(y)-mean(x))
+                                ttest_mean_upper[loni,lati] <- ttest$conf.int[2] # upper bound
                             }
                         } # for lati
                     } # for loni
 
                     # save t-test result as netcdf
-                    fout <- paste0(inpaths[2], "/ttest_", ttest_alternative, "_", 
-                                   (1 - ttest_significance)*100, "pcnt_", # inpath = inpath of 2nd setting
-                                   paste(rev(paste0(names_short_p, "_", seasonsp_p, 
-                                                    "_", froms_plot_p, "_to_", tos_plot_p, "_n",
-                                                    sapply(d$time, length), "_",
-                                                    areas_p)), collapse="_minus_"), 
+                    varname_out <- paste0(varnames_in[2], "_minus_", varnames_in[1])
+                    path_out <- paste0(host$workpath, "/post/",
+                                       paste(rev(unique(models)), collapse="_minus_"), 
+                                       "/timmean/", varname_out)
+                    fout <- paste0(paste(rev(unique(paste0(prefixes, "_", models))), collapse="_minus_"),
+                                   "_timmean_", varname_out, "_", 
+                                   paste(rev(unique(paste0(areas_p, "_", seasonsp_p, "_", 
+                                                           fromsf, "-", tosf))), collapse="_minus_"), # update for fromsf_p, tosf_p
                                    ".nc")
-                    message("\nsave t-test nc ", fout , " ...")
+                    dir.create(path_out, recursive=T, showWarnings=F)
+                    if (file.exists(paste0(path_out, "/", fout))) file.remove(paste0(path_out, "/", fout))
+                    message("\nsave t-test nc ", path_out, "/", fout , " ...")
                     londim <- ncdim_def("lon", "degrees_east", d$lon[[1]]) 
                     latdim <- ncdim_def("lat", "degrees_north", d$lat[[1]])
                     ttest_mean_var <- ncvar_def(zname, data_infos[[2]][[zname]]$units,
                                                 list(londim, latdim),
-                                                longname=paste0(data_infos[[2]][[zname]]$long_name, " anomaly ",
-                                                                paste(rev(names_short_p), collapse=" minus ")))
+                                                longname=paste0(data_infos[[2]][[zname]]$long_name, " anomaly"))
                     ttest_mean_lower_var <- ttest_mean_upper_var <- ttest_mean_var
                     ttest_mean_lower_var$name <- paste0(ttest_mean_lower_var$name, "_lower_", 
                                                         (1 - ttest_significance)*100, "_conf") 
-                    ttest_mean_lower_var$longname <- paste0(ttest_mean_lower_var$longname, 
-                                                            " (lower ", (1 - ttest_significance)*100,
-                                                            " percent confidence)")
                     ttest_mean_upper_var$name <- paste0(ttest_mean_upper_var$name, "_upper_", 
                                                         (1 - ttest_significance)*100, "_conf") 
-                    ttest_mean_upper_var$longname <- paste0(ttest_mean_upper_var$longname, 
-                                                            " (upper ", (1 - ttest_significance)*100,
-                                                            " percent confidence)")
-                    ncout <- nc_create(fout, list(ttest_mean_var, ttest_mean_lower_var, ttest_mean_upper_var),
+                    ncout <- nc_create(paste0(path_out, "/", fout), 
+                                       list(ttest_mean_var, ttest_mean_lower_var, ttest_mean_upper_var),
                                        force_v4=T)
                     ncvar_put(ncout, ttest_mean_var, ttest_mean)
+                    ncatt_put(ncout, ttest_mean_var, "anomaly", 
+                              paste(rev(names_short_p), collapse=" minus "))
                     ncvar_put(ncout, ttest_mean_lower_var, ttest_mean_lower)
+                    ncatt_put(ncout, ttest_mean_lower_var, "anomaly", 
+                              paste(rev(names_short_p), collapse=" minus "))
                     ncvar_put(ncout, ttest_mean_upper_var, ttest_mean_upper)
+                    ncatt_put(ncout, ttest_mean_upper_var, "anomaly", 
+                              paste(rev(names_short_p), collapse=" minus "))
                     ncatt_put(ncout, 0, "History", 
                               paste0(date(), ": stats::t.test(x=", names_short[1], ", y=", names_short[2], 
                                      ", alternative=", ttest_alternative, ", conf.level=", 1-ttest_significance, ")"))
                     ncatt_put(ncout, 0, names_short[1], paste0(inpaths[1], "/", fnames[1]))
                     ncatt_put(ncout, 0, names_short[2], paste0(inpaths[2], "/", fnames[2]))
-                    nc_close(ncout) 
+                    ncatt_put(ncout, 0, paste0(names_short[1], "_n"), length(d$time[[1]]))
+                    ncatt_put(ncout, 0, paste0(names_short[2], "_n"), length(d$time[[2]]))
+                    ncatt_put(ncout, 0, "alternative", ttest_alternative)
+                    ncatt_put(ncout, 0, "conf.level", 1-ttest_significance)
+                    nc_close(ncout)
                     
                     
                     ## plot t-test result 
-                    plotname <- paste0(plotpath, "/", mode_p, "/", zname, "/",
-                                       "ttest_", ttest_alternative, "_", (1 - ttest_significance)*100, "pcnt_",
+                    plotname <- paste0(plotpath, "/timmean/", zname, "/",
                                        zname, "_", 
                                        paste(rev(paste0(names_short_p, "_", seasonsp_p, 
                                                     "_", froms_plot_p, "_to_", tos_plot_p, "_n",
                                                     sapply(d$time, length), "_",
                                                     areas_p)), collapse="_minus_"), 
-                                       plotname_suffix, ".", p$plot_type)
+                                       plotname_suffix, 
+                                       "_ttest_", ttest_alternative, "_", (1 - ttest_significance)*100, "pcnt",
+                                       ".", p$plot_type)
                     dir.create(dirname(plotname), recursive=T, showWarnings=F)
                     message("\nplot ", plotname, " ...")
-                    dir.create(dirname(plotname), recursive=T, showWarnings=F)
                     
                     # add stuff to plot
                     cmd_list <- segment_list <- polygon_list <- quiver_list <- NULL
