@@ -81,12 +81,6 @@ if (!all(sapply(exist_checks, exists))) {
          ifelse(length(which(missing_vars)) > 1, "s", ""),
          " \"", paste0(names(missing_vars)[missing_vars], collapse="\", \""), "\"")
 }
-if (any(file.access(datapaths, mode=4) != 0)) { # check read permission
-    nonreadable_paths <- which(file.access(datapaths, mode=2) != 0)
-    stop("\nnot existing/no permission to read of datapath", ifelse(length(nonreadable_paths) > 1, "s", ""),
-         " '", paste0(datapaths[nonreadable_paths], collapse="', '"), "'.")
-}
-datapaths <- normalizePath(datapaths)
 nsettings <- length(datapaths)
 #if (!exists("ftypes")) ftypes <- rep("f", t=nsettings)
 if (!exists("prefixes")) prefixes <- rep(NA, t=nsettings)
@@ -337,7 +331,75 @@ for (i in 1:nsettings) {
             if (!check) warning("something went wrong deleting file ", fout)
         }
 
-        # replace potential <pattern> in `fpatterns[i]`
+        # replace potential "<...>" strings in `datapaths[i]`
+        message("\ncheck `datapaths[", i, "]` =\n   \"", datapaths[i], "\"\nfor \"<...>\" patterns to replace ...")
+        sub_list <- NULL # default
+        pattern_inds_open <- gregexpr("<", datapaths[i])[[1]] # returns n inds if found or -1 
+        pattern_inds_closed <- gregexpr(">", datapaths[i])[[1]]
+        if (!all(pattern_inds_open == -1) || !all(pattern_inds_closed == -1)) {
+            if (length(pattern_inds_open) != length(pattern_inds_closed)) {
+                stop("in `datapaths[", i, "]` you provided ", length(pattern_inds_open), 
+                     " opening brackets \"<\" to indicate a file pattern to replace but ", 
+                     length(pattern_inds_closed), " closing brackets \">\". there must be a \"<\" for every \">\".")
+            }
+            n_patterns_per_file <- length(pattern_inds_open)
+            sub_list <- vector("list", l=n_patterns_per_file)
+            for (pati in seq_len(n_patterns_per_file)) {
+                pattern <- substr(datapaths[i], pattern_inds_open[pati], pattern_inds_closed[pati]) # pattern to replace with leading "<" and trailing ">"
+                sub_list[[pati]]$pattern <- pattern
+                sub_list[[pati]]$pattern_inds <- c(pattern_inds_open[pati], pattern_inds_closed[pati])
+                # special patterns: replace <YYYY*>, <MM*>, etc. with "*"
+                if (pattern %in% special_patterns) {
+                    message("   replace special pattern \"", pattern, "\" by \"?\"")
+                    sub_list[[pati]]$replacement <- "?"
+                    if (any(pattern == c("<YYYY>", "<YYYY_from>", "<YYYY_to>"))) {
+                        sub_list[[pati]]$replacement_times <- 4
+                    } else if (any(pattern == c("<MM>", "<MM_from>", "<MM_to>"))) {
+                        sub_list[[pati]]$replacement_times <- 2
+                    } else if (any(pattern == c("<DD>", "<DD_from>", "<DD_to>"))) {
+                        sub_list[[pati]]$replacement_times <- 2
+                    } else {
+                        stop("not pattern \"", pattern, "\" not defined yet")
+                    }
+                # all other patterns: replace <pattern> by value of object in the current work space named `pattern`
+                } else { 
+                    obj <- substr(pattern, 2, nchar(pattern)-1) # pattern string without leading "<" and trailing ">"
+                    if (exists(eval(obj))) { # variable with the name of the pattern exists
+                        eval(parse(text=paste0("length_of_obj <- length(", obj, ")")))
+                        if (length_of_obj == nsettings) { # assume that the entry of setting i should be replaced
+                            eval(parse(text=paste0("replacement <- ", obj, "[i]")))
+                        } else {
+                            eval(parse(text=paste0("replacement <- ", obj)))
+                        }
+                    } else { # no such a variable exists
+                        stop("   did not find an object named \"", obj, "\" to replace the pattern \"", 
+                             pattern, "\" in `datapaths[", i, "]`. dont know how to interpret this case.")
+                    }
+                    message("   replace pattern \"", pattern, "\" by \"", replacement, "\"")
+                    sub_list[[pati]]$replacement <- replacement
+                    #sub_list[[pati]]$replacement_times <- nchar(replacement)
+                    sub_list[[pati]]$replacement_times <- 1 # dont repeat replacement pattern in this default case
+                } # special or default <pattern>
+                sub_list[[pati]]$replacement <- paste(rep(sub_list[[pati]]$replacement, t=sub_list[[pati]]$replacement_times),
+                                                      collapse="")
+                sub_list[[pati]]$replacement_length <- nchar(sub_list[[pati]]$replacement)
+                sub_list[[pati]]$nchar_diff <- sub_list[[pati]]$replacement_length - nchar(sub_list[[pati]]$pattern)
+            } # for pati n <patterns> to replace
+
+            # apply replacements of patterns one by one (thats why `sub()` and not `gsub()`; the latter would replace all occurences at once)
+            datapath <- datapaths[i]
+            for (pati in seq_along(sub_list)) {
+                datapath <- sub(pattern=sub_list[[pati]]$pattern, replacement=sub_list[[pati]]$replacement, x=datapath)
+            }
+            message("   -> \"", datapath, "\"")
+        } else {
+            message("   no \"<...>\" strings detected in `datapaths[", i, "]` ...")
+            datapath <- datapaths[i]
+        } # if user provided "<...>" strings in datapaths
+        
+        datapath <- normalizePath(datapath)
+        
+        # replace potential "<...>" strings in `fpatterns[i]`
         message("\ncheck `fpatterns[", i, "]` =\n   \"", fpatterns[i], "\"\nfor \"<...>\" patterns to replace ...")
         sub_list <- NULL # default
         pattern_inds_open <- gregexpr("<", fpatterns[i])[[1]] # returns n inds if found or -1 
@@ -411,26 +473,27 @@ for (i in 1:nsettings) {
                 sub_list[[pati]]$replacement_inds[2] <- sub_list[[pati]]$replacement_inds[1] + sub_list[[pati]]$replacement_length - 1
             }
         } else {
-            message("   no \"<...>\" strings detected ...")
+            message("   no \"<...>\" strings detected in `fpatterns[", i, "]` ...")
             fpattern <- fpatterns[i]
-        } # if user provided <patterns>
+        } # if user provided "<...>" string in fpatterns
+        # this sublist based on `fpatterns[i]` will be used later
 
         # find files based on datapath and fpattern with potential <patterns> applied
         # todo: search for files and links and compare
         #cmd <- paste0("ls ", datapaths[i], "/", fpattern) 
         # --> this may result in `-bash: /bin/ls: Argument list too long`
-        #cmd <- paste0("find ", datapaths[i], " -type ", ftypes[i], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
-        cmd <- paste0("find ", datapaths[i], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
+        #cmd <- paste0("find ", datapath, " -type ", ftypes[i], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
+        cmd <- paste0("find ", datapath, " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
         # --> `find` does not have this limit 
         message("\nrun `", cmd, "` ...")
         ticcmd <- Sys.time()
         files <- system(cmd, intern=T)
         toccmd <- Sys.time()
-        if (length(files) == 0) stop("Zero files found. Are `datapaths` and `fpatterns` correct?")
+        if (length(files) == 0) stop("Zero files found. Is the `find`-command above correct?")
         elapsedcmd <- toccmd - ticcmd
         message("`find` of ", length(files), " files took ", elapsedcmd, " ", attributes(elapsedcmd)$units) 
 
-        if (datapaths[i] == "/ace/user/stschuet/Hol-T_echam5_wiso_links") {
+        if (datapath == "/ace/user/stschuet/Hol-T_echam5_wiso_links") {
             if (any(files == "Hol-T_echam5_wiso_link_555006")) {
                 message("\nspecial: remove Hol-T_echam5_wiso_link_555006 from steffens links ...")
                 files <- files[-which(files == "Hol-T_echam5_wiso_link_555006")]
@@ -495,14 +558,14 @@ for (i in 1:nsettings) {
                 message("\nno <YYYY*> or <MM*> patterns provided --> find years/months/etc. of based on `cdo showdate` of found files ...")
                 years_filenames <- vector("list", l=length(files))
                 for (fi in seq_along(files)) {
-                    cmd <- paste0(cdo, " showdate ", datapaths[i], "/", files[fi])
+                    cmd <- paste0(cdo, " showdate ", datapath, "/", files[fi])
                     message("run `", cmd, "`")
                     dates <- system(cmd, intern=T)
                     dates <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", dates, perl=T) # remove double and leading blanks
                     dates <- strsplit(dates, " ")[[1]]
                     if (verbose) {
                         message("\n", length(dates), " cdo dates of this file:")
-                        ht(dates, n=20)
+                        ht(dates, n=5)
                     }
                     years_filenames[[fi]] <- substr(dates, 1, 4)
                 }
@@ -761,8 +824,8 @@ for (i in 1:nsettings) {
         # get format of input files
         convert_to_nc <- F # default: no conversion to nc needed or wanted
         message("\nget input file format from first found file ...")
-        cmd <- paste0("cdo showformat ", datapaths[i], "/", files[1])
-        input_file_type <- cdo_get_filetype(paste0(datapaths[i], "/", files[1]))
+        cmd <- paste0("cdo showformat ", datapath, "/", files[1])
+        input_file_type <- cdo_get_filetype(paste0(datapath, "/", files[1]))
         # conversion is needed if:
         if ((input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) || # case1: wanted
             (input_file_type$file_type == "non-nc" && !is.null(new_date_list[[i]]))) { # case2: needed
@@ -819,23 +882,25 @@ for (i in 1:nsettings) {
             
             # 1st (faster) try: `cdo partab`
             if (T) {
-                cmd <- paste0(cdoprefix, " ", cdo_select_no_history, " partab ", datapaths[i], "/", files[1])
+                cmd <- paste0(cdoprefix, " ", cdo_select_no_history, " partab ", datapath, "/", files[1])
                 message("run `", cmd, "`")
                 check <- system(cmd, intern=T)
-                if (!is.na(codes[i])) { # code not provided
-                    teststring <- paste0("name=var", codes[i])
+                if (!is.na(codes[i])) { # code provided
+                    teststring <- c("name", "=", paste0("var", codes[i]))
                 } else {
-                    teststring <- paste0("name=", fvarnames[i])
+                    teststring <- c("name", "=", fvarnames[i])
                 }
-                if (!any(grepl(teststring, check))) { # requested variable not found in files[1]
-                    message("   teststring \"", teststring, "\" not found in partab")
-                    attributes(check) <- list(status=1)
+                attributes(check) <- list(status=1) # default: wanted variable not in file
+                for (linei in seq_along(check)) { # check if teststring is available
+                    if (all(sapply(teststring, grepl, check[linei]))) {
+                        attributes(check) <- list(status=0) # wanted variable is in file
+                    }
                 }
 
             # 2nd (slower) try: `cdo select`
             } else if (F) {
                 varcheck_file <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", files[1])
-                cmd <- paste0(cdoprefix, " ", cdoconvert, " ", cdoselect, " ", datapaths[i], "/", files[1], " ", varcheck_file)
+                cmd <- paste0(cdoprefix, " ", cdoconvert, " ", cdoselect, " ", datapath, "/", files[1], " ", varcheck_file)
                 message("run `", cmd, "`")
                 check <- system(cmd, intern=T)
                 if (clean) system(paste0("rm -v ", varcheck_file))
@@ -849,10 +914,10 @@ for (i in 1:nsettings) {
             }
             
 
-            if (!is.null(attributes(check))) { # requested variable not in first found file
+            if (attributes(check)$status == 1) { # requested variable not in first found file
 
                 message("--> requested variable \"", fvarnames[i], "\" was not found in first file:\n",
-                        "   \"", datapaths[i], "/", files[1], "\"")
+                        "   \"", datapath, "/", files[1], "\"")
 
                 # special case: requested variable is one of the wiso delta variables
                 #if (fvarnames[i] %in% known_wiso_d_vars$vars) {
@@ -1166,7 +1231,7 @@ for (i in 1:nsettings) {
                     # replace <files> with actual files
                     #files <- files[1:29355]
                     cmd_select_tmp <- gsub("<files>", 
-                                           paste(paste0(datapaths[i], "/", files), collapse=" "), 
+                                           paste(paste0(datapath, "/", files), collapse=" "), 
                                            cmd_select)
                     
                     # check if cmd_select command is longer than cdo_nchar_max_arglist = 2612710
@@ -1177,7 +1242,7 @@ for (i in 1:nsettings) {
                         # find maximum number of files per chunk
                         message("--> this is longer than `cdo_nchar_max_arglist` = ", cdo_nchar_max_arglist, 
                                 " and would yield the error \"Argument list too long\"")
-                        nchar_needed_per_file <- nchar(paste0(datapaths[i], "/", files[1], " "))
+                        nchar_needed_per_file <- nchar(paste0(datapath, "/", files[1], " "))
                         nchar_wout_files <- nchar(gsub("<files>", "", cmd_select))
                         nchar_avail <- cdo_nchar_max_arglist - nchar_wout_files
                         nfiles_per_chunk <- floor(nchar_avail/nchar_needed_per_file)
@@ -1215,7 +1280,7 @@ for (i in 1:nsettings) {
                             selfile_vec[select_chunki] <- gsub(".nc", paste0("_chunk_", select_chunki, "_of_", nchunks, ".nc"), selfile)
                             fout_vec[select_chunki] <- gsub(".nc", paste0("_chunk_", select_chunki, "_of_", nchunks, ".nc"), fout)
                             cmd_select_chunki <- gsub("<files>", 
-                                                      paste(paste0(datapaths[i], "/", files[inds_chunki]), collapse=" "), 
+                                                      paste(paste0(datapath, "/", files[inds_chunki]), collapse=" "), 
                                                       cmd_select)
                             cmd_select_chunki <- gsub(selfile, selfile_vec[select_chunki], cmd_select_chunki)
                             cmd_select_list[[select_chunki]]$n <- length(inds_chunki)
@@ -1274,7 +1339,7 @@ for (i in 1:nsettings) {
                     message("run `", cmd, "`")
                     
                     # check if cmd command is longer than cdo_nchar_max_arglist = 2612710
-                    cmd_tmp <- gsub("<files>", paste(paste0(datapaths[i], "/", files), collapse=" "), cmd)
+                    cmd_tmp <- gsub("<files>", paste(paste0(datapath, "/", files), collapse=" "), cmd)
                     nchar_cmd <- nchar(substr(cmd_tmp, start=nchar(cdo) + 1, stop=nchar(cmd_tmp))) 
                     message("\n", "cdo argument list is ", nchar_cmd, " characters long")
                     
@@ -1613,7 +1678,7 @@ for (i in 1:nsettings) {
                                     }
 
                                     # special case
-                                    if (datapaths[i] == "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" &&
+                                    if (datapath == "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" &&
                                         fpatterns[i] == "fort.75_fort_<YYYY>0101_<YYYY>1231.nc") { # daily moc data
                                         message("\nfix special case manually:\n",
                                                 "6 years occur twice in annual fort.75* files of Hol-T2 ",
@@ -1645,7 +1710,7 @@ for (i in 1:nsettings) {
                                                                                 dates_in_list[[chunki]]$days)
                                         #years_in_chunki <- unique(dates_in_list[[chunki]]$years)
 
-                                    } else if (datapaths[i] == "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" &&
+                                    } else if (datapath == "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" &&
                                                fpatterns[i] == "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc") { # monthly moc data
                                         message("\nfix special case manually:\n",
                                                 "6 years occur twice in annual fort.75* files of Hol-T2 ",
@@ -2205,46 +2270,80 @@ for (i in 1:nsettings) {
     }
 
     # run special functions in the end    
-    if (models[i] == "mpiom1" && any(fvarnames[i] == c("amoc", "gmoc"))) { # run mpiom_moc_make_bottom_topo()
-            
-        message("\n`models[", i, "]` = \"", models[i], "\" and `fvarnames[", i, "]` = ",
-                "\"", fvarnames[i], "\" --> run mpiom_moc_make_bottom_topo() ...")
+    if (models[i] == "mpiom1") {
         
-        cmd <- "mpiom_moc_make_bottom_topo(cdo=cdo, varname=fvarnames[i], fin=fout, fout=fout"
-        if (exists("mpiom_moc_make_bottom_topo_arg_list")) {
-            for (argi in seq_along(mpiom_moc_make_bottom_topo_arg_list[[i]])) {
-                cmd <- paste0(cmd, ", ", 
-                              names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi], 
-                              "=mpiom_moc_make_bottom_topo_arg_list[[", i, "]]$",
-                              names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi])
+        # run mpiom_remap2lonlat() function on timmean output
+        if (modes[i] == "timmean") {
+            message("\n`models[", i, "]` = \"", models[i], "\" and `modes[", i, "]` = ",
+                    "\"", modes[i], "\" --> try to run mpiom_remap2lonlat() ...")
+            
+            cmd <- "mpiom_remap2lonlat(files=fout, cdo=cdo"
+            message("check if `mpiom_remap2lonlat_arg_list[[", i, "]]` is provided ...")
+            if (exists("mpiom_remap2lonlat_arg_list")) {
+                if (!is.null(mpiom_remap2lonlat_arg_list[[i]])) {
+                    for (argi in seq_along(mpiom_remap2lonlat_arg_list[[i]])) {
+                        cmd <- paste0(cmd, ", ", 
+                                      names(mpiom_remap2lonlat_arg_list[[i]])[argi], 
+                                      "=mpiom_remap2lonlat_arg_list[[", i, "]]$",
+                                      names(mpiom_remap2lonlat_arg_list[[i]])[argi])
+                    }
+                } else {
+                    message("--> mpiom_remap2lonlat_arg_list exists but mpiom_remap2lonlat_arg_list[[",
+                            i, "]] is empty")
+                }
+            } else {
+                message("--> does not exist")
             }
-        }
-        cmd <- paste0(cmd, ")")
-        message("run `", cmd, "`")
-        eval(parse(text=cmd))
+            cmd <- paste0(cmd, ")")
+            message("run `", cmd, "`")
+            eval(parse(text=cmd))
 
-        # get moc time series if not timmean
-        if (modes[i] != "timmean") {
+        } # interp result if modes[i] == "timmean"
 
-            message("\n`modes[", i, "] = \"", modes[i], "\" != \"timmean", 
-                    "\" --> get moc time series --> run mpiom_moc_extract_ts() ...")
-           
-            cmd <- "mpiom_moc_extract_ts(fin=fout"
-            if (exists("mpiom_moc_extract_ts_arg_list")) {
-                for (argi in seq_along(mpiom_moc_extract_ts_arg_list[[i]])) {
+        if (any(fvarnames[i] == c("amoc", "gmoc"))) { # run mpiom_moc_make_bottom_topo()
+            
+            # run mpiom_moc_make_bottom_topo() function 
+            message("\n`models[", i, "]` = \"", models[i], "\" and `fvarnames[", i, "]` = ",
+                    "\"", fvarnames[i], "\" --> run mpiom_moc_make_bottom_topo() ...")
+            
+            cmd <- "mpiom_moc_make_bottom_topo(cdo=cdo, varname=fvarnames[i], fin=fout, fout=fout"
+            if (exists("mpiom_moc_make_bottom_topo_arg_list")) {
+                for (argi in seq_along(mpiom_moc_make_bottom_topo_arg_list[[i]])) {
                     cmd <- paste0(cmd, ", ", 
-                                  names(mpiom_moc_extract_ts_arg_list[[i]])[argi], 
-                                  "=mpiom_moc_extract_ts_arg_list[[", i, "]]$",
-                                  names(mpiom_moc_extract_ts_arg_list[[i]])[argi])
+                                  names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi], 
+                                  "=mpiom_moc_make_bottom_topo_arg_list[[", i, "]]$",
+                                  names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi])
                 }
             }
             cmd <- paste0(cmd, ")")
             message("run `", cmd, "`")
             eval(parse(text=cmd))
 
-        } # if modes[i] != "timmean"
+            # get moc time series if not timmean
+            if (modes[i] != "timmean") {
 
-    } # if mpiom1 and *moc
+                message("\n`modes[", i, "] = \"", modes[i], "\" != \"timmean", 
+                        "\" --> get moc time series --> run mpiom_moc_extract_ts() ...")
+               
+                cmd <- "mpiom_moc_extract_ts(fin=fout"
+                if (exists("mpiom_moc_extract_ts_arg_list")) {
+                    for (argi in seq_along(mpiom_moc_extract_ts_arg_list[[i]])) {
+                        cmd <- paste0(cmd, ", ", 
+                                      names(mpiom_moc_extract_ts_arg_list[[i]])[argi], 
+                                      "=mpiom_moc_extract_ts_arg_list[[", i, "]]$",
+                                      names(mpiom_moc_extract_ts_arg_list[[i]])[argi])
+                    }
+                }
+                cmd <- paste0(cmd, ")")
+                message("run `", cmd, "`")
+                eval(parse(text=cmd))
+
+            } # if modes[i] != "timmean"
+
+        } # if *moc
+    
+    } # which model
+    # finished running model-dependent stuff in the end
 
     toc <- Sys.time()
     elapsed[[i]] <- toc - tic

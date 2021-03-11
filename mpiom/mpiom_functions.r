@@ -1,24 +1,27 @@
 # r
 
-mpiom_remap2lonlat <- function(files, cdo_select="", outpath, fout_rename_pattern, 
+mpiom_remap2lonlat <- function(files, cdo_select="", 
                                mpiom_model_grid="GR30s.nc",
                                reg_res=c(nlon=360, nlat=180),
                                remap_method="remapcon2",
-                               cdo="cdo", convert2nc=T, verbose=T) {
+                               outpath, fout_rename_pattern, 
+                               cdo=Sys.which("cdo"), 
+                               convert2nc=T, verbose=T) {
     
     # todo: cdo_get_filetype() dependence from `functions` repo
     library(stringr)
 
     if (missing(files) || !is.character(files)) {
         stop("provide `files=\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\"` or\n",
-             "`files=c(\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\", \"/path/to/expd_mpiom_ZZZZ10101_ZZZZ1231.nc\")`")
+             "`files=c(\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\", ",
+             "\"/path/to/expd_mpiom_ZZZZ10101_ZZZZ1231.nc\")`")
     }
     
     if (missing(outpath)) {
         outpath <- dirname(files[1])
         if (verbose) {
-            message("`outpath` not given, use dirname(files[1]=\"", 
-                    files[1], "\") = \"", outpath, "\"")
+            message("`outpath` not given, use `dirname(files[1] = \"", 
+                    files[1], "\")` = \"", outpath, "\"")
         }
     } else {
         if (length(outpath) != 1) {
@@ -33,8 +36,12 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath, fout_rename_patter
         }
     }
 
-    if (fout_rename_pattern == "") {
-        stop("`fout_rename_pattern` is empty string. dont know how to rename input file")
+    if (missing(fout_rename_pattern)) {
+        stop("provide `fout_rename_pattern` of type character")
+    } else {
+        if (!is.character(fout_rename_pattern)) {
+            stop("provided `fout_rename_pattern` must be of type character")
+        }
     }
 
     for (fi in seq_along(files)) {
@@ -64,7 +71,7 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath, fout_rename_patter
         }
         cmd <- paste0(cmd ," -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
                       " -setgrid,", mpiom_model_grid)
-        
+            
         # variable selection before remapping
         if (cdo_select != "") {
             if (!grepl("select", cdo_select)) {
@@ -85,14 +92,14 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath, fout_rename_patter
             tmp <- stringr::str_replace_all(tmp, "=", "_")
             fout <- paste0(fout, "_", tmp)
             # edit output filename
-            fout <- gsub(fout_rename_pattern, 
-                         paste0(fout_rename_pattern, "_", tmp, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"]),
-                         fout)
+            fout <- sub(fout_rename_pattern, 
+                        paste0(fout_rename_pattern, "_", tmp, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"]),
+                        fout)
         } else {
             # edit output filename
-            fout <- gsub(fout_rename_pattern, 
-                         paste0(fout_rename_pattern, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"]),
-                         fout)
+            fout <- sub(fout_rename_pattern, 
+                        paste0(fout_rename_pattern, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"]),
+                        fout)
         } # cdo_select or not
 
         # run command with final output filename
@@ -121,7 +128,8 @@ mpiom_remap2lonlat <- function(files, cdo_select="", outpath, fout_rename_patter
 } # mpiom_remap2lonlat
 
 
-mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, cdo="cdo", verbose=T) {
+mpiom_ext_to_nc <- function(ext_files, partab_ext, outpath, 
+                            cdo=Sys.which("cdo"), verbose=T) {
 
     if (missing(ext_files) || !is.character(ext_files)) {
         stop("provide `ext_files=\"/path/to/TIMESER.YYYY0101_YYYY1231.ext\"` or\n",
