@@ -20,7 +20,7 @@ host <- get_host()
 if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
     message("\nload ", host$homepath, "/functions/myfunctions.r ...")
     source(paste0(host$homepath, "/functions/myfunctions.r"))
-    # post_echam.r needs the myfunctions.r functions: 
+    # dependencies: 
     # ht(), make_posixlt_origin(), is.leap(), tryCatch.W.E(), identical_list(), cdo_get_filetype()
 } else {
     stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
@@ -103,6 +103,8 @@ if (!exists("areas_out")) {
         areas_out <- rep("global", t=nsettings)
     }
 }
+if (!exists("cdoshifttimes")) cdoshifttimes <- rep("", t=nsettings)
+
 # check if postpaths can be created/have writing rights
 if (!exists("postpaths")) {
     postpaths <- paste(host$workpath, "post", models, modes, fvarnames, sep="/")
@@ -514,9 +516,12 @@ for (i in 1:nsettings) {
             }
         }
         
-        # identify years/months/etc. of found files based on <YYYY*>, <MM*>, etc. patterns if given or, alternatively, based on `cdo showdate`
+        # identify years/months/etc. of found files based on <YYYY*>, <MM*>, etc. 
+        # patterns if given or, alternatively, based on `cdo showdate`
         if (any(special_patterns %in% sapply(sub_list, "[[", "pattern"))) {
-            message("\nfind years/months/etc. of based on <YYYY*>, <MM*>, etc. patterns of found files ...")
+            message("\nfind years/months/etc. based on `special_patterns`=\n",
+                    paste(paste0("   \"", special_patterns), collapse="\"\n"), "\"\n",
+                    "of found files ...")
             
             special_patterns_in_filenames <- special_patterns[which(special_patterns %in% sapply(sub_list, "[[", "pattern"))]
             for (pati in seq_along(special_patterns_in_filenames)) {
@@ -538,8 +543,11 @@ for (i in 1:nsettings) {
                         years_filenames_to <- as.integer(df$YYYY_to)
                     } else if (special_patterns_in_filenames[pati] == "<MM>") {
                         months_filenames <- as.integer(df$MM)
+                    } else if (special_patterns_in_filenames[pati] == "<MM_from>") {
+                        months_filenames_from <- as.integer(df$MM_from)
+                    } else if (special_patterns_in_filenames[pati] == "<MM_to>") {
+                        months_filenames_to <- as.integer(df$MM_to)
                     }
-                    # todo: MM_from, MM_to
                 } else {
                     message("pattern \"", special_patterns_in_filenames[pati], "\" occurs ", length(pattern_list), 
                             " times in `fpatterns[", i, "]` but their respective values differ from each other:")
@@ -724,7 +732,7 @@ for (i in 1:nsettings) {
         if (season_names[i] != "Jan-Dec" && season_names[i] != "annual") {
             message("\n", "season_inds = ", paste(season_inds[[i]], collapse=","), 
                     " -> season = ", season_names[i])
-            if (grepl("<MM>", fpatterns[i])) { # <MM> is in fpatterns
+            if (grepl("<MM>", fpatterns[i])) { # <MM> given per file
                 file_season_inds <- which(months_filenames %in% season_inds[[i]])
                 if (length(file_season_inds) == 0) { # no files in wanted season 
                     stop("no files found at season_inds = ", paste(season_inds[[i]], collapse=","), 
@@ -737,8 +745,11 @@ for (i in 1:nsettings) {
                 months_filenames <- months_filenames[-outside_years_inds]
                 if (verbose > 0) ht(df)
 
-            } else { # <MM> is not in fpatterns
-                cmd <- paste0("cdo ", cdo_silent, " showmon ", files[1])
+            #} else if (grepl("<MM_from>", fpatterns[i])) {
+            #    # this does not help?
+
+            } else { # no "<MM>" string in `fpatterns[i]`
+                cmd <- paste0("cdo ", cdo_silent, " showmon ", datapath, "/", files[1])
                 message("run `", cmd, "`")
                 months_per_file <- system(cmd, intern=T)
                 if (months_per_file != "") {
@@ -748,15 +759,13 @@ for (i in 1:nsettings) {
                 if (length(months_per_file) == 1 && months_per_file == "") { # `cdo showmon` was not successfull
                     stop("input files do not have proper time axis. not implemented yet")
                 }
-                message("determined months_per_file = ", paste(months_per_file, collapse=","), " (by `cdo showmon`)")
+                months_per_file <- as.integer(months_per_file)
                 selmon_season_inds <- which(months_per_file %in% season_inds[[i]])
-                if (length(selmon_season_inds) == 0) { # no files in wanted season 
-                    stop("wanted season_inds = ", paste(season_inds[[i]], collapse=","), 
-                         " not found in determined seasons ", paste(months_per_file, collapse=","), 
-                         " (by `cdo showmon`) in files[1] = ", files[1], ".")
+                if (length(selmon_season_inds) == 0) { # no files in wanted season
+                    stop("found zero ", season_name, " months in this file")
                 }
-                cdoselmon <- paste0("-selmon,", paste(months_per_file[selmon_season_inds], collapse=",")) 
-                message("to do: add `", cdoselmon, "` to cdo command ...")
+                cdoselmon <- paste0("-selmon,", paste(season_inds[[i]], collapse=",")) 
+                message("--> defined `cdoselmon = \"", cdoselmon, "\"")
 
             } # if <MM> is given in fpatterns or not
         } # if season_name != "Jan_Dec"
@@ -884,21 +893,37 @@ for (i in 1:nsettings) {
             if (T) {
                 cmd <- paste0(cdoprefix, " ", cdo_select_no_history, " partab ", datapath, "/", files[1])
                 message("run `", cmd, "`")
-                check <- system(cmd, intern=T)
-                if (!is.na(codes[i])) { # code provided
-                    teststring <- c("name", "=", paste0("var", codes[i]))
-                } else {
-                    teststring <- c("name", "=", fvarnames[i])
-                }
-                attributes(check) <- list(status=1) # default: wanted variable not in file
-                for (linei in seq_along(check)) { # check if teststring is available
-                    if (all(sapply(teststring, grepl, check[linei]))) {
-                        attributes(check) <- list(status=0) # wanted variable is in file
+                var_exist <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
+                if (!is.null(var_exist$warning)) { # `cdo partab` yields warn/error
+                    # use `ncks -m` instead
+                    ncks <- Sys.which("ncks")
+                    cmd <- paste0(ncks, " -m ", datapath, "/", files[1])
+                    message("run `", cmd, "`")
+                    var_exist <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
+                    if (!is.na(codes[i])) {
+                        stop("implement")
+                    } else {
+                        teststring <- paste0(" ", fvarnames[i], "\\(")
                     }
+                } else { # `cdo partab` success
+                    stop("update")
+                    if (!is.na(codes[i])) { # code provided
+                        teststring <- paste0("name = var", codes[i])
+                    } else {
+                        teststring <- paste0("name = ", fvarnames[i])
+                    }
+                }
+                var_exist <- var_exist$value 
+                var_exist <- gsub("\\s+", " ", var_exist)
+                if (any(grepl(teststring, var_exist))) {
+                    var_exist <- T # wanted variable is in file
+                } else {
+                    var_exist <- F
                 }
 
             # 2nd (slower) try: `cdo select`
             } else if (F) {
+                stop("update for var_exist")
                 varcheck_file <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", files[1])
                 cmd <- paste0(cdoprefix, " ", cdoconvert, " ", cdoselect, " ", datapath, "/", files[1], " ", varcheck_file)
                 message("run `", cmd, "`")
@@ -910,11 +935,11 @@ for (i in 1:nsettings) {
 
             if (F) { # for testing
                 message("\n*********** for testing set variable to not found ************\n")
-                attributes(check) <- list(status=1)
+                var_exist <- F
             }
             
 
-            if (attributes(check)$status == 1) { # requested variable not in first found file
+            if (!var_exist) { # requested variable not in first found file
 
                 message("--> requested variable \"", fvarnames[i], "\" was not found in first file:\n",
                         "   \"", datapath, "/", files[1], "\"")
@@ -1044,7 +1069,7 @@ for (i in 1:nsettings) {
                
 
             # else if requested variable was found in first found file (the default)
-            } else { 
+            } else if (var_exist) { 
                 
                 own_cmd <- F
 
@@ -1116,6 +1141,39 @@ for (i in 1:nsettings) {
                 } # if areas_out != "global" 
 
                 # cdoselyear defined earlier
+
+                ## shifttime 
+                cdoshifttime <- "" # default: not shifttime
+                if (cdoshifttimes[i] != "") {
+                    # derive dt if shifttime is wanted
+                    message("\nprovided `cdoshifttimes[", i, "]` = \"", cdoshifttimes[i], "\"")
+                    if (grepl("dt", cdoshifttimes[i])) {
+                        message("--> detected \"dt\" --> get frequency of input files ...")
+                        cmd <- paste0(cdo, " showtimestamp ", datapath, "/", files[1])
+                        dates <- system(cmd, intern=T)
+                        dates <- trimws(dates)
+                        dates <- gsub("\\s+", " ", dates)
+                        dates <- strsplit(dates, " ")[[1]]
+                        dt <- difftime(dates[2:length(dates)], dates[1:(length(dates)-1)], units="secs")
+                        dt <- unique(dt)
+                        if (all(dt == 86400)) {
+                            frequency <- "daily"
+                            attributes(frequency)$units <- "day"
+                        } else if (all(match(dt, c(2419200, 2548800, 2592000, 2635200, 2678400)))) {
+                            frequency <- "monthly"
+                            attributes(frequency)$units <- "month"
+                        } else {
+                            stop("dt = ", paste(dt, collapse=", "), " secs unknown")
+                        }
+                        # overwrite "dt" placeholder with actual frequency
+                        message("--> dt = ", dt, " secs --> frequency is ", frequency)
+                        message("--> replace \"dt\" in cdoshifttimes[", i, "]` = ", 
+                                cdoshifttimes[i], " with \"", attributes(frequency)$units, "\" ...")
+                        cdoshifttimes[i] <- sub("dt", attributes(frequency)$units, cdoshifttimes[i])
+                    } # if "dt" is in provided `cdoshifttimes[i]`
+                    cdoshifttime <- paste0("-shifttime,", cdoshifttimes[i])
+                    message("--> `cdoshifttime` = ", cdoshifttime)
+                } # if cdoshifttime is provided
 
                 # add further cdo chain commands here
                 # ...
@@ -1199,6 +1257,11 @@ for (i in 1:nsettings) {
                     
                     # check for further calculation commands if wanted
                     # ...
+                    
+                    # shifttime after variable selection
+                    if (cdoshifttime != "") {
+                        cmd_calc <- paste0(cmd_calc, " ", cdoshifttime)
+                    }
                     
                     # end of calculation: put prefix and in/out
                     if (cmd_calc != "") {
@@ -1328,7 +1391,7 @@ for (i in 1:nsettings) {
                                   " ", cdocalc, " ", 
                                   cdosellevel, " ", cdoselarea, " ", 
                                   cdoselmon, " ", cdoselyear, " ",  
-                                  cdoselect, " ", 
+                                  cdoshifttime, " ", cdoselect, " ",
                                   " <files> ", fout)
                     if (F) {
                         cmd <- paste0(cmd, " || echo error")
@@ -2278,9 +2341,10 @@ for (i in 1:nsettings) {
                     "\"", modes[i], "\" --> try to run mpiom_remap2lonlat() ...")
             
             cmd <- "mpiom_remap2lonlat(files=fout, cdo=cdo"
-            message("check if `mpiom_remap2lonlat_arg_list[[", i, "]]` is provided ...")
+            message("check if `mpiom_remap2lonlat_arg_list[[", i, "]]` is provided ... ", appendLF=F)
             if (exists("mpiom_remap2lonlat_arg_list")) {
                 if (!is.null(mpiom_remap2lonlat_arg_list[[i]])) {
+                    message("yes! --> use its components ...")
                     for (argi in seq_along(mpiom_remap2lonlat_arg_list[[i]])) {
                         cmd <- paste0(cmd, ", ", 
                                       names(mpiom_remap2lonlat_arg_list[[i]])[argi], 
@@ -2288,14 +2352,13 @@ for (i in 1:nsettings) {
                                       names(mpiom_remap2lonlat_arg_list[[i]])[argi])
                     }
                 } else {
-                    message("--> mpiom_remap2lonlat_arg_list exists but mpiom_remap2lonlat_arg_list[[",
-                            i, "]] is empty")
+                    message("yes! but mpiom_remap2lonlat_arg_list[[", i, "]] is empty")
                 }
             } else {
-                message("--> does not exist")
+                message("no! --> use defaults")
             }
             cmd <- paste0(cmd, ")")
-            message("run `", cmd, "`")
+            message("run `", cmd, "` ...")
             eval(parse(text=cmd))
 
         } # interp result if modes[i] == "timmean"

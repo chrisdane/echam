@@ -72,8 +72,8 @@ if (F) { # old hist
 
 } else if (T) { # cmip6
     #models <- "echam6"
-    models <- "mpiom1"
-    #models <- "fesom"
+    #models <- "mpiom1"
+    models <- "fesom"
     # awi-cm-1-1-lr
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/PI-CTRL_nodynveg2/outdata/echam"
     #datapaths <- "/work/ab0995/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/PI-CTRL_nodynveg2/outdata/echam"
@@ -82,10 +82,13 @@ if (F) { # old hist
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/4CO2/outdata/echam"
     # awi-esm-1-1-lr
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
-    #datapaths <- "/work/ab0995/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/outdata/echam"
+    #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/outdata/fesom"
+    #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/fesom"
+    #cdoshifttimes <- "-1dt"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/day/<fvarnames>/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/<fvarnames>/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Omon/<fvarnames>/gn/v20200212"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/SImon/<fvarnames>/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Emon/<fvarnames>/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/historical/r1i1p1f1/3hr/<fvarnames>/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/historical/r1i1p1f1/6hrPlev/<fvarnames>/gn/v20200212"
@@ -100,29 +103,38 @@ if (F) { # old hist
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/PMIP/AWI/AWI-ESM-1-1-LR/lgm/r1i1p1f1/Omon/<fvarnames>/gn/v20200212"
     # awi-cm-1-2-lr
     #datapaths <- "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_HIST/outdata/echam"
-    # awi-cm-1-1-mr
+    # awi-cm-1-1-mr; piControl: 2401-2900; piControl-2650-2799 = deck-1850-1999
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/historical/r1i1p1f1/day/<fvarnames>/gn/v20181218"
-    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Amon/<fvarnames>/gn/v20191015" # piControl 1850-1999: 2650-2799
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/Amon/<fvarnames>/gn/v20191015" 
+    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/SImon/<fvarnames>/gn/v20181218/"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/piControl/r1i1p1f1/SImon/<fvarnames>/gn/v20191015"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/historical/r1i1p1f1/Amon/<fvarnames>/gn/v20200720"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/1pctCO2/r1i1p1f1/Amon/<fvarnames>/gn/v20191015"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-CM-1-1-MR/abrupt-4xCO2/r1i1p1f1/Amon/<fvarnames>/gn/v20191015"
     # mpi-esm1-2-lr
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Omon/<fvarnames>/gn/v20190710"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/SImon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/historical/r1i1p1f1/day/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/historical/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/historical/r1i1p1f1/Omon/<fvarnames>/gn/v20190710/"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/1pctCO2/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/1pctCO2/r1i1p1f1/Omon/<fvarnames>/gn/v20190710"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/1pctCO2/r1i1p1f1/SImon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/abrupt-4xCO2/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
     # mpi-esm1-2-hr
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/piControl/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/piControl/r1i1p1f1/Omon/<fvarnames>/gn/v20190710"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/piControl/r1i1p1f1/SImon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/historical/r1i1p1f1/day/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/historical/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/1pctCO2/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
-    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/1pctCO2/r1i1p1f1/Omon/<fvarnames>/gn/v20190710"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/1pctCO2/r1i1p1f1/Omon/<fvarnames>/gn/v20190710"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/1pctCO2/r1i1p1f1/SImon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/abrupt-4xCO2/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
+    # awi-esm-1-1-lr
+    #fpatterns <- "PI-CTRL6_fesom_<fvarnames>_<YYYY>0101.nc"
+    #fpatterns <- "1percCO2_fesom_<fvarnames>_<YYYY>0101.nc"
     #fpatterns <- "historical_echam6_echamday_<YYYY><MM>.grb"
     #fpatterns <- "<fvarnames>_day_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
     #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
@@ -139,25 +151,33 @@ if (F) { # old hist
     #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_day_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
     #fpatterns <- "<fvarnames>_Omon_AWI-ESM-1-1-LR_lgm_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    # awi-cm-1-1-mr
     #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
+    fpatterns <- "<fvarnames>_SImon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_day_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<YYYY>0101-<YYYY>1231.nc"
     #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_abrupt-4xCO2_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
+    # mpi-esm1-2-lr
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_day_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
     #fpatterns <- "<fvarnames>_day_MPI-ESM1-2-HR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_abrupt-4xCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    # mpi-esm1-2-hr
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_abrupt-4xCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "PI-CTRL_nodynveg2_echam6_echam_<YYYY><MM>.grb"
     #fpatterns <- "PI-CTRL_nodynveg2_fesom_<fvarnames>_<YYYY>0101.nc"
@@ -175,21 +195,22 @@ if (F) { # old hist
     #prefixes <- "awi-cm-1-1-lr_1percCO2"
     #prefixes <- "awi-cm-1-1-lr_4CO2"
     #prefixes <- "awi-esm-1-1-lr_piControl"
+    #prefixes <- "awi-esm-1-1-lr_piControl_day"
+    #prefixes <- "awi-esm-1-1-lr_piControl_Eday"
+    #prefixes <- "awi-esm-1-1-lr_piControl_SIday"
+    #prefixes <- "awi-esm-1-1-lr_piControl_mistral_esm"
     #prefixes <- "awi-esm-1-1-lr_historical_3hr"
     #prefixes <- "awi-esm-1-1-lr_historical_6hrPlev"
     #prefixes <- "awi-esm-1-1-lr_historical_6hrLev"
     #prefixes <- "awi-esm-1-1-lr_historical_day"
     #prefixes <- "awi-esm-1-1-lr_historical_AERmon"
     #prefixes <- "awi-esm-1-1-lr_historical_Amon"
-    #prefixes <- "awi-esm-1-1-lr_piControl_day"
-    #prefixes <- "awi-esm-1-1-lr_piControl_Eday"
-    #prefixes <- "awi-esm-1-1-lr_piControl_SIday"
-    #prefixes <- "awi-esm-1-1-lr_piControl_mistral_esm"
+    #prefixes <- "awi-esm-1-1-lr_1percCO2"
     #prefixes <- "awi-esm-1-2-lr_historical"
     #prefixes <- "awi-esm-1-1-lr_midHolocene"
     #prefixes <- "awi-esm-1-1-lr_midHolocene_day"
     #prefixes <- "awi-esm-1-1-lr_lgm"
-    #prefixes <- "awi-cm-1-1-mr_piControl"
+    prefixes <- "awi-cm-1-1-mr_piControl"
     #prefixes <- "awi-cm-1-1-mr_historical_day"
     #prefixes <- "awi-cm-1-1-mr_historical"
     #prefixes <- "awi-cm-1-1-mr_1percCO2"
@@ -202,7 +223,7 @@ if (F) { # old hist
     #prefixes <- "mpi-esm1-2-hr_piControl"
     #prefixes <- "mpi-esm1-2-hr_historical"
     #prefixes <- "mpi-esm1-2-hr_historical_day"
-    prefixes <- "mpi-esm1-2-hr_1percCO2"
+    #prefixes <- "mpi-esm1-2-hr_1percCO2"
     #prefixes <- "mpi-esm1-2-hr_4CO2"
     #fvarnames <- "temp2"
     #codes <- 167
@@ -232,19 +253,22 @@ if (F) { # old hist
     #fvarnames <- "tob"
     #fvarnames <- "sitemptop"
     #fvarnames <- "si"
-    fvarnames <- "mlotst"
+    #fvarnames <- "siextentn"
+    fvarnames <- "siextents"
+    #fvarnames <- "mlotst"
     mpiom_remap2lonlat_arg_list <- list(list(mpiom_model_grid="/pool/data/MPIOM/TP04/TP04s.nc",
                                              reg_res=c(nlon=1440, nlat=720),
-                                             fout_rename_pattern=prefixes))
+                                             fout_rename_pattern=prefixes[1]))
     #froms <- 1842 # awi-cm/esm-1-1-lr piControl correct filestamp
     #froms <- 1850
     #froms <- 1855 # awi-cm/esm-1-1-lr piControl wrong filestamp
     #froms <- 1870
     #froms <- 1873
-    froms <- 1910
+    #froms <- 1910
     #froms <- 1912 # last 30 years: 1912:1941; last 100 years: 1842:1941 
-    #froms <- 1942 # piControl 1850 correct filestamp
-    #froms <- 1955 # piControl 1850 wrong filestamp
+    #froms <- 1942 # piControl-1942 = deck-1850 (correct filestamp)
+    #froms <- 1955 # piControl-1955 = deck-1850 (wrong filestamp)
+    froms <- 2401 # awi-cm-1-1-lr piControl-2401 = deck-
     #froms <- 2650
     #froms <- 3106 # awi-esm-1-1-lr midHolocene on esgf
     #froms <- "3901"
@@ -254,20 +278,26 @@ if (F) { # old hist
     #tos <- 1859
     #tos <- 1869 # 1percCO2: 1850-1869.nc
     #tos <- 1872 # 4CO2: 1850-1872.nc
-    tos <- 1930
+    #tos <- 1930
     #tos <- 1941 # awi-cm/esm-1-1-lr piControl correct filestamp
     #tos <- 1954 # awi-cm/esm-1-1-lr piControl wrong filestamp
     #tos <- 1999
     #tos <- 2014
     #tos <- 2099
     #tos <- 2091 # awi-cm/esm-1-1-lr piControl 2000 correct filestamp
-    #tos <- 2104 # awi-cm/esm-1-1-lr piControl 2000 wrong filestamp
+    #tos <- 2099
+    #tos <- 2104 # awi-cm/esm-1-1-lr piControl-2000 = deck_1999
     #tos <- 2799
+    tos <- 2900 # awi-cm-1-1-lr piControl-2900 = deck-
     #tos <- 3115
     #tos <- 3205 # awi-esm-1-1-lr midHolocene on esgf
     #tos <- "3912"
-    #modes <- "select"
-    modes <- "timmean"
+    #season_inds <- list(c(12, 1, 2)) # DJF
+    #season_inds <- list(c(2:4)) # FMA
+    #season_inds <- list(c(9:11)) # SON
+    modes <- "select"
+    #modes <- "timmean"
+    #modes <- "monmean"
     #modes <- "yseasmean" 
     #modes <- "fldmean"
     # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)

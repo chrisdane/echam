@@ -33,7 +33,7 @@ pchs_filled_w_border <- c(21, 24, 22, 23)
 add_title <- F
 add_legend <- T
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-p <- myDefaultPlotOptions(plot_type="png", 
+p <- myDefaultPlotOptions(#plot_type="png", 
                           #plot_type="pdf"
                           #,family_png="Droid Sans Mono", 
                           #,family_pdf="Droid Sans Mono"
@@ -1319,6 +1319,33 @@ if (F) { # awi-esm-1-1-lr hist
                                "5) mh_new", "6) midHolocene", "7) mh_cold", "8) mat_0013")
     cols_samedims <- 1:8
     ltys_samedims <- rep(1, t=8)
+
+} else if (T) {
+    models <- c(rep("fesom", t=4), rep("mpiom1", t=4))
+    prefixes <- c("awi-esm-1-1-lr_piControl_regular_dx0.250_dy0.250", "awi-esm-1-1-lr_1percCO2_regular_dx0.250_dy0.250",
+                  "awi-cm-1-1-mr_piControl_regular_dx0.250_dy0.250", "awi-cm-1-1-mr_1pctCO2_regular_dx0.250_dy0.250",
+                  "mpi-esm1-2-lr_piControl_remapbil_r1440x720", "mpi-esm1-2-lr_1percCO2_remapbil_r1440x720",
+                  "mpi-esm1-2-hr_piControl_remapbil_r1440x720", "mpi-esm1-2-hr_1percCO2_remapbil_r1440x720")
+    names_short <- c("AWI-LR-pi", "AWI-LR-1pct",
+                     "AWI-MR-pi", "AWI-MR-1pct",
+                     "MPI-LR-pi", "MPI-LR-1pct",
+                     "MPI-HR-pi", "MPI-HR-1pct")
+    names_legend <- c("AWI-LR PI", "AWI-LR 1%",
+                      "AWI-MR PI", "AWI-MR 1%",
+                      "MPI-LR PI", "MPI-LR 1%",
+                      "MPI-HR PI", "MPI-HR 1%")
+    fromsf <- c(2015, 1910,
+                2710, 1910,
+                1910, 1910,
+                1910, 1910)
+    tosf <- c(2035, 1930,
+              2730, 1930,
+              1930, 1930,
+              1930, 1930)
+    #seasonsf <- rep("FMA", t=8)
+    seasonsf <- rep("SON", t=8)
+    varnames_in <- rep("mlotst", t=8)
+    modes <- rep("timmean", t=8)
 
 } # which settings
 

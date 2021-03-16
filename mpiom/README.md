@@ -9,7 +9,7 @@ cdo -t mpiom1 -f nc copy Hol-Tx10_mpiom_32900101_32901231.grb Hol-Tx10_mpiom_329
 # regridding
 regrid from bi-/tripolar mpiom grids to regular grids with
 ```bash
-# GR15 (bipolar) grb scalar
+# GR* (bipolar curvilinear, nlon=256, nlat=220) grb scalar
 cdo -remabil,r360x180 -setgrid,gridfile_s -sethalo,-1,-1 sin sout
 # GR15 grb vector
 cdo -remabil,r360x180 -mrotuvb -setgrid,gridfile_u -sethalo,-1,-1 uin -setgrid,gridfile_v -sethalo,-1,-1 vin uvout
@@ -17,16 +17,23 @@ cdo -remabil,r360x180 -mrotuvb -setgrid,gridfile_u -sethalo,-1,-1 uin -setgrid,g
 cdo -remabil,r360x180 -sethalo,-1,-1 sin sout
 # GR15 nc vector
 cdo -remabil,r360x180 -sethalo,-1,-1 -mrotuvb uin vin uvout
-# TP04 (tripolar) grb scalar
+# GR30 as for GR15
+# TP04 (tripolar curvilinear, nlon=802, nlat=404) grb scalar
 cdo -remabil,r360x180 -selindexbox,1,800,3,404 -setgrid,gridfile_s -sethalo,-1,-1 sin sout
 # TP04 grb vector
 cdo -remabil,r360x180 -selindexbox,1,800,3,404 -mrotuvb -setgrid,gridfile_u -sethalo,-1,-1 uin -setgrid,gridfile_v -sethalo,-1,-1 vin uvout
 # TP04 nc scalar
-cdo -remabil,r360x180 -selindexbox,2,801,3,404 -sethalo,-1,-1 sin sout
+cdo -remabil,r360x180 -selindexbox,2,801,3,404 sin sout
 # TP04 nc vector
 cdo -remabil,r360x180 -selindexbox,2,801,3,404 -mrotuvb uin vin uvout
 ```
 with
+```
+GR30: nlon=120, nlat=101, ngridpoints=12120, dx=2.951°, dy=1.8°
+GR15: nlon=256, nlat=220, ngridpoints=56320, ~1.5°
+TP04: nlon=802, nlat=404, ngridpoints=324008, ~0.4°
+```
+and
 ```
 grid_s: /pool/data/MPIOM/GR15/GR15s.nc, /pool/data/MPIOM/TP04/TP04s.nc
 grid_u: /pool/data/MPIOM/GR15/GR15u.nc, /pool/data/MPIOM/TP04/TP04u.nc

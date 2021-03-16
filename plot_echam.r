@@ -42,6 +42,9 @@ source("namelist.plot.r")
 # must-have objects set by user
 objs <- c("prefixes", "models", "names_short", "fromsf", "tosf", "varnames_in", "modes")
 for (obj in objs) if (!exists(obj)) stop("provide `", obj, "` in namelist.plot.r")
+# replace blanks and special chars in `names_short`
+names_short <- gsub("\\s+", "_", names_short)
+names_short <- gsub("[[:punct:]]", "_", names_short)
 nsettings <- length(prefixes)
 if (exists("varnames_uv")) {
     if (!all(sapply(varnames_uv, length) == 3)) {
@@ -5018,7 +5021,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if xp is NA or not
 
             } else {
-                message("\nno point_data for zname = ", zname, " ...\n")
+                message("--> no point_data defined for zname = ", zname, " ...\n")
             } # if point_data was properly defined or not for current zname
 
 
@@ -5142,6 +5145,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else if (zname == "wisoaprt_d") {
                 palname <- "RdYlBu"
                 anom_colorbar <- F
+            } else if (zname == "mlotst") {
+                message("special zlim")
+                palname <- "RdYlBu"
+                # FMA: 6.053815 3650.000000
+                # SON: 6.04869794845581 4879.9344112022
+                zlevels <- c(min(zlim), seq(500, zlim[2], b=500))
+                if (max(zlevels) != zlim[2]) zlevels[length(zlevels)] <- zlim[2]
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, 
@@ -5293,9 +5303,32 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 plotname_suffix <- paste0("_vs_point_datap", point_datap_suffix) 
             } # if xp is defined
 
-            addland_list <- list(data="world", xlim="xlim", ylim="ylim") # default yes since lon,lat plot
-            if (mode_p == "area") addland_list <- NULL # fesom
+            # add land contoures
+            # default yes since lon,lat plot
+            addland_list <- lapply(vector("list", l=length(z)), 
+                                   base::append, 
+                                   list(data="world", xlim="xlim", ylim="ylim"))
+            if (any(models == "mpiom1")) { 
+                inds <- which(models == "mpiom1")
+                addland_list[inds] <- NA
+            }
+            if (any(models == "fesom")) { 
+                inds <- which(models == "fesom")
+                addland_list[inds] <- NA
+            }
             
+            # add mpiom land sea mask contours
+            mpiom_lsm_segments <- ls(pattern=glob2rx("mpiom_*_land_sea_mask_segments_lon*"))
+            if (F && length(mpiom_lsm_segments) > 0) {
+                segment_list <- vector("list", l=length(z))
+                inds <- seq_along(z) # change here
+                message("add mpiom land sea mask segments to sub-plots ", 
+                        paste(names_legend[inds], collapse=", "), " ...")
+                segment_list[inds] <- mpiom_GR30s_land_sea_mask_segments_lon180
+                #segment_list[inds] <- mpiom_GR15s_land_sea_mask_segments_lon180
+                #segment_list[inds] <- mpiom_TP04s_land_sea_mask_segments_lon180
+            }
+
             if (exists("add_echam_TR31GR30_oromea_contour") && add_echam_TR31GR30_oromea_contour) {
                 message("special: add echam oromea contours to plot ...")
                 levels <- image.plot.pre(zlim=range(echam_TR31GR30_oromea$OROMEA), nlevels=5)$levels
@@ -5307,12 +5340,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
             }
             
-            if (add_mpiom_GR30_lsm_seg) {
-                message("special: add mpiom land sea mask segments to plot ...")
-                segment_list <- mpiom_GR30_lsm_seg
-                addland_list <- NULL
-            }
-
             # show PLOT coords
             if (exists("PLOT_coords_cmd_list")) {
                 message("special: add PLOT coords to plot ...")
@@ -5450,8 +5477,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         message("special: add PLOT coords to plot ...")
                         cmd_list <- c(cmd_list, PLOT_coords_cmd_list)
                     }
-                    
-                    if (add_mpiom_GR30_lsm_seg) {
+            
+                    if (any(models == "mpiom1")) {
                         message("special: add mpiom land sea mask segments to plot ...")
                         segment_list <- mpiom_GR30_lsm_seg
                         addland_list <- NULL
@@ -5597,7 +5624,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("min, max = ", zlim[1], ", ", zlim[2])
                 addland_list <- list(data="world", ylim="ylim")
             }
-            if (add_mpiom_GR30_lsm_seg) {
+                
+            if (any(models == "mpiom1")) {
                 message("special: add mpiom land sea mask segments to plot ...")
                 if (F) { # default
                     addland_list <- list(data=mpiom_GR30_lsm_seg, ylim="ylim")
@@ -7286,7 +7314,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         cmd_list <- c(cmd_list, PLOT_coords_cmd_list)
                     }
                     
-                    if (add_mpiom_GR30_lsm_seg) {
+                    if (any(models == "mpiom1")) {
                         message("special: add mpiom land sea mask segments to plot ...")
                         segment_list <- mpiom_GR30_lsm_seg
                         addland_list <- NULL

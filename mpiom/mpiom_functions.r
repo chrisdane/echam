@@ -1,9 +1,10 @@
 # r
 
 mpiom_remap2lonlat <- function(files, cdo_select="", 
+                               mode="scalar",
                                mpiom_model_grid="GR30s.nc",
                                reg_res=c(nlon=360, nlat=180),
-                               remap_method="remapcon2",
+                               remap_method="remapbil",
                                outpath, fout_rename_pattern, 
                                cdo=Sys.which("cdo"), 
                                convert2nc=T, verbose=T) {
@@ -11,12 +12,12 @@ mpiom_remap2lonlat <- function(files, cdo_select="",
     # todo: cdo_get_filetype() dependence from `functions` repo
     library(stringr)
 
+    # checks
     if (missing(files) || !is.character(files)) {
         stop("provide `files=\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\"` or\n",
              "`files=c(\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\", ",
              "\"/path/to/expd_mpiom_ZZZZ10101_ZZZZ1231.nc\")`")
     }
-    
     if (missing(outpath)) {
         outpath <- dirname(files[1])
         if (verbose) {
@@ -35,7 +36,6 @@ mpiom_remap2lonlat <- function(files, cdo_select="",
             stop("no write permission in `outpath` = \"", outpath, "\"")
         }
     }
-
     if (missing(fout_rename_pattern)) {
         stop("provide `fout_rename_pattern` of type character")
     } else {
@@ -43,7 +43,10 @@ mpiom_remap2lonlat <- function(files, cdo_select="",
             stop("provided `fout_rename_pattern` must be of type character")
         }
     }
-
+    if (!any(mode == c("scalar", "vector"))) {
+        stop("mode = \"", mode, "\" not defined. must be either \"scalar\" or \"vector\"")
+    }
+    
     for (fi in seq_along(files)) {
         
         if (verbose) message("\nfile ", fi, "/", length(files), ": ", files[fi])
@@ -51,28 +54,92 @@ mpiom_remap2lonlat <- function(files, cdo_select="",
         if (!file.exists(files[fi])) stop("file does not exist")
 
         # get format of input files
-        if (convert2nc) { # if conversion to nc is wanted
-            convert2nc <- cdo_get_filetype(files[fi])$file_type
-            if (convert2nc == "non-nc") {
-                convert2nc <- T
-            } else {
-                convert2nc <- F
-            }
+        file_type <- cdo_get_filetype(files[fi])$file_type
+        if (!convert2nc && file_type == "non-nc") { # if conversion is not wanted but needed
+            convert2nc <- T
+        }
+        if (convert2nc && file_type == "nc") { # if conversion to nc is wanted but not needed
+            convert2nc <- F 
         }
 
+        # regridding command depends if mpiom grid is GR* or TP* (see README.md")
+        # --> found no way of automatic decision
+        # --> workaround: use cdo ngridsize
+        cmd <- paste0(cdo, " ngridpoints ", files[fi])
+        message("run `", cmd, "` ...")
+        ngridpoints <- system(cmd, intern=T)[1]
+        options(warn=2) # stop on warnings
+        ngridpoints <- as.integer(ngridpoints)
+        options(warn=0) # back to default
+        if (any(ngridpoints == c(12120, 56320))) { # GR30, GR15
+            input_grid_type <- "GR"
+        } else if (any(ngridpoints == c(324008))) { # TP04, ...
+            input_grid_type <- "TP"
+            if (ngridpoints == 324008) {
+                input_res=c(nlon=802, nlat=404) # needed for regridding
+            } else {
+                stop("not yet")
+            }
+        } else {
+            stop("mpiom grid with `cdo ngridpoints` = ", ngridpoints, " not implemented yet")
+        }
+        message("--> ngridpoints = ", ngridpoints, " --> mpiom grid type = ", input_grid_type)
+
+        # construct regridding cmd 
+        cmd <- paste0(cdo, " -P 8")
+        
         # output filename
         #fout <- paste0(outpath, "/", tools::file_path_sans_ext(basename(files[fi])))
         fout <- basename(files[fi])
-
-        cmd <- paste0(cdo, " -P 8")
-        if (convert2nc) {
+        
+        # add nc conversion 
+        if (convert2nc) { # input is grb
             cmd <- paste0(cmd, " -t mpiom1 -f nc copy")
             if (tools::file_ext(fout) != "nc") fout <- paste0(fout, ".nc")
         }
-        cmd <- paste0(cmd ," -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
-                      " -setgrid,", mpiom_model_grid)
-            
-        # variable selection before remapping
+
+        # add remapping (see README.md")
+        if (input_grid_type == "GR") {
+            if (file_type == "non-nc") {
+                if (mode == "scalar") {
+                    cmd <- paste0(cmd,
+                                  " -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
+                                  " -setgrid,", mpiom_model_grid, 
+                                  " -sethalo,-1,-1")
+                } else if (mode == "vector") {
+                    stop("not yet")
+                } 
+            } else if (file_type == "nc") {
+                if (mode == "scalar") {
+                    cmd <- paste0(cmd,
+                                  " -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
+                                  " -sethalo,-1,-1")
+                } else if (mode == "vector") {
+                    stop("not yet")
+                }
+            }
+        } else if (input_grid_type == "TP") {
+            if (file_type == "non-nc") {
+                if (mode == "scalar") {
+                    stop("not yet")
+                } else if (mode == "vector") {
+                    stop("not yet")
+                } 
+            } else if (file_type == "nc") {
+                if (mode == "scalar") {
+                    cmd <- paste0(cmd,
+                                  " -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
+                                  " -selindexbox,2,", input_res["nlon"]-1, ",3,", input_res["nlat"])
+                } else if (mode == "vector") {
+                    cmd <- paste0(cmd,
+                                  " -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
+                                  " -selindexbox,2,", input_res["nlon"]-1, ",3,", input_res["nlat"],
+                                  " -mrotuvb")
+                }
+            }
+        } # which input_grid_type GR or TP
+
+        # add variable,depth,etc. selection 
         if (cdo_select != "") {
             if (!grepl("select", cdo_select)) {
                 stop("provided `cdo_select` = \"", cdo_select, "\" does not contain \"select\"")

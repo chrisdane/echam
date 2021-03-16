@@ -31,22 +31,19 @@ if (F) {
 
 
 # mpiom land sea mask segments
-if (T) {
-    f <- paste0(host$repopath, "/mpiom/mpiom_GR30s_land_sea_mask_segments_lon180.txt")
-    #f <- paste0(host$repopath, "/mpiom/mpiom_GR30s_land_sea_mask_segments_lon360.txt")
-    if (file.exists(f)) {
+fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon180.txt")
+#fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon360.txt")
+for (f in fs) {
+    if (T && file.exists(f)) {
         message("\ndisable here if you do not want to load mpiom land sea mask segments from ", f, " ...")
-        mpiom_GR30_lsm_seg <- read.table(f, header=T)
-        add_mpiom_GR30_lsm_seg <- T
-        message("set add_mpiom_GR30_lsm_seg=T if you want to add to lon,lat plot ...\n")
+        cmd <- paste0(tools::file_path_sans_ext(basename(fs)), " <- read.table(f, header=T)")
+        message("run `", cmd, "` ...")
+        eval(parse(text=cmd))
     } else {
-        message("file ", f, " does not exist. run the function mpiom_get_lsm_segments() via ", 
+        message("\nmpiom land sea mask file ", f, " does not exist. run the function mpiom_get_lsm_segments() via ", 
                 host$repopath, "/mpiom/run_mpiom.r to generate the land sea mask segments ...")
     }
-} else {
-    message("enable here to load mpiom land sea mask segments ...")
-}
-
+} # for f
 
 # cmip6 co2 hist
 f <- ""
