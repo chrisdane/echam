@@ -9,22 +9,23 @@ cdo -t mpiom1 -f nc copy Hol-Tx10_mpiom_32900101_32901231.grb Hol-Tx10_mpiom_329
 # regridding
 regrid from bi-/tripolar mpiom grids to regular grids with
 ```bash
-# GR* (bipolar curvilinear, nlon=256, nlat=220) grb scalar
-cdo -remabil,r360x180 -setgrid,gridfile_s -sethalo,-1,-1 sin sout
-# GR15 grb vector
-cdo -remabil,r360x180 -mrotuvb -setgrid,gridfile_u -sethalo,-1,-1 uin -setgrid,gridfile_v -sethalo,-1,-1 vin uvout
-# GR15 nc scalar
+## GR* (bipolar)
+# grb scalar
+cdo -remabil,r360x180 -setgrid,grid_s -sethalo,-1,-1 sin sout
+# grb vector
+cdo -remabil,r360x180 -mrotuvb -setgrid,grid_u -sethalo,-1,-1 uin -setgrid,grid_v -sethalo,-1,-1 vin uvout
+# nc scalar
 cdo -remabil,r360x180 -sethalo,-1,-1 sin sout
-# GR15 nc vector
+# nc vector
 cdo -remabil,r360x180 -sethalo,-1,-1 -mrotuvb uin vin uvout
-# GR30 as for GR15
-# TP04 (tripolar curvilinear, nlon=802, nlat=404) grb scalar
-cdo -remabil,r360x180 -selindexbox,1,800,3,404 -setgrid,gridfile_s -sethalo,-1,-1 sin sout
-# TP04 grb vector
-cdo -remabil,r360x180 -selindexbox,1,800,3,404 -mrotuvb -setgrid,gridfile_u -sethalo,-1,-1 uin -setgrid,gridfile_v -sethalo,-1,-1 vin uvout
-# TP04 nc scalar
+# TP* (tripolar)
+# grb scalar
+cdo -remabil,r360x180 -selindexbox,1,800,3,404 -setgrid,grid_s -sethalo,-1,-1 sin sout
+# grb vector
+cdo -remabil,r360x180 -selindexbox,1,800,3,404 -mrotuvb -setgrid,grid_u -sethalo,-1,-1 uin -setgrid,grid_v -sethalo,-1,-1 vin uvout
+# nc scalar
 cdo -remabil,r360x180 -selindexbox,2,801,3,404 sin sout
-# TP04 nc vector
+# nc vector
 cdo -remabil,r360x180 -selindexbox,2,801,3,404 -mrotuvb uin vin uvout
 ```
 with
