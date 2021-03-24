@@ -23,7 +23,7 @@ ttest_alternative <- "two.sided" # differences in means
 ttest_significance <- 0.05 # p-value (*100 for %)
 
 # calc options
-calc_monhtly_and_annual_climatology <- F
+calc_monthly_and_annual_climatology <- F
 calc_ttest_lon_lat_time <- T
 
 # plot options
@@ -75,7 +75,7 @@ add_nonlinear_trend <- F
 add_1to1_line <- T
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
-scale_ts <- F
+scale_ts <- T
 ts_highlight_seasons <- list(#bool=T,
                              bool=F,
                              seasons=c("DJF", "MAM", "JJA", "SON"),
@@ -167,7 +167,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -240,12 +240,12 @@ if (F) { # awi-esm-1-1-lr hist
     #remove_mean_tos <- -6996
     #remove_mean_froms <- -7000
     #remove_mean_tos <- -7000
-    #seasonsf <- "annual"
+    seasonsf <- "annual"
     #seasonsf <- "Jun"
     #seasonsf <- "Jun"
     #seasonsf <- "Dec"
     #seasonsf <- "yearsum"
-    seasonsf <- "NDJFM"
+    #seasonsf <- "NDJFM"
     #seasonsp <- "Feb" # cdo's default season timestamps: DJF->Feb, MAM->May, JJA->Aug, SON->Nov
     #seasonsp <- "Mar"
     #seasonsp <- "May"
@@ -259,11 +259,11 @@ if (F) { # awi-esm-1-1-lr hist
     #seasonsp <- "MAM"
     #seasonsp <- "JJA"
     #seasonsp <- "SON"
-    seasonsp <- "NDJFMmean"
+    #seasonsp <- "NDJFMmean"
     #varnames_in <- "temp2"
     #varnames_in <- "tsurf"
     #varnames_in <- "tslm1"
-    varnames_in <- "psl"
+    #varnames_in <- "psl"
     #varnames_in <- "aprt"
     #varnames_in <- "aprs"
     #varnames_in <- "wisoaprt_d"
@@ -274,6 +274,7 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
     #varnames_in <- "srad0d"
+    varnames_in <- "lm_psl_as_time_slope"
     #varnames_in <- "lm_temp2_as_time_slope"
     #varnames_in <- "lm_tsurf_as_time_slope"
     #varnames_in <- "lm_aprt_as_time_slope"
@@ -320,7 +321,7 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- "moc26.5N"
     #levs <- "-0to-5420m"
     #regboxes <- list(list(regbox="northeast_europe"))
-    #regboxes <- list(list(regbox="NAsiberia"))
+    regboxes <- list(list(regbox="NAsiberia"))
 
 # =====================================
 # 2 settings
@@ -452,8 +453,8 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("LSeaSouthmld", "LSeaSouthmld")
     #areas <- c("GINmld", "GINmld")
     #areas <- c("weddelmld", "weddelmld")
-    areas <- c("ladoga_remapnn", "ladoga_remapnn")
-    #areas <- c("shuchye_remapnn", "shuchye_remapnn")
+    #areas <- c("ladoga_remapnn", "ladoga_remapnn")
+    areas <- c("shuchye_remapnn", "shuchye_remapnn")
     #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapnn")
     #areas <- c("taymyr_remapnn", "taymyr_remapnn")
     #areas <- c("emanda_remapnn", "emanda_remapnn")
@@ -1320,7 +1321,7 @@ if (F) { # awi-esm-1-1-lr hist
     cols_samedims <- 1:8
     ltys_samedims <- rep(1, t=8)
 
-} else if (T) {
+} else if (F) {
     models <- c(rep("fesom", t=4), rep("mpiom1", t=4))
     prefixes <- c("awi-esm-1-1-lr_piControl_regular_dx0.250_dy0.250", "awi-esm-1-1-lr_1percCO2_regular_dx0.250_dy0.250",
                   "awi-cm-1-1-mr_piControl_regular_dx0.250_dy0.250", "awi-cm-1-1-mr_1pctCO2_regular_dx0.250_dy0.250",

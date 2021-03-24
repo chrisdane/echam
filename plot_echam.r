@@ -2269,11 +2269,11 @@ if (!exists("datasma")) {
 # calculate monthly and annual means
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
     
-    if (!calc_monhtly_and_annual_climatology) {
-        message("\nsome settings have \"time\" dim but `calc_monhtly_and_annual_climatology`=F --> ",
+    if (!calc_monthly_and_annual_climatology) {
+        message("\nsome settings have \"time\" dim but `calc_monthly_and_annual_climatology`=F --> ",
                 "do not calc monthly climatology and annual means ...") 
     
-    } else if (calc_monhtly_and_annual_climatology) { 
+    } else if (calc_monthly_and_annual_climatology) { 
 
         message("\nsome settings have \"time\" dim --> calc monthly climatology and annual means ...")
         datasmon <- datasan <- datas # lazy declaration
@@ -2436,12 +2436,12 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
         if (all(is.na(datasan))) {
             rm(datasan)
         }
-    } # if calc_monhtly_and_annual_climatology
+    } # if calc_monthly_and_annual_climatology
 
 } else { # if any setting has time dim
     #message("\nno time dim detected")
 }
-# if calc_monhtly_and_annual_climatology finished calculating monthly means if applicable
+# if calc_monthly_and_annual_climatology finished calculating monthly means if applicable
 
 ## calculate temporal mean (long term mean; ltm)
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
