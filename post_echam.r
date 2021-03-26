@@ -82,6 +82,27 @@ if (!all(sapply(exist_checks, exists))) {
          " \"", paste0(names(missing_vars)[missing_vars], collapse="\", \""), "\"")
 }
 nsettings <- length(datapaths)
+# convert given modes to list if not provided as list
+if (!is.list(modes)) {
+    modesp <- vector("list", l=nsettings)
+    for (i in seq_len(nsettings)) {
+        modesp[[i]] <- modes[i]
+        names(modesp)[i] <- modes[i]
+    }
+    modes <- modesp
+}
+if (any(names(modes) == "")) {
+    inds <- which(names(modes) == "")
+    stop("provide a proper mode name for `modes` entries ", paste(inds, collapse=", "))
+}
+if (any(grepl(" ", names(modes)))) { # replace space " " by "_" in mode names
+    inds <- which(grepl(" ", names(modes)))
+    message("replace spaces \" \" with \"_\" in mode names:\n",
+            paste(paste0("   ", names(modes)[inds]), collapse="\n"))
+    names(modes)[inds] <- gsub(" ", "_", names(modes)[inds])
+    message("to\n",
+            paste(paste0("   ", names(modes)[inds]), collapse="\n"))
+}
 #if (!exists("ftypes")) ftypes <- rep("f", t=nsettings)
 if (!exists("prefixes")) prefixes <- rep(NA, t=nsettings)
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
@@ -107,7 +128,7 @@ if (!exists("cdoshifttimes")) cdoshifttimes <- rep("", t=nsettings)
 
 # check if postpaths can be created/have writing rights
 if (!exists("postpaths")) {
-    postpaths <- paste(host$workpath, "post", models, modes, fvarnames, sep="/")
+    postpaths <- paste(host$workpath, "post", models, names(modes), fvarnames, sep="/")
 } else {
     postpaths <- normalizePath(postpaths)
 }
@@ -281,7 +302,7 @@ for (i in 1:nsettings) {
     if (!is.na(codes[i])) message("code = ", codes[i])
     message("postpath = ", postpaths[i])
     message("prefix = ", prefixes[i])
-    message("mode = ", modes[i])
+    message("mode = \"", names(modes)[i], "\" = ", paste(modes[[i]], collapse=", "))
     message("from = ", froms[i])
     message("to = ", tos[i])
     message("season_name = ", season_names[i])
@@ -302,7 +323,7 @@ for (i in 1:nsettings) {
     # output fname
     fout <- paste0(postpaths[i], "/", 
                    ifelse(!is.na(prefixes[i]), paste0(prefixes[i], "_"), ""),
-                   models[i], "_", modes[i],
+                   models[i], "_", names(modes)[i],
                    #todo: include code number in fout or not?
                    #ifelse(!is.na(codes[i]), paste0("_selcode_", codes[i]), ""),
                    "_", fvarnames[i], 
@@ -906,7 +927,6 @@ for (i in 1:nsettings) {
                         teststring <- paste0(" ", fvarnames[i], "\\(")
                     }
                 } else { # `cdo partab` success
-                    stop("update")
                     if (!is.na(codes[i])) { # code provided
                         teststring <- paste0("name = var", codes[i])
                     } else {
@@ -1081,34 +1101,32 @@ for (i in 1:nsettings) {
                         paste(cdo_version, collapse="."), ") ...")
 
                 ## cat/mergetime/etc.
-                if (modes[i] == "timmean") {
+                if (all(modes[[i]] == "timmean")) {
                     nmax <- as.integer(system("ulimit -n", intern=T))
                     if (length(files) > nmax) {
-                        stop("cannot compute ", modes[i], " of ", length(files), 
-                             " files because `cdo ensmean` maximum files is ", nmax)
+                        stop("cannot compute timmean of ", length(files), 
+                             " files because `cdo ensmean` maximum files is `ulimit -n` = ", nmax)
                     }
                     cmdcat <- "-O ensmean"
-                } else if (modes[i] == "fldmean") {
+                } else if (all(modes[[i]] == "fldmean")) {
                     if (F) { # could not figure out a significant time difference between cat and mergetime
                         cmdcat <- "cat"
                     } else if (T) {
                         cmdcat <- "mergetime"
                     }
                 } else {
-                    #stop("cat/mergetime not defined for mode '", modes[i], "' not defined.")
+                    #stop("cat/mergetime not defined for mode '", modes[[i]], "' not defined.")
                 } # which cat/mergetime depending on mode
 
                 ## calculation
-                if (modes[i] == "select") {
+                cdocalc <- paste(paste0("-", modes[[i]]), collapse=" ") # default; e.g. "-fldmean" or "-timmean -monmax"
+                if (all(modes[[i]] == "select")) {
                     cdocalc <- "" # variable selection only
-                } else if (modes[i] == "volint") {
-                    message("only test")
-                    cdocalc <- "-fldsum -vertsum"
-                } else { # else default:
-                    cdocalc <- paste0("-", modes[i]) # default; e.g. "-fldmean"
                 } # which calculation depending on mode
+                
                 if (cdo_before_calcs[i] != "") cdocalc <- paste0(cdocalc, " -", cdo_before_calcs[i])
-                message("`modes[", i, "]` = \"", modes[i], "\" --> `cdocalc` = \"", cdocalc, "\" ...")
+                message("`modes[[", i, "]]` = \"", paste(modes[[i]], collapse=", "), 
+                        "\" --> `cdocalc` = \"", cdocalc, "\" ...")
 
                 ## sellevel
                 cdosellevel <- "" # default: none
@@ -1231,7 +1249,7 @@ for (i in 1:nsettings) {
                     cmd_calc <- "" # default: no calculation is needed
                     
                     # check for `-fldmean` etc.
-                    if (modes[i] != "select") {
+                    if (all(modes[[i]] != "select")) {
                         cmd_calc <- paste0(cmd_calc, " ", cdocalc) 
                     }
                     
@@ -2336,9 +2354,9 @@ for (i in 1:nsettings) {
     if (models[i] == "mpiom1") {
         
         # run mpiom_remap2lonlat() function on timmean output
-        if (modes[i] == "timmean") {
-            message("\n`models[", i, "]` = \"", models[i], "\" and `modes[", i, "]` = ",
-                    "\"", modes[i], "\" --> try to run mpiom_remap2lonlat() ...")
+        if (any(grepl("timmean", modes[[i]]))) {
+            message("\n`models[", i, "]` = \"", models[i], "\" and `modes[[", i, "]]` = ",
+                    "\"", paste(modes[[i]], collapse=", "), "\" --> try to run mpiom_remap2lonlat() ...")
             
             cmd <- "mpiom_remap2lonlat(files=fout, cdo=cdo"
             message("check if `mpiom_remap2lonlat_arg_list[[", i, "]]` is provided ... ", appendLF=F)
@@ -2361,11 +2379,9 @@ for (i in 1:nsettings) {
             message("run `", cmd, "` ...")
             eval(parse(text=cmd))
 
-        } # interp result if modes[i] == "timmean"
+        } # interp result if any(grepl("timmean", modes[[i]])))
 
         if (any(fvarnames[i] == c("amoc", "gmoc"))) { # run mpiom_moc_make_bottom_topo()
-            
-            # run mpiom_moc_make_bottom_topo() function 
             message("\n`models[", i, "]` = \"", models[i], "\" and `fvarnames[", i, "]` = ",
                     "\"", fvarnames[i], "\" --> run mpiom_moc_make_bottom_topo() ...")
             
@@ -2383,8 +2399,7 @@ for (i in 1:nsettings) {
             eval(parse(text=cmd))
 
             # get moc time series if not timmean
-            if (modes[i] != "timmean") {
-
+            if (!(any(grepl("timmean", modes[[i]])))) {
                 message("\n`modes[", i, "] = \"", modes[i], "\" != \"timmean", 
                         "\" --> get moc time series --> run mpiom_moc_extract_ts() ...")
                
@@ -2401,7 +2416,7 @@ for (i in 1:nsettings) {
                 message("run `", cmd, "`")
                 eval(parse(text=cmd))
 
-            } # if modes[i] != "timmean"
+            } # if !(any(grepl("timmean", modes[[i]])))
 
         } # if *moc
     
@@ -2411,7 +2426,8 @@ for (i in 1:nsettings) {
     toc <- Sys.time()
     elapsed[[i]] <- toc - tic
     message("\nsetting ", i, "/", nsettings , " took ", elapsed[[i]], " ", 
-            attributes(elapsed[[i]])$units, " for ", models[i], " ", modes[i], " calculation of ",
+            attributes(elapsed[[i]])$units, " for ", models[i], " ", names(modes)[i], 
+            " = ", paste(modes[[i]], collapse=", "), " calculation of ",
             length(files), " file", ifelse(length(files) > 1, "s", ""))
 
     # restore user options for next setting
@@ -2425,7 +2441,8 @@ for (i in seq_len(nsettings)) {
     message("\nsetting ", i, "/", nsettings , "\n",
             "  ", datapaths[i], "/", fpatterns[i], "\n",
             "took ", elapsed[[i]], " ", 
-            attributes(elapsed[[i]])$units, " for ", models[i], " ", modes[i], " calculation of ", 
+            attributes(elapsed[[i]])$units, " for ", models[i], " ", names(modes)[i], 
+            " = ", paste(modes[[i]], collapse=", "), " calculation of ", 
             length(files), " file", ifelse(length(files) > 1, "s", ""), "\n")
 }
 

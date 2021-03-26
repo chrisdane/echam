@@ -1780,6 +1780,18 @@ for (i in 1:nsettings) {
                 data_infos[[i]][[vi]]$label <- "Depth of MOC max [m]"
             }
         
+        } else if (varname == "mlotst") {
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("MLD"[sigma[theta]], " [m]"))))
+        
+        } else if (varname == "mlotstmax") {
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("max MLD"[sigma[theta]], " [m]"))))
+        
+        } else if (varname == "mlotstmin") {
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("min MLD"[sigma[theta]], " [m]"))))
+        
+        } else if (varname == "omldamax") {
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("max MLD"["MS"], " [m]"))))
+        
         } else if (grepl("siarea", varname)) {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NH sea ice extent [km"^2, 
                                                                             " " %*% " ", 10^6, "]"))))
@@ -5107,7 +5119,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             zlim <- range(z, na.rm=T)
             op <- options()$digits; options(digits=15); cat("=", zlim, "\n"); options(digits=op)
 
-            nlevels <- zlevels <- y_at <- palname <- anom_colorbar <- NULL
+            nlevels <- zlevels <- axis.labels <- y_at <- palname <- anom_colorbar <- NULL
             if (zname == "quv") {
                 message("special zlim")
                 nlevels <- 200
@@ -5145,17 +5157,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else if (zname == "wisoaprt_d") {
                 palname <- "RdYlBu"
                 anom_colorbar <- F
-            } else if (zname == "mlotst") {
+            } else if (any(zname == c("mlotst", "omldamax"))) {
                 message("special zlim")
-                palname <- "RdYlBu"
+                #palname <- "RdYlBu"
+                palname <- "Spectral"
                 # FMA: 6.053815 3650.000000
                 # SON: 6.04869794845581 4879.9344112022
-                zlevels <- c(min(zlim), seq(500, zlim[2], b=500))
-                if (max(zlevels) != zlim[2]) zlevels[length(zlevels)] <- zlim[2]
+                #zlevels <- c(min(zlim), seq(500, zlim[2], b=500))
+                #if (max(zlevels) != zlim[2]) zlevels[length(zlevels)] <- zlim[2]
+                zlevels <- c(seq(min(zlim), 1100, l=100), zlim[2])
+                axis.labels <- c(round(zlim[1]), seq(125, 1000, b=125), round(zlim[2]))
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, 
-                                 palname=palname, anom_colorbar=anom_colorbar, 
+                                 axis.labels=axis.labels, palname=palname, 
+                                 anom_colorbar=anom_colorbar, 
                                  verbose=F)
             if (any(zlim[1] < min(ip$levels))) warning("zlim[1] < min(ip$levels) in lon vs lat plot. do you want that?")
             if (any(zlim[2] > max(ip$levels))) warning("zlim[2] > max(ip$levels) in lon vs lat plot. do you want that?")

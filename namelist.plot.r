@@ -34,7 +34,6 @@ add_title <- F
 add_legend <- T
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
 p <- myDefaultPlotOptions(#plot_type="png", 
-                          #plot_type="pdf"
                           #,family_png="Droid Sans Mono", 
                           #,family_pdf="Droid Sans Mono"
                           #,family_pdf="CM Roman"
@@ -75,7 +74,7 @@ add_nonlinear_trend <- F
 add_1to1_line <- T
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
-scale_ts <- T
+scale_ts <- F
 ts_highlight_seasons <- list(#bool=T,
                              bool=F,
                              seasons=c("DJF", "MAM", "JJA", "SON"),
@@ -167,7 +166,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -1321,10 +1320,14 @@ if (F) { # awi-esm-1-1-lr hist
     cols_samedims <- 1:8
     ltys_samedims <- rep(1, t=8)
 
-} else if (F) {
+} else if (T) {
     models <- c(rep("fesom", t=4), rep("mpiom1", t=4))
-    prefixes <- c("awi-esm-1-1-lr_piControl_regular_dx0.250_dy0.250", "awi-esm-1-1-lr_1percCO2_regular_dx0.250_dy0.250",
-                  "awi-cm-1-1-mr_piControl_regular_dx0.250_dy0.250", "awi-cm-1-1-mr_1pctCO2_regular_dx0.250_dy0.250",
+    #prefixes <- c("awi-esm-1-1-lr_piControl_regular_dx0.250_dy0.250", "awi-esm-1-1-lr_1percCO2_regular_dx0.250_dy0.250",
+    #              "awi-cm-1-1-mr_piControl_regular_dx0.250_dy0.250", "awi-cm-1-1-mr_1pctCO2_regular_dx0.250_dy0.250",
+    #              "mpi-esm1-2-lr_piControl_remapbil_r1440x720", "mpi-esm1-2-lr_1percCO2_remapbil_r1440x720",
+    #              "mpi-esm1-2-hr_piControl_remapbil_r1440x720", "mpi-esm1-2-hr_1percCO2_remapbil_r1440x720")
+    prefixes <- c("awi-esm-1-1-lr_piControl_monmax_regular_dx0.250_dy0.250", "awi-esm-1-1-lr_1percCO2_monmax_regular_dx0.250_dy0.250",
+                  "awi-cm-1-1-mr_piControl_monmax_regular_dx0.250_dy0.250", "awi-cm-1-1-mr_1pctCO2_monmax_regular_dx0.250_dy0.250",
                   "mpi-esm1-2-lr_piControl_remapbil_r1440x720", "mpi-esm1-2-lr_1percCO2_remapbil_r1440x720",
                   "mpi-esm1-2-hr_piControl_remapbil_r1440x720", "mpi-esm1-2-hr_1percCO2_remapbil_r1440x720")
     names_short <- c("AWI-LR-pi", "AWI-LR-1pct",
@@ -1344,9 +1347,11 @@ if (F) { # awi-esm-1-1-lr hist
               1930, 1930,
               1930, 1930)
     #seasonsf <- rep("FMA", t=8)
-    seasonsf <- rep("SON", t=8)
-    varnames_in <- rep("mlotst", t=8)
-    modes <- rep("timmean", t=8)
+    #seasonsf <- rep("SON", t=8)
+    #varnames_in <- rep("mlotst", t=8)
+    varnames_in <- rep("omldamax", t=8)
+    #modes <- rep("timmean", t=8)
+    modes <- c(rep("timmean", t=4), rep("timmean_monmax", t=4))
 
 } # which settings
 
