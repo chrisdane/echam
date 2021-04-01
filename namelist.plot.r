@@ -74,7 +74,7 @@ add_nonlinear_trend <- F
 add_1to1_line <- T
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
-scale_ts <- F
+scale_ts <- T
 ts_highlight_seasons <- list(#bool=T,
                              bool=F,
                              seasons=c("DJF", "MAM", "JJA", "SON"),
@@ -174,8 +174,8 @@ if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_wiso_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-T"
-    prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
-    #prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
+    #prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
+    prefixes <- "cosmos-aso-wiso_Hol-T_wiso_mm"
     #prefixes <- "Hol-T_stschuett_echam5_wiso" # steffens data
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_2_remapcon2_r120x101"
     #prefixes <- "cosmos-aso-wiso_Hol-T_grb_code_15_remapcon2_r120x101_gt_0.15_times_area"
@@ -273,14 +273,14 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "ptemp"
     #varnames_in <- "srad0"
     #varnames_in <- "srad0d"
-    varnames_in <- "lm_psl_as_time_slope"
+    #varnames_in <- "lm_psl_as_time_slope"
     #varnames_in <- "lm_temp2_as_time_slope"
     #varnames_in <- "lm_tsurf_as_time_slope"
     #varnames_in <- "lm_aprt_as_time_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_temp2_slope"
     #varnames_in <- "lm_wisoaprt_d_sellevel_2_as_ptemp_slope"
-    #varnames_in <- "lm_wisoaprt_d_post_as_time_slope"
-    #levs <- 2
+    varnames_in <- "lm_wisoaprt_d_post_as_time_slope"
+    levs <- 2
     #varnames_in <- "quv"
     #varnames_in <- "quv_direction"
     #levsf <- "_int1000-100hPa"
@@ -297,12 +297,12 @@ if (F) { # awi-esm-1-1-lr hist
     #varnames_in <- "lm_albedo_as_time_slope"
     #varnames_in <- "amoc"
     #codes <- 101
-    modes <- "select"
+    #modes <- "select"
     #modes <- "timmean"
     #modes <- "fldmean"
     #modes <- "timmean_yearsum"
     #modes <- "yseasmean"
-    #modes <- "yearsum"
+    modes <- "yearsum"
     #modes <- "zonmean"
     #modes <- "vertsum"
     #modes <- "fldsum"
@@ -367,7 +367,7 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (F) { # Hol-T with vs without orbital acceleration
+} else if (T) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_Hol-T", "cosmos-aso-wiso_Hol-Tx10")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")
@@ -453,12 +453,12 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- c("GINmld", "GINmld")
     #areas <- c("weddelmld", "weddelmld")
     #areas <- c("ladoga_remapnn", "ladoga_remapnn")
-    areas <- c("shuchye_remapnn", "shuchye_remapnn")
+    #areas <- c("shuchye_remapnn", "shuchye_remapnn")
     #areas <- c("levinson-lessing_remapnn", "levinson-lessing_remapnn")
     #areas <- c("taymyr_remapnn", "taymyr_remapnn")
     #areas <- c("emanda_remapnn", "emanda_remapnn")
     #areas <- c("kotokel_remapnn", "kotokel_remapnn")
-    #areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
+    areas <- c("elgygytgyn_remapnn", "elgygytgyn_remapnn")
     #areas <- c("two-yurts_remapnn", "two-yurts_remapnn")
     seasonsf <- rep("annual", t=2)
     #seasonsf <- rep("yearsum", t=2)
@@ -1320,7 +1320,7 @@ if (F) { # awi-esm-1-1-lr hist
     cols_samedims <- 1:8
     ltys_samedims <- rep(1, t=8)
 
-} else if (T) {
+} else if (F) {
     models <- c(rep("fesom", t=4), rep("mpiom1", t=4))
     #prefixes <- c("awi-esm-1-1-lr_piControl_regular_dx0.250_dy0.250", "awi-esm-1-1-lr_1percCO2_regular_dx0.250_dy0.250",
     #              "awi-cm-1-1-mr_piControl_regular_dx0.250_dy0.250", "awi-cm-1-1-mr_1pctCO2_regular_dx0.250_dy0.250",

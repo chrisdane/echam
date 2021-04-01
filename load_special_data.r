@@ -634,18 +634,20 @@ if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
     lakes_table <- read.table(f, header=T, stringsAsFactors=F)
     PLOT_coords_cmd_list <- NULL
-    if (T) {
-        lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-yurts", "elgygytgyn")
+    lakes <- c("A"="ladoga", 
+               #"B"="shuchye", 
+               "C"="kotokel", "D"="emanda", "E"="two-yurts", "F"="elgygytgyn")
+    if (F) {
         col <- "black"
-    } else if (F) { # blue letters for significant negative holocene trends
-        lakes <- c("ladoga", "shuchye", "kotokel", "emanda", "two-yurts")
+    } else if (T) { # blue letters for significant negative holocene trends
+        message("special: print blue letters")
         col <- "blue"
     }
     for (lakei in seq_along(lakes)) {
         cmd <- "text("
         cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
         cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
-        cmd <- paste0(cmd, ", labels=\"", LETTERS[lakei], "\", cex=1")
+        cmd <- paste0(cmd, ", labels=\"", names(lakes)[lakei], "\", cex=1")
         cmd <- paste0(cmd, ", col=\"", col, "\"")
         cmd <- paste0(cmd, ") # ", lakes[lakei])
         PLOT_coords_cmd_list[[lakei]] <- cmd 
@@ -667,7 +669,11 @@ if (T && file.exists(f)) {
     message("run read_meyer_etal_function() ...")
     #tmp <- read_meyer_etal_function(xlsx_file=f)
     #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
-    tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
+    #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
+    tmp <- read_meyer_etal_function(xlsx_file=f, 
+                                    #sheets_wanted=c("Lake Ladoga", "Lake Kotokel", "Two Jurts Lake", "El'gygytgyn Lake"), 
+                                    sheets_wanted=c("Lake Ladoga", "Lake Emanda unpubl.", "Lake Kotokel", "Two Jurts Lake", "El'gygytgyn Lake"), 
+                                    year_from=-10000, verbose=F)
     #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
     #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
     #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
@@ -682,6 +688,34 @@ if (T && file.exists(f)) {
                        lty=1, lwd=1, pch=1, cex=1)
 } else {
     message("enable here to load hanno meyer et al. PLOT data excel sheet ...")
+}
+
+
+# kostrova et al. 2021 emanda
+f <- ""
+if (host$machine_tag == "paleosrv") {
+    f <- "/isibhv/projects/paleo_work/cdanek/data/kostrova_etal_2021/Kostrova et al_Oxygen isotope composition of diatoms from Lake Emanda (northeastern Siberia, Russia).xlsx"
+}
+if (T && file.exists(f)) {
+    message("\ndisable here if you do not want to load kostrova et al. 2021 emanda data from ", f)
+    kostrova_etal_2021 <- read.xlsx(f, 1,
+                                    startRow=17, endRow=62, colIndex=2:9, 
+                                    header=F, stringsAsFactors=F)
+    colnames(kostrova_etal_2021) <- c("core", "sample_depth_cm", "age_cal_ka_bp", "SiO2_pcnt", "Al2O3_pcnt", 
+                                      "d18o_meas_perm", "C_cont_pcnt", "d18o_corr_perm")
+    kostrova_etal_2021 <- kostrova_etal_2021[dim(kostrova_etal_2021)[1]:1,] # rev
+    years <- -1000*kostrova_etal_2021$age_cal_ka_bp
+    timelt <- make_posixlt_origin(years, origin_in=1950, origin_out=1950, verbose=0)
+    kostrova_etal_2021$time <- timelt
+    kostrova_etal_2021 <- list(data=kostrova_etal_2021,
+                               type="o", 
+                               #col="#E41A1C", # myred
+                               col="#377EB8", # myblue
+                               #col="#1B9E77", # mygreen
+                               lty=1, lwd=1, pch=1, cex=1,
+                               text="D: Emanda (Kostrova et al. 2021)")
+} else {
+    message("enable here to load kostrova et al. 2021 emanda data ...")
 }
 
 

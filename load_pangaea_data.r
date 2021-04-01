@@ -239,9 +239,22 @@ if (F) {
                                                       dims=list("yr_from_0"="Year [a AD]"))))))
 }
 
+# d18o from lakes
+if (T) {
+    pdois <- c(pdois, 
+               list("swann_etal_2010"=
+                    list(pdoi="10.1594/PANGAEA.856095",
+                         vars=list("d18o_w_smow"=list(inputname="Diatoms δ18O [‰ SMOW]", 
+                                                      dims=list("kyr_before_1950"="Age [ka BP]"),
+                                                      merge=list("Lz1029"=c("Lz1029-9", "Lz1029-5"))))))) # order of `merge` matters
+
+}
 # pollen
 if (F) { # cao et al. 2020 siberia 40k compilation: taxa only
     #"10.1594/PANGAEA.898616",
+}
+if (F) { # chevalier et al. 2019: Eurasian Modern Pollen Database (former European Modern Pollen Database)
+    #"10.1594/PANGAEA.909130" --> only modern; no time axis
 }
 
 # pa_th
@@ -382,7 +395,7 @@ if (length(pdois) == 0) {
     message("`length(pdois)=0`. nothing to do")
 
 } else {
-    # step 1/3: load data and save in lipd-like format
+    # step 1/4: load data and save in lipd-like format
     message("load ", length(pdois), " pangaea dois ...")
     
     for (pgi in seq_along(pdois)) {
@@ -712,7 +725,7 @@ if (length(pdois) == 0) {
     cat(capture.output(str(pg, max.level=2)), sep="\n")
     #stop("asd")
 
-    # step 2/3: modify dimensions if necessary
+    # step 2/4: modify dimensions if necessary
     message("\ncheck/modify dims/data of ", length(pg), " different variables from ", 
             length(pdois), " pangaea dois. this may take some moments ...")
     for (vi in seq_along(pg)) {
@@ -752,7 +765,7 @@ if (length(pdois) == 0) {
                             } # if flip
                             dimvals <- -1000*dimvals
                             dimvals <- make_posixlt_origin(dimvals, origin_in=1950, origin_out=1950)
-                        
+
                         # convert `"Modern` --> `0 from 1950 CE` and "Holocene"` --> `-6000 from 1950 CE`
                         } else if (dimin == "vasilchuk_etal_2020_time") {
                             dimout <- "time"
@@ -786,7 +799,7 @@ if (length(pdois) == 0) {
         } # for pdoi
     } # for vi
 
-    # step 3/3: check final data
+    # step 3/4: check final data
     # check if all values of all dimensions of a variable are NA --> remove data
     message("\nfinal check of ", length(pg), " pangaea variables ...")
     for (vi in seq_along(pg)) {
@@ -815,6 +828,65 @@ if (length(pdois) == 0) {
 
     # todo: check double entries
     
+    # step 4/4: merge data if wanted
+    message("\ncheck if any pangaea datasets shall be merged ...")
+    for (pgi in seq_along(pdois)) {
+        for (vi in seq_along(pdois[[pgi]]$vars)) {
+            if (!is.null(pdois[[pgi]]$vars[[vi]]$merge)) {
+                events_to_merge <- pdois[[pgi]]$vars[[vi]]$merge
+                for (mergei in seq_along(events_to_merge)) {
+                    varind <- which(names(pg) == names(pdois[[pgi]]$vars)[vi])
+                    if (length(varind) != 1) stop("this should not happen")
+                    doiind <- which(names(pg[[varind]]) == names(pdois)[pgi])
+                    if (length(doiind) != 1) stop("this should not happen")
+                    message(length(events_to_merge[[mergei]]), " ", names(pdois[[pgi]]$vars)[vi], 
+                            " events of ", names(pdois)[pgi], " to merge (in this order):")
+                    eventinds <- match(events_to_merge[[mergei]], names(pg[[varind]][[doiind]]))
+                    if (any(is.na(eventinds))) {
+                        nainds <- which(is.na(eventinds))
+                        stop("provided merge-event", ifelse(length(nainds) > 1, "s", ""), " \"", 
+                             paste(events_to_merge[[mergei]][nainds], collapse="\", \""), 
+                             "\" not found in this loaded pangaea data")
+                    }
+                    cat(capture.output(str(pg[[varind]][[doiind]][eventinds])), sep="\n")
+                    # check if dims of data sets to merge are the same
+                    dims_to_check <- lapply(pg[[varind]][[doiind]], "[[", "dims") 
+                    if (!all(sapply(dims_to_check, length))) { # not all have same number of dims
+                        stop("cannot merge data with different numbers of dimensions")
+                    }
+                    # merge in same order as provided `merge`
+                    merged_list <- list(pg[[varind]][[doiind]][[1]]) # placeholder
+                    merged_list[[1]]$merged_events <- events_to_merge[[mergei]]
+                    names(merged_list) <- names(events_to_merge)[mergei]
+                    merged_data <- c()
+                    merged_dims <- vector("list", l=length(pg[[varind]][[doiind]][[eventinds[1]]]$dims)) 
+                    names(merged_dims) <- names(pg[[varind]][[doiind]][[eventinds[1]]]$dims)
+                    for (di in seq_along(merged_dims)) { # need to declare special dims e.g. POSIX; stupid workaround
+                        merged_dims[[di]] <- pg[[varind]][[doiind]][[eventinds[1]]]$dims[[di]][1]
+                        merged_dims[[di]] <- merged_dims[[di]][-1] # remove first entry again
+                    } 
+                    for (eventi in seq_along(eventinds)) {
+                        merged_data <- c(merged_data, 
+                                         pg[[varind]][[doiind]][[eventinds[eventi]]]$data)
+                        for (di in seq_along(merged_dims)) {
+                            merged_dims[[di]] <- c(merged_dims[[di]], 
+                                                   pg[[varind]][[doiind]][[eventinds[eventi]]]$dims[[di]])
+                        }
+                    }
+                    merged_list[[1]]$data <- merged_data
+                    merged_list[[1]]$dims <- merged_dims
+                    # remove original data
+                    pg[[varind]][[doiind]][eventinds] <- NULL
+                    # add merged data
+                    pg[[varind]][[doiind]][[length(pg[[varind]][[doiind]])+1]] <- merged_list[[1]]
+                    names(pg[[varind]][[doiind]])[length(pg[[varind]][[doiind]])] <- names(events_to_merge)[mergei]
+                    message("merged data:")
+                    cat(capture.output(str(pg[[varind]][[doiind]][length(pg[[varind]][[doiind]])])), sep="\n")
+                } # for mergei
+            } # if merge is not null
+        } # for vi
+    } # for pgi
+
     message("\nfinished modifying ", length(pdois), " pangaea dois")
 
 } # if length(pdois) > 0

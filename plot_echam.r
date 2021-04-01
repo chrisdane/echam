@@ -230,7 +230,7 @@ data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 
 ## load pangaea data if defined 
-if (F) {
+if (T) {
     message("\ndisable here if you do not want to load pangaea data via load_pangaea_data.r ...")
     source("load_pangaea_data.r")
 } else {
@@ -4006,6 +4006,39 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #point_data_label <- expression(paste("PLOT ", delta^{18}, "O"["diatom,SMOW"], " [‰]"))
                 #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
                 point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
+                # replace meyer et al. xlsx emanda with kostrova et al. 2021 emanda
+                if (T && any(names(meyer_etal$data) == "emanda") && exists("kostrova_etal_2021")) {
+                    message("replace meyer et al. xlsx emanda with kostrova et al. 2021 emanda ...")
+                    emandaind <- which(names(meyer_etal$data) == "emanda")
+                    inds <- seq_along(kostrova_etal_2021$data$time)
+                    if (T) {
+                        message("use only younger than 10k BP ...")
+                        inds <- which(kostrova_etal_2021$data$time$year + 1900 > -10000)
+                    }
+                    meyer_etal$data[[emandaind]]$data <- list(d18o_corr_perm=kostrova_etal_2021$data$d18o_corr_perm[inds],
+                                                              timelt=kostrova_etal_2021$data$time[inds])
+                    meyer_etal$data[[emandaind]]$data$time <- as.POSIXct(meyer_etal$data[[emandaind]]$data$timelt)
+                }
+                # add swann et al. 2010 from pangaea to meyer et al xlsx at elgygytgyn
+                varind <- which(names(pg) == "d18o_w_smow")
+                if (T && any(names(meyer_etal$data) == "elgygytgyn") && any(names(pg[[varind]]) == "swann_etal_2010")) {
+                    gygyind <- which(names(meyer_etal$data) == "elgygytgyn")
+                    meyer_etal$data[[length(meyer_etal$data)+1]] <- meyer_etal$data[[gygyind]] # copy lon,lat etc.
+                    doiind <- which(names(pg[[varind]]) == "swann_etal_2010")
+                    eventind <- 1
+                    message("add d18o_smow pangaea event \"", names(pg[[varind]][[doiind]])[eventind], 
+                            "\" from swann_etal_2010 to meyer et al xlsx ...")
+                    inds <- seq_along(pg[[varind]][[doiind]][[eventind]]$dims$time)
+                    if (T) {
+                        message("only use younger than 10k BP ...")
+                        inds <- which(pg[[varind]][[doiind]][[eventind]]$dims$time$year + 1900 > -10000)
+                    }
+                    meyer_etal$data[[length(meyer_etal$data)]]$data <- list(timelt=pg[[varind]][[doiind]][[eventind]]$dims$time[inds],
+                                                                            d18o_corr_perm=pg[[varind]][[doiind]][[eventind]]$data[inds])
+                    meyer_etal$data[[length(meyer_etal$data)]]$data$time <- as.POSIXct(meyer_etal$data[[length(meyer_etal$data)]]$data$timelt)
+                    names(meyer_etal$data)[length(meyer_etal$data)] <- "elgygytgyn_swann_etal_2010"
+                    meyer_etal$data[[length(meyer_etal$data)]]$text <- "F: El’gygytgyn (Swann et al. 2010)"
+                }
                 # calc lm of scaled PLOT time series
                 tmp <- vector("list", l=length(meyer_etal$data))
                 for (i in seq_along(tmp)) { # loop through lakes
@@ -4227,26 +4260,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                         # if point data has time dim, calc temporal means of point data (since 
                         # here is the lon,lat section and not lon,lat,time)
-                        stop("update season_check --> known_seasons")
-                        if (any(seasonsp_p[i] == names(season_check$known_seasons))) { # seas check 1/3
-                            season_inds <- season_check$known_seasons[[
-                                            which(seasonsp_p[i] == names(season_check$known_seasons))
-                                                                     ]]$inds
+                        if (any(seasonsp_p[i] == names(known_seasons))) { # seas check 1/3
+                            season_inds <- known_seasons[[
+                                            which(seasonsp_p[i] == names(known_seasons))
+                                                        ]]$inds
                         } else {
-                            season_inds <- regexpr(seasonsp_p[i], season_check$string)
-                            if (any(season_inds != -1)) { # seas check 2/3: "DJF", "JJA"
-                                season_inds <- season_check$inds[
-                                            season_inds:(season_inds+attributes(season_inds)$match.length-1)
-                                                                ]
-                            } else { # seas check 3/3: "Jan", "Jul"
-                                season_inds <- regexpr(seasonsp_p[i], season_check$names)
-                                if (length(which(season_inds != -1)) == 1) {
-                                    season_inds <- which(season_inds != -1)
-                                } else {
-                                    stop("`seasonsp_p[", i, "]` = \"", seasonsp_p[i], "\" not defined")
-                                }
-                            }
+                            stop("this should not happen here")
                         }
+                        
                         # apply seasonal subset and apply temporal mean to all point data coords within lon,lat-lims
                         message("\ncalc seasonal mean seasonsp_p[", i, "] = ", seasonsp_p[i], " of ",
                                 length(point_datap), " point_datap locations (use months ", 
@@ -5335,14 +5356,17 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             # add mpiom land sea mask contours
             mpiom_lsm_segments <- ls(pattern=glob2rx("mpiom_*_land_sea_mask_segments_lon*"))
-            if (F && length(mpiom_lsm_segments) > 0) {
+            if (T && length(mpiom_lsm_segments) > 0) {
                 segment_list <- vector("list", l=length(z))
-                inds <- seq_along(z) # change here
+                inds <- seq_along(z) # change here which settings to include
                 message("add mpiom land sea mask segments to sub-plots ", 
                         paste(names_legend[inds], collapse=", "), " ...")
-                segment_list[inds] <- mpiom_GR30s_land_sea_mask_segments_lon180
-                #segment_list[inds] <- mpiom_GR15s_land_sea_mask_segments_lon180
-                #segment_list[inds] <- mpiom_TP04s_land_sea_mask_segments_lon180
+                for (i in inds) {
+                    segment_list[[i]] <- mpiom_GR30s_land_sea_mask_segments_lon180
+                    #segment_list[[i]] <- mpiom_GR15s_land_sea_mask_segments_lon180
+                    #segment_list[[i]] <- mpiom_TP04s_land_sea_mask_segments_lon180
+                }
+                addland_list[] <- NA
             }
 
             if (exists("add_echam_TR31GR30_oromea_contour") && add_echam_TR31GR30_oromea_contour) {
@@ -6010,11 +6034,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 data_right <- list(suffix="") # default
             } # if add_data_right_yaxis_ts
 
-            # after check
+            # data_right after check
             if (add_data_right_yaxis_ts) {
-                
                 nsettings_right <- length(data_right$data)
-
                 if (add_smoothed) {
                     for (i in seq_len(nsettings_right)) {
                         if (F) { # todo: how to do this check autmatically?
@@ -6162,11 +6184,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 data_upper <- list(suffix="") # default
             } # if add_data_upper_xaxis_ts
 
-            # after check
+            # data_upper after check
             if (add_data_upper_xaxis_ts) {
-                
                 nsettings_upper <- length(data_upper$data)
-
                 if (add_smoothed) {
                     for (i in seq_len(nsettings_upper)) {
                         data_upper$data[[i]]$yma <- filter(data_upper$data[[i]]$y, 
@@ -6216,7 +6236,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
             } # if center_ts or scale_ts
 
-            # ylims of model data
+            ## ylim model
             if (add_unsmoothed) {
                 message("\n", mode_p, " versus time min / mean / max ", varname, " z:")
                 for (i in seq_along(z)) {
@@ -6239,110 +6259,133 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim <- range(ylimma)
             }
             ylim[is.infinite(ylim)] <- 0
-
+            
+            # update ylim according to ylim_upper
             if (add_data_upper_xaxis_ts) {
+                message("\nupdate left yaxis ylim = ", paste(ylim, collapse=", "), 
+                        " with ylim_upper = ", paste(ylim_upper, collapse=", "), " ...") 
                 ylim <- range(ylim, ylim_upper)
-            } # change ylim according to ylim_upper
+            } 
 
-            # ylim of obs, etc.
+            ## add data to left yaxis (e.g. obs)
+            message("\nprepare additional left yaxis data (e.g. obs)")
+            data_left <- list() # default: dont add additional data to left yaxis
+            
+            # add to data_left
             if (F && varname == "temp2") {
-                message("\nadd hadcrut4_sat_anom, gistempv4_sat_anom to ylim ...")
-                ylim <- range(ylim,
-                              hadcrut4_sat_anom_annual$hadcrut4_sat_anom_lower_uncert,
-                              hadcrut4_sat_anom_annual$hadcrut4_sat_anom_upper_uncert,
-                              #gistempv4_sat_anom_annual$gistempv4_sat_anom, 
-                              na.rm=T)
+                message("add hadcrut4_sat_anom, gistempv4_sat_anom to ylim ...")
+                data_left[[length(data_left)+1]] <- list(x=as.POSIXct(hadcrut4_sat_anom_annual$time), 
+                                                         y=hadcrut4_sat_anom_annual$hadcrut4_sat_anom,
+                                                         y_lower=hadcrut4_sat_anom_annual$hadcrut4_sat_anom_lower_uncert,
+                                                         y_upper=hadcrut4_sat_anom_annual$hadcrut4_sat_anom_upper_uncert)
             } # if add som obs to ylim
 
+            # add to data_left
             if (F && varname == "moc_max_26.25deg") {
-                message("\nadd rapid$moc_annual to ylim ...")
-                ylim <- range(ylim, moc_rapid$moc_annual, na.rm=T)
+                message("add rapid$moc_annual to ylim ...")
+                okinds <- which(!is.na(moc_rapid$moc) & !is.na(moc_rapid$moc_error)) 
+                data_left[[length(data_left)+1]] <- list(x=as.POSIXct(moc_rapid$time[okinds]), 
+                                                         y=moc_rapid$moc[okinds],
+                                                         y_lower=moc_rapid$moc[okinds] - moc_rapid$moc_error[okinds],
+                                                         y_upper=moc_rapid$moc[okinds] + moc_rapid$moc_error[okinds])
             } # if add moc ts
             
+            # add to data_left
             if (T && varname == "siarean") {
-                message("\nadd nsidc annual to ylim ...")
-                ylim <- range(ylim, nsidc_siarean_annual$siarean, na.rm=T)
+                message("add nsidc annual to ylim ...")
+                data_left[[length(data_left)+1]] <- list(x=nsidc_siarean_annual$time,
+                                                         y=nsidc_siarean_annual$siarean)
             } # if add nsidc
+            
+            # add to data_left
+            if (zname == "wisoaprt_d" && any(names(pg) == "d18o_w_smow")) {
+                varind <- which(names(pg) == "d18o_w_smow")
+                for (i in seq_along(pg[[varind]])) { # all d18o_w_smow records loaded from pangaea
+                    if (all(grepl("elgygytgyn", areas)) && any(names(pg[[varind]]) == "swann_etal_2010")) {
+                        doiind <- which(names(pg[[varind]]) == "swann_etal_2010")
+                        for (eventi in seq_along(pg[[varind]][[doiind]])) {
+                            message("add d18o_smow pangaea event \"", names(pg[[varind]][[doiind]])[eventi], 
+                                    "\" from swann_etal_2010 to data_left ...")
+                            inds <- seq_along(pg[[varind]][[doiind]][[eventi]]$dims$time)
+                            if (T) {
+                                message("only use younger than 10k BP ...")
+                                inds <- which(pg[[varind]][[doiind]][[eventi]]$dims$time$year + 1900 > -10000)
+                            }
+                            data_left[[length(data_left)+1]] <- list(x=pg[[varind]][[doiind]][[eventi]]$dims$time[inds],
+                                                                     y=pg[[varind]][[doiind]][[eventi]]$data[inds],
+                                                                     type="o", col=mycols(9)[9],
+                                                                     pch=2,
+                                                                     text="F: El’gygytgyn (Swann et al. 2010)")
 
-            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && 
-                exists("kostrova_etal_2019") &&
-                all(grepl("ladoga", areas))) {
-                message("\nadd kostrova et al. 2019 d18o data ...")
-                message("ylim before: ", ylim[1], ", ", ylim[2])
-                if (center_ts) kostrova_etal_2019$d18o <- scale(kostrova_etal_2019$d18o, scale=F)
-                if (scale_ts) kostrova_etal_2019$d18o <- scale(kostrova_etal_2019$d18o)
-                ylim <- range(ylim, kostrova_etal_2019$d18o)
-                message("ylim after: ", ylim[1], ", ", ylim[2])
-            }
-
-            if (#any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && 
-                exists("meyer_etal")) {
-                add_meyer_etal_xlsx <- T
-                message("\nadd meyer et al. xlsx d18o data ...")
-                if (all(grepl("ladoga", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data$"ladoga"
-                } else if (all(grepl("shuchye", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data$"shuchye"
-                } else if (all(grepl("emanda", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data$"emanda"
-                } else if (all(grepl("elgygytgyn", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data$"elgygytgyn"
-                } else if (all(grepl("two-yurts", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data$"two-yurts"
-                } else if (all(grepl("kotokel", areas))) {
-                    meyer_etal_tmp <- meyer_etal$data$"kotokel"
-                } else {
-                    message("no meyer et al. xlsx data available for some of the areas\n",
-                            paste(areas, collapse=", "))
-                    add_meyer_etal_xlsx <- F
+                        }
+                    } 
                 }
-                if (add_meyer_etal_xlsx) {
-                    if (center_ts) meyer_etal_tmp$data$d18o_corr_perm <- scale(meyer_etal_tmp$data$d18o_corr_perm, scale=F)
-                    if (scale_ts) meyer_etal_tmp$data$d18o_corr_perm <- scale(meyer_etal_tmp$data$d18o_corr_perm)
-                    message("ylim before: c(", ylim[1], ", ", ylim[2], ")")
-                    message("ylim meyer_etal: c(", range(meyer_etal_tmp$data$d18o_corr_perm)[1], 
-                            ", ", range(meyer_etal_tmp$data$d18o_corr_perm)[2], ")")
-                    ylim <- range(ylim, meyer_etal_tmp$data$d18o_corr_perm, na.rm=T)
-                    # ylims Hol-T* and meyer et al. xlsx d18o lakes
-                    if (center_ts) {
-                        # ladoga: c(-3.30543235329369, 1.8024062688112) 
-                        # shuchye: c(-3.31588729672117, 5.07708695323018)
-                        # emanda: c(-1.69386684350292, 0.902706467116598)
-                        # elgygytgyn: c(-0.859484244878168, 0.837003798075255)
-                        # two-yurts: c(-2.05770537576561, 1.94485402526289)
-                        # kotokel: c(-4.32039527896077, 2.06724117367673)
-                        message("special ylim")
-                        ylim <- c(-4.32039527896077, 5.07708695323018)
+            } # if zname == "wisoaprt_d" && any(names(pg) == "d18o_w_smow"))
+            
+            # add to data_left
+            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d"))) {
+                if (T && exists("kostrova_etal_2021") && all(grepl("emanda", areas))) {
+                    message("add kostrova et al. 2021 d18o emanda data to data_left ...")
+                    inds <- seq_along(kostrova_etal_2021$data$time)
+                    if (T) {
+                        message("only use data younger than 10k BP ...")
+                        inds <- which(kostrova_etal_2021$data$time$year + 1900 > -10000)
                     }
-                    if (scale_ts) {
-                        ## meyer et al. 10k BP 
-                        # ladoga: c(-2.71845068304792, 1.12244344859212)
-                        # shuchye: c(-2.06540423594796, 2.95748401109693)
-                        # emanda: c(-1.98885622964664, 2.40795779371568)
-                        # kotokel: c(-3.08014665995613, 1.35190103264372)
-                        # elgygytgyn: c(-1.47405790466153, 1.61041540752816)
-                        # two-yurts: c(-2.1518519172735, 2.0338372598759)
-                        # hol-t, hol-tx10; n_mas 250, 50
-                        # ladoga: c(-2.85126486366215, 2.32484231975009)
-                        # shuchye: c(-2.85992909997141, 2.44526416112507)
-                        # emanda: c(-2.06748945256795, 2.55525657817665)
-                        # kotokel: c(-2.60277676884169, 2.96409565621687)
-                        # elgygytgyn: c(-2.37444352133196, 3.04432535587108)
-                        # two-yurts: c(-2.70199788713988, 3.21519386227393) 
-                        message("special ylim: scale lims of 6 plot lakes incl. diatom data")
-                        ylim <- c(-3.08014665995613, 3.215193862273933)
+                    data_left[[length(data_left)+1]] <- list(x=kostrova_etal_2021$data$time[inds], 
+                                                             y=kostrova_etal_2021$data$d18o_corr_perm[inds],
+                                                             type=kostrova_etal_2021$type, col=kostrova_etal_2021$col, 
+                                                             pch=kostrova_etal_2021$pch, cex=kostrova_etal_2021$cex,
+                                                             lty=kostrova_etal_2021$lty, lwd=kostrova_etal_2021$lwd.,
+                                                             text=kostrova_etal_2021$text, legend.pos="topright")
+                }
+                if (F && exists("kostrova_etal_2019") && all(grepl("ladoga", areas))) {
+                    message("add kostrova et al. 2019 d18o ladoga data to data_left ...")
+                    data_left[[length(data_left)+1]] <- list(x=kostrova_etal_2019$time, 
+                                                             y=kostrova_etal_2019$d18o,
+                                                             type=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
+                                                             pch=kostrova_etal_2019$pch, cex=kostrova_etal_2019$cex,
+                                                             lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd,
+                                                             text=kostrova_etal_2019$text)
+                }
+                if (T && exists("meyer_etal")) {
+                    meyer_etal_tmp <- NULL
+                    if (all(grepl("ladoga", areas)) && !is.null(meyer_etal$data$"ladoga")) {
+                        meyer_etal_tmp <- meyer_etal$data$"ladoga"
+                        meyer_etal_tmp$legend.pos <- "topleft"
+                    } else if (all(grepl("shuchye", areas)) && !is.null(meyer_etal$data$"shuchye")) {
+                        meyer_etal_tmp <- meyer_etal$data$"shuchye"
+                        meyer_etal_tmp$legend.pos <- "topright"
+                    } else if (all(grepl("emanda", areas)) && !is.null(meyer_etal$data$"emanda")) {
+                        meyer_etal_tmp <- meyer_etal$data$"emanda"
+                        meyer_etal_tmp$legend.pos <- "topright"
+                    } else if (all(grepl("elgygytgyn", areas)) && !is.null(meyer_etal$data$"elgygytgyn")) {
+                        meyer_etal_tmp <- meyer_etal$data$"elgygytgyn"
+                        meyer_etal_tmp$legend.pos <- "bottomleft"
+                    } else if (all(grepl("two-yurts", areas)) && !is.null(meyer_etal$data$"two-yurts")) {
+                        meyer_etal_tmp <- meyer_etal$data$"two-yurts"
+                        meyer_etal_tmp$legend.pos <- "bottomleft"
+                    } else if (all(grepl("kotokel", areas)) && !is.null(meyer_etal$data$"kotokel")) {
+                        meyer_etal_tmp <- meyer_etal$data$"kotokel"
+                        meyer_etal_tmp$legend.pos <- "bottom"
                     }
-                    message("ylim after: c(", ylim[1], ", ", ylim[2], ")")
-                } # if add_meyer_etal_xlsx
-            } else {  
-                add_meyer_etal_xlsx <- F
-            } # if add meyer et al xlsx
+                    if (!is.null(meyer_etal_tmp)) {
+                        message("add meyer et al. xlsx d18o data to data_left ...")
+                        data_left[[length(data_left)+1]] <- list(x=meyer_etal_tmp$data$time,
+                                                                 y=meyer_etal_tmp$data$d18o_corr_perm,
+                                                                 type=meyer_etal$type, col=meyer_etal$col,
+                                                                 pch=meyer_etal$pch, cex=meyer_etal$cex,
+                                                                 lty=meyer_etal$lty, lwd=meyer_etal$lwd,
+                                                                 text=meyer_etal_tmp$text, 
+                                                                 legend.pos=meyer_etal_tmp$legend.pos)
+                    }
+                } # if exists("meyer_etal")
+            } # if any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d"))
 
+            # add to data_left
             if (T && exists("noaa_ghcdn")) {
                 if (any(varname == c("temp2", "tsurf", "aprt"))) {
-                    message("\nadd noadd ghcdn monthly data\n", 
+                    message("add noadd ghcdn monthly data\n", 
                             "check https://github.com/chrisdane/PLOT/blob/master/lakes/lake_coords_closest_GHCDN_stations.txt ...")
-                    message("ylim before: ", ylim[1], ", ", ylim[2])
                     if (all(grepl("ladoga", areas))) {
                         noaa_ghcdn_tmp <- noaa_ghcdn$RSM00022802_SORTAVALA_RS
                     } else if (all(grepl("shuchye", areas))) {
@@ -6361,23 +6404,125 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         stop("noaa ghcdn data not defined for areas\n",
                              paste(areas, collapse=", "))
                     }
-                    noaax <- noaa_ghcdn_tmp$ts$time
+                    data_left[[length(data_left)+1]] <- list(x=noaa_ghcdn_tmp$ts$time, 
+                                                             type=noaa_ghcdn_tmp$type, col=noaa_ghcdn_tmp$col,
+                                                             pch=noaa_ghcdn$pch, cex=noaa_ghcdn$cex,
+                                                             lty=noaa_ghcdn$lty, lwd=noaa_ghcdn$lwd)
                     if (any(varname == c("temp2", "tsurf"))) {
-                        noaay <- noaa_ghcdn_tmp$ts$Tavg
+                        data_left[[length(data_left)]]$y <- noaa_ghcdn_tmp$ts$Tavg
                     } else if (varname == "aprt") {
-                        noaay <- noaa_ghcdn_tmp$ts$precip
+                        data_left[[length(data_left)]]$y <- noaa_ghcdn_tmp$ts$precip
                     }
-                    if (center_ts) noaay <- scale(noaay, scale=F)
-                    if (scale_ts) noaay <- scale(noaay)
-                    if (exists("zma")) {
-                        if (length(unique(n_mas)) != 1) stop("different n_ma present. dont know which to use for noaa ghcdn station data")
-                        message("filter(noaay) by n_mas[1] = ", n_mas[1])
-                        noaay <- filter(noaay, rep(1/n_mas[1], t=n_mas[1]))
-                    }
-                    ylim <- range(ylim, noaay, na.rm=T)
-                    message("ylim after: ", ylim[1], ", ", ylim[2])
                 } # if temp2, tsurf, aprt
             } # if exists("noaa_ghcdn")
+            # finished adding data to data_left
+
+            # check data_left
+            if (length(data_left) > 0) {
+                for (i in seq_along(data_left)) {
+                    if (is.null(data_left[[i]]$type)) data_left[[i]]$type <- "p" # default: point
+                    if (is.null(data_left[[i]]$col)) data_left[[i]]$col <- i
+                    if (is.null(data_left[[i]]$col_rgb)) col2rgba(data_left[[i]]$col)
+                    if (is.null(data_left[[i]]$pch)) data_left[[i]]$pch <- 1
+                    if (is.null(data_left[[i]]$lty)) data_left[[i]]$lty <- 1
+                    if (is.null(data_left[[i]]$lwd)) data_left[[i]]$lwd <- 1
+                    if (is.null(data_left[[i]]$n_ma)) data_left[[i]]$n_ma <- 1 # no low-pass filter
+                    if (is.null(data_left[[i]]$text)) data_left[[i]]$text <- "set text"
+                    if (is.null(data_left[[i]]$legend.pos)) data_left[[i]]$legend.pos <- NA
+                } # for i in data_left
+            } # if length(data_left) > 0
+
+            # apply moving average on data_left
+            if (length(data_left) > 0) {
+                for (i in seq_along(data_left)) {
+                    if (data_left[[i]]$n_ma != 1) {
+                        stop("implement")
+                    }
+                }
+            } # if length(data_left) > 0
+
+            # scale data_left
+            if (length(data_left) > 0) {
+                if (center_ts || scale_ts) {
+                    if (center_ts) {
+                        message("\n`center_ts` = T --> center data_left before plot ...")
+                    } else if (scale_ts) {
+                        message("\n`scale_ts` = T --> scale data_left before plot ...")
+                    }
+                    for (i in seq_along(data_left)) {
+                        if (center_ts) {
+                            data_left[[i]]$y <- scale(data_left[[i]]$y, scale=F)
+                            if (!is.null(data_left[[i]]$y_lower)) {
+                                data_left[[i]]$y_lower <- scale(data_left[[i]]$y_lower, scale=F)
+                            }
+                            if (!is.null(data_left[[i]]$y_upper)) {
+                                data_left[[i]]$y_upper <- scale(data_left[[i]]$y_upper, scale=F)
+                            }
+                        } else if (scale_ts) {
+                            data_left[[i]]$y <- scale(data_left[[i]]$y)
+                            if (!is.null(data_left[[i]]$y_lower)) {
+                                data_left[[i]]$y_lower <- scale(data_left[[i]]$y_lower)
+                            }
+                            if (!is.null(data_left[[i]]$y_upper)) {
+                                data_left[[i]]$y_upper <- scale(data_left[[i]]$y_upper)
+                            }
+                        }
+                    }
+                }
+            } # if length(data_left) > 0
+
+            # update ylim according to additional data_left (e.g. obs)
+            if (length(data_left) > 0) {
+                ylim_left <- range(lapply(data_left, "[[", "y"), na.rm=T)
+                message("\nupdate left yaxis ylim = ", paste(ylim, collapse=", "), 
+                        " with ylim_left = ", paste(ylim_left, collapse=", "), " ...") 
+                ylim <- range(ylim, ylim_left)
+                ylim_left_lower <- lapply(data_left, "[[", "y_lower")
+                if (!all(sapply(ylim_left_lower, is.null))) {
+                    ylim_left_lower <- range(ylim_left_lower, na.rm=T)
+                    message("update left yaxis ylim = ", paste(ylim, collapse=", "), 
+                            " with ylim_left_lower = ", paste(ylim_left_lower, collapse=", "), " ...") 
+                    ylim <- range(ylim, ylim_left_lower)
+                }
+                ylim_left_upper <- lapply(data_left, "[[", "y_upper")
+                if (!all(sapply(ylim_left_lower, is.null))) {
+                    ylim_left_upper <- range(ylim_left_upper, na.rm=T)
+                    message("update left yaxis ylim = ", paste(ylim, collapse=", "), 
+                            " with ylim_left_upper = ", paste(ylim_left_lower, collapse=", "), " ...") 
+                    ylim <- range(ylim, ylim_left_upper)
+                }
+            } # if (length(data_left) > 0)
+
+            if (T) { # special manual ylim based on data_left
+                if (T) { # special PLOT ylim
+                    message("special PLOT ylim")
+                    if (center_ts) {
+                        # ladoga: c(-3.30543235329369, 1.8024062688112) 
+                        # shuchye: c(-3.31588729672117, 5.07708695323018)
+                        # emanda: c(-1.69386684350292, 0.902706467116598)
+                        # elgygytgyn: c(-0.859484244878168, 0.837003798075255)
+                        # two-yurts: c(-2.05770537576561, 1.94485402526289)
+                        # kotokel: c(-4.32039527896077, 2.06724117367673)
+                        ylim <- c(-4.32039527896077, 5.07708695323018)
+                    } else if (scale_ts) {
+                        ## meyer et al. 10k BP 
+                        # ladoga: c(-2.71845068304792, 1.12244344859212)
+                        # shuchye: c(-2.06540423594796, 2.95748401109693)
+                        # emanda: c(-1.98885622964664, 2.40795779371568)
+                        # kotokel: c(-3.08014665995613, 1.35190103264372)
+                        # elgygytgyn: c(-1.47405790466153, 1.61041540752816)
+                        # two-yurts: c(-2.1518519172735, 2.0338372598759)
+                        # hol-t, hol-tx10; n_mas 250, 50
+                        # ladoga: c(-2.85126486366215, 2.32484231975009)
+                        # shuchye: c(-2.85992909997141, 2.44526416112507)
+                        # emanda: c(-2.06748945256795, 2.55525657817665)
+                        # kotokel: c(-2.60277676884169, 2.96409565621687)
+                        # elgygytgyn: c(-2.37444352133196, 3.04432535587108)
+                        # two-yurts: c(-2.70199788713988, 3.21519386227393) 
+                        ylim <- c(-3.08014665995613, 3.215193862273933)
+                    }
+                } # special PLOT ylim
+            } # if special ylim based on data_left
 
             # increase ylim for legend if many settings
             if (F && length(z) > 6) {
@@ -6634,70 +6779,36 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
             } # add_linear_trend
             
-            ## add obs, etc.
-            if (F && varname == "temp2") {
-                message("\nadd hadcrut4_sat_anom, gistempv4_sat_anom to datas plot ...")
-                polygon(c(as.POSIXct(hadcrut4_sat_anom_annual$time), 
-                          rev(as.POSIXct(hadcrut4_sat_anom_annual$time))),
-                        c(hadcrut4_sat_anom_annual$hadcrut4_sat_anom_lower_uncert,
-                          rev(hadcrut4_sat_anom_annual$hadcrut4_sat_anom_upper_uncert)),
-                        col=hadcrut4_sat_anom_annual$col_rgb, border=NA)
-                lines(hadcrut4_sat_anom_annual$time, hadcrut4_sat_anom_annual$hadcrut4_sat_anom,
-                      col=hadcrut4_sat_anom_annual$col, lty=hadcrut4_sat_anom_annual$lty,
-                      lwd=hadcrut4_sat_anom_annual$lwd)
-                #lines(gistempv4_sat_anom_annual$time, gistempv4_sat_anom_annual$gistempv4_sat_anom,
-                #      col=cols[2], lwd=2, lty=2)
-            }
-            if (F && varname == "moc_max_26.25deg") {
-                message("\nadd moc_rapid$moc_annual to datas plot ...")
-                # exclude NA values
-                nainds <- which(!is.na(moc_rapid$moc) & !is.na(moc_rapid$moc_error)) 
-                #polygon(c(as.POSIXct(moc_rapid$time[nainds]), rev(as.POSIXct(moc_rapid$time[nainds]))),
-                #        c(moc_rapid$moc[nainds] - moc_rapid$moc_error[nainds], 
-                #          rev(moc_rapid$moc[nainds] + moc_rapid$moc_error[nainds])),
-                #        col=moc_rapid$col_rgb, border=NA)
-                lines(moc_rapid$time, moc_rapid$moc_annual,
-                      col=moc_rapid$col, lty=moc_rapid$lty,
-                      lwd=moc_rapid$lwd)
-            }
-            if (T && varname == "siarean") {
-                message("\nadd nsidc annual to datas plot ...")
-                lines(nsidc_siarean_annual$time, nsidc_siarean_annual$siarean,
-                      col=nsidc_siarean_annual$col, lty=nsidc_siarean_annual$lty,
-                      lwd=nsidc_siarean_annual$lwd)
-            }
-            
-            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) && 
-                exists("kostrova_etal_2019") &&
-                all(grepl("ladoga", areas))) {
-                message("\nadd kostrova et al. 2019 to datas plot ...")
-                points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
-                       t=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
-                       lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd, 
-                       pch=kostrova_etal_2019$pch, cex=kostrova_etal_2019$cex)
-            }
-            
-            if (add_meyer_etal_xlsx) {
-                message("\nadd meyer et al. xlsx to datas plot ...")
-                points(meyer_etal_tmp$data$time, meyer_etal_tmp$data$d18o_corr_perm,
-                       t=meyer_etal$type, col=meyer_etal$col, 
-                       lty=meyer_etal$lty, lwd=meyer_etal$lwd, 
-                       pch=meyer_etal$pch, cex=meyer_etal$cex)
-            }
-            
-            if (T && exists("noaa_ghcdn")) {
-                if (any(varname == c("temp2", "tsurf", "aprt"))) {
-                    message("\nadd noadd ghcdn monthly data to datas plot ...")
-                    points(noaax, noaay,
-                           t=noaa_ghcdn_tmp$type, 
-                           col=noaa_ghcdn_tmp$col,
-                           lty=noaa_ghcdn$lty, 
-                           lwd=noaa_ghcdn$lwd,
-                           pch=noaa_ghcdn$pch, 
-                           cex=noaa_ghcdn$cex)
-                } # if temp2, tsurf, aprt
-            } # if exists("noaa_ghcdn")
-            # finished adding obs
+            # add obs, etc.
+            if (length(data_left) > 0) {
+                message("\nadd data_left to plot ...")
+
+                # add uncertainties if given
+                for (i in seq_along(data_left)) {
+                    if (!is.null(data_left[[i]]$y_lower) || !is.null(data_left[[i]]$y_upper)) {
+                        message("add data_left[[", i, "]]$text = ", data_left[[i]]$text, " uncertainties to plot ...")
+                        if (!is.null(data_left[[i]]$y_lower) && !is.null(data_left[[i]]$y_upper)) {
+                            polygon(c(data_left[[i]]$x, rev(data_left[[i]]$x)),
+                                    c(data_left[[i]]$y_lower, rev(data_left[[i]]$y_upper)),
+                                    col=data_left[[i]]$col_rgb, border=NA)
+                        } else if (!is.null(data_left[[i]]$y_lower) && is.null(data_left[[i]]$y_upper)) {
+                            stop("implement")
+                        } else if (is.null(data_left[[i]]$y_lower) && !is.null(data_left[[i]]$y_upper)) {
+                            stop("implement")
+                        }
+                    }
+                } # for i in data_left
+
+                # add data points/lines
+                for (i in seq_along(data_left)) {
+                    message("add data_left[[", i, "]]$text = ", data_left[[i]]$text, " data to plot ...")
+                    points(data_left[[i]]$x, data_left[[i]]$y, 
+                           type=data_left[[i]]$type, col=data_left[[i]]$col, 
+                           pch=data_left[[i]]$pch, cex=data_left[[i]]$cex, 
+                           lty=data_left[[i]]$lty, lwd=data_left[[i]]$lwd)
+                } # for i in data_left
+
+            } # add obs if length(data_left) > 0
 
             # add legend if wanted
             if (add_legend) {
@@ -6760,64 +6871,46 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch[i] <- NA
                     }
                 }
-                # add stuf to legend here
-                if (F && varname == "temp2") {
-                    message("\nadd non hadcrut4 to ", mode_p, " datas legend ...")
-                    if (varname == "temp2") {
-                        le$text <- c(le$text, hadcrut4_sat_anom_annual$text)
-                        le$col <- c(le$col, hadcrut4_sat_anom_annual$col)
-                        le$lty <- c(le$lty, hadcrut4_sat_anom_annual$lty)
-                        le$lwd <- c(le$lwd, hadcrut4_sat_anom_annual$lwd)
-                        le$pch <- c(le$pch, hadcrut4_sat_anom_annual$pch)
-                    }
+
+                if (T && all(grepl("shuchye", areas_p))) {
+                    message("special shuchye legend ...")
+                    le$text <- "B: Bolshoye Shchuchye"
+                    le$pos <- "topleft"
+                    le$col <- NA; le$lty <- NA; le$lwd <- NA; le$pch <- NA
                 }
-                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) &&
-                    exists("kostrova_etal_2019") &&
-                    all(grepl("ladoga", areas))) {
-                    message("\nadd kostrova et al. 2019 to datas legend ...")
-                    le$pos <- "bottom"
-                    le$text <- c(le$text, kostrova_etal_2019$text)
-                    le$col <- c(le$col, kostrova_etal_2019$col)
-                    le$lty <- c(le$lty, kostrova_etal_2019$lty)
-                    le$lwd <- c(le$lwd, kostrova_etal_2019$lwd)
-                    le$pch <- c(le$pch, kostrova_etal_2019$pch)
-                }
-                if (add_meyer_etal_xlsx) {
-                    message("\nadd meyer et al. xlsx to datas legend ...")
-                    if (all(grepl("ladoga", areas))) le$pos <- "topleft"
-                    if (all(grepl("shuchye", areas))) le$pos <- "topright"
-                    if (all(grepl("emanda", areas))) le$pos <- "topright"
-                    if (all(grepl("kotokel", areas))) le$pos <- "topleft"
-                    if (all(grepl("elgygytgyn", areas))) le$pos <- "bottomleft"
-                    if (all(grepl("two-yurts", areas))) le$pos <- "bottomleft"
-                    if (all(grepl("kotokel", areas))) le$pos <- "bottom"
-                    #le$cex <- 0.7
-                    if (all(grepl("ladoga", areas))) { # add PLOT to legend
-                        message("--> add to model legend")
-                        le$text <- c(le$text, meyer_etal_tmp$text)
-                        le$col <- c(le$col, meyer_etal$col)
-                        le$lty <- c(le$lty, meyer_etal$lty)
-                        le$lwd <- c(le$lwd, meyer_etal$lwd)
-                        le$pch <- c(le$pch, meyer_etal$pch)
-                    } else { # replace legend with PLOT
-                        message("--> replace model legend")
-                        le$text <- meyer_etal_tmp$text
-                        le$col <- meyer_etal$col
-                        le$lty <- meyer_etal$lty
-                        le$lwd <- meyer_etal$lwd
-                        le$pch <- meyer_etal$pch
+
+                # add data_left to legend
+                if (length(data_left) > 0) {
+
+                    # add data_left to model legend
+                    message("add ", length(data_left), " data_left entries to legend ...")
+                    le$text <- c(le$text, sapply(data_left, "[[", "text"))
+                    le$col <- c(le$col, sapply(data_left, "[[", "col"))
+                    le$lty <- c(le$lty, sapply(data_left, "[[", "lty"))
+                    le$lwd <- c(le$lwd, sapply(data_left, "[[", "lwd"))
+                    le$pch <- c(le$pch, sapply(data_left, "[[", "pch"))
+
+                    if (T) { # special: replace model legend with data_left legend
+                        message("special: replace model legend by ", length(data_left), " data_left entries ...")
+                        le$text <- sapply(data_left, "[[", "text")
+                        le$col <- sapply(data_left, "[[", "col")
+                        le$lty <- sapply(data_left, "[[", "lty")
+                        le$lwd <- sapply(data_left, "[[", "lwd")
+                        le$pch <- sapply(data_left, "[[", "pch")
                     }
-                } # if add_meyer_etal_xlsx
-                if (T && exists("noaa_ghcdn")) {
-                    if (any(varname == c("temp2", "tsurf", "aprt"))) {
-                        message("\nadd noadd ghcdn monthly data to legend ...")
-                        le$text <- c(le$text, noaa_ghcdn_tmp$text)
-                        le$col <- c(le$col, noaa_ghcdn_tmp$col)
-                        le$lty <- c(le$lty, noaa_ghcdn_tmp$lty)
-                        le$lwd <- c(le$lwd, noaa_ghcdn_tmp$lwd)
-                        le$pch <- c(le$pch, noaa_ghcdn_tmp$pch)
-                    } # temp2, tsurf, aprt
-                } # noadd_ghcdn
+                    
+                    if (T && any(!is.na(sapply(data_left, "[[", "legend.pos")))) {
+                        message("special legend placement")
+                        legend.pos <- sapply(data_left, "[[", "legend.pos")
+                        legend.pos <- legend.pos[which(!is.na(legend.pos))]
+                        if (length(legend.pos) == 1) {
+                            le$pos <- legend.pos
+                        } else {
+                            stop("found ", length(legend.pos), " legend.pos in data_left. dont know how to continue")
+                        }
+                    }
+
+                } # if (length(data_left) > 0)
 
                 # reorder reading direction from R's default top->bottom to left->right
                 if (T) {
