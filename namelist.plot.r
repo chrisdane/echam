@@ -74,7 +74,7 @@ add_nonlinear_trend <- F
 add_1to1_line <- T
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
-scale_ts <- T
+scale_ts <- F
 ts_highlight_seasons <- list(#bool=T,
                              bool=F,
                              seasons=c("DJF", "MAM", "JJA", "SON"),
@@ -322,6 +322,15 @@ if (F) { # awi-esm-1-1-lr hist
     #regboxes <- list(list(regbox="northeast_europe"))
     regboxes <- list(list(regbox="NAsiberia"))
 
+} else if (T) { # my phd stuff
+    postpaths <- "/work/ba0941/a270073/post"
+    models <- "fesom"
+    prefixes <- "LSea5_s5_regular_dx0.250_dy0.250"
+    names_short <- "Lsea5_s5"
+    varnames_in <- "resolutionkm"
+    seasonsf <- fromsf <- tosf <- ""
+    modes <- "timmean"
+
 # =====================================
 # 2 settings
 } else if (F) { # awi-esm-1-1-lr 1pct 4CO2
@@ -367,7 +376,7 @@ if (F) { # awi-esm-1-1-lr hist
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
 
-} else if (T) { # Hol-T with vs without orbital acceleration
+} else if (F) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_Hol-T", "cosmos-aso-wiso_Hol-Tx10")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm", "cosmos-aso-wiso_Hol-Tx10_main_mm")
     #prefixes <- c("cosmos-aso-wiso_Hol-T_main_mm_plev", "cosmos-aso-wiso_Hol-Tx10_main_mm_plev")

@@ -140,7 +140,7 @@ if (any(!is.na(sapply(regboxes, "[[", "regbox")))) { # run namelist.area.r to ge
     areas_out[which(!is.na(sapply(regboxes, "[[", "regbox")))] <- sapply(regboxes, "[[", "regbox")
 }
 
-# defaults: regular interp stuff
+# defaults: regular interp stuff; for back compatility old fesom post
 if (!exists("reg_dxs")) reg_dxs <- rep("", t=nsettings)
 if (!exists("reg_dys")) reg_dys <- rep("", t=nsettings)
 reg_dxsf <- reg_dxs
@@ -230,7 +230,7 @@ data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 
 ## load pangaea data if defined 
-if (T) {
+if (F) {
     message("\ndisable here if you do not want to load pangaea data via load_pangaea_data.r ...")
     source("load_pangaea_data.r")
 } else {
@@ -238,7 +238,7 @@ if (T) {
 }
 
 ## load special data if defined
-if (T) {
+if (F) {
     message("\ndisable here if you do not want to load special data via load_special_data.r ...")
     source("load_special_data.r")
 } else {
@@ -264,10 +264,13 @@ for (i in seq_len(nsettings)) {
     fname <- paste0(prefixes[i], "_", models[i], "_", modes[i], 
                     codesf[i], "_", varnames_in[i], 
                     levsf[i], depthsf[i], "_",
-                    areas[i], "_", 
-                    seasonsf[i], "_", fromsf[i], "-", tosf[i], 
+                    areas[i])
+    if (seasonsf[i] != "") fname <- paste0(fname, "_", seasonsf[i])
+    if (fromsf[i] != "") fname <- paste0(fname, "_", fromsf[i])
+    if (tosf[i] != "") fname <- paste0(fname, "-", tosf[i])
+    fname <- paste0(fname, 
                     reg_dxsf[i], reg_dysf[i],
-                    ".nc") 
+                    ".nc")
     inpaths[i] <- inpath; fnames[i] <- fname
 
     message("\nopen ", inpath, "/", fname, " ...")
@@ -5135,12 +5138,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # finished add special data to z
             
             # colorbar values
-            message("define color levels here if wanted ...")
+            message("define lon vs lat color levels here if wanted ...")
             message("get global min/max zlim ... ", appendLF=F)
             zlim <- range(z, na.rm=T)
             op <- options()$digits; options(digits=15); cat("=", zlim, "\n"); options(digits=op)
 
-            nlevels <- zlevels <- axis.labels <- y_at <- palname <- anom_colorbar <- NULL
+            nlevels <- zlevels <- axis.labels <- axis.addzlims <- y_at <- palname <- anom_colorbar <- NULL
             if (zname == "quv") {
                 message("special zlim")
                 nlevels <- 200
@@ -5181,21 +5184,34 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else if (any(zname == c("mlotst", "omldamax"))) {
                 message("special zlim")
                 #palname <- "RdYlBu"
-                palname <- "Spectral"
                 # FMA: 6.053815 3650.000000
                 # SON: 6.04869794845581 4879.9344112022
                 #zlevels <- c(min(zlim), seq(500, zlim[2], b=500))
                 #if (max(zlevels) != zlim[2]) zlevels[length(zlevels)] <- zlim[2]
                 zlevels <- c(seq(min(zlim), 1100, l=100), zlim[2])
                 axis.labels <- c(round(zlim[1]), seq(125, 1000, b=125), round(zlim[2]))
+            } else if (zname == "resolutionkm") {
+                message("special resolutionkm zlevels ...")
+                # lsea2 irregular: 4.425313, 91.178831
+                # lsea2 regular 1/4: 4.610265, 90.491457
+                zlevels <- c(4.425313, seq(6, 18, b=2), seq(20, 50, b=10), 75, 91.178831)
+                axis.labels <- as.character(round(zlevels))
+                axis.labels[1] <- round(zlevels[1], 2)
+                axis.labels[length(axis.labels)] <- round(zlevels[length(zlevels)], 2)
+                axis.addzlims <- F
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
             ip <- image.plot.pre(zlim=zlim, nlevels=nlevels, zlevels=zlevels, 
-                                 axis.labels=axis.labels, palname=palname, 
-                                 anom_colorbar=anom_colorbar, 
+                                 axis.labels=axis.labels, axis.addzlims=axis.addzlims, 
+                                 palname=palname, anom_colorbar=anom_colorbar, 
                                  verbose=F)
             if (any(zlim[1] < min(ip$levels))) warning("zlim[1] < min(ip$levels) in lon vs lat plot. do you want that?")
             if (any(zlim[2] > max(ip$levels))) warning("zlim[2] > max(ip$levels) in lon vs lat plot. do you want that?")
+            
+            if (zname == "resolutionkm") {
+                message("reverse resolutionkm colors ...")
+                ip$cols <- rev(ip$cols)
+            }
 
             # default names
             if (any(names_legend_p != "")) {
