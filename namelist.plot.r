@@ -323,7 +323,7 @@ if (F) { # awi-esm-1-1-lr hist
     regboxes <- list(list(regbox="NAsiberia"))
 
 } else if (T) { # my phd stuff
-    postpaths <- "/work/ba0941/a270073/post"
+    #postpaths <- "/work/ba0941/a270073/post"
     models <- "fesom"
     prefixes <- "LSea5_s5_regular_dx0.250_dy0.250"
     names_short <- "Lsea5_s5"

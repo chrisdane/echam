@@ -27,7 +27,7 @@ get_host <- function() {
     } else {
         machine_tag <- "unknown"
         homepath <- "~/scripts/r"
-        workpath <- homepath
+        workpath <- "~"
     }
     repopath <- system("git rev-parse --show-toplevel", intern=T)
     message("hostname    = \"", hostname, "\"\n",
