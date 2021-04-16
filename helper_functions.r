@@ -24,10 +24,10 @@ get_host <- function() {
         machine_tag <- "stan"
         homepath <- "~/scripts/r"
         workpath <- "/ace/user/cdanek"
-    } else {
+    } else { # defaults if unknown machine 
         machine_tag <- "unknown"
         homepath <- "~/scripts/r"
-        workpath <- "~"
+        workpath <- "~/data"
     }
     repopath <- system("git rev-parse --show-toplevel", intern=T)
     message("hostname    = \"", hostname, "\"\n",

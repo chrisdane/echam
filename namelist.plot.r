@@ -33,7 +33,8 @@ pchs_filled_w_border <- c(21, 24, 22, 23)
 add_title <- F
 add_legend <- T
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-p <- myDefaultPlotOptions(#plot_type="png", 
+p <- myDefaultPlotOptions(plot_type="png", 
+                          #plot_type="active",
                           #,family_png="Droid Sans Mono", 
                           #,family_pdf="Droid Sans Mono"
                           #,family_pdf="CM Roman"
@@ -98,6 +99,8 @@ add_cor_data_left_and_right_ts_an <- F
 add_legend_right_yaxis <- T
 add_legend_upper_xaxis <- F
 
+plot_lon_lat_anomaly <- F
+
 plot_scatter_s1_vs_s2 <- F
 #scatter_s1_vs_s1_varname <- "temp2"
 scatter_s1_vs_s1_varname <- "tsurf"
@@ -122,16 +125,16 @@ varnamey <- "toa_imbalance_datas"
 # time vs depth:
 add_ts_to_time_vs_depth <- T
 
-# special
-plot_redfit <- F
-
 # map (lon vs lat) plot options
-proj <- "rectangular" #"rectangular"
-addland <- T
 reorder_lon_from_0360_to_180180 <- T
-add_grid <- F
+addland <- T
+add_grid <- T
 respect_asp <- T
 aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for plot
+proj <- "" # default: no projection
+
+# special
+plot_redfit <- F
 
 # clear work space if non-clean restart of plot_echam.r (i.e. without rm of everything)
 objs <- c("postpaths", "plotpath", 
@@ -322,7 +325,7 @@ if (F) { # awi-esm-1-1-lr hist
     #regboxes <- list(list(regbox="northeast_europe"))
     regboxes <- list(list(regbox="NAsiberia"))
 
-} else if (T) { # my phd stuff
+} else if (F) { # my phd stuff
     #postpaths <- "/work/ba0941/a270073/post"
     models <- "fesom"
     prefixes <- "LSea5_s5_regular_dx0.250_dy0.250"
@@ -573,6 +576,16 @@ if (F) { # awi-esm-1-1-lr hist
     #areas <- rep("elgygytgyn_remapnn", t=2)
     areas <- rep("two-yurts_remapnn", t=2)
     #areas <- rep("kotokel_remapnn", t=2)
+
+} else if (T) { # my phd stuff
+    #postpaths <- "/work/ba0941/a270073/post"
+    models <- rep("fesom", t=2)
+    prefixes <- c("Low01_s52_regular_dx0.250_dy0.250", "LSea5_s5_regular_dx0.250_dy0.250")
+    names_short <- c("Low01_s5_dx0.250", "Lsea5_s5_dx0.250")
+    varnames_in <- rep("resolutionkm", t=2)
+    proj <- "+proj=ortho +lat_0=30 +lon_0=-45"
+    seasonsf <- fromsf <- tosf <- rep("", t=2)
+    modes <- rep("timmean", t=2)
 
 # =====================================
 # 3 settings

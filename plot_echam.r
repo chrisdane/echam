@@ -59,10 +59,20 @@ if (center_ts && scale_ts) {
 # defaults: general stuff
 if (!exists("postpaths")) { # default from post_echam.r
     postpaths <- rep(paste0(host$workpath, "/post"), t=nsettings)
+} else {
+    if (!any(dir.exists(postpaths))) {
+        for (i in seq_along(postpaths)) {
+            if (!dir.exists(postpaths[i])) dir.create(postpaths[i], recursive=T, showWarnings=F)
+        }
+    }
 }
+postpaths <- normalizePath(postpaths)
 if (!exists("plotpath")) { # default from post_echam.r
     plotpath <- paste0(host$workpath, "/plots/", paste(unique(models), collapse="_vs_"))
+} else {
+    if (!dir.exists(plotpath)) dir.create(plotpath, recursive=T, showWarnings=F)
 }
+plotpath <- normalizePath(plotpath)
 if (!exists("names_legend")) names_legend <- rep("", t=nsettings)
 
 # defaults: code stuff
@@ -5070,8 +5080,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
            
             ## add stuff lon,lat plot before zlim
-            contour_list <- polygon_list <- quiver_list <- segment_list <- point_list <- text_list <- cmd_list <- NULL # default
-
+            addland_list <- contour_list <- polygon_list <- quiver_list <- segment_list <- 
+                point_list <- text_list <- cmd_list <- NULL # default
            
             # add special quiver data to lon,lat plot
             if (any(zname == c("quv", "quv_direction"))) {
@@ -5143,7 +5153,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             zlim <- range(z, na.rm=T)
             op <- options()$digits; options(digits=15); cat("=", zlim, "\n"); options(digits=op)
 
-            nlevels <- zlevels <- axis.labels <- axis.addzlims <- y_at <- palname <- anom_colorbar <- NULL
+            nlevels <- zlevels <- axis.labels <- axis.addzlims <- 
+                y_at <- palname <- anom_colorbar <- NULL
             if (zname == "quv") {
                 message("special zlim")
                 nlevels <- 200
@@ -5192,12 +5203,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 axis.labels <- c(round(zlim[1]), seq(125, 1000, b=125), round(zlim[2]))
             } else if (zname == "resolutionkm") {
                 message("special resolutionkm zlevels ...")
+                # cbscl irregular: 5.512, 212.598
+                # cbscl regular 1/4: 5.952736 213.047769
                 # lsea2 irregular: 4.425313, 91.178831
                 # lsea2 regular 1/4: 4.610265, 90.491457
-                zlevels <- c(4.425313, seq(6, 18, b=2), seq(20, 50, b=10), 75, 91.178831)
+                zlevels <- c(zlim[1], seq(6, 18, b=2), seq(20, 50, b=10), seq(75, 150, b=25), zlim[2])
                 axis.labels <- as.character(round(zlevels))
-                axis.labels[1] <- round(zlevels[1], 2)
-                axis.labels[length(axis.labels)] <- round(zlevels[length(zlevels)], 2)
+                axis.labels[1] <- "4.4"
+                axis.labels[length(axis.labels)] <- "212.6"
                 axis.addzlims <- F
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
@@ -5357,17 +5370,18 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # if xp is defined
 
             # add land contoures
-            # default yes since lon,lat plot
-            addland_list <- lapply(vector("list", l=length(z)), 
-                                   base::append, 
-                                   list(data="world", xlim="xlim", ylim="ylim"))
-            if (any(models == "mpiom1")) { 
-                inds <- which(models == "mpiom1")
-                addland_list[inds] <- NA
-            }
-            if (any(models == "fesom")) { 
-                inds <- which(models == "fesom")
-                addland_list[inds] <- NA
+            if (addland) { # this is lon,lat plot section
+                addland_list <- lapply(vector("list", l=length(z)), 
+                                       base::append, 
+                                       list(data="world", xlim="xlim", ylim="ylim"))
+                if (any(models == "mpiom1")) { 
+                    inds <- which(models == "mpiom1")
+                    addland_list[inds] <- NA
+                }
+                if (any(models == "fesom")) { 
+                    inds <- which(models == "fesom")
+                    addland_list[inds] <- NA
+                }
             }
             
             # add mpiom land sea mask contours
@@ -5382,7 +5396,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     #segment_list[[i]] <- mpiom_GR15s_land_sea_mask_segments_lon180
                     #segment_list[[i]] <- mpiom_TP04s_land_sea_mask_segments_lon180
                 }
-                addland_list[] <- NA
+                if (addland) addland_list[] <- NA
             }
 
             if (exists("add_echam_TR31GR30_oromea_contour") && add_echam_TR31GR30_oromea_contour) {
@@ -5404,14 +5418,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
+            n <- m <- zoomfac <- NULL
             if (T && all(areas_p == "N30-90") || all(areas_p == "NAsiberia")) {
                 message("special nrow ncol")
                 n <- length(z); m <- 1
-                nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, n=n, m=m, ip=ip, dry=T)
                 y_at <- pretty(d$lat[[1]], n=5)
-            }  else {
-                nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, dry=T)
             }
+            if (T && length(z) == 2) {
+                message("special 2 cols instead of 2 rows (default)")
+                n <- 1; m <- 2
+            }
+            if (grepl("+ortho", proj)) {
+                zoomfac <- 1.066
+                message("`proj` = \"", proj, "\" --> set `zoomfac` = ", zoomfac)
+            }
+            nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, n=n, m=m, ip=ip, dry=T)
 
             # this is the lon vs lat plot: respecting aspect ratio based on dlon and dlat make sense here 
             width_in <- p$a4_width_in # maximum a4 width as threshold (8.26 in)
@@ -5474,13 +5495,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #showtext_auto() 
                 #def <- get(".PDF.Options.default", envir = grDevices:::.PSenv)
             }
-            message("final ", p$plot_type, ifelse(p$plot_type == "png", paste0(" (ppi=", p$ppi, ")"), ""), 
-                    " plot width/height = ", width, "/", height, " = ", round(width/height, 3), " ...") 
+            if (any(p$plot_type == c("png", "pdf"))) {
+                message("final ", p$plot_type, ifelse(p$plot_type == "png", paste0(" (ppi=", p$ppi, ")"), ""), 
+                        " plot width/height = ", width, "/", height, " = ", round(width/height, 3), " ...") 
+            }
 
             # map plot
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             image.plot.nxm(x=d$lon, y=d$lat, z=z, ip=ip, 
-                           n=nm$nrow, m=nm$ncol, verbose=T,
+                           n=nm$nrow, m=nm$ncol,
+                           add_grid=add_grid, proj=proj, zoomfac=zoomfac,
                            y_at=y_at,
                            xlab="Longitude [°]", ylab="Latitude [°]", 
                            zlab=data_info$label, znames=names_legend_p, 
@@ -5494,10 +5518,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            point_list=point_list,
                            segment_list=segment_list,
                            text_list=text_list,
-                           cmd_list=cmd_list)
+                           cmd_list=cmd_list,
+                           verbose=T)
             
             message("save plot ", plotname, " ...")
-            dev.off()
+            if (p$plot_type != "active") dev.off()
             if (p$plot_type == "pdf") {
                 if (T) {
                     message("run `", p$pdf_embed_fun, "()` ...")
@@ -5513,9 +5538,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
             #stop("asd")
 
             # lon vs lat anomaly plot of 2 settings 
-            if (length(z) == 2) {
+            if (plot_lon_lat_anomaly && length(z) == 2) {
 
-                message("\n\n`length(z)` = 2 ", appendLF=F)
+                message("\n\n`plot_lon_lat_anomaly` = T and `length(z)` = 2 ", appendLF=F)
 
                 if (length(d$lon[[1]]) == length(d$lon[[2]]) &&
                     length(d$lat[[1]]) == length(d$lat[[2]])) {
@@ -5526,18 +5551,30 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             " as lon vs lat ...\n")
                  
                     # add stuff to plot
-                    cmd_list <- segment_list <- polygon_list <- quiver_list <- NULL
-                    addland_list <- list(data="world", xlim="xlim", ylim="ylim")
+                    addland_list <- cmd_list <- segment_list <- polygon_list <- quiver_list <- NULL
+                    
+                    # add land contoures
+                    if (addland) { # this is lon,lat anom plot section
+                        addland_list <- lapply(vector("list", l=1), 
+                                               base::append, 
+                                               list(data="world", xlim="xlim", ylim="ylim"))
+                        if (any(models == "mpiom1")) addland_list[] <- NA 
+                        if (any(models == "fesom")) addland_list[] <- NA 
+                    }
+
+                    # add mpiom land sea mask contours
+                    mpiom_lsm_segments <- ls(pattern=glob2rx("mpiom_*_land_sea_mask_segments_lon*"))
+                    if (T && length(mpiom_lsm_segments) > 0) {
+                        message("add mpiom land sea mask segments")
+                        segment_list <- mpiom_GR30s_land_sea_mask_segments_lon180
+                        #segment_list <- mpiom_GR15s_land_sea_mask_segments_lon180
+                        #segment_list <- mpiom_TP04s_land_sea_mask_segments_lon180
+                        if (addland) addland_list[] <- NA
+                    }
                     
                     if (exists("PLOT_coords_cmd_list")) {
                         message("special: add PLOT coords to plot ...")
                         cmd_list <- c(cmd_list, PLOT_coords_cmd_list)
-                    }
-            
-                    if (any(models == "mpiom1")) {
-                        message("special: add mpiom land sea mask segments to plot ...")
-                        segment_list <- mpiom_GR30_lsm_seg
-                        addland_list <- NULL
                     }
             
                     # add quiver anomaly
@@ -5611,10 +5648,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } else { # if lon_dim and lat_dim of both settings are of same length
                     message("but lon and lat dims of both settings are of different length --> cannot plot anomaly as lon vs lat")
                 }
-            } else { # if length(z) != 2
-                message("\nlength(z) != 2 --> cannot plot anomaly as lon vs lat")
+            } else { # if !plot_lon_lat_anomaly or length(z) != 2
+                message("\n`plot_lon_lat_anomaly` = F or length(z) != 2 --> cannot plot anomaly as lon vs lat")
             } # finished anomaly plot of 2 dims (lon,lat)
-
 
 
         } # if ndims == 2 and lon,lat
