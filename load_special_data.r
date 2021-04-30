@@ -3,7 +3,9 @@
 # todo: solve dependencies from other repos: make_posixlt_origin()
 #source(paste0(hompath, "/functions/myfunctions.r"))
 
+
 # echam SLF
+
 
 # echam OROMEA (= `elevation` of jsbach input)
 if (F) {
@@ -33,17 +35,22 @@ if (F) {
 # mpiom land sea mask segments
 fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon180.txt")
 #fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon360.txt")
-for (f in fs) {
-    if (T && file.exists(f)) {
-        message("\ndisable here if you do not want to load mpiom land sea mask segments from ", f, " ...")
-        cmd <- paste0(tools::file_path_sans_ext(basename(fs)), " <- read.table(f, header=T)")
-        message("run `", cmd, "` ...")
-        eval(parse(text=cmd))
-    } else {
-        message("\nmpiom land sea mask file ", f, " does not exist. run the function mpiom_get_lsm_segments() via ", 
-                host$repopath, "/mpiom/run_mpiom.r to generate the land sea mask segments ...")
+if (F && any(file.exists(fs))) {
+    message("\ndisable here if you do not want to load mpiom land sea mask segments ...")
+    for (f in fs) {
+        if (file.exists(f)) {
+            cmd <- paste0(tools::file_path_sans_ext(basename(f)), " <- read.table(f, header=T)")
+            message("run `", cmd, "` ...")
+            eval(parse(text=cmd))
+        } else {
+            message("mpiom land sea mask file ", f, " does not exist. run the function mpiom_get_lsm_segments() via ", 
+                    host$repopath, "/mpiom/run_mpiom.r to generate the land sea mask segments ...")
+        }
     }
-} # for f
+} else {
+    message("enable here to load mpiom land sea mask segments ...")
+}
+
 
 # cmip6 co2 hist
 f <- ""
@@ -91,6 +98,17 @@ co2_4co2 <- list(co2_ppm=1137.2679,
 message("\nset 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
 add_co2_4co2 <- F
 message("set add_co2_4co2=T if you want to add to plot")
+
+
+# nao time series
+f <- paste0(host$workpath, "/NAO/nao_pc_djfm.txt")
+if (T && file.exists(f)) {
+    message("\ndisable here if you do not want to load ucar hurrel NAO time series ", f, " ...")
+    source(paste0(host$workpath, "/NAO/read_ucar_nao_function.r"))
+    nao <- read_ucar_nao_function(f)
+} else {
+    message("enable here to load ucar hurrel NAO time series ...")
+}
 
 
 # koehler et al. 2017 ghg by paul
@@ -630,7 +648,7 @@ if (F && file.exists(f)) {
 
 # PLOT coords as eval list
 f <- "~/awi/PLOT/git/PLOT/lakes/lake_coords.txt"
-if (T && file.exists(f)) {
+if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
     lakes_table <- read.table(f, header=T, stringsAsFactors=F)
     PLOT_coords_cmd_list <- NULL

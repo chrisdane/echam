@@ -1,4 +1,4 @@
-# input for plot.echam.r
+#list(minus_symbol=minus_symbol)) input for plot.echam.r
 
 # dependencies: myfunctions.r
 
@@ -10,13 +10,14 @@ ignore_vars <- c("time_bnds", "timestamp",
                  "hyai", "hybi", "hyam", "hybm",
                  "plev", "height", 
                  "depthvec", 
+                 "timevec", "xi", "yi", # old rfesom 
                  "moc_reg_lat")
 message("\nthese variables will be ignored:\n",
 		"\"", paste(ignore_vars, collapse="\", \""), "\"")
 
 # general script options
 squeeze <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
-nchar_max_foutname <- 255
+nchar_max_foutname <- 255 - 4 # -4 for extension (".png" or ".pdf")
 
 # stats options
 ttest_alternative <- "two.sided" # differences in means
@@ -27,13 +28,15 @@ calc_monthly_and_annual_climatology <- F
 calc_ttest_lon_lat_time <- T
 
 # plot options
+bilinear_interp_factor <- 1
+plot_samedims <- T
+add_title <- F
+add_legend <- T
 pchs_hollow <- c(1, 2, 0, 5) # bring hollow, filled wout borders and filled with borders in same order
 pchs_filled_wout_border <- c(16, 17, 15, 18) # 1: circle, 2: triangle up, 3: square, 4: diamond
 pchs_filled_w_border <- c(21, 24, 22, 23)
-add_title <- F
-add_legend <- T
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-p <- myDefaultPlotOptions(plot_type="png", 
+p <- myDefaultPlotOptions(#plot_type="png", 
                           #plot_type="active",
                           #,family_png="Droid Sans Mono", 
                           #,family_pdf="Droid Sans Mono"
@@ -42,6 +45,11 @@ p <- myDefaultPlotOptions(plot_type="png",
 # encoding <- getOption("encoding") leads to "failed to load encoding file 'native.enc'"
 encoding <- NULL 
 alpha_rgb <- 0.2 # transparent: 0,1 (0 fully transparent)
+if (p$plot_type == "pdf") {
+    minus_symbol_dash <- "-"
+} else {
+    minus_symbol_dash <- "\u2013"
+}
 
 known_seasons <- list("DJF"=list(inds=c(12, 1, 2), col="blue"),
                       "MAM"=list(inds=3:5, col="darkgreen"),
@@ -90,7 +98,8 @@ ts_highlight_seasons <- list(#bool=T,
                              suffix="_highlight_seasons") 
 show_first_data_point <- F
 ts_plot_each_setting_in_subplot <- F
-add_data_right_yaxis_ts <- F
+add_data_left_yaxis_before_ts <- T
+add_data_right_yaxis_ts <- T
 add_cor_data_left_and_right_ts <- F
 add_data_upper_xaxis_ts <- F
 add_data_right_yaxis_ts_mon <- F
@@ -98,8 +107,7 @@ add_data_right_yaxis_ts_an <- F
 add_cor_data_left_and_right_ts_an <- F
 add_legend_right_yaxis <- T
 add_legend_upper_xaxis <- F
-
-plot_lon_lat_anomaly <- F
+add_legend_left_yaxis_before <- T
 
 plot_scatter_s1_vs_s2 <- F
 #scatter_s1_vs_s1_varname <- "temp2"
@@ -126,9 +134,10 @@ varnamey <- "toa_imbalance_datas"
 add_ts_to_time_vs_depth <- T
 
 # map (lon vs lat) plot options
+plot_lon_lat_anomaly <- F
 reorder_lon_from_0360_to_180180 <- T
 addland <- T
-add_grid <- T
+add_grid <- F
 respect_asp <- T
 aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for plot
 proj <- "" # default: no projection
@@ -325,7 +334,7 @@ if (F) { # awi-esm-1-1-lr hist
     #regboxes <- list(list(regbox="northeast_europe"))
     regboxes <- list(list(regbox="NAsiberia"))
 
-} else if (F) { # my phd stuff
+} else if (F) { # my phd stuff 1 setting
     #postpaths <- "/work/ba0941/a270073/post"
     models <- "fesom"
     prefixes <- "LSea5_s5_regular_dx0.250_dy0.250"
@@ -577,15 +586,89 @@ if (F) { # awi-esm-1-1-lr hist
     areas <- rep("two-yurts_remapnn", t=2)
     #areas <- rep("kotokel_remapnn", t=2)
 
-} else if (T) { # my phd stuff
+} else if (T) { # my phd stuff 2 settings
     #postpaths <- "/work/ba0941/a270073/post"
     models <- rep("fesom", t=2)
-    prefixes <- c("Low01_s52_regular_dx0.250_dy0.250", "LSea5_s5_regular_dx0.250_dy0.250")
-    names_short <- c("Low01_s5_dx0.250", "Lsea5_s5_dx0.250")
-    varnames_in <- rep("resolutionkm", t=2)
-    proj <- "+proj=ortho +lat_0=30 +lon_0=-45"
-    seasonsf <- fromsf <- tosf <- rep("", t=2)
+    #prefixes <- c("Low01_sub_lsea_s52", "LSea5_sub_lsea_s5")
+    #names_short <- c("Low01_s52", "LSea5_s5") 
+    #prefixes <- c("Low01_s52_regular_dx0.250_dy0.250", "LSea5_s5_regular_dx0.250_dy0.250")
+    #names_short <- c("Low01_s5_dx0.250", "Lsea5_s5_dx0.250")
+    #prefixes <- c("Low01_s52_regular_dx0.100_dy0.100", "LSea5_s5_regular_dx0.100_dy0.100")
+    prefixes <- c("Low01_sub_lsea_s52_regular_dx0.100_dy0.100", "LSea5_sub_lsea_s5_regular_dx0.100_dy0.100")
+    names_short <- c("Low01_s5_dx0.100", "Lsea5_s5_dx0.100")
+    names_legend <- c("Low", "High")
+    #names_legend <- c("a) Low", "b) High")
+    if (F) {
+        varnames_in <- rep("resolutionkm", t=2)
+        seasonsf <- fromsf <- tosf <- rep("", t=2)
+        proj <- "+proj=ortho +lat_0=30 +lon_0=-45"
+        proj <- "+proj=ortho +lat_0=40 +lon_0=-45"
+    } else if (F) {
+        varnames_in <- rep("Ftemp", t=2)
+        prefixes[1] <- "Low01_s52_regular_dx0.100_dy0.100"
+        depths <- c(0, 0)
+        bilinear_interp_factor <- 10
+    } else if (F) {
+        varnames_in <- rep("divuvt", t=2)
+        depthsf <- c("_int0-3600m", "_int0-4150m")
+        ignore_vars <- c(ignore_vars, "dutempdx", "dvtempdy")
+        bilinear_interp_factor <- 10
+    } else if (F) {
+        varnames_in <- rep("divuvteddy", t=2)
+        depthsf <- c("_int0-3600m", "_int0-4150m")
+        ignore_vars <- c(ignore_vars, "duteddydx", "dvteddydy")
+        bilinear_interp_factor <- 10
+    } else if (F) {
+        varnames_in <- rep("FeKe", t=2)
+        depths <- c(0, 0)
+        lepos <- "topleft"
+        bilinear_interp_factor <- 10
+    } else if (F) {
+        varnames_in <- rep("HRS", t=2)
+        depthsf <- c("_int0-3600m", "_int0-4150m")
+        bilinear_interp_factor <- 10
+        add_legend <- F; add_legend_right_yaxis <- T; add_legend_left_yaxis_before <- F
+    } else if (F) {
+        varnames_in <- rep("VRS", t=2)
+        depthsf <- c("_int0-3600m", "_int0-4150m")
+        add_legend <- F; add_legend_right_yaxis <- F; add_legend_left_yaxis_before <- F
+    } else if (T) {
+        varnames_in <- rep("wbeddy", t=2)
+        depthsf <- c("_int0-3600m", "_int0-4150m")
+        bilinear_interp_factor <- 10
+        add_legend <- F; add_legend_right_yaxis <- T; add_legend_left_yaxis_before <- F
+    }
+    polyl <- read.table(paste0(host$workpath, 
+                               #"/post/fesom/CbSCL_mesh_LS_ge_3000m.and.hvel_lt_5_cms-1_chull.txt"),
+                               "/post/fesom/CbSCL_mesh_LS_ge_3000m.and.hvel_lt_6.1_cms-1_chull.txt"),
+                        header=F, col.names=c("x", "y"))
+    polyh <- read.table(#paste0(host$workpath, "/post/fesom/LSea2_mesh_LS_ge_3500m_chull.txt"),
+                        paste0(host$workpath, "/post/fesom/CbSCL_mesh_LS_ge_3000m_chull.txt"),
+                        header=F, col.names=c("x", "y"))
+    areas <- rep("lsea", t=2)
+    #areas <- c("LS30l2", "LS30l")
+    #areas <- rep("LS30l2", t=2)
+    fromsf <- rep(1948, t=2)
+    tosf <- rep(2009, t=2)
+    seasonsf <- rep("Mar", t=2)
+    #n_mas <- rep(36, t=2)
     modes <- rep("timmean", t=2)
+    #modes <- rep("fldint", t=2)
+
+} else if (F) { # phd Arc22
+    models <- rep("fesom", t=2)
+    prefixes <- c("Arc22_sub_daily", "Arc22_sub")
+    names_short <- c("Arc22_day", "Arc22_mon")
+    names_legend <- c("daily model output", "monthly model output")
+    #varnames_in <- rep("divuvbtot", t=2)
+    varnames_in <- rep("divuvbeddy", t=2); ignore_vars <- c(ignore_vars, "dubeddydx_meanint", "dvbeddydy_meanint")
+    depthsf <- rep("_int0-5650m", t=2)
+    areas <- rep("arc08fram", t=2)
+    fromsf <- rep(2005, t=2)
+    tosf <- rep(2009, t=2)
+    modes <- rep("fldint", t=2)
+    cols <- c(2, 1)
+    lepos <- "bottomright"
 
 # =====================================
 # 3 settings
@@ -1083,6 +1166,59 @@ if (F) { # awi-esm-1-1-lr hist
     #names_legend <- paste0("tas ", names_short)
     #varnames_in <- rep("tas", t=4)
     modes <- rep("fldmean", t=4)
+
+} else if (F) { # my phd stuff divuvt* 4 settings
+    #postpaths <- "/work/ba0941/a270073/post"
+    models <- rep("fesom", t=4)
+    if (T) {
+        prefixes <- rep("Low01_sub_lsea_s52", t=4)
+        names_short <- paste0("Low01_s52", c("divuvttot_plus_divuvsgsttot", "divuvt", "divuvteddy_plus_divuvsgsttot", "divuvsgsttot"))
+        areas <- rep("LS30l2", t=4)
+        add_legend <- F
+        add_legend_right_yaxis <- F
+        add_legend_left_yaxis_before <- F
+    } else if (F) {
+        prefixes <- rep("LSea5_sub_lsea_s5", t=4)
+        names_short <- paste0("LSea5_s5", c("divuvttot_plus_divuvsgsttot", "divuvt", "divuvteddy_plus_divuvsgsttot", "divuvsgsttot"))
+        areas <- rep("LS30l", t=4)
+    }
+    names_legend <- c("divuvttot_plus_divuvsgsttot", "divuvt", "divuvteddy_plus_divuvsgsttot", "divuvsgsttot")
+    varnames_in <- c("divuvttot_plus_divuvsgsttot", "divuvt", "divuvteddy_plus_divuvsgsttot", "divuvsgsttot")
+    cols <- c(1, 3, 2, 2)
+    ltys <- c(1, 1, 1, 2)
+    varnames_out_samedims <- "divuvt_budget"
+    names_legend_samedims <- names_legend
+    ignore_vars <- c(ignore_vars, "dx_uXtemp_meanint", "dy_vXtemp_meanint")
+    depthsf <- rep("_int0-MLD", t=4)
+    fromsf <- rep(1948, t=4)
+    tosf <- rep(2009, t=4)
+    n_mas <- rep(36, t=4)
+    modes <- rep("fldint", t=4)
+
+} else if (F) { # my phd stuff lorenz energy cycle 4 settings
+    #postpaths <- "/work/ba0941/a270073/post"
+    models <- rep("fesom", t=4)
+    if (T) {
+        prefixes <- rep("Low01_sub_lsea_s52", t=4)
+        names_short <- paste0("Low01_s52", c("FeKe", "HRS", "VRS", "wbeddy"))
+        depthsf <- c("_0m", rep("_int0-3600m", t=3))
+        areas <- rep("LS30l2", t=4)
+        add_legend <- F
+        add_legend_right_yaxis <- F
+        add_legend_left_yaxis_before <- F
+    } else if (F) {
+        prefixes <- rep("LSea5_sub_lsea_s5", t=4)
+        names_short <- paste0("LSea5_s5_", c("FeKe", "HRS", "VRS", "wbeddy"))
+        depthsf <- c("_0m", rep("_int0-4150m", t=3))
+        areas <- rep("LS30l", t=4)
+    }
+    varnames_in <- c("FeKe", "HRS", "VRS", "wbeddy")
+    varnames_out_samedims <- "lorenz_energy_cycle"
+    names_legend_samedims <- varnames_in
+    fromsf <- rep(1948, t=4)
+    tosf <- rep(2009, t=4)
+    n_mas <- rep(36, t=4)
+    modes <- rep("fldint", t=4)
 
 # ==================================================
 ## 5 settings 
