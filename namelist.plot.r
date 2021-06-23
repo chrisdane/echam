@@ -24,7 +24,7 @@ ttest_alternative <- "two.sided" # differences in means
 ttest_significance <- 0.05 # p-value (*100 for %)
 
 # calc options
-calc_monthly_and_annual_climatology <- F
+calc_monthly_and_annual_climatology <- T
 calc_ttest_lon_lat_time <- T
 
 # plot options
@@ -35,12 +35,14 @@ add_legend <- T
 pchs_hollow <- c(1, 2, 0, 5) # bring hollow, filled wout borders and filled with borders in same order
 pchs_filled_wout_border <- c(16, 17, 15, 18) # 1: circle, 2: triangle up, 3: square, 4: diamond
 pchs_filled_w_border <- c(21, 24, 22, 23)
+
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
+source("~/scripts/r/functions/myfunctions.r")
 p <- myDefaultPlotOptions(#plot_type="png", 
                           #plot_type="active",
-                          #,family_png="Droid Sans Mono", 
-                          #,family_pdf="Droid Sans Mono"
-                          #,family_pdf="CM Roman"
+                          #,png_family="Droid Sans Mono", 
+                          #,pdf_family="Droid Sans Mono"
+                          #,pdf_family="CM Roman"
                           , verbose=T)
 # encoding <- getOption("encoding") leads to "failed to load encoding file 'native.enc'"
 encoding <- NULL 
@@ -51,7 +53,19 @@ if (p$plot_type == "pdf") {
     minus_symbol_dash <- "\u2013"
 }
 
-known_seasons <- list("DJF"=list(inds=c(12, 1, 2), col="blue"),
+known_seasons <- list("Jan"=list(inds=1),
+                      "Feb"=list(inds=2),
+                      "Mar"=list(inds=3),
+                      "Apr"=list(inds=4),
+                      "May"=list(inds=5),
+                      "Jun"=list(inds=6),
+                      "Jul"=list(inds=7),
+                      "Aug"=list(inds=8),
+                      "Sep"=list(inds=9),
+                      "Oct"=list(inds=10),
+                      "Nov"=list(inds=11),
+                      "Dec"=list(inds=12),
+                      "DJF"=list(inds=c(12, 1, 2), col="blue"),
                       "MAM"=list(inds=3:5, col="darkgreen"),
                       "JJA"=list(inds=6:8, col="red"),
                       "SON"=list(inds=9:11, col="brown"),
@@ -65,6 +79,7 @@ for (i in seq_along(known_seasons)) {
     } else if (names(known_seasons)[i] == "Jan-Dec") {
         known_seasons$annual <- known_seasons[["Jan-Dec"]]
     }
+    if (is.null(known_seasons[[i]]$col)) known_seasons[[i]]$col <- "black"
     known_seasons[[i]]$col_rgb <- rgb(t(col2rgb(known_seasons[[i]]$col)/255), alpha=alpha_rgb)
 }
 
@@ -138,7 +153,6 @@ plot_lon_lat_anomaly <- F
 reorder_lon_from_0360_to_180180 <- T
 addland <- T
 add_grid <- F
-respect_asp <- T
 aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for plot
 proj <- "" # default: no projection
 
@@ -586,16 +600,17 @@ if (F) { # awi-esm-1-1-lr hist
     areas <- rep("two-yurts_remapnn", t=2)
     #areas <- rep("kotokel_remapnn", t=2)
 
-} else if (T) { # my phd stuff 2 settings
+} else if (T) { # my phd stuff 2 settings maps
     #postpaths <- "/work/ba0941/a270073/post"
     models <- rep("fesom", t=2)
-    #prefixes <- c("Low01_sub_lsea_s52", "LSea5_sub_lsea_s5")
-    #names_short <- c("Low01_s52", "LSea5_s5") 
+    prefixes <- c("Low01_sub_lsea_s52", "LSea5_sub_lsea_s5")
     #prefixes <- c("Low01_s52_regular_dx0.250_dy0.250", "LSea5_s5_regular_dx0.250_dy0.250")
-    #names_short <- c("Low01_s5_dx0.250", "Lsea5_s5_dx0.250")
     #prefixes <- c("Low01_s52_regular_dx0.100_dy0.100", "LSea5_s5_regular_dx0.100_dy0.100")
-    prefixes <- c("Low01_sub_lsea_s52_regular_dx0.100_dy0.100", "LSea5_sub_lsea_s5_regular_dx0.100_dy0.100")
-    names_short <- c("Low01_s5_dx0.100", "Lsea5_s5_dx0.100")
+    #prefixes <- c("Low01_s52_regular_dx0.100_dy0.100", "LSea5_sub_lsea_s5_regular_dx0.100_dy0.100")
+    #prefixes <- c("Low01_sub_lsea_s52_regular_dx0.100_dy0.100", "LSea5_sub_lsea_s5_regular_dx0.100_dy0.100")
+    names_short <- c("Low01_s52", "LSea5_s5") 
+    #names_short <- c("Low01_s5_dx0.250", "Lsea5_s5_dx0.250")
+    #names_short <- c("Low01_s5_dx0.100", "Lsea5_s5_dx0.100")
     names_legend <- c("Low", "High")
     #names_legend <- c("a) Low", "b) High")
     if (F) {
@@ -604,8 +619,9 @@ if (F) { # awi-esm-1-1-lr hist
         proj <- "+proj=ortho +lat_0=30 +lon_0=-45"
         proj <- "+proj=ortho +lat_0=40 +lon_0=-45"
     } else if (F) {
+        varnames_in <- rep("mixlay", t=2)
+    } else if (F) {
         varnames_in <- rep("Ftemp", t=2)
-        prefixes[1] <- "Low01_s52_regular_dx0.100_dy0.100"
         depths <- c(0, 0)
         bilinear_interp_factor <- 10
     } else if (F) {
@@ -632,11 +648,19 @@ if (F) { # awi-esm-1-1-lr hist
         varnames_in <- rep("VRS", t=2)
         depthsf <- c("_int0-3600m", "_int0-4150m")
         add_legend <- F; add_legend_right_yaxis <- F; add_legend_left_yaxis_before <- F
-    } else if (T) {
+    } else if (F) {
         varnames_in <- rep("wbeddy", t=2)
         depthsf <- c("_int0-3600m", "_int0-4150m")
         bilinear_interp_factor <- 10
-        add_legend <- F; add_legend_right_yaxis <- T; add_legend_left_yaxis_before <- F
+        add_legend <- F; add_legend_right_yaxis <- T; add_legend_left_yaxis_before <- T
+    } else if (F) {
+        varnames_in <- rep("eke", t=2)
+        depthsf <- c("_int0-3600m", "_int0-4150m")
+        add_legend <- F; add_legend_right_yaxis <- T; add_legend_left_yaxis_before <- T
+    } else if (T) {
+        varnames_in <- rep("eke_over_tke", t=2)
+        depthsf <- c("_int0-3600m", "_int0-4150m")
+        add_legend <- F; add_legend_right_yaxis <- T; add_legend_left_yaxis_before <- T
     }
     polyl <- read.table(paste0(host$workpath, 
                                #"/post/fesom/CbSCL_mesh_LS_ge_3000m.and.hvel_lt_5_cms-1_chull.txt"),
@@ -645,15 +669,17 @@ if (F) { # awi-esm-1-1-lr hist
     polyh <- read.table(#paste0(host$workpath, "/post/fesom/LSea2_mesh_LS_ge_3500m_chull.txt"),
                         paste0(host$workpath, "/post/fesom/CbSCL_mesh_LS_ge_3000m_chull.txt"),
                         header=F, col.names=c("x", "y"))
-    areas <- rep("lsea", t=2)
+    #areas <- rep("lsea", t=2)
     #areas <- c("LS30l2", "LS30l")
-    #areas <- rep("LS30l2", t=2)
+    areas <- rep("LS30l2", t=2)
     fromsf <- rep(1948, t=2)
     tosf <- rep(2009, t=2)
-    seasonsf <- rep("Mar", t=2)
-    #n_mas <- rep(36, t=2)
-    modes <- rep("timmean", t=2)
-    #modes <- rep("fldint", t=2)
+    #seasonsf <- rep("Mar", t=2)
+    #seasonsp <- rep("Mar", t=2)
+    n_mas <- rep(36, t=2)
+    #modes <- rep("timmean", t=2)
+    #modes <- rep("fldmean", t=2)
+    modes <- rep("fldint", t=2)
 
 } else if (F) { # phd Arc22
     models <- rep("fesom", t=2)
@@ -1174,13 +1200,12 @@ if (F) { # awi-esm-1-1-lr hist
         prefixes <- rep("Low01_sub_lsea_s52", t=4)
         names_short <- paste0("Low01_s52", c("divuvttot_plus_divuvsgsttot", "divuvt", "divuvteddy_plus_divuvsgsttot", "divuvsgsttot"))
         areas <- rep("LS30l2", t=4)
-        add_legend <- F
-        add_legend_right_yaxis <- F
-        add_legend_left_yaxis_before <- F
+        #add_legend <- F; add_legend_right_yaxis <- F; add_legend_left_yaxis_before <- F
     } else if (F) {
         prefixes <- rep("LSea5_sub_lsea_s5", t=4)
         names_short <- paste0("LSea5_s5", c("divuvttot_plus_divuvsgsttot", "divuvt", "divuvteddy_plus_divuvsgsttot", "divuvsgsttot"))
         areas <- rep("LS30l", t=4)
+        add_legend <- F; add_legend_right_yaxis <- F; add_legend_left_yaxis_before <- F
     }
     names_legend <- c("divuvttot_plus_divuvsgsttot", "divuvt", "divuvteddy_plus_divuvsgsttot", "divuvsgsttot")
     varnames_in <- c("divuvttot_plus_divuvsgsttot", "divuvt", "divuvteddy_plus_divuvsgsttot", "divuvsgsttot")
