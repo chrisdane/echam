@@ -240,7 +240,7 @@ data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 
 ## load pangaea data if defined 
-if (F) {
+if (T) {
     message("\ndisable here if you do not want to load pangaea data via load_pangaea_data.r ...")
     source("load_pangaea_data.r")
 } else {
@@ -4512,8 +4512,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     tmp[[i]]$fname <- point_data_fname
                     tmp[[i]]$label <- point_data_label
                     tmp[[i]]$legend <- point_data_legend
-                    tmp[[i]]$colno <- 1 #2
-                    tmp[[i]]$pchno <- 1 #2
+                    tmp[[i]]$colno <- 2 #1 2
+                    tmp[[i]]$pchno <- 2 #1 2
                 }
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
                         point_data_fname, " to point_data ...")
@@ -4545,6 +4545,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             tmp[[i]][[point_data_varname]] <- mean(tmp[[i]], na.rm=T)
                         }
                     } else  if (zname == "lm_wisoaprt_d_post_as_time_slope") {
+                        tmp[[i]]$time_orig <- tmp[[i]]$time
                         tmp[[i]]$time <- make_posixlt_origin(-6000) # placeholder for trend
                         tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     }
@@ -4594,6 +4595,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             # nothing to do
                         } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
                             # add linear trend as data point
+                            tmp[[i]]$time_orig <- tmp[[i]]$time
                             tmp[[i]]$time <- make_posixlt_origin(-6000) # placeholder for trend
                             tmp[[i]][[point_data_varname]] <- 
                                 tmp[[i]][[point_data_varname]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
@@ -4602,8 +4604,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         tmp[[i]]$fname <- point_data_fname
                         tmp[[i]]$label <- point_data_label
                         tmp[[i]]$legend <- point_data_legend
-                        tmp[[i]]$colno <- 2 #3
-                        tmp[[i]]$pchno <- 2 #3
+                        tmp[[i]]$colno <- 2
+                        tmp[[i]]$pchno <- 2
                     } else {
                         tmp[[i]] <- NA
                     } # if timeinds
@@ -4627,13 +4629,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #point_data_label <- expression(paste("PLOT ", delta^{18}, "O"["diatom,SMOW"], " [‰]"))
                 #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/nonp,SMOW"], " [‰]"))
                 point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
-                # replace meyer et al. xlsx emanda with kostrova et al. 2021 emanda
                 if (T && any(names(meyer_etal$data) == "emanda") && exists("kostrova_etal_2021")) {
                     message("replace meyer et al. xlsx emanda with kostrova et al. 2021 emanda ...")
                     emandaind <- which(names(meyer_etal$data) == "emanda")
                     inds <- seq_along(kostrova_etal_2021$data$time)
                     if (T) {
-                        message("use only younger than 10k BP ...")
+                        message("  --> use only younger than 10k BP ...")
                         inds <- which(kostrova_etal_2021$data$time$year + 1900 > -10000)
                     }
                     meyer_etal$data[[emandaind]]$data <- list(d18o_corr_perm=kostrova_etal_2021$data$d18o_corr_perm[inds],
@@ -4641,24 +4642,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     meyer_etal$data[[emandaind]]$data$time <- as.POSIXct(meyer_etal$data[[emandaind]]$data$timelt)
                 }
                 # add swann et al. 2010 from pangaea to meyer et al xlsx at elgygytgyn
-                varind <- which(names(pg) == "d18o_w_smow")
-                if (T && any(names(meyer_etal$data) == "elgygytgyn") && any(names(pg[[varind]]) == "swann_etal_2010")) {
-                    gygyind <- which(names(meyer_etal$data) == "elgygytgyn")
-                    meyer_etal$data[[length(meyer_etal$data)+1]] <- meyer_etal$data[[gygyind]] # copy lon,lat etc.
-                    doiind <- which(names(pg[[varind]]) == "swann_etal_2010")
-                    eventind <- 1
-                    message("add d18o_smow pangaea event \"", names(pg[[varind]][[doiind]])[eventind], 
-                            "\" from swann_etal_2010 to meyer et al xlsx ...")
-                    inds <- seq_along(pg[[varind]][[doiind]][[eventind]]$dims$time)
-                    if (T) {
-                        message("only use younger than 10k BP ...")
-                        inds <- which(pg[[varind]][[doiind]][[eventind]]$dims$time$year + 1900 > -10000)
+                if (exists("pg")) {
+                    varind <- which(names(pg) == "d18o_w_smow")
+                    if (T && any(names(meyer_etal$data) == "elgygytgyn") && any(names(pg[[varind]]) == "swann_etal_2010")) {
+                        gygyind <- which(names(meyer_etal$data) == "elgygytgyn")
+                        meyer_etal$data[[length(meyer_etal$data)+1]] <- meyer_etal$data[[gygyind]] # copy lon,lat etc.
+                        doiind <- which(names(pg[[varind]]) == "swann_etal_2010")
+                        eventind <- 1
+                        message("add d18o_smow pangaea event \"", names(pg[[varind]][[doiind]])[eventind], 
+                                "\" from swann_etal_2010 to meyer et al xlsx ...")
+                        inds <- seq_along(pg[[varind]][[doiind]][[eventind]]$dims$time)
+                        if (T) {
+                            message("  --> only use younger than 10k BP ...")
+                            inds <- which(pg[[varind]][[doiind]][[eventind]]$dims$time$year + 1900 > -10000)
+                        }
+                        meyer_etal$data[[length(meyer_etal$data)]]$data <- list(timelt=pg[[varind]][[doiind]][[eventind]]$dims$time[inds],
+                                                                                d18o_corr_perm=pg[[varind]][[doiind]][[eventind]]$data[inds])
+                        meyer_etal$data[[length(meyer_etal$data)]]$data$time <- as.POSIXct(meyer_etal$data[[length(meyer_etal$data)]]$data$timelt)
+                        names(meyer_etal$data)[length(meyer_etal$data)] <- "elgygytgyn_swann_etal_2010"
+                        meyer_etal$data[[length(meyer_etal$data)]]$text <- "F: El’gygytgyn (Swann et al. 2010)"
                     }
-                    meyer_etal$data[[length(meyer_etal$data)]]$data <- list(timelt=pg[[varind]][[doiind]][[eventind]]$dims$time[inds],
-                                                                            d18o_corr_perm=pg[[varind]][[doiind]][[eventind]]$data[inds])
-                    meyer_etal$data[[length(meyer_etal$data)]]$data$time <- as.POSIXct(meyer_etal$data[[length(meyer_etal$data)]]$data$timelt)
-                    names(meyer_etal$data)[length(meyer_etal$data)] <- "elgygytgyn_swann_etal_2010"
-                    meyer_etal$data[[length(meyer_etal$data)]]$text <- "F: El’gygytgyn (Swann et al. 2010)"
                 }
                 # calc lm of scaled PLOT time series
                 tmp <- vector("list", l=length(meyer_etal$data))
@@ -4996,7 +4999,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             attributes(xp[[i]])$rangetot <- rangetot
                             attributes(xp[[i]])$from <- apply(sapply(point_datap, "[[", "data_mean_rangetime"), 2, min)
                             attributes(xp[[i]])$to <- apply(sapply(point_datap, "[[", "data_mean_rangetime"), 2, max) 
-                            attributes(xp[[i]])$origin <- sapply(lapply(sapply(point_datap, "[[", "time"), attributes), "[[", "origin")
+                            #attributes(xp[[i]])$origin <- sapply(lapply(sapply(point_datap, "[[", "time"), attributes), "[[", "origin")
                             yp[[i]] <- model_data
                         
                             # make attributes sticky (not removed by subsetting)
@@ -5077,201 +5080,224 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     xp_legend_unique <- lapply(xp_legend, unique)
                     xp_tlims <- lapply(lapply(xp, attributes), "[[", "ranges") # list of length nsettings, each having dims = (2,nxp) 
                   
-
-                    # special: save survived LiPD data urls as latex table
-                    if (length(xp) == 1 && any(xp_legend_unique[[1]] == "LiPD")) {
-                        message("\nspecial: save survived LiPD dois as latex table")
-                        inds <- which(xp_legend[[1]] == "LiPD")
-                        if (zname == "lm_aprt_as_time_slope") {
-                            latex_varname <- "$P$"
-                            latex_varname_thead <- "$P$\\\\trend"
-                            latex_unit <- "mm/year/6k years"
-                        } else {
-                            stop("not defined")
-                        }
-                        latex_caption <- paste0("Linked Paleo Data (LiPD) records used for linear trends of ",
-                                                "annual precipitation ", latex_varname, " (in ", latex_unit, ") shown in Fig. ",
-                                                "\\ref{fig:trend_tsurf_aprt_annual_bartlein_kaufman_lipd} ",
-                                                "and \\ref{fig:scatter_linear_midHolocene_bartlein_kaufman_lipd}. ",
-                                                "Only those proxy records were included whose database fields ",
-                                                "\\textit{variableName} = \"precipitation\", \\textit{units} = \"mm\" ",
-                                                "or \"mm/yr\", \\textit{seasonality} = \"annual\", ",
-                                                "which cover a period of at least 2000 years and where the p-value of ",
-                                                "the least square trend from 7k to 0 BP is smaller than 0.01. ",
-                                                "The LiPD reference denotes the suffix to the URL ",
-                                                "\\href{https://lipdverse.org/globalHolocene/1_0_0/}",
-                                                "{https://lipdverse.org/globalHolocene/1\\_0\\_0/$<$LiPD reference$>$.html}, ",
-                                                "maintained by Nicholas McKay. Duplicate LiPD references denote different samples per site. ",
-                                                "Start and End columns provide years before 0 BP.")
-                        columns <- paste0("\\thead{No}",
-                                          " & \\theadl{LiPD reference}",
-                                          " & \\thead{lon [$^{\\circ}$]}",
-                                          " & \\thead{lat [$^{\\circ}$]}",
-                                          " & \\thead{Start}",
-                                          " & \\thead{End}",
-                                          " & \\thead{", latex_varname_thead, "}",
-                                          " & \\thead{Trend\\\\summary}",
-                                          "\\\\")
-                        lines <- c("\\fontsize{9}{6}\\selectfont",
-                                   "\\begin{longtable}{@{}rlrrrrrr@{}}",
-                                   paste0("\\caption{", latex_caption, "}\\label{tab:appendix_lipd}\\\\"),
-                                   "\\toprule",
-                                   columns,
-                                   "\\endfirsthead",
-                                   "\\toprule",
-                                   columns,
-                                   "\\midrule",
-                                   "\\endhead",
-                                   "\\midrule")
-                        for (i in seq_along(inds)) {
-                            line <- paste0(i, " &")
-                            lipd_ref <- tools::file_path_sans_ext(basename(point_datap[[inds[i]]]$lipd$lipdverseLink))
-                            #if (grepl("yCorMontana", lipd_ref)) stop("asdasd")
-                            if (grepl("_", lipd_ref)) {
-                                lipd_ref <- sub("_", "\\\\_", lipd_ref)
-                            }
-                            line <- paste0(line, " \\href{", point_datap[[inds[i]]]$lipd$lipdverseLink, 
-                                           "}{", lipd_ref, "}")
-                            line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lon, 3))
-                            line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lat, 3))
-                            o <- attributes(point_datap[[inds[i]]]$time_ts)$origin
-                            if (o == 1950) {
-                                fromto_1950 <- abs(range(point_datap[[inds[i]]]$time_ts$year + 1900)) # years before 1950
-                                #fromto_1950 <- as.Date(fromto_1950)
-                            } else if (o == 0) {
-                                stop("not defined")
+                    # special: save survived point_datap as latex table
+                    if (T) {
+                        message("\nspecial: save survived point_datap as latex table")
+                        
+                        # table a2 jqs paper
+                        if (all(xp_legend_unique[[1]] == "LiPD")) {
+                            inds <- which(xp_legend[[1]] == "LiPD")
+                            if (zname == "lm_aprt_as_time_slope") {
+                                latex_varname <- "$P$"
+                                latex_varname_thead <- "$P$\\\\trend"
+                                latex_unit <- "mm/year/6k years"
+                                latex_caption <- paste0("Linked Paleo Data (LiPD) records used for linear trends of ",
+                                                        "annual precipitation ", latex_varname, " (in ", latex_unit, ") shown in Fig. ",
+                                                        "\\ref{fig:trend_tsurf_aprt_annual_bartlein_kaufman_lipd} ",
+                                                        "and \\ref{fig:scatter_linear_midHolocene_bartlein_kaufman_lipd}. ",
+                                                        "Only those proxy records were included whose database fields ",
+                                                        "\\textit{variableName} = \"precipitation\", \\textit{units} = \"mm\" ",
+                                                        "or \"mm/yr\", \\textit{seasonality} = \"annual\", ",
+                                                        "which cover a period of at least 2000 years and where the p-value of ",
+                                                        "the least square trend from 7k to 0 BP is smaller than 0.01. ",
+                                                        "The LiPD reference denotes the suffix to the URL ",
+                                                        "\\href{https://lipdverse.org/globalHolocene/1_0_0/}",
+                                                        "{https://lipdverse.org/globalHolocene/1\\_0\\_0/$<$LiPD reference$>$.html}, ",
+                                                        "maintained by Nicholas McKay. Duplicate LiPD references denote different samples per site. ",
+                                                        "Start and End columns provide years before 0 BP.")
                             } else {
                                 stop("not defined")
                             }
-                            line <- paste0(line, " & ", fromto_1950[1])
-                            line <- paste0(line, " & ", fromto_1950[2])
-                            line <- paste0(line, " & ", round(point_datap[[inds[i]]]$data_mean))
-                            lm_summary <- point_datap[[inds[i]]]$lm_label
-                            if (grepl("<", lm_summary)) {
-                                lm_summary <- sub("<", "$<$", lm_summary)
-                            }
-                            line <- paste0(line, " & ", lm_summary)
-                            line <- paste0(line, "\\\\")
-                            lines <- c(lines, line)
-                        } # for i inds
-                        lines <- c(lines, 
-                                   "\\bottomrule",
-                                   "\\end{longtable}", 
-                                   "\\normalsize")
-                        fout <- paste0("LiPD_", zname, "_table.txt")
-                        message("save ", fout, " ...")
-                        writeLines(lines, con=fout)
-                    } # save LiPD precip entres as latex table
-
-                    # special: save survived pangaea dois as latex table
-                    # one multi-row per unique pangaea bibtex entry (and not DOI) because:
-                    # different pangaea DOIs may have the same bibtex entry! 
-                    if (length(xp) == 1 && any(xp_legend_unique[[1]] == "Pangaea")) {
-                        message("\nspecial: save survived pangaea dois as latex table")
-                        inds <- which(xp_legend == "Pangaea")
-                        pdois <- sapply(point_datap[inds], "[[", "doi")
-                        pdois_unique <- unique(pdois)
-                        bibtex <- vector("list", l=length(pdois_unique))
-                        if (!any(search() == "package:RCurl")) library(RCurl)
-                        for (i in seq_along(pdois_unique)) {
-                            #message("run `RCurl::getURL(", paste0(pdois_unique[i], "?format=citation_bibtex"), ")` ...")
-                            bibtex[[i]] <- RCurl::getURL(paste0(pdois_unique[i], "?format=citation_bibtex"))
-                            bibtex[[i]] <- strsplit(bibtex[[i]], "\n ")[[1]]
-                        } 
-                        # first rows of bibtex-entries
-                        prefs <- sapply(bibtex, "[", 1)
-                        prefs <- substr(prefs,
-                                        sapply(gregexpr("\\{", prefs), "[[", 1) + 1,
-                                        sapply(gregexpr(",", prefs), "[[", 1) - 1)
-                        names(bibtex) <- prefs
-                        if (zname == "wisoaprt_d") {
-                            latex_varname <- "$\\delta^{18}$O$_\\text{p,SMOW}$"
-                            latex_unit <- "\\textperthousand"
-                        } else {
-                            stop("not defined")
-                        }
-                        latex_caption <- paste0("Pangaea data sets used for temporal mean calculation of ", 
-                                                latex_varname, " (in ", latex_unit, ") shown in Fig. ",
-                                                "\\ref{fig:timmean_d18o_pi_gnip_iso2k_sisal_pangaea} and ",
-                                                "\\ref{fig:scatter_d18o_pi_linear_gnip_iso2k_sisal_pangaea}. ",
-                                                "Start and End columns provide years from 0 CE.")
-                        columns <- paste0("\\mythead{No}",
-                                          " & \\mytheadl{Pangaea reference}",
-                                          " & \\mythead{lon [$^{\\circ}$]}",
-                                          " & \\mythead{lat [$^{\\circ}$]}",
-                                          " & \\mythead{Start}",
-                                          " & \\mythead{End}",
-                                          paste0(" & \\mythead{", latex_varname, "}"),
-                                          "\\\\")
-                        lines <- c("\\fontsize{9}{6}\\selectfont",
-                                   "\\begin{longtable}{@{}rlrrrrrr@{}}",
-                                   paste0("\\caption{", latex_caption, "}\\label{tab:appendix_pangaea}\\\\"),
-                                   "\\toprule",
-                                   columns,
-                                   "\\endfirsthead",
-                                   "\\toprule",
-                                   columns,
-                                   "\\midrule",
-                                   "\\endhead",
-                                   "\\midrule")
-                        cnt <- 0
-                        for (i in seq_along(pdois_unique)) {
-                            inds2 <- inds[which(pdois == pdois_unique[i])]
-                            if (length(unique(sapply(point_datap[inds2], "[[", "fname"))) != 1) {
-                                stop("there should only be one ref for ", 
-                                     length(inds2), " identical pangaea dois")
-                            }
-                            line <- c()
-                            for (j in seq_along(inds2)) {
-                                cnt <- cnt + 1
-                                line[j] <- paste0(cnt, " &")
-                                if (j == 1) { # add authors only for first record
-                                    line[j] <- paste0(line[j], " \\citet{", names(bibtex)[i], "}")
-                                } else {
-                                    line[j] <- paste0(line[j], " \\dittotikz")
+                            columns <- paste0("\\thead{No}",
+                                              " & \\theadl{LiPD reference}",
+                                              " & \\thead{lon [$^{\\circ}$]}",
+                                              " & \\thead{lat [$^{\\circ}$]}",
+                                              " & \\thead{Start}",
+                                              " & \\thead{End}",
+                                              " & \\thead{", latex_varname_thead, "}",
+                                              " & \\thead{Trend\\\\summary}",
+                                              "\\\\")
+                            lines <- c("\\fontsize{9}{6}\\selectfont",
+                                       "\\begin{longtable}{@{}rlrrrrrr@{}}",
+                                       paste0("\\caption{", latex_caption, "}\\label{tab:appendix_lipd}\\\\"),
+                                       "\\toprule",
+                                       columns,
+                                       "\\endfirsthead",
+                                       "\\toprule",
+                                       columns,
+                                       "\\midrule",
+                                       "\\endhead",
+                                       "\\midrule")
+                            for (i in seq_along(inds)) {
+                                line <- paste0(i, " &")
+                                lipd_ref <- tools::file_path_sans_ext(basename(point_datap[[inds[i]]]$lipd$lipdverseLink))
+                                #if (grepl("yCorMontana", lipd_ref)) stop("asdasd")
+                                if (grepl("_", lipd_ref)) {
+                                    lipd_ref <- sub("_", "\\\\_", lipd_ref)
                                 }
-                                line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$lon, 3))
-                                line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$lat, 3))
-                                o <- attributes(point_datap[[inds2[j]]]$time)$origin
+                                line <- paste0(line, " \\href{", point_datap[[inds[i]]]$lipd$lipdverseLink, 
+                                               "}{", lipd_ref, "}")
+                                line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lon, 3))
+                                line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lat, 3))
+                                o <- attributes(point_datap[[inds[i]]]$time_ts)$origin
                                 if (o == 1950) {
-                                    fromto_1950 <- as.POSIXlt(point_datap[[inds2[j]]]$data_mean_rangetime, o="1970-1-1", tz="UTC")
-                                    fromto_1950 <- fromto_1950$year + 1900
-                                    fromto_0 <- fromto_1950 + 1950
+                                    fromto_1950 <- abs(range(point_datap[[inds[i]]]$time_ts$year + 1900)) # years before 1950
+                                    #fromto_1950 <- as.Date(fromto_1950)
                                 } else if (o == 0) {
                                     stop("not defined")
                                 } else {
                                     stop("not defined")
                                 }
-                                line[j] <- paste0(line[j], " & ", fromto_0[1])
-                                line[j] <- paste0(line[j], " & ", fromto_0[2])
-                                line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$data_mean, 2))
-                                if (F) { # add pangaea DOI
+                                line <- paste0(line, " & ", fromto_1950[1])
+                                line <- paste0(line, " & ", fromto_1950[2])
+                                line <- paste0(line, " & ", round(point_datap[[inds[i]]]$data_mean))
+                                lm_summary <- point_datap[[inds[i]]]$lm_label
+                                if (grepl("<", lm_summary)) {
+                                    lm_summary <- sub("<", "$<$", lm_summary)
+                                }
+                                line <- paste0(line, " & ", lm_summary)
+                                line <- paste0(line, "\\\\")
+                                lines <- c(lines, line)
+                            } # for i inds
+                            lines <- c(lines, 
+                                       "\\bottomrule",
+                                       "\\end{longtable}", 
+                                       "\\normalsize")
+                            fout <- paste0("LiPD_", zname, "_table.txt")
+                            message("save ", fout, " ...")
+                            writeLines(lines, con=fout)
+                    
+                        # table a3 jqs paper
+                        } else if (all(grepl(paste(c("Temp12", "Iso2k", "SISAL", "PLOT"), collapse="|"), xp_legend_unique[[1]]))) {
+                            for (i in seq_along(xp_legend_unique[[1]])) {
+                                message("############################ ", xp_legend_unique[[1]][i])
+                                inds <- which(xp_legend[[1]] == xp_legend_unique[[1]][i])
+                                for (j in seq_along(inds)) {
                                     if (j == 1) {
-                                        line[j] <- paste0(line[j], " & ")
-                                        if (F) { # complete url
-                                            line[j] <- paste0(line[j], 
-                                                              "\\href{", pdois_unique[i], "}{", 
-                                                              basename(dirname(pdois_unique[i])), "/", basename(pdois_unique[i]), "}")
-                                        } else if (T) { # just doi
-                                            line[j] <- paste0(line[j], basename(dirname(pdois_unique[i])), "/", basename(pdois_unique[i]))
-                                        }
+                                        message(inds[j], ":")
+                                        print(str(point_datap[[inds[j]]], max.level=1))
                                     }
                                 }
-                                line[j] <- paste0(line[j], "\\\\")
-                            } # for j inds2
-                            lines <- c(lines, line)
-                        } # for i pdois_unique
-                        lines <- c(lines, 
-                                   "\\bottomrule",
-                                   "\\end{longtable}", 
-                                   "\\normalsize",
-                                   "")
-                        for (i in seq_along(bibtex)) lines <- c(lines, bibtex[[i]])
-                        fout <- paste0("pangaea_table_", paste(prefs, collapse="_"), ".txt")
-                        message("save ", fout, " ...")
-                        writeLines(lines, con=fout)
-                    } # if any(xp_legend_unique[[1]] == "Pangaea")
-                    # finished special: save survived pangaea dois as latex table 
+                                #if (grepl("Temp12", xp_legend_unique[[1]][i])) { # 
+                                    
+                                #}
+                            } # for i in xp_legend_unique[[1]]
+                            stop("table stop")
+
+                        # table a1 jqs paper
+                        } else if (all(xp_legend_unique[[1]] == "Pangaea")) {
+                            # save survived pangaea dois as latex table
+                            # one multi-row per unique pangaea bibtex entry (and not DOI) because:
+                            # different pangaea DOIs may have the same bibtex entry! 
+                            message("\nspecial: save survived pangaea dois as latex table")
+                            inds <- which(xp_legend == "Pangaea")
+                            pdois <- sapply(point_datap[inds], "[[", "doi")
+                            pdois_unique <- unique(pdois)
+                            bibtex <- vector("list", l=length(pdois_unique))
+                            if (!any(search() == "package:RCurl")) library(RCurl)
+                            for (i in seq_along(pdois_unique)) {
+                                #message("run `RCurl::getURL(", paste0(pdois_unique[i], "?format=citation_bibtex"), ")` ...")
+                                bibtex[[i]] <- RCurl::getURL(paste0(pdois_unique[i], "?format=citation_bibtex"))
+                                bibtex[[i]] <- strsplit(bibtex[[i]], "\n ")[[1]]
+                            } 
+                            # first rows of bibtex-entries
+                            prefs <- sapply(bibtex, "[", 1)
+                            prefs <- substr(prefs,
+                                            sapply(gregexpr("\\{", prefs), "[[", 1) + 1,
+                                            sapply(gregexpr(",", prefs), "[[", 1) - 1)
+                            names(bibtex) <- prefs
+                            if (zname == "wisoaprt_d") {
+                                latex_varname <- "$\\delta^{18}$O$_\\text{p,SMOW}$"
+                                latex_unit <- "\\textperthousand"
+                            } else {
+                                stop("not defined")
+                            }
+                            latex_caption <- paste0("Pangaea data sets used for temporal mean calculation of ", 
+                                                    latex_varname, " (in ", latex_unit, ") shown in Fig. ",
+                                                    "\\ref{fig:timmean_d18o_pi_gnip_iso2k_sisal_pangaea} and ",
+                                                    "\\ref{fig:scatter_d18o_pi_linear_gnip_iso2k_sisal_pangaea}. ",
+                                                    "Start and End columns provide years from 0 CE.")
+                            columns <- paste0("\\mythead{No}",
+                                              " & \\mytheadl{Pangaea reference}",
+                                              " & \\mythead{lon [$^{\\circ}$]}",
+                                              " & \\mythead{lat [$^{\\circ}$]}",
+                                              " & \\mythead{Start}",
+                                              " & \\mythead{End}",
+                                              paste0(" & \\mythead{", latex_varname, "}"),
+                                              "\\\\")
+                            lines <- c("\\fontsize{9}{6}\\selectfont",
+                                       "\\begin{longtable}{@{}rlrrrrrr@{}}",
+                                       paste0("\\caption{", latex_caption, "}\\label{tab:appendix_pangaea}\\\\"),
+                                       "\\toprule",
+                                       columns,
+                                       "\\endfirsthead",
+                                       "\\toprule",
+                                       columns,
+                                       "\\midrule",
+                                       "\\endhead",
+                                       "\\midrule")
+                            cnt <- 0
+                            for (i in seq_along(pdois_unique)) {
+                                inds2 <- inds[which(pdois == pdois_unique[i])]
+                                if (length(unique(sapply(point_datap[inds2], "[[", "fname"))) != 1) {
+                                    stop("there should only be one ref for ", 
+                                         length(inds2), " identical pangaea dois")
+                                }
+                                line <- c()
+                                for (j in seq_along(inds2)) {
+                                    cnt <- cnt + 1
+                                    line[j] <- paste0(cnt, " &")
+                                    if (j == 1) { # add authors only for first record
+                                        line[j] <- paste0(line[j], " \\citet{", names(bibtex)[i], "}")
+                                    } else {
+                                        line[j] <- paste0(line[j], " \\dittotikz")
+                                    }
+                                    line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$lon, 3))
+                                    line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$lat, 3))
+                                    o <- attributes(point_datap[[inds2[j]]]$time)$origin
+                                    if (o == 1950) {
+                                        fromto_1950 <- as.POSIXlt(point_datap[[inds2[j]]]$data_mean_rangetime, o="1970-1-1", tz="UTC")
+                                        fromto_1950 <- fromto_1950$year + 1900
+                                        fromto_0 <- fromto_1950 + 1950
+                                    } else if (o == 0) {
+                                        stop("not defined")
+                                    } else {
+                                        stop("not defined")
+                                    }
+                                    line[j] <- paste0(line[j], " & ", fromto_0[1])
+                                    line[j] <- paste0(line[j], " & ", fromto_0[2])
+                                    line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$data_mean, 2))
+                                    if (F) { # add pangaea DOI
+                                        if (j == 1) {
+                                            line[j] <- paste0(line[j], " & ")
+                                            if (F) { # complete url
+                                                line[j] <- paste0(line[j], 
+                                                                  "\\href{", pdois_unique[i], "}{", 
+                                                                  basename(dirname(pdois_unique[i])), "/", basename(pdois_unique[i]), "}")
+                                            } else if (T) { # just doi
+                                                line[j] <- paste0(line[j], basename(dirname(pdois_unique[i])), "/", basename(pdois_unique[i]))
+                                            }
+                                        }
+                                    }
+                                    line[j] <- paste0(line[j], "\\\\")
+                                } # for j inds2
+                                lines <- c(lines, line)
+                            } # for i pdois_unique
+                            lines <- c(lines, 
+                                       "\\bottomrule",
+                                       "\\end{longtable}", 
+                                       "\\normalsize",
+                                       "")
+                            for (i in seq_along(bibtex)) lines <- c(lines, bibtex[[i]])
+                            fout <- paste0("pangaea_table_", paste(prefs, collapse="_"), ".txt")
+                            message("save ", fout, " ...")
+                            writeLines(lines, con=fout)
+                        } # if any(xp_legend_unique[[1]] == "Pangaea")
+                    
+                    } else {
+                        message("enable here to export latex tables ...")
+                    } # if saved survived point_datap as latex table
+                    # finished special: save survived point_data as latex table 
 
                     # group scatter point_data by?
                     message("\ngroup color and pch of point_data xp/yp by what?")
@@ -5379,29 +5405,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     dput(ylim)
                     yat <- pretty(ylim, n=10)
                     ylab <- format(yat, trim=T)
-                
-                    width_in <- p$inch #a4_width_in # maximum a4 width as threshold (8.26 in)
-                    message("width_in = ", width_in, " ", appendLF=F)
-                    asp_width_over_height <- p$scatter_width/p$scatter_height 
-                    message("--> aspect ratio = ", round(asp_width_over_height, 3))
-                    height_in <- width_in/asp_width_over_height
-                    message("height_in = width_in/aspect_ratio = ", 
-                            width_in, "/", round(asp_width_over_height, 3), " = ", 
-                            round(width_in/asp_width_over_height, 4), " = ",
-                            round(height_in, 4), " ", appendLF=F)
-                    if (height_in > p$a4_height_in) {
-                        height_in <- p$a4_height_in # take a4 maximum height as threshold (11.58 in)
-                        message("> ", p$a4_height_in, " --> height_in = ", height_in, 
-                                " --> aspect ratio = ", round(width_in/height_in, 3))
-                    } else {
-                        message()
-                    }
-                    pointsize <- p$pointsize*width_in/p$inch # multiple of default
-                    if (T) {
-                        message("special: increase pointsize ...")
-                        pointsize <- 1.25*pointsize
-                    }
-
+                    
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        zname, "_", 
                                        paste0(names_short_p, "_", seasonsp_p, 
@@ -5426,13 +5430,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                     message("open plot ", plotname, " ...")
                     dir.create(dirname(plotname), recursive=T, showWarnings=F)
+                    source("~/scripts/r/functions/myfunctions.r") 
+                    pp <- plot_sizes(width_in=p$scatter_width_in, asp=p$scatter_asp, verbose=T)
                     if (p$plot_type == "png") {
-                        width <- width_in*p$ppi; height <- height_in*p$ppi
-                        png(plotname, width=width, height=height, res=p$ppi, 
-                            family=p$family_png, pointsize=pointsize)
+                        png(plotname, width=pp$png_width_px, height=pp$png_height_px,
+                            pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
                     } else if (p$plot_type == "pdf") {
-                        pdf(plotname, width=width_in, height=height_in, family=p$family_pdf, 
-                            pointsize=pointsize, encoding=encoding)
+                        pdf(plotname, width=pp$pdf_width_in, height=pp$pdf_height_in,
+                            family=p$pdf_family, encoding=encoding, pointsize=pp$pdf_pointsize)
                     }
                      
                     # set plot margins
@@ -6230,36 +6235,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
             nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, n=n, m=m, ip=ip, dry=T)
 
-            # this is the lon vs lat plot: respecting aspect ratio based on dlon and dlat make sense here 
-            width_in <- p$a4_width_in # maximum a4 width as threshold (8.26 in)
-            message("width_in = ", width_in, " ", appendLF=F)
-            if (respect_asp) {
-                message("--> `respect_asp`=T ", appendLF=F)
-                asp_width_over_height <- sapply(lapply(d$lon, range), diff)/sapply(lapply(d$lat, range), diff) # per subplot
-                asp_width_over_height <- max(asp_width_over_height) # makes sense?
-                if (asp_width_over_height > aspect_ratio_thr) {
-                    message("--> dlon/dlat = ", round(asp_width_over_height, 3), 
-                            " > `aspect_ratio_thr` = ", aspect_ratio_thr, " ", appendLF=F)
-                    asp_width_over_height <- aspect_ratio_thr
-                }
-            } else { # use own default aspect ratio 
-                asp_width_over_height <- p$map_width/p$map_height 
-            }
-            message("--> aspect ratio = ", round(asp_width_over_height, 3))
-            height_in <- nm$nrow*width_in/asp_width_over_height
-            message("height_in = nrow*width_in/aspect_ratio = ", 
-                    nm$nrow, "*", width_in, "/", round(asp_width_over_height, 3), " = ", 
-                    nm$nrow, "*", round(width_in/asp_width_over_height, 4), " = ",
-                    round(height_in, 4), " ", appendLF=F)
-            if (height_in > p$a4_height_in) {
-                height_in <- p$a4_height_in # take a4 maximum height as threshold (11.58 in)
-                message("> ", p$a4_height_in, " --> set height_in = ", height_in, 
-                        " --> aspect ratio = ", round(width_in/height_in, 3))
-            } else {
-                message()
-            }
-            pointsize <- p$pointsize*width_in/p$inch # multiple of default
-            
             # open plot device 
             plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                zname, "_", 
@@ -6284,21 +6259,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             message("open plot ", plotname, " ...")
+            # this is the lon vs lat plot: respecting aspect ratio based on dlon and dlat make sense here 
+            source("~/scripts/r/functions/myfunctions.r")
+            asp <- sapply(lapply(d$lon, range), diff)/sapply(lapply(d$lat, range), diff) # dlon/dlat per setting
+            asp <- max(asp) # one asp for potentially differnet dlon/dlat per setting
+            asp <- min(asp, aspect_ratio_thr) # not too high aspect ratio for map plot
+            pp <- plot_sizes(width_in=p$map_width_in, asp=asp, verbose=T)
             if (p$plot_type == "png") {
-                width <- width_in*p$ppi; height <- height_in*p$ppi
-                png(plotname, width=width, height=height, res=p$ppi, family=p$family_png, pointsize=pointsize)
+                png(plotname, width=pp$png_width_px, height=pp$png_height_px,
+                    pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
             } else if (p$plot_type == "pdf") {
-                width <- width_in; height <- height_in
-                pdf(plotname, width=width_in, height=height_in, family=p$family_pdf, encoding=encoding, pointsize=pointsize
-                    #, paper="a4" # pdf page will alyways have sizes of a4 in inch, no matter what `width` and `height` are
-                    )
+                pdf(plotname, width=pp$pdf_width_in, height=pp$pdf_height_in,
+                    family=p$pdf_family, encoding=encoding, pointsize=pp$pdf_pointsize)
                 #library(showtext)
                 #showtext_auto() 
                 #def <- get(".PDF.Options.default", envir = grDevices:::.PSenv)
-            }
-            if (any(p$plot_type == c("png", "pdf"))) {
-                message("final ", p$plot_type, ifelse(p$plot_type == "png", paste0(" (ppi=", p$ppi, ")"), ""), 
-                        " plot width/height = ", width, "/", height, " = ", round(width/height, 3), " ...") 
             }
 
             # map plot

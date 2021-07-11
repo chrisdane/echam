@@ -153,7 +153,7 @@ plot_lon_lat_anomaly <- F
 reorder_lon_from_0360_to_180180 <- T
 addland <- T
 add_grid <- F
-aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for plot
+aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for map plot
 proj <- "" # default: no projection
 
 # special
@@ -192,7 +192,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -600,7 +600,7 @@ if (F) { # awi-esm-1-1-lr hist
     areas <- rep("two-yurts_remapnn", t=2)
     #areas <- rep("kotokel_remapnn", t=2)
 
-} else if (T) { # my phd stuff 2 settings maps
+} else if (F) { # my phd stuff 2 settings maps
     #postpaths <- "/work/ba0941/a270073/post"
     models <- rep("fesom", t=2)
     prefixes <- c("Low01_sub_lsea_s52", "LSea5_sub_lsea_s5")

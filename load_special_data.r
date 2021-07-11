@@ -648,7 +648,7 @@ if (F && file.exists(f)) {
 
 # PLOT coords as eval list
 f <- "~/awi/PLOT/git/PLOT/lakes/lake_coords.txt"
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
     lakes_table <- read.table(f, header=T, stringsAsFactors=F)
     PLOT_coords_cmd_list <- NULL
@@ -962,7 +962,7 @@ if (host$machine_tag == "paleosrv") {
                 "gnip_ts_O18_H2_H3_H3_err_precip_tair_vapour_pressure_min_5_consecutive_complete_yrs_1953-1-15_to_2019-12-15.RData2"
                 )
 }
-if (T && file.exists(f)) {
+if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load GNIP monthly station data ...\n")
     load(f) # gnip_list 
 } else {
