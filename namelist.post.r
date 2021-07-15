@@ -70,7 +70,7 @@ if (F) { # old hist
     codes <- 167
     modes <- "fldmean"
 
-} else if (T) { # cmip6
+} else if (F) { # cmip6
     #models <- "echam6"
     models <- "mpiom1"
     #models <- "fesom"
@@ -897,6 +897,67 @@ if (F) { # old hist
     modes <- "select"
     froms <- "2650"
     tos <- "2749"
+
+} else if (T) { # awi-esm-1-1-lr_kh800 og piControl
+    #models <- "echam6"
+    models <- "fesom"
+    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/echam" # chunk 1
+    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
+    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
+    datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
+    #fpatterns <- "SR_output_echam6_echam_<YYYY>01.nc" # chunk 1
+    #fpatterns <- "test_echam6_echam_<YYYY>01.nc" # chunk 2
+    fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc" 
+    prefixes <- "awi-esm-1-1-lr_kh800_og_piControl"
+    #fvarnames <- "temp2"
+    fvarnames <- "thetaoga"
+    cdoshifttimes <- "-1dt" # for fesom
+    modes <- "select"
+    #modes <- "fldmean"
+    #modes <- list("fldmean_monmean"=c("fldmean", "monmean"))
+    #froms <- 1950 # start chunk1: 1950
+    #froms <- 2030 # start chunk2: 2030
+    froms <- 2680
+    #tos <- 2029 # end chunk1: 2029 
+    tos <- 2685 # end chunk2: 2685
+
+} else if (F) { # awi-esm-1-1-lr_kh800 og esm-piControl test
+    models <- "echam6"
+    datapaths <- "/mnt/lustre02/work/ba1103/a270094/AWIESM/test_esm3/outdata/echam"
+    fpatterns <- "test_esm3_echam6_echam_<YYYY><MM>.nc"
+    prefixes <- "awi-esm-1-1-lr_kh800_og_esm-piControl"
+    fvarnames <- "temp2"
+    modes <- list("fldmean_monmean"=c("fldmean", "monmean"))
+    froms <- 1850
+    tos <- 1855
+
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl init
+    models <- "echam6"
+    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/echam"
+    fpatterns <- "esm-piControl_<YYYY><MM>.01_g3bmon"
+    prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl"
+    codes <- 167
+    fvarnames <- "temp2"
+    modes <- "fldmean"
+    froms <- 1001
+    tos <- 1010
+
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl restart
+    #models <- "echam6"
+    models <- "fesom"
+    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/echam"
+    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
+    #fpatterns <- "esm-piControl_2685_1m_2_<YYYY>01.01_g3bmon"
+    fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
+    prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl"
+    #codes <- 167
+    #fvarnames <- "temp2"
+    fvarnames <- "thetaoga"
+    cdoshifttimes <- "-1dt" # for fesom
+    modes <- "select"
+    #modes <- "fldmean"
+    froms <- 2686
+    tos <- 2686
 
 # ======================================================
 # 2 settings

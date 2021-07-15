@@ -654,7 +654,7 @@ for (i in 1:nsettings) {
                 years_wanted <- froms[i]:tos[i] 
                 # try to apply command later
             } else {
-                stop("--> these are out of found years from filenames: ", 
+                stop("--> these given years are not within found years: ", 
                      min(years_filenames), " to ", max(years_filenames))
             }
         } else {
@@ -916,7 +916,7 @@ for (i in 1:nsettings) {
                 message("run `", cmd, "`")
                 var_exist <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
                 if (!is.null(var_exist$warning)) { # `cdo partab` yields warn/error
-                    # use `ncks -m` instead
+                    # use `ncks -m` instead; only works if input is nc file
                     ncks <- Sys.which("ncks")
                     cmd <- paste0(ncks, " -m ", datapath, "/", files[1])
                     message("run `", cmd, "`")
@@ -1172,25 +1172,30 @@ for (i in 1:nsettings) {
                         dates <- trimws(dates)
                         dates <- gsub("\\s+", " ", dates)
                         dates <- strsplit(dates, " ")[[1]]
-                        dt <- difftime(dates[2:length(dates)], dates[1:(length(dates)-1)], units="secs")
-                        dt <- unique(dt)
-                        if (all(dt == 86400)) {
+                        dt_sec <- difftime(dates[2:length(dates)], dates[1:(length(dates)-1)], units="secs")
+                        dt_sec <- unique(dt_sec)
+                        if (!any(is.na(match(dt_sec, 86400)))) {
                             frequency <- "daily"
                             attributes(frequency)$units <- "day"
-                        } else if (all(match(dt, c(2419200, 2548800, 2592000, 2635200, 2678400)))) {
+                        } else if (!any(is.na(match(dt_sec, 
+                                                     c(2419200, 2505600, 2548800, 2592000, 
+                                                       2635200, 2674800, 2678400, 2682000))))) {
                             frequency <- "monthly"
                             attributes(frequency)$units <- "month"
                         } else {
-                            stop("dt = ", paste(dt, collapse=", "), " secs unknown")
+                            stop("at least some of dt = ", paste(dt_sec, collapse=", "), " secs are unknown")
                         }
                         # overwrite "dt" placeholder with actual frequency
-                        message("--> dt = ", dt, " secs --> frequency is ", frequency)
-                        message("--> replace \"dt\" in cdoshifttimes[", i, "]` = ", 
-                                cdoshifttimes[i], " with \"", attributes(frequency)$units, "\" ...")
+                        message("--> dt = ", paste(dt_sec, collapse=", "), " secs")
+                        message("--> frequency is ", frequency)
+                        message("--> replace \"dt\" in cdoshifttimes[", i, "]` = \"", 
+                                cdoshifttimes[i], "\" with \"", attributes(frequency)$units, "\" ...")
                         cdoshifttimes[i] <- sub("dt", attributes(frequency)$units, cdoshifttimes[i])
                     } # if "dt" is in provided `cdoshifttimes[i]`
                     cdoshifttime <- paste0("-shifttime,", cdoshifttimes[i])
                     message("--> `cdoshifttime` = ", cdoshifttime)
+                } else {
+                    message("`cdoshifttimes[", i, "]` not provided. set to e.g. \"-1mo\" or, more general, \"-1dt\", if wanted")
                 } # if cdoshifttime is provided
 
                 # add further cdo chain commands here

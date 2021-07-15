@@ -69,11 +69,10 @@ if (!exists("postpaths")) { # default from post_echam.r
 postpaths <- normalizePath(postpaths)
 if (!exists("plotpath")) { # default from post_echam.r
     plotpath <- paste0(host$workpath, "/plots/", paste(unique(models), collapse="_vs_"))
-} else {
-    if (!dir.exists(plotpath)) dir.create(plotpath, recursive=T, showWarnings=F)
 }
+if (!dir.exists(plotpath)) dir.create(plotpath, recursive=T, showWarnings=F)
 plotpath <- normalizePath(plotpath)
-if (!exists("names_legend")) names_legend <- rep("", t=nsettings)
+if (!exists("names_legend")) names_legend <- names_short
 
 # defaults: code stuff
 if (!exists("codes")) codes <- rep("", t=nsettings)
@@ -161,6 +160,18 @@ reg_dysf[reg_dys != ""] <- paste0("_dy", reg_dys[reg_dys != ""])
 # defaults: plot stuff
 if (!exists("types")) types <- rep("l", t=nsettings) # default: lines plots and not points
 if (!exists("ltys")) ltys <- rep(1, t=nsettings)
+if (!exists("lwds")) lwds <- rep(1, t=nsettings)
+if (!exists("pchs")) {
+    pchs <- rep(NA, t=nsettings)
+    for (i in seq_along(pchs)) {
+        if (types[i] == "l") {
+            pchs[i] <- NA
+        } else {
+            pchs[i] <- pchs_filled_wout_border[1]
+        }
+    }
+}
+if (!exists("scatterpchs")) scatterpchs <- rep(pchs_filled_wout_border[1], t=nsettings)
 if (nsettings == 1) { # mycols my colors nicer than R defaults
     cols_vec <- "black"
 } else if (nsettings == 2) {
@@ -191,9 +202,6 @@ if (F) {
     cols_save <- cols
     cols <- cols_rgb
 } 
-if (!exists("lwds")) lwds <- rep(1, t=nsettings)
-if (!exists("pchs")) pchs <- rep(pchs_filled_wout_border[1], t=nsettings)
-if (!exists("scatterpchs")) scatterpchs <- rep(pchs_filled_wout_border[1], t=nsettings)
 if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
 if (exists("cols_samedims")) {
     if (class(cols_samedims) == "integer") { # user provided color numbers
@@ -240,7 +248,7 @@ data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 
 ## load pangaea data if defined 
-if (T) {
+if (F) {
     message("\ndisable here if you do not want to load pangaea data via load_pangaea_data.r ...")
     source("load_pangaea_data.r")
 } else {
@@ -248,7 +256,7 @@ if (T) {
 }
 
 ## load special data if defined
-if (T) {
+if (F) {
     message("\ndisable here if you do not want to load special data via load_special_data.r ...")
     source("load_special_data.r")
 } else {
@@ -323,6 +331,17 @@ for (i in seq_len(nsettings)) {
     } # for di
     if (length(dropinds) > 0) {
         message("--> drop these dims of length 1 ...")
+        if (length(dropinds) == length(dims[[i]])) {
+            message("dropping ", length(dropinds), 
+                    " dims of length 1 would mean to drop all dims of the data")
+            if (any(names(dims[[i]]) == "time")) {
+                message("--> keep time dim")
+                ind <- which(names(dims[[i]]) == "time")
+                dropinds <- dropinds[-ind]
+            } else {
+                stop("not defined")
+            }
+        }
         dims[[i]][dropinds] <- NULL
     }
 
@@ -1091,8 +1110,19 @@ for (i in seq_len(nsettings)) {
                 len1_dim_inds <- which(dim_lengths == 1)
                 message("\n`squeeze=T` --> drop dims of length 1: \"", 
                         paste(names(len1_dim_inds), collapse="\", \""), "\" ...")
+                if (length(len1_dim_inds) == length(dim_lengths)) { # 
+                    message("dropping ", length(len1_dim_inds), 
+                            " dims of length 1 would mean to drop all dims of the data")
+                    if (any(names(dim_lengths) == "time")) {
+                        message("--> keep time dim")
+                        ind <- which(names(dim_lengths) == "time")
+                        len1_dim_inds <- len1_dim_inds[-ind]
+                    } else {
+                        stop("not defined")
+                    }
+                }
                 dimids <- dimids[-len1_dim_inds]
-                for (di in seq_along(len1_dim_inds)) {
+                for (di in seq_along(len1_dim_inds)) { # this is actually not needed anymore?:
                     dims[[i]][names(len1_dim_inds)[di]] <- NULL
                 }
             } # if var has dims of length 1 
@@ -1889,7 +1919,7 @@ for (i in seq_len(nsettings)) {
         
         } else if (varname == "tos") {
             data_infos[[i]][[vi]]$label <- "SST [°C]"
-            if (T) {
+            if (F) {
                 message("special label")
                 data_infos[[i]][[vi]]$label <- "SST anomaly [°C]"
             }
@@ -4162,7 +4192,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 tlim <- range(lapply(d$time, as.numeric)) # seconds by default 
                 tlimlt <- as.POSIXlt(tlim, origin="1970-1-1", tz="UTC")
                 tlimct <- as.POSIXct(tlimlt)
-                tlabcex <- 0.8
+                tlabcex <- 1
+                #tlabcex <- 0.8
                 monlim <- range(tlimlt$mon+1)
                 anlim <- range(tlimlt$year+1900)
 
@@ -4259,6 +4290,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } else if (tlab_dt_secs > 180*24*60*60) { 
                     tlablt <- tlablt$year+1900
                     tunit <- "year"
+                    if (T) {
+                        message("special time unit label")
+                        tunit <- "model year"
+                    }
                 }
                 # from here, tlablt is not of type POSIX* anymore!
                 if (any(duplicated(tlablt))) {
@@ -4296,8 +4331,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
      
         # todo: find common axes values for all dims 
 
-        if (T) {
-            message("\nspecial tlim, tatn and tablt ...")
+        if (F) {
+            message("\nspecial tlim, tatn, tablt for phd stuff ...")
             tlim <- c(-694310400, 1259625600)
             tatn <- c(-788918400, -631152000, -473385600, -315619200, -157766400, 
                       0, 157766400, 315532800, 473385600, 631152000, 788918400, 946684800, 
@@ -6873,7 +6908,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     data_right$label <- eval(substitute(expression(paste(integral(), " MKE dV [m"^5, " s"^-2, "] " %*% "", 10^11))))
                     data_right$lepos <- "topright"
                     data_right$suffix <- "_with_mke"
-                } else if (T) {
+                } else if (F) {
                     message("add depth integrated eke to right axis ...")
                     data_right <- list(data=vector("list", l=length(z)))
                     names(data_right$data)[] <- "EKE"
@@ -6998,9 +7033,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # check
                 if (length(data_right$data) == 0) {
                     warning("provided `add_data_right_yaxis_ts` = T but no data_right was defined for\n",
-                            "zname = \"", zname, "\"; `plot_groups[", plot_groupi, "] = \"", 
-                            plot_groups[plot_groupi], "; `ploti` = ", ploti, ")\n", 
-                            " --> set `add_data_right_yaxis_ts=F` and continue ...")
+                            "  zname = \"", zname, "\"; `plot_groups[", plot_groupi, "] = \"", 
+                            plot_groups[plot_groupi], "; `ploti` = ", ploti, "\n", 
+                            "  --> set `add_data_right_yaxis_ts=F` and continue ...")
                     add_data_right_yaxis_ts <- F
                     data_right <- list(suffix="") # default
                 }
@@ -7673,10 +7708,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             # get plot sizes
             message("open plot ", plotname, " ...")
+            source("~/scripts/r/functions/myfunctions.r") 
             pp <- plot_sizes(width_in=p$ts_width_in, asp=p$ts_asp, verbose=T)
             if (p$plot_type == "png") {
                 png(plotname, width=pp$png_width_px, height=pp$png_height_px,
-                    pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
+                    pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family, type="cairo")
             } else if (p$plot_type == "pdf") {
                 pdf(plotname, width=pp$pdf_width_in, height=pp$pdf_height_in,
                     family=p$pdf_family, encoding=encoding, pointsize=pp$pdf_pointsize)
@@ -7771,16 +7807,18 @@ for (plot_groupi in seq_len(nplot_groups)) {
             axis(2, at=yat, labels=ylab, las=2)
 
             # add time label on x-axis
-            mtext(side=1, tunit, line=2, cex=0.9)
+            mtext(side=1, tunit, line=2, cex=1)
+            #mtext(side=1, tunit, line=2, cex=0.9)
 
             # add variable label on y-axis
-            label_line <- 2.5
-            #label_line <- 3
+            #label_line <- 2.5
+            label_line <- 3
             #label_line <- 3.5
             #label_line <- 4
             #label_line <- 4.5
             message("\nput datas label in `label_line` = ", label_line, " distance ...")
-            mtext(side=2, data_info$label, line=label_line, cex=0.8)
+            mtext(side=2, data_info$label, line=label_line, cex=1)
+            #mtext(side=2, data_info$label, line=label_line, cex=0.8)
             
             # add title
             if (add_title) {
@@ -7885,7 +7923,22 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # default unsmoothed data 
                 } else { # if not (ts_highlight_seasons$bool)
                     for (i in seq_along(z)) {
-                        points(d$time[[i]], z[[i]], t=types_p[i],
+                        if (types_p[i] == "l" && lwds_p[i] == 0) warning("intent to draw line with zero width", .immediate=T)
+                        if (types_p[i] == "p" && is.na(pchs_p[i])) warning("intent to draw points with NA character", .immediate=T)
+                        if (length(z[[i]]) == 1) {
+                            if (types_p[i] == "l") {
+                                message("length(z[[", i, "]] = 1 --> switch type = \"", types_p[i], "\" to \"", appendLF=F)
+                                types_p[i] <- "p"
+                                message(types_p[i], "\"")
+                            }
+                            if (is.na(pchs_p[i])) {
+                                message("length(z[[", i, "]] = 1 --> switch pch = NA to \"", appendLF=F)
+                                pch <- c(pchs_hollow, seq_len(255)[-pchs_hollow]) # declare
+                                pchs_p[i] <- pch[i]
+                                message(pchs_p[i], "\"")
+                            }
+                        }
+                        points(d$time[[i]], z[[i]], type=types_p[i], 
                                col=ifelse(add_smoothed, cols_rgb_p[i], cols_p[i]), 
                                lty=ltys_p[i], lwd=lwds_p[i], pch=pchs_p[i])
                     }
@@ -7981,7 +8034,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("\nadd default stuff to datas vs time legend ...")
                 le <- list()
                 if (!exists("lepos")) {
-                    if (F && suppressPackageStartupMessages(require(Hmisc))) {
+                    if (T && suppressPackageStartupMessages(require(Hmisc))) {
                         Hmisc_z <- NULL
                         if (add_unsmoothed) Hmisc_z <- c(Hmisc_z, unlist(z))
                         if (add_smoothed) Hmisc_z <- c(Hmisc_z, unlist(zma))
@@ -8104,7 +8157,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
             } # if add_legend
 
-            if (T) {
+            if (F) {
                 message("\nadd special stuff to datas vs time")
                 legend("bottomleft", "c", col="black", lty=NA, pch=NA, lwd=NA, bty="n", 
                        x.intersp=-1.8, y.intersp=0.5, cex=1.25)

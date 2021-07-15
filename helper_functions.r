@@ -15,7 +15,8 @@ get_host <- function() {
         machine_tag <- "mistral"
         homepath <- "~/scripts/r"
         #workpath <- "/work/ba0941/a270073"
-        workpath <- "/work/ab0246/a270073"
+        #workpath <- "/work/ab0246/a270073"
+        workpath <- "/work/ba1103/a270073"
     } else if (any(sapply(c("paleosrv1", "fu-"), grepl, hostname))) {
         machine_tag <- "paleosrv"
         homepath <- "~/scripts/r"

@@ -38,7 +38,7 @@ pchs_filled_w_border <- c(21, 24, 22, 23)
 
 message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
 source("~/scripts/r/functions/myfunctions.r")
-p <- myDefaultPlotOptions(#plot_type="png", 
+p <- myDefaultPlotOptions(plot_type="png", 
                           #plot_type="active",
                           #,png_family="Droid Sans Mono", 
                           #,pdf_family="Droid Sans Mono"
@@ -192,7 +192,7 @@ if (F) { # awi-esm-1-1-lr hist
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
 
-} else if (T) { # Hol-Tx10 on paleosrv or Hol-T on stan
+} else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
     #models <- "mpiom1"
     #models <- "jsbach"
@@ -357,8 +357,39 @@ if (F) { # awi-esm-1-1-lr hist
     seasonsf <- fromsf <- tosf <- ""
     modes <- "timmean"
 
+} else if (T) { # awi-esm-1-1-lr_kh800 piControl oezguer
+    models <- "fesom"
+    prefixes <- "awi-esm-1-1-lr_kh800_og_piControl"
+    names_short <- "awicm1-recom_pi_og"
+    names_legend <- "piControl"
+    varnames_in <- "tos"
+    fromsf <- 1950
+    tosf <- 2685
+    new_origins <- 1
+    seasonsf <- "annual"
+    modes <- "fldmean"
+
 # =====================================
 # 2 settings
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl me vs oezguer
+    models <- rep("echam6", t=2)
+    prefixes <- c("awi-esm-1-1-lr_kh800_esm-piControl", "awi-esm-1-1-lr_kh800_esm-piControl_og")
+    names_short <- c("new", "old")
+    varnames_in <- rep("temp2", t=2)
+    fromsf <- c("1001", "1850")
+    tosf <- c("1010", "1855")
+    new_origins <- c(1, 1) # spinup years counting from 1
+    modes <- c("fldmean", "fldmean_monmean")
+
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl oezguer last years vs my esm-piControl first years 
+    models <- rep("echam6", t=2)
+    prefixes <- c("awi-esm-1-1-lr_kh800_og_piControl", "awi-esm-1-1-lr_kh800_esm-piControl")
+    names_short <- c("piControl", "esm-piControl")
+    varnames_in <- rep("temp2", t=2)
+    fromsf <- c("2680", "2686")
+    tosf <- c("2685", "2686")
+    modes <- c("fldmean_monmean", "fldmean")
+
 } else if (F) { # awi-esm-1-1-lr 1pct 4CO2
     #models <- rep("echam6", t=2)
     models <- rep("fesom", t=2)
