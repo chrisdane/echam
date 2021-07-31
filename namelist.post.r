@@ -898,26 +898,29 @@ if (F) { # old hist
     froms <- "2650"
     tos <- "2749"
 
-} else if (T) { # awi-esm-1-1-lr_kh800 og piControl
-    #models <- "echam6"
-    models <- "fesom"
+} else if (F) { # awi-esm-1-1-lr_kh800 og piControl
+    models <- "echam6"
+    #models <- "fesom"
     #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/echam" # chunk 1
     #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
-    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
-    datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
+    datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
+    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
     #fpatterns <- "SR_output_echam6_echam_<YYYY>01.nc" # chunk 1
     #fpatterns <- "test_echam6_echam_<YYYY>01.nc" # chunk 2
-    fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc" 
-    prefixes <- "awi-esm-1-1-lr_kh800_og_piControl"
-    #fvarnames <- "temp2"
-    fvarnames <- "thetaoga"
-    cdoshifttimes <- "-1dt" # for fesom
-    modes <- "select"
-    #modes <- "fldmean"
+    #prefixes <- "awi-esm-1-1-lr_kh800_og_piControl_3hr"
+    fpatterns <- "test_echam6_g3bid_<YYYY>01.nc" # chunk 2
+    prefixes <- "awi-esm-1-1-lr_kh800_og_piControl_day"
+    #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc" 
+    #prefixes <- "awi-esm-1-1-lr_kh800_og_piControl"
+    fvarnames <- "temp2"
+    #fvarnames <- "thetaoga"
+    #cdoshifttimes <- "-1dt" # for fesom
+    #modes <- "select"
+    modes <- "fldmean"
     #modes <- list("fldmean_monmean"=c("fldmean", "monmean"))
     #froms <- 1950 # start chunk1: 1950
     #froms <- 2030 # start chunk2: 2030
-    froms <- 2680
+    froms <- 2675
     #tos <- 2029 # end chunk1: 2029 
     tos <- 2685 # end chunk2: 2685
 
@@ -942,22 +945,69 @@ if (F) { # old hist
     froms <- 1001
     tos <- 1010
 
-} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl restart
-    #models <- "echam6"
-    models <- "fesom"
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/echam"
-    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
-    #fpatterns <- "esm-piControl_2685_1m_2_<YYYY>01.01_g3bmon"
-    fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
-    prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl"
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
+    models <- "echam6"
+    #models <- "fesom"
+    if (F) {
+        datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/echam"
+        #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
+        #fpatterns <- "esm-piControl_2685_<YYYY><MM>.01_g3bmon"
+        #fpatterns <- "esm-piControl_2685_<YYYY><MM>.01_tracermon"
+        fpatterns <- "esm-piControl_2685_<YYYY><MM>.01_co2mon"
+        #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_2percatm"
+    } else if (F) {
+        datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2percfalse/outdata/echam"
+        fpatterns <- "esm-piControl_2percfalse_<YYYY><MM>.01_co2mon"
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_2percfalse"
+    } else if (F) {
+        datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/echam"
+        fpatterns <- "esm-piControl_<YYYY><MM>.01_co2mon"
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_2percboth"
+    } else if (T) {
+        datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/echam"
+        #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
+        fpatterns <- "esm-piControl_co2fsign_<YYYY><MM>.01_co2mon"
+        #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
+    }
     #codes <- 167
     #fvarnames <- "temp2"
-    fvarnames <- "thetaoga"
-    cdoshifttimes <- "-1dt" # for fesom
-    modes <- "select"
+    #codes <- 1
+    #fvarnames <- "CO2"
+    #sellevels <- 1
+    #cdo_after_calcs <- list(c("setunit,ppm", "mulc,658267")) # [CO2] (in ppm) = 1e6 * 0.658267 * co2mmr
+    codes <- 6
+    fvarnames <- "co2_flx_land"
+    #codes <- 7
+    #fvarnames <- "co2_flx_ocean"
+    #codes <- 9
+    #fvarnames <- "co2_burden_corr_acc2"
+    #fvarnames <- "thetaoga"
+    #fvarnames <- "aCO2"
+    #cdoshifttimes <- "-1dt" # for fesom
+    #modes <- "select"
+    modes <- "timmean"
     #modes <- "fldmean"
+    #modes <- "fldsum"
+    #modes <- "fldint"
     froms <- 2686
-    tos <- 2686
+    #tos <- 2686
+    tos <- 2704
+
+} else if (F) { # awi-esm-1-1-lr_kh800 historical
+    models <- "echam6"
+    #models <- "fesom"
+    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/echam"
+    #fpatterns <- "historical_<YYYY>01.01_echam"
+    #prefixes <- "awi-esm-1-1-lr_kh800_historical_3hr"
+    fpatterns <- "historical_<YYYY>01.01_g3bid"
+    prefixes <- "awi-esm-1-1-lr_kh800_historical_day"
+    codes <- 167
+    fvarnames <- "temp2"
+    modes <- "fldmean"
+    froms <- 1850
+    tos <- 1862
 
 # ======================================================
 # 2 settings
@@ -1129,7 +1179,24 @@ if (F) { # old hist
     modes <- rep("fldmean", t=4)
     #modes <- rep("timmean", t=4)
     #modes <- rep("volint", t=4)
-}
+
+# ======================================================
+# 12 settings
+} else if (T) { # 12 months timmeans
+    models <- rep("echam6", t=12)
+    datapaths <- rep("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/echam", t=12)
+    fpatterns <- rep("esm-piControl_co2fsign_<YYYY><MM>.01_co2mon", t=12)
+    prefixes <- rep("awi-esm-1-1-lr_kh800_esm-piControl_co2fsign", t=12)
+    #codes <- rep(7, t=12)
+    #fvarnames <- rep("co2_flx_ocean", t=12)
+    codes <- rep(6, t=12)
+    fvarnames <- rep("co2_flx_land", t=12)
+    season_inds <- 1:12
+    modes <- rep("timmean", t=12)
+    froms <- rep(2686, t=12)
+    tos <- rep(2704, t=12)
+
+} # which setting
 
 # https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_calc_wiso_echam5_monmean.sh
 # /ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh

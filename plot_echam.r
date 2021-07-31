@@ -42,10 +42,22 @@ source("namelist.plot.r")
 # must-have objects set by user
 objs <- c("prefixes", "models", "names_short", "fromsf", "tosf", "varnames_in", "modes")
 for (obj in objs) if (!exists(obj)) stop("provide `", obj, "` in namelist.plot.r")
+
+nsettings <- length(prefixes)
+
+# check if must-have objects are of correct length
+for (i in seq_along(objs)) {
+    cmd <- paste0("length(", objs[i], ")")
+    length_of_obj <- eval(parse(text=cmd))
+    if (length_of_obj != nsettings) {
+        stop("variable `", objs[i], "` is of length ", length_of_obj, 
+             " but must be of length ", nsettings, " (as `prefixes`)")
+    }
+}
+
 # replace blanks and special chars in `names_short`
 names_short <- gsub("\\s+", "_", names_short)
 names_short <- gsub("[[:punct:]]", "_", names_short)
-nsettings <- length(prefixes)
 if (exists("varnames_uv")) {
     if (!all(sapply(varnames_uv, length) == 3)) {
         stop("every list in `varnames_uv` must have 3 entries (name of uv-, u- and v-components)")
@@ -132,8 +144,12 @@ if (!exists("depths") && !exists("depthsf")) {
 }
 if (!exists("depth_fromsf")) depth_fromsf <- rep(NA, t=nsettings)
 if (!exists("depth_tosf")) depth_tosf <- rep(NA, t=nsettings)
+if (!exists("lev_fromsf")) lev_fromsf <- rep(NA, t=nsettings)
+if (!exists("lev_tosf")) lev_tosf <- rep(NA, t=nsettings)
 if (!exists("depth_fromsp")) depth_fromsp <- depth_fromsf
 if (!exists("depth_tosp")) depth_tosp <- depth_tosf
+if (!exists("lev_fromsp")) lev_fromsp <- lev_fromsf
+if (!exists("lev_tosp")) lev_tosp <- lev_tosf
 
 # defaults: area stuff
 if (!exists("areas")) areas <- rep("global", t=nsettings)
@@ -457,7 +473,7 @@ for (i in seq_len(nsettings)) {
         } # if !is.na(new_origins[i])
         # finished set new time origin
 
-        # find time inds if wanted (`fromsp` is defined and different than `fromsf`)
+        # find time inds if wanted (`fromsp` is defined and different from `fromsf`)
         if (!is.na(fromsp[i]) || !is.na(tosp[i])) {
             fromind <- 1 # default
             toind <- length(timein_lt)
@@ -503,9 +519,11 @@ for (i in seq_len(nsettings)) {
                 }
             }
 
-        } else { # `fromsp` is not defined
+        } else { # `fromsp` and `tosp` not provided
             fromsp[i] <- timein_lt$year[1] + 1900
+            message("fromsp not given --> fromsp[", i, "] = ", fromsp[i])
             tosp[i] <- timein_lt$year[length(timein_lt)] + 1900
+            message("tosp not given --> tosp[", i, "] = ", tosp[i])
             time_inds <- NULL # default
             
         } # if exists("fromsp") || exists("tosp")
@@ -580,18 +598,58 @@ for (i in seq_len(nsettings)) {
         print(range(dims[[i]]$timelt$mon+1))
 
     } # if nc file has time dim
-    froms_plot[i] <- fromsf[i] # default
-    tos_plot[i] <- tosf[i]
-    if (is.na(fromsp[i]) && !is.na(new_origins[i])) {
-        froms_plot[i] <- new_origins[i]
-    } else if (!is.na(fromsp[i])) {
-        froms_plot[i] <- fromsp[i]
+    
+    # find YYYY from and to for plotnames if time dim was dropped
+    if (is.na(fromsp[i])) {
+        if (is.na(new_origins[i])) {
+            fromsp[i] <- fromsf[i] # same as file input
+            message("\nfromsp not given --> fromsf[", i, "] = ", fromsf[i], 
+                    " --> fromsp[", i, "] = ", fromsp[i])
+        } else if (!is.na(new_origins[i])) { # new origin is wanted
+            shift_by <- new_origins[i] - as.integer(fromsf[i]) # - 1
+            fromsp[i] <- as.integer(fromsf[i]) + shift_by
+            message("\nfromsp not given --> fromsf[", i, "] = ", fromsf[i], 
+                    ", shift_by = ", shift_by, " --> fromsp[", i, "] = ", fromsp[i])
+        }
     }
-    if (!is.na(tosp[i])) tos_plot[i] <- tosp[i]
+    if (is.na(tosp[i])) {
+        if (is.na(new_origins[i])) {
+            tosp[i] <- tosf[i] # same as file input
+            message("\ntosp not given --> tosf[", i, "] = ", tosf[i], 
+                    " --> tosp[", i, "] = ", tosp[i])
+        } else if (!is.na(new_origins[i])) { # new origin is wanted
+            shift_by <- new_origins[i] - as.integer(fromsf[i]) # - 1
+            tosp[i] <- as.integer(tosf[i]) + shift_by
+            message("\ntosp not given --> tosf[", i, "] = ", tosf[i], 
+                    ", shift_by = ", shift_by, " --> tosp[", i, "] = ", tosp[i])
+        }
+    }
+    froms_plot[i] <- fromsp[i]
+    tos_plot[i] <- tosp[i]
     # finfished time dim stuff
-    #stop("asd")
 
 
+    # depth dim stuff 
+    # use km instead of m as depth unit
+    if (any(names(dims[[i]]) == "depth")) {
+        dims[[i]]$depthunit <- "Depth [m]"
+        if (F) {
+            message("\ndivide depth dim by 1000 m --> km")
+            dims[[i]]$depth <- dims[[i]]$depth/1000
+            dims[[i]]$depthunit <- "Depth [km]"
+        }
+    }
+    # finished depth dim stuff
+
+
+    # lev dim stuff 
+    # use km instead of m as lev unit
+    if (any(names(dims[[i]]) == "lev")) {
+        dims[[i]]$levunit <- "Level"
+    }
+    # finished lev dim stuff
+    
+    
     ## lon and lat dim stuff
     # load additional modeled lon,lat data (ll_data) as matrix if wanted
     if (any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
@@ -895,7 +953,7 @@ for (i in seq_len(nsettings)) {
             }
         } # for li in ll_data[[i]] 
     } # if !is.null(ll_data[[i]][[1]]$lat)
-
+            
     # get lon and/or lat inds
     if (!is.na(regboxes[[i]]$regbox)) {
         message("\n`regboxes[[", i, "]]$regbox` = \"", regboxes[[i]]$regbox, "\" is not NA")
@@ -1070,6 +1128,33 @@ for (i in seq_len(nsettings)) {
     } # if any of file dims is "depth"
     #stop("asd")
 
+    # get lev inds
+    if (any(names(dims[[i]]) == "lev")) {
+        lev_fromsf[i] <- min(dims[[i]]$lev)
+        lev_tosf[i] <- max(dims[[i]]$lev)
+        if (is.na(lev_fromsp[i])) lev_fromsp[i] <- lev_fromsf[i]
+        if (is.na(lev_tosp[i])) lev_tosp[i] <- lev_tosf[i]
+        message("\nfind lev subsets from lev_fromsp[", i, "]=", 
+                lev_fromsp[i], " to lev_tosp[", i, "]=", lev_tosp[i], " ...")
+        # find lev subset based on given lev_fromsp lev_tosp
+        lev_inds <- which(dims[[i]]$lev >= lev_fromsp[i] & dims[[i]]$lev <= lev_tosp[i])
+        # take lev subset
+        if (length(lev_inds) > 0 && length(lev_inds) != length(dims[[i]]$lev)) { 
+            message("found lev subset of length ", length(lev_inds), " out of ", 
+                    length(dims[[i]]$lev), " total lev points ...")
+            message("before range(dims[[i]]$lev) = ", appendLF=F)
+            print(range(dims[[i]]$lev))
+            dims[[i]]$lev <- dims[[i]]$lev[lev_inds]
+            message("after range(dims[[i]]$lev) = ", appendLF=F)
+            print(range(dims[[i]]$lev))
+            dims[[i]]$lev_inds <- lev_inds
+        } else {
+            if (length(lev_inds) == 0) {
+                stop("lev subset is of length 0")
+            }
+        }
+    } # if any of file dims is "lev"
+    
     # get vars of file
     message("\nget variables ...")
     vars_per_file <- names(ncin$var)
@@ -1429,7 +1514,7 @@ for (i in seq_len(nsettings)) {
         vars_with_depthdim_inds <- lapply(dims_per_setting, function(x) grep("depth", x) != -1)
         vars_with_depthdim_inds <- which(sapply(vars_with_depthdim_inds, any))
         if (length(vars_with_depthdim_inds) > 0) {
-            for (vi in 1:length(vars_with_depthdim_inds)) {
+            for (vi in seq_along(vars_with_depthdim_inds)) {
                 var_with_depthdim_ind <- vars_with_depthdim_inds[vi]
                 dims_of_var <- attributes(datas[[i]][[var_with_depthdim_ind]])$dims # e.g. "time", "depth"
                 depthdimind <- which(dims_of_var == "depth")
@@ -1449,6 +1534,64 @@ for (i in seq_len(nsettings)) {
         } # if there are varbels with depth dim
     } # finished cut depth subset if wanted
     
+    
+    # apply missval to lon,lat data if necessary
+    if (models[i] == "echam6" && areas[i] == "global" &&
+        any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
+        message("\nmodels[", i, "] = echam6 and areas[", i, "] = global ",
+                "and current setting has variables with lon and lat dims ",
+                "--> apply missval to lon,lat data if possible?")
+        if (T) { # activate/deactivate here
+            echam6_lsm_name <- "slm" # "slm" or "slf
+            message("--> yes: `echam6_lsm_name` = \"", echam6_lsm_name, "\"")
+            if (!exists("echam6_lsm_global")) { # open echam6 land sea mask from nc
+                if (length(dims[[i]]$lon) == 192 && length(dims[[i]]$lat) == 96) {
+                    echam6_lsm_file <- paste0(host$repopath, "/echam/T63_", echam6_lsm_name, ".nc")
+                } else {
+                    stop("case nlon = ", length(dims[[i]]$lon), " and nlat = ", length(dims[[i]]$lat), " not defined")
+                }
+                if (!file.exists(echam6_lsm_file)) {
+                    warning("file ", echam6_lsm_file, " not found")
+                    echam6_lsm_global <- NULL
+                } else {
+                    message("read ", echam6_lsm_name, " from ", echam6_lsm_file, " ...")
+                    echam6_lsm_nc <- nc_open(echam6_lsm_file)
+                    echam6_lsm_global <- ncvar_get(echam6_lsm_nc, echam6_lsm_name)
+                }
+            }
+            if (!is.null(echam6_lsm_global)) { # echam6 land sea mask was successfully loaded
+                vars_with_londim_inds <- lapply(dims_per_setting, function(x) grep("lon", x) != -1)
+                vars_with_londim_inds <- which(sapply(vars_with_londim_inds, any))
+                vars_with_latdim_inds <- lapply(dims_per_setting, function(x) grep("lat", x) != -1)
+                vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
+                vars_with_lonandlatdim_inds <- intersect(vars_with_londim_inds, vars_with_latdim_inds)
+                if (length(vars_with_lonandlatdim_inds) > 0) {
+                    for (vi in seq_along(vars_with_lonandlatdim_inds)) {
+                        var_with_lonandlatdim_ind <- vars_with_lonandlatdim_inds[vi]
+                        dims_of_var <- attributes(datas[[i]][[var_with_lonandlatdim_ind]])$dims # e.g. "lon", "lat"
+                        if (length(dims_of_var) == 2) { # only 2 dims: lon and lat
+                            if (F) {
+                                message("set land to NA")
+                                nainds <- echam6_lsm_global != 0 # not ocean (`nainds` is array)
+                            } else if (T) {
+                                message("set ocean to NA")
+                                nainds <- echam6_lsm_global == 0 # not ocean (`nainds` is array)    
+                            }
+                            datas[[i]][[var_with_lonandlatdim_ind]][nainds] <- NA
+                        } else {
+                            londimind <- which(dims_of_var == "lon")
+                            latdimind <- which(dims_of_var == "lat")
+                            stop("not implemented yet")
+                        }
+                    } # for vi
+                } # if no variable with lon and lat dim
+            } # if echam6 land sea mask was successfully loaded
+        } else { # if T/F
+            message("--> no. activate here if wanted")
+        }
+    } # apply missval to echam6 lon,lat data if necessary
+
+    
     # reorder lons of data to (-180,...,180) if wanted and necessary
     if (any(names(dims[[i]]) == "lon_orig")) {
         # check for variables that have lon dim
@@ -1456,7 +1599,7 @@ for (i in seq_len(nsettings)) {
         if (length(vars_with_londim_inds) > 0) {
             message("\nreorder lon dim of data ...")
             if (!any(search() == "package:abind")) library(abind)
-            for (vi in 1:length(vars_with_londim_inds)) {
+            for (vi in seq_along(vars_with_londim_inds)) {
                 var_with_londim_ind <- vars_with_londim_inds[vi]
                 dims_of_var <- attributes(datas[[i]][[var_with_londim_ind]])$dims # e.g. "lon", "lat"
                 londimind <- which(dims_of_var == "lon")
@@ -1569,7 +1712,7 @@ for (i in seq_len(nsettings)) {
     } # if !is.null(ll_data[[i]][[1]]$lon)
     # finished flip ll_data with lat dim if necessary (needs to be increasing for plot)
     
-    # cut rectangular lon subset from data if wanted
+    # cut area: rectangular lon subset from data if wanted
     if (!is.null(dims[[i]]$lon_inds)) {
         # check for variables that have lon dim
         vars_with_londim_inds <- lapply(dims_per_setting, function(x) grep("lon", x) != -1)
@@ -1697,25 +1840,23 @@ for (i in seq_len(nsettings)) {
     } # finished flip data with depth dim if necessary (needs to be increasing for plot)
 
     # if two dims and one is time, make it x-dim
-    if (any(names(dims[[i]]) == "time") && any(names(dims[[i]]) == "lat")) {
+    if (any(names(dims[[i]]) == "time")) {
         vars_with_timedim_inds <- lapply(dims_per_setting, function(x) grep("time", x) != -1)
         vars_with_timedim_inds <- which(sapply(vars_with_timedim_inds, any))
-        vars_with_latdim_inds <- lapply(dims_per_setting, function(x) regexpr("lat", x) != -1)
-        vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
-        vars_with_timedim_and_latdim_inds <- intersect(vars_with_timedim_inds, vars_with_latdim_inds)
-        if (length(vars_with_timedim_and_latdim_inds) > 0) {
-            message("\ndetected variables with time and lat dims. check if ndims=2 and permute (lat x time) to (time x lat) if necessary ...") 
-            for (vi in seq_along(vars_with_timedim_and_latdim_inds)) {
-                var_with_timedim_and_latdim <- vars_with_timedim_and_latdim_inds[vi]
-                dims_of_var <- attributes(datas[[i]][[var_with_timedim_and_latdim]])$dims # e.g. "lat", "depth", "time"
+        if (length(vars_with_timedim_inds) > 0) {
+            message("\ndetected variables with \"time\" dimension\n",
+                    "--> check if ndims=2 and permute (<otherdim> x time) to (time x <otherdim>) if necessary ...") 
+            for (vi in seq_along(vars_with_timedim_inds)) {
+                var_with_timedim <- vars_with_timedim_inds[vi]
+                dims_of_var <- attributes(datas[[i]][[var_with_timedim]])$dims # e.g. "lat" and "time" or "lev" and "time" or "depth" and "time"
                 if (length(dims_of_var) == 2) {
-                    if (dims_of_var[1] == "lat" && dims_of_var[2] == "time") {
-                        message("   aperm(datas[[", i, "]][[", var_with_timedim_and_latdim, "]], c(2, 1)) ...")
-                        datas[[i]][[var_with_timedim_and_latdim]] <- aperm(datas[[i]][[var_with_timedim_and_latdim]], c(2, 1)) # permutate
-                        attributes(datas[[i]][[var_with_timedim_and_latdim]]) <- list(dim=dim(datas[[i]][[var_with_timedim_and_latdim]]),
-                                                             dims=dims_of_var[c(2, 1)])
+                    if (dims_of_var[1] != "time") { # if first dimension (x-dim) is not time
+                        message("   aperm(datas[[", i, "]][[", var_with_timedim, "]], c(2, 1)) ...")
+                        datas[[i]][[var_with_timedim]] <- aperm(datas[[i]][[var_with_timedim]], c(2, 1)) # permutate
+                        attributes(datas[[i]][[var_with_timedim]]) <- list(dim=dim(datas[[i]][[var_with_timedim]]),
+                                                                           dims=dims_of_var[c(2, 1)])
                     } else {
-                        # ndims=2 AND dims are already time x lat; nothing to do
+                        # time is already x-dim; nothing to do
                     }
                 } else {
                     message("ndim(datas[[", i, "]][[", vi, "]]) = ", length(attributes(datas[[i]][[vi]])$dims), " != 2. skip.")
@@ -1860,6 +2001,162 @@ for (i in seq_len(nsettings)) {
         } else if (varname == "tsurf") {
             data_infos[[i]][[vi]]$label <- expression(paste("T"["surf"], " [°C]"))
         
+        } else if (varname == "CO2") { # echam tracer
+            if (data_infos[[i]][[vi]]$units_old == "ppm") {
+                if (modes[i] == "fldmean") {
+                    data_infos[[i]][[vi]]$label <- expression(paste("global mean atm CO"[2], " [ppm]"))
+                } else {
+                    stop("not defined")
+                }
+            } else {
+                stop("not defined")
+            }
+
+        } else if (varname == "aCO2") { # fesom/recom
+            data_infos[[i]][[vi]]$label <- expression(paste("global mean atm CO"[2], " [µatm]"))
+        
+        } else if (varname == "CO2f") { # fesom/recom
+            # original: mmol C m-2 d-1
+            # 1 mole C = 1 mole CO2; 1 mole = 6.02214076 * 1e23 particles
+            # 1 mole C = 12.0107 g C
+            # 1 mole CO2 = 44.0095 g CO2
+            # --> 12.0107 g C = 44.0095         g CO2
+            # <=>       1 g C = 44.0095/12.0107 g CO2
+            # <=>       1 g C = 3.664191        g CO2
+            # --> convert g C   to g CO2: *3.664191
+            # --> convert g CO2 to g C  : /3.664191
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [mmolC m"^paste(-2), " d"^paste(-1), "] (>0 into ocean)"))))
+            if (T) {
+                message("CO2f d-1 --> yr-1")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 365.25) # d-1 -> yr-1
+                data_infos[[i]][[vi]]$units <- "mmolC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [mmolC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+            if (F) { # molC --> kgC
+                message("CO2f mmolC --> kgC")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 12.011) # mmolC -> mgC  
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6) # mgC -> kgC
+                data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+            if (T) { # molC --> kgCO2
+                message("CO2f mmolC --> kgCO2")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 44.0095) # mmolC -> mgCO2  
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6) # mgCO2 -> kgCO2
+                data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+            if (modes[i] == "fldint") {
+                message("CO2f kg --> Pg")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e12) # kg -> Pg
+                data_infos[[i]][[vi]]$units <- "PgCO2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgCO"[2], " yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+
+        } else if (varname == "co2_flx_ocean") {
+            # original: kg m-2 s-1 --> its actually kgCO2 m-2 s-1
+            # 1 mole C = 1 mole CO2; 1 mole = 6.02214076 * 1e23 particles
+            # 1 mole C = 12.0107 g C
+            # 1 mole CO2 = 44.0095 g CO2
+            # --> 12.0107 g C = 44.0095         g CO2
+            # <=>       1 g C = 44.0095/12.0107 g CO2
+            # <=>       1 g C = 3.664191        g CO2
+            # --> convert g C   to g CO2: *3.664191
+            # --> convert g CO2 to g C  : /3.664191
+            data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into atm)"))))
+            message("co2_flx_ocean: >0 into atm --> >0 into ocean")
+            data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+            data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
+            if (T) {
+                message("co2_flx_ocean: s-1 --> yr-1")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 365.25*86400) # s-1 -> yr-1
+                data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+            if (T) {
+                message("co2_flx_ocean: kgCO2 --> kgC")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 3.664191) # kgCO2 -> kgC
+                data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC", " m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+            if (modes[i] == "fldint") {
+                message("co2_flx_ocean: kg --> Pg")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e12) # kg -> Pg
+                data_infos[[i]][[vi]]$units <- "PgC yr-1"
+                #data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgCO"[2], " yr"^paste(-1), "] (>0 into ocean)"))))
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
+            } else {
+                message("co2_flx_ocean: kg --> g")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3) # kg -> g
+                data_infos[[i]][[vi]]$units <- "gC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [gC", " m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+
+        } else if (varname == "co2_flx_land") {
+            # original: kg m-2 s-1 --> its actually kgCO2 m-2 s-1
+            # 1 mole C = 1 mole CO2; 1 mole = 6.02214076 * 1e23 particles
+            # 1 mole C = 12.0107 g C
+            # 1 mole CO2 = 44.0095 g CO2
+            # --> 12.0107 g C = 44.0095         g CO2
+            # <=>       1 g C = 44.0095/12.0107 g CO2
+            # <=>       1 g C = 3.664191        g CO2
+            # --> convert g C   to g CO2: *3.664191
+            # --> convert g CO2 to g C  : /3.664191
+            data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into atm)"))))
+            message("co2_flx_land: >0 into atm --> >0 into land")
+            data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+            data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into land)"))))
+            if (T) {
+                message("co2_flx_land: s-1 --> yr-1")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 365.25*86400) # s-1 -> yr-1
+                data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgCO"[2], " m"^paste(-2), " yr"^paste(-1), "] (>0 into land)"))))
+            }
+            if (T) {
+                message("co2_flx_land: kgCO2 --> kgC")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 3.664191) # kgCO2 -> kgC
+                data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgC", " m"^paste(-2), " yr"^paste(-1), "] (>0 into land)"))))
+            }
+            if (modes[i] == "fldint") {
+                message("co2_flx_land: kg --> Pg")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e12) # kg -> Pg
+                data_infos[[i]][[vi]]$units <- "PgC yr-1"
+                #data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [PgCO"[2], " yr"^paste(-1), "] (>0 into land)"))))
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into land)"))))
+            } else {
+                message("co2_flx_land: kg --> g")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3) # kg -> g
+                data_infos[[i]][[vi]]$units <- "gC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [gC", " m"^paste(-2), " yr"^paste(-1), "] (>0 into land)"))))
+            }
+
+        } else if (varname == "co2_burden_corr_acc2") {
+            if (modes[i] == "fldint") {
+                data_infos[[i]][[vi]]$offset$operator <- c("/")
+                data_infos[[i]][[vi]]$offset$value <- c(1e4) # kg -> t
+                data_infos[[i]][[vi]]$units <- "t"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("CO"[2], " correction [t]"))))
+            }
+        
         } else if (varname == "aprt") {
             # units can be mm/month or mm/a depending on `modes[i]`
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("P"["total"], " [", unit, "]")),
@@ -1923,6 +2220,9 @@ for (i in seq_len(nsettings)) {
                 message("special label")
                 data_infos[[i]][[vi]]$label <- "SST anomaly [°C]"
             }
+        
+        } else if (any(varname == c("thetao", "thetaoga"))) {
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("T"[theta], " [°C]"))))
                 
         } else if (varname == "potdens") {
             #data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(sigma[theta], " [kg m"^"-3","]"))))
@@ -2643,7 +2943,7 @@ for (i in seq_len(nsettings)) {
 
 # save data infos for later
 message("\nsave data infos ...")
-for (vi in 1:length(varnames_unique)) {
+for (vi in seq_along(varnames_unique)) {
     cmd <- paste0(varnames_unique[vi], "_infos <- list()")
     eval(parse(text=cmd))
     cnt <- 0
@@ -2794,6 +3094,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                 } # if any variable has time dim or not
             } # if remove_mean_froms[i] is not NA
         } # for i nsettings
+        plotname_suffix <- paste0(plotname_suffix, "_anom")
     } else {
         message("\n`remove_mean_froms` all NA --> do not remove temporal means ...")
     } # finished removing a temporal mean
@@ -3035,12 +3336,12 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
     datasltm <- datas
     for (i in seq_len(nsettings)) {
-        if (i == 1) message("\nsome settings have \"time\" dim --> calc long time means ...")
+        if (i == 1) message("\nsome settings have \"time\" dim --> calc ltm ...")
         ltm_range <- paste0(dims[[i]]$time[1], " to ", dims[[i]]$time[length(dims[[i]]$time)])
         message(i, "/", nsettings, ": ", names_short[i], " (", ltm_range, ") ...")
         for (vi in 1:length(datas[[i]])) {
             if (any(attributes(datas[[i]][[vi]])$dims == "time")) { # if var has time dim
-                message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi], " ...")
+                message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi], " ... ", appendLF=F)
                 dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                 timedimind <- which(dims_of_var == "time")
                 if (dim(datas[[i]][[vi]])[timedimind] > 1) {
@@ -3066,6 +3367,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                         }
                         attributes(datasltm[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims[-timedimind]
                     }
+                    message(datasltm[[i]][[vi]], " ", data_infos[[i]][[vi]]$units)
                 } else { # time dim is of length 1 
                     datasltm[[i]][[vi]] <- NA
                 }
@@ -3938,6 +4240,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
         seasonsp_p <- seasonsp[sapply(dinds, "[")]
         froms_plot_p <- froms_plot[sapply(dinds, "[")]
         tos_plot_p <- tos_plot[sapply(dinds, "[")]
+        depth_fromsp_p <- depth_fromsp[sapply(dinds, "[")]
+        depth_tosp_p <- depth_tosp[sapply(dinds, "[")]
+        lev_fromsp_p <- lev_fromsp[sapply(dinds, "[")]
+        lev_tosp_p <- lev_tosp[sapply(dinds, "[")]
         types_p <- types[sapply(dinds, "[")]
         cols_rgb_p <- rgb(t(col2rgb(cols_p)/255), alpha=alpha_rgb)
         lwds_p <- lwds[sapply(dinds, "[")]
@@ -3950,6 +4256,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
             seasonsp_pmon <- seasonsp[sapply(dmoninds , "[")]
             froms_plot_pmon <- froms_plot[sapply(dmoninds , "[")]
             tos_plot_pmon <- tos_plot[sapply(dmoninds , "[")]
+            depth_fromsp_pmon <- depth_fromsp[sapply(dmoninds, "[")]
+            depth_tosp_pmon <- depth_tosp[sapply(dmoninds, "[")]
+            lev_fromsp_pmon <- lev_fromsp[sapply(dmoninds, "[")]
+            lev_tosp_pmon <- lev_tosp[sapply(dmoninds, "[")]
             types_pmon <- types[sapply(dmoninds , "[")]
             cols_pmon <- cols[sapply(dmoninds , "[")]
             cols_rgb_pmon <- cols_rgb[sapply(dmoninds , "[")]
@@ -3964,6 +4274,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
             seasonsp_pan <- seasonsp[sapply(daninds , "[")]
             froms_plot_pan <- froms_plot[sapply(daninds , "[")]
             tos_plot_pan <- tos_plot[sapply(daninds , "[")]
+            depth_fromsp_pan <- depth_fromsp[sapply(daninds, "[")]
+            depth_tosp_pan <- depth_tosp[sapply(daninds, "[")]
+            lev_fromsp_pan <- lev_fromsp[sapply(daninds, "[")]
+            lev_tosp_pan <- lev_tosp[sapply(daninds, "[")]
             types_pan <- types[sapply(daninds , "[")]
             cols_pan <- cols[sapply(daninds , "[")]
             cols_rgb_pan <- cols_rgb[sapply(daninds , "[")]
@@ -3978,6 +4292,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
             seasonsp_pltm <- seasonsp[sapply(dltminds , "[")]
             froms_plot_pltm <- froms_plot[sapply(dltminds , "[")]
             tos_plot_pltm <- tos_plot[sapply(dltminds , "[")]
+            depth_fromsp_pltm <- depth_fromsp[sapply(dltminds, "[")]
+            depth_tosp_pltm <- depth_tosp[sapply(dltminds, "[")]
+            lev_fromsp_pltm <- lev_fromsp[sapply(dltminds, "[")]
+            lev_tosp_pltm <- lev_tosp[sapply(dltminds, "[")]
             types_pltm <- types[sapply(dltminds , "[")]
             cols_pltm <- cols[sapply(dltminds , "[")]
             cols_rgb_pltm <- cols_rgb[sapply(dltminds , "[")]
@@ -4327,7 +4645,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # if any(ntime_per_setting > 1)
 
         } # if any data has time axis
-        # finished getting time axis labels
      
         # todo: find common axes values for all dims 
 
@@ -4340,7 +4657,28 @@ for (plot_groupi in seq_len(nplot_groups)) {
             tlablt <- c(1945, 1950, 1955, 1960, 1965, 1970, 1975, 1980, 1985, 1990, 
                         1995, 2000, 2005, 2010)
         }
+        # finished getting time axis labels
+        
+        # set depth axis label
+        if (any(sapply(lapply(z, attributes), "[[", "dims") == "depth")) {
+            depthunit <- sapply(dims, "[[", "depthunit")
+            depthunit <- unique(depthunit)
+            if (length(depthunit) != 1) {
+                stop("detected different depth units, implement this")
+            }
+        }
+        # finished getting depth axis labels
 
+        # set lev axis label
+        if (any(sapply(lapply(z, attributes), "[[", "dims") == "lev")) {
+            levunit <- sapply(dims, "[[", "levunit")
+            levunit <- unique(levunit)
+            if (length(levunit) != 1) {
+                stop("detected different lev units, implement this")
+            }
+        }
+        # finished getting lev axis labels
+        
         # verbose
         message("\nz:")
         cat(capture.output(str(z)), sep="\n")
@@ -4350,6 +4688,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
         ## plot `datas` (`datas` always exists; no exists() check necessary)
         message("\n****************** plot datas z_* ***************************")
         #stop("asd")
+        
+        message("\nz_", plot_groups[plot_groupi], "[[", ploti, "/", nplots, "]]: \"", zname, 
+                "\" has ", ndims, " dim", ifelse(ndims > 1, "s", ""), ": \"", 
+                paste(dim_names, collapse="\", \""), "\". check if this case is defined ...")
 
         ### 2 dims
         ## plot `datas` as lon vs lat
@@ -5808,7 +6150,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 y_at <- palname <- anom_colorbar <- center_include <- NULL
             # placeholder defaults for image.plot.nxm.r:
             znames_method <- znames_pos <- legend.line <- colorbar.cex <- NULL
-            if (zname == "quv") {
+            if (any(zname == c("tos", "thetao"))) {
+                #anom_colorbar <- F
+            } else if (zname == "quv") {
                 message("special zlim")
                 nlevels <- 200
                 #zlim <- c(5.03, 324.37) # feb; era5: 0.0244510751217604, 294.239959716797 
@@ -5854,6 +6198,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #if (max(zlevels) != zlim[2]) zlevels[length(zlevels)] <- zlim[2]
                 zlevels <- c(seq(min(zlim), 1100, l=100), zlim[2])
                 axis.labels <- c(round(zlim[1]), seq(125, 1000, b=125), round(zlim[2]))
+            } else if (zname == "co2_flx_ocean") {
+                nlevels <- 20
+                palname <- "colormaps_jaisnd"
+            } else if (zname == "co2_flx_land") {
+                #anom_colorbar <- F
+            } else if (zname == "bgc03") { # total alkalinity
+                zlevels <- pretty(c(2250, 2350), n=10)
+                if (zlim[1] < min(zlevels)) zlevels <- c(zlim[1], zlevels)
+                if (zlim[2] > max(zlevels)) zlevels <- c(zlevels, zlim[2])
             } else if (zname == "resolutionkm") {
                 message("special resolutionkm zlevels ...")
                 # cbscl irregular: 5.512, 212.598
@@ -6260,7 +6613,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 n <- length(z); m <- 1
                 y_at <- pretty(d$lat[[1]], n=5)
             }
-            if (T && length(z) == 2) {
+            if (F && length(z) == 2) {
                 message("special 2 cols instead of 2 rows (default)")
                 n <- 1; m <- 2
             }
@@ -6292,6 +6645,20 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 if (proj != "") plotname <- paste0(plotname, "_", gsub("\\s+", "_", proj))
                 plotname <- paste0(plotname, ".", p$plot_type)
             }
+            if (nchar(plotname) > nchar_max_foutname) {
+                plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                   zname, "_", 
+                                   names_short_p[1], "_", # only 1 setting to decrease plotname size
+                                   paste(unique(seasonsp_p), collapse="_"), "_", 
+                                   paste(unique(froms_plot_p), collapse="_"), "-", 
+                                   paste(unique(tos_plot_p), collapse="_"), "_", 
+                                   plotname_suffix)
+                if (proj != "") plotname <- paste0(plotname, "_", gsub("\\s+", "_", proj))
+                plotname <- paste0(plotname, ".", p$plot_type)
+            }
+            if (nchar(plotname) > nchar_max_foutname) {
+                stop("plotname too long")
+            }
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             message("open plot ", plotname, " ...")
             # this is the lon vs lat plot: respecting aspect ratio based on dlon and dlat make sense here 
@@ -6299,7 +6666,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             asp <- sapply(lapply(d$lon, range), diff)/sapply(lapply(d$lat, range), diff) # dlon/dlat per setting
             asp <- max(asp) # one asp for potentially differnet dlon/dlat per setting
             asp <- min(asp, aspect_ratio_thr) # not too high aspect ratio for map plot
-            pp <- plot_sizes(width_in=p$map_width_in, asp=asp, verbose=T)
+            #pp <- plot_sizes(width_in=nm$ncol*p$map_width_in, asp=asp, verbose=T)
+            pp <- plot_sizes(width_in=nm$ncol*p$map_width_in, height_in=nm$nrow*p$map_width_in/asp, verbose=T)
             if (p$plot_type == "png") {
                 png(plotname, width=pp$png_width_px, height=pp$png_height_px,
                     pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
@@ -6622,15 +6990,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 z <- zma
             }
 
-            # use km instead of m as depth unit
-            if (T) {
-                message("divide depth dim by 1000 m --> km")
-                depth_dim <- lapply(depth_dim, "/", 1000)
-                ylab <- "Depth [km]"
-            } else {
-                ylab <- "Depth [m]"
-            }
-
             if (add_ts_to_time_vs_depth) {
                 message("\nadd time series to datas time vs depth plot ...")
 
@@ -6638,12 +6997,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # colorbar values
             zlim <- range(z, na.rm=T)
-            zlevels <- NULL
-            if (F && varname == "thetao") {
-                zlevels <- seq(ceiling(zlim[1]), min(10, zlim[2]), b=1)
+            zlevels <- axis.labels <- NULL
+            if (T && varname == "thetao") {
+                message("special thetao levels")
+                if (F) { # spinup drift absolute vals
+                    zlevels <- c(seq(0, 3, b=0.1), seq(4, 11, b=1))
+                    if (zlim[1] < min(zlevels)) zlevels <- c(round(zlim[1], 2), zlevels)
+                    if (zlim[2] > max(zlevels)) zlevels <- c(zlevels, round(zlim[2], 2))
+                    axis.labels <- zlevels
+                } else if (F) { # spinup drift anomaly versus year 1
+                    zlevels <- c(seq(round(zlim[1], 1), 0, b=0.25), seq(0.1, round(zlim[2], 1), b=0.1))
+                    if (zlim[1] < min(zlevels)) zlevels <- c(round(zlim[1], 2), zlevels)
+                    if (zlim[2] > max(zlevels)) zlevels <- c(zlevels, round(zlim[2], 2))
+                    axis.labels <- zlevels
+                } else if (T) { # transition piControl and esm-piControl upper 50 m
+                    zlevels <- c(16, 16.5, 17)
+                    axis.labels <- zlevels
+                }
             }
             source(paste0(host$homepath, "/functions/image.plot.pre.r"))
-            ip <- image.plot.pre(zlim, zlevels=zlevels, verbose=T)
+            ip <- image.plot.pre(zlim, zlevels=zlevels, axis.labels=axis.labels, verbose=T)
 
             # determine number of rows and columns
             source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
@@ -6655,24 +7028,27 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       froms_plot_p, "_to_", tos_plot_p, "_", 
                                       depth_fromsp_p, "-", depth_tosp_p, "m",
                                       collapse="_vs_"), 
-                               ".", p$plot_type)
+                               plotname_suffix, ".", p$plot_type)
             message("plot ", plotname, " ...")
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
+            pp <- plot_sizes(width_in=p$ts_width_in, asp=p$ts_asp, verbose=T)
             if (p$plot_type == "png") {
-                png(plotname, width=nm$ncol*p$ts_width, height=nm$nrow*p$ts_height,
-                    res=p$ppi, family=p$family_png)
+                png(plotname, width=nm$ncol*pp$png_width_px, height=nm$nrow*pp$png_height_px,
+                    pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
             } else if (p$plot_type == "pdf") {
-                pdf(plotname, width=nm$ncol*p$inch, 
-                    height=p$inch*((nm$nrow*p$ts_height)/(nm$ncol*p$ts_width)),
-                    family=p$family_pdf, encoding=encoding)
+                pdf(plotname, width=nm$ncol*pp$pdf_width_in, height=nm$nrow*pp$pdf_height_in,
+                    family=p$pdf_family, encoding=encoding, pointsize=pp$pdf_pointsize)
             }
 
             # plot
             image.plot.nxm(x=d$time, y=d$depth, z=z, ip=ip, verbose=T,
                            #xlim=tlimct, 
-                           x_at=tatn, x_labels=tlablt, 
-                           xlab="Time", ylab=ylab,
-                           zlab=data_info$label, znames=names_legend_p)
+                           contour_only=T,
+                           #contour_posneg_soliddashed=F, contour_posneg_redblue=T,
+                           x_at=tatn, x_labels=tlablt, xlab=tunit, 
+                           ylab=depthunit,
+                           zlab=data_info$label, znames_labels=names_legend_p,
+                           useRaster=F)
         
             message("\nsave plot ", plotname, " ...")
             dev.off()
@@ -6691,6 +7067,76 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
         } # if ndims == 2 and time, depth
         # finished plot `datas` as time vs depth
+
+
+        ## plot `datas` as time vs lev
+        if (ndims == 2 && all(dim_names == c("time", "lev"))) {
+       
+            if (add_smoothed) {
+                message("\n`add_smoothed` = T --> replace z with zma ...")
+                z <- zma
+            }
+
+            if (add_ts_to_time_vs_depth) {
+                message("\nadd time series to datas time vs depth plot ...")
+
+            } # if add_ts_to_time_vs_depth
+
+            # colorbar values
+            zlim <- range(z, na.rm=T)
+            zlevels <- axis.labels <- NULL
+            source(paste0(host$homepath, "/functions/image.plot.pre.r"))
+            ip <- image.plot.pre(zlim, zlevels=zlevels, axis.labels=axis.labels, verbose=T)
+
+            # determine number of rows and columns
+            source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
+            nm <- image.plot.nxm(x=d$time, y=d$lev, z=z, ip=ip, dry=T)
+
+            plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                               varname, "_", 
+                               paste0(names_short_p, "_", areas_p, "_", seasonsp_p, "_", 
+                                      froms_plot_p, "_to_", tos_plot_p, "_", 
+                                      lev_fromsp_p, "-", lev_tosp_p, "m",
+                                      collapse="_vs_"), 
+                               plotname_suffix, ".", p$plot_type)
+            message("plot ", plotname, " ...")
+            dir.create(dirname(plotname), recursive=T, showWarnings=F)
+            pp <- plot_sizes(width_in=p$ts_width_in, asp=p$ts_asp, verbose=T)
+            if (p$plot_type == "png") {
+                png(plotname, width=nm$ncol*pp$png_width_px, height=nm$nrow*pp$png_height_px,
+                    pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
+            } else if (p$plot_type == "pdf") {
+                pdf(plotname, width=nm$ncol*pp$pdf_width_in, height=nm$nrow*pp$pdf_height_in,
+                    family=p$pdf_family, encoding=encoding, pointsize=pp$pdf_pointsize)
+            }
+
+            # plot
+            image.plot.nxm(x=d$time, y=d$lev, z=z, ip=ip, verbose=T,
+                           #xlim=tlimct, 
+                           contour_only=T,
+                           #contour_posneg_soliddashed=F, contour_posneg_redblue=T,
+                           x_at=tatn, x_labels=tlablt, xlab=tunit, 
+                           ylab=levunit,
+                           zlab=data_info$label, znames_labels=names_legend_p,
+                           useRaster=F)
+        
+            message("\nsave plot ", plotname, " ...")
+            dev.off()
+            if (p$plot_type == "pdf") {
+                if (T) {
+                    message("run `", p$pdf_embed_fun, "()` ...")
+                    if (p$pdf_embed_fun == "grDevices::embedFonts") {
+                        grDevices::embedFonts(plotname, outfile=plotname)
+                    } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                        extrafont::embed_fonts(plotname, outfile=plotname)
+                    }
+                } else {
+                    message("todo: sometimes pdf font embedding blurrs colors why?")
+                }
+            }
+
+        } # if ndims == 2 and time, lev
+        # finished plot `datas` as time vs lev
 
 
         ### 1 dim
@@ -7678,6 +8124,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       areas_p, collapse="_vs_"), 
                                data_right$suffix, data_upper$suffix, 
                                ts_highlight_seasons$suffix,
+                               "_ts", 
                                plotname_suffix,
                                ".", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
@@ -7686,6 +8133,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                        varname, "_",
                                        paste0(names_short_p, n_mas_fname_p, "_", areas_p, collapse="_vs_"), 
                                        data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
+                                       "_ts", 
                                        plotname_suffix,
                                        ".", p$plot_type)
                 } else if (plot_groups[plot_groupi] == "samedims") {
@@ -7693,6 +8141,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                        varname, "_",
                                        paste0(names_short_p, "_", varnames_in_p, collapse="_vs_"), 
                                        data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
+                                       "_ts", 
                                        plotname_suffix,
                                        ".", p$plot_type)
                 }
@@ -7712,7 +8161,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             pp <- plot_sizes(width_in=p$ts_width_in, asp=p$ts_asp, verbose=T)
             if (p$plot_type == "png") {
                 png(plotname, width=pp$png_width_px, height=pp$png_height_px,
-                    pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family, type="cairo")
+                    pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
             } else if (p$plot_type == "pdf") {
                 pdf(plotname, width=pp$pdf_width_in, height=pp$pdf_height_in,
                     family=p$pdf_family, encoding=encoding, pointsize=pp$pdf_pointsize)
@@ -7722,12 +8171,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
             mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
             mar[4] <- 1 # decrease right margin
             if (!add_title && !add_data_upper_xaxis_ts) mar[3] <- 1 # decrease upper margin
-            if (F) {
-                if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
+            if (tlabsrt == 0) {
+                message("decrease lower margin vs time")
+                mar[1] <- mar[1]/1.5  # decrease lower margin
             }
             if (add_data_right_yaxis_ts) mar[4] <- mar[2] # right same as left  
 
             # open plot
+            message("mar = ", paste(mar, collapse=", "))
             par(mar=mar)
             
             # add data_left_before
@@ -7812,13 +8263,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # add variable label on y-axis
             #label_line <- 2.5
-            label_line <- 3
+            #label_line <- 3
             #label_line <- 3.5
-            #label_line <- 4
+            label_line <- 4
             #label_line <- 4.5
-            message("\nput datas label in `label_line` = ", label_line, " distance ...")
-            mtext(side=2, data_info$label, line=label_line, cex=1)
-            #mtext(side=2, data_info$label, line=label_line, cex=0.8)
+            #label_cex <- 1
+            label_cex <- 0.9
+            #label_cex <- 0.75
+            message("\nput datas label in `label_line` = ", label_line, 
+                    " distance with `label_cex` = ", label_cex, " ...")
+            mtext(side=2, data_info$label, line=label_line, cex=label_cex)
             
             # add title
             if (add_title) {
@@ -8034,14 +8488,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("\nadd default stuff to datas vs time legend ...")
                 le <- list()
                 if (!exists("lepos")) {
-                    if (T && suppressPackageStartupMessages(require(Hmisc))) {
+                    if (F && suppressPackageStartupMessages(require(Hmisc))) { # adagio::maxempty works better
                         Hmisc_z <- NULL
                         if (add_unsmoothed) Hmisc_z <- c(Hmisc_z, unlist(z))
                         if (add_smoothed) Hmisc_z <- c(Hmisc_z, unlist(zma))
                         tmp <- Hmisc::largest.empty(x=unlist(d$time), y=unlist(Hmisc_z), method="area")
-                        le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner
+                        le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner of Hmisc result
                         message("automatically derived Hmisc::largest.empty legend position: ", appendLF=F) 
-                    } else if (F && suppressPackageStartupMessages(require(adagio))) {
+                    } else if (F && suppressPackageStartupMessages(require(adagio))) { # works better than Hmisc::largest.empty
                         adagio_z <- NULL
                         if (add_unsmoothed) adagio_z <- c(adagio_z, unlist(z))
                         if (add_smoothed) adagio_z <- c(adagio_z, unlist(zma))
@@ -8052,16 +8506,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         message("automatically derived adagio::maxempty legend position: ", appendLF=F) 
                     } else {
                         message("manually set legend position: ", appendLF=F)
-                        le$pos <- "bottom" 
+                        #le$pos <- "bottom" 
                         #le$pos <- "topleft" 
                         #le$pos <- "left"
                         #le$pos <- "bottomleft"
-                        #le$pos <- "topright"
+                        le$pos <- "topright"
                         #le$pos <- "bottomright" 
                         #le$pos <- c(tatn[1], yat[length(yat)-1])
                         #le$pos <- c(as.numeric(as.POSIXct("2650-1-1", tz="UTC")), 13.45)
                         #le$pos <- c(as.numeric(as.POSIXct("2650-1-1", tz="UTC")), yat[length(yat)])
-                        le$pos <- c(as.numeric(as.POSIXct("1946-1-1", tz="UTC")), 1.3)
+                        #le$pos <- c(as.numeric(as.POSIXct("1946-1-1", tz="UTC")), 1.3)
                     }
                 } else { # if exists("lepos") or not
                     le$pos <- lepos
@@ -9657,15 +10111,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     pdf(plotname, width=nm$ncol*p$inch, 
                         height=p$inch*((nm$nrow*p$map_height)/(nm$ncol*p$map_width)),
                         family=p$family_pdf, encoding=encoding)
-                }
-
-                # use km instead of m as depth unit
-                if (T) {
-                    message("divide depth dim by 1000 m --> km")
-                    depth_dim <- lapply(depth_dim, "/", 1000)
-                    ylab <- "Depth [km]"
-                } else {
-                    ylab <- "Depth [m]"
                 }
 
                 # plot

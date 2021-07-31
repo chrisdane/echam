@@ -79,9 +79,20 @@ if (!all(sapply(exist_checks, exists))) {
     missing_vars <- !sapply(exist_checks, exists)
     stop("\nyou have to define the variable", 
          ifelse(length(which(missing_vars)) > 1, "s", ""),
-         " \"", paste0(names(missing_vars)[missing_vars], collapse="\", \""), "\"")
+         " `", paste0(names(missing_vars)[missing_vars], collapse="`, `"), "`")
 }
 nsettings <- length(datapaths)
+
+# check if all necessary variables are of correct length
+for (i in seq_along(exist_checks)) {
+    cmd <- paste0("length(", exist_checks[i], ")")
+    length_of_obj <- eval(parse(text=cmd))
+    if (length_of_obj != nsettings) {
+        stop("variable `", exist_checks[i], "` is of length ", length_of_obj, 
+             " but must be of length ", nsettings, " (as `datapaths`)")
+    }
+}
+
 # convert given modes to list if not provided as list
 if (!is.list(modes)) {
     modesp <- vector("list", l=nsettings)
@@ -172,13 +183,15 @@ if (exists("season_names")) {
     } else if (!exists("season_inds")) {
         # no season_names or season_inds given. use default: annual
         season_inds <- vector("list", l=nsettings)
-        for (i in 1:nsettings) season_inds[[i]] <- 1:12
+        for (i in seq_len(nsettings)) season_inds[[i]] <- 1:12
     }
     season_names <- rep(NA, t=nsettings)
-    for (i in 1:nsettings) {
+    for (i in seq_len(nsettings)) {
         if (length(season_inds[[i]]) == 12 && season_inds[[i]] == 1:12) { # default case: annual
             season_names[i] <- "Jan-Dec"
-        } else { # all other: first letters of months
+        } else if (length(season_inds[[i]]) == 1) { # only 1 month, e.g. "Jan"
+            season_names[i] <- month.abb[season_inds[[i]]]
+        } else { # several months: first letters of months, e.g. "JFM"
             season_names[i] <- paste(substr(month.abb[season_inds[[i]]], 1, 1), collapse="")
         }
     }
@@ -202,6 +215,21 @@ if (any(!is.na(sellevsidx))) {
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
 
 if (!exists("cdo_before_calcs")) cdo_before_calcs <- rep("", t=nsettings)
+if (!exists("cdo_after_calcs")) cdo_after_calcs <- rep("", t=nsettings)
+if (!is.list(cdo_before_calcs)) {
+    cdo_before_calcsp <- vector("list", l=nsettings)
+    for (i in seq_along(cdo_before_calcsp)) {
+        cdo_before_calcsp[[i]] <- cdo_before_calcs[i]
+    }
+    cdo_before_calcs <- cdo_before_calcsp
+}
+if (!is.list(cdo_after_calcs)) {
+    cdo_after_calcsp <- vector("list", l=nsettings)
+    for (i in seq_along(cdo_after_calcsp)) {
+        cdo_after_calcsp[[i]] <- cdo_after_calcs[i]
+    }
+    cdo_after_calcs <- cdo_after_calcsp
+}
 
 # check for new times if wanted
 message("check if `new_date_list` is set and correct ... ", appendLF=F)
@@ -759,7 +787,7 @@ for (i in 1:nsettings) {
                     stop("no files found at season_inds = ", paste(season_inds[[i]], collapse=","), 
                          " based on given <MM> pattern.")
                 }
-                message("remove ", length(file_season_inds), " files out of these months. files:")
+                message("keep ", length(file_season_inds), " files out of these months. files:")
                 files <- files[file_season_inds]
                 df <- df[file_season_inds,]
                 years_filenames <- years_filenames[-outside_years_inds]
@@ -884,9 +912,21 @@ for (i in 1:nsettings) {
         # convert to nc if grb
         cdoconvert <- "" # default: no conversion
         if (convert_to_nc) {
-            if (any(models[i] == c("echam4", "echam5", "echam6", "mpiom1", "ecmwf", "remo", 
-                                   "cosmo002", "cosmo201", "cosmo202", "cosmo203", "cosmo205", "cosmo250"))) {
-                cdoconvert <- paste0(cdoconvert, " -t ", models[i])
+
+            ## try to apply paramter tables for conversion
+            # try 1/2: check if there is a "<filename>.codes" file in data dir
+            codes_file <- list.files(datapath, pattern=paste0(files[1], ".codes"), full.names=T)
+            if (length(codes_file) == 1) { # use found code file
+                message("--> found and use .codes file = \"", codes_file, "\" ...")
+                cdoconvert <- paste0(cdoconvert, " -t ", codes_file)
+            # try 2/2: use default parameter code table name if available for current model
+            } else {
+                if (any(models[i] == c("echam4", "echam5", "echam6", "mpiom1", 
+                                       "ecmwf", "remo", "cosmo002", "cosmo201", 
+                                       "cosmo202", "cosmo203", "cosmo205", "cosmo250"))) {
+                    message("--> did not find .codes file --> use default parameter code table for model \"", models[i], "\" ...")
+                    cdoconvert <- paste0(cdoconvert, " -t ", models[i])
+                }
             }
             cdoconvert <- paste0(cdoconvert, " -f nc")
         } # convert if wanted and input is grb
@@ -899,16 +939,15 @@ for (i in 1:nsettings) {
         } else {
 
             # check if requested variable is in first found file
-            message("\ncheck if requested variable ", appendLF=F)
+            message("\ncheck if requested variable \"", fvarnames[i], "\" ", appendLF=F)
 
             if (!is.na(codes[i])) { # code not provided
                 cdoselect <- paste0(cdo_select_no_history, " -select,code=", codes[i])
-                message("\"var", codes[i], "\"", appendLF=F)
+                message("(\"var", codes[i], "\") ", appendLF=F)
             } else {
                 cdoselect <- paste0(cdo_select_no_history, " -select,name=", fvarnames[i])
-                message("\"", fvarnames[i], "\"", appendLF=F)
             }
-            message(" is present in first found file ...")
+            message("is present in first found file ...")
             
             # 1st (faster) try: `cdo partab`
             if (T) {
@@ -961,7 +1000,9 @@ for (i in 1:nsettings) {
 
             if (!var_exist) { # requested variable not in first found file
 
-                message("--> requested variable \"", fvarnames[i], "\" was not found in first file:\n",
+                message("--> requested variable \"", fvarnames[i], "\" ", appendLF=F)
+                if (!is.na(codes[i])) message("(\"var", codes[i], "\") ", appendLF=F)
+                message("was not found in first file:\n", 
                         "   \"", datapath, "/", files[1], "\"")
 
                 # special case: requested variable is one of the wiso delta variables
@@ -1094,7 +1135,9 @@ for (i in 1:nsettings) {
                 own_cmd <- F
 
                 # continue with default case -> cdo cmd and not any of `cdo_known_cmds`
-                message("--> requested variable \"", fvarnames[i], "\" was found in first file")
+                message("--> requested variable \"", fvarnames[i], "\" ", appendLF=F)
+                if (!is.na(codes[i])) message("(\"var", codes[i], "\") ", appendLF=F)
+                message("was found in first file")
             
                 # construct necessary cdo commands
                 message("\nconstruct cdo command chain (cdo version = ", 
@@ -1119,14 +1162,42 @@ for (i in 1:nsettings) {
                 } # which cat/mergetime depending on mode
 
                 ## calculation
+                
                 cdocalc <- paste(paste0("-", modes[[i]]), collapse=" ") # default; e.g. "-fldmean" or "-timmean -monmax"
+                
+                # if special cdo calc case
                 if (all(modes[[i]] == "select")) {
                     cdocalc <- "" # variable selection only
-                } # which calculation depending on mode
                 
-                if (cdo_before_calcs[i] != "") cdocalc <- paste0(cdocalc, " -", cdo_before_calcs[i])
-                message("`modes[[", i, "]]` = \"", paste(modes[[i]], collapse=", "), 
+                } else if (all(modes[[i]] == "fldint")) {
+                    cdocalc <- "" # combination `-mul -select` does not work; need to apply -mul at the end
+
+                } # which cdo calculation depending on mode
+                
+                message("\n`modes[[", i, "]]` = \"", paste(modes[[i]], collapse=", "), 
                         "\" --> `cdocalc` = \"", cdocalc, "\" ...")
+                
+                if (all(cdo_before_calcs[[i]] == "")) {
+                    message("\n`cdo_before_calcs[[", i, "]]` not given --> do not run some command before cdo `", 
+                            cdocalc, "` ...")
+                } else {
+                    message("\n`cdo_before_calcs[[", i, "]]` = ", 
+                            paste(cdo_before_calcs[[i]], collapse=", "), " --> run `", appendLF=F)
+                    cdo_before_calc <- paste(paste0("-", cdo_before_calcs[[i]]), collapse=" ")
+                    message(cdo_before_calc, "` before cdo `", cdocalc, "` ...")
+                    cdocalc <- paste0(cdocalc, " ", cdo_before_calc)
+                }
+                
+                if (all(cdo_after_calcs[[i]] == "")) {
+                    message("\n`cdo_after_calcs[", i, "]` not given --> do not run some command after cdo `", 
+                            cdocalc, "` ...")
+                } else {
+                    message("\n`cdo_after_calcs[[", i, "]]` = ", 
+                            paste(cdo_after_calcs[[i]], collapse=", "), " --> run `", appendLF=F)
+                    cdo_after_calc <- paste(paste0("-", cdo_after_calcs[[i]]), collapse=" ")
+                    message(cdo_after_calc, "` after cdo `", cdocalc, "` ...")
+                    cdocalc <- paste0(cdo_after_calc, " ", cdocalc)
+                }
 
                 ## sellevel
                 cdosellevel <- "" # default: none
@@ -1195,7 +1266,7 @@ for (i in 1:nsettings) {
                     cdoshifttime <- paste0("-shifttime,", cdoshifttimes[i])
                     message("--> `cdoshifttime` = ", cdoshifttime)
                 } else {
-                    message("`cdoshifttimes[", i, "]` not provided. set to e.g. \"-1mo\" or, more general, \"-1dt\", if wanted")
+                    message("\n`cdoshifttimes[", i, "]` not provided. set to e.g. \"-1mo\" or \"-1dt\", if wanted")
                 } # if cdoshifttime is provided
 
                 # add further cdo chain commands here
@@ -2341,6 +2412,41 @@ for (i in 1:nsettings) {
         } # if !is.null(new_date_list[[i]]$years)
 
     } # if fout_exist_check (if output file already exists or not)
+                
+    if (all(modes[[i]] == "fldint")) {
+        message("\nmodes[[", i, "]] = \"fldint\" --> find gridarea in m2 ...")
+        if (!any(models[i] == c("echam6", "jsbach"))) {
+            stop("mode \"fldint\" only supported for models echam6 or jsbach")
+        }
+        # get correct grid area
+        cmd <- paste0(cdo, " griddes ", datapath, "/", files[1])
+        message("run `", cmd, "` ...")
+        griddes <- system(cmd, intern=T)
+        xsize <- which(base::startsWith(griddes, "xsize"))
+        if (length(xsize) == 0) stop("cdo griddes did not yield \"xsize\" entry.")
+        xsize <- gsub(" ", "", griddes[xsize])
+        xsize <- strsplit(xsize, "=")[[1]][2]
+        xsize <- as.integer(xsize) # will stop on error if not successful 
+        message("--> xsize = ", xsize)
+        ysize <- which(base::startsWith(griddes, "ysize"))
+        if (length(ysize) == 0) stop("cdo griddes did not yield \"ysize\" entry.")
+        ysize <- gsub(" ", "", griddes[ysize])
+        ysize <- strsplit(ysize, "=")[[1]][2]
+        ysize <- as.integer(ysize) # will stop on error if not successful 
+        message("--> ysize = ", ysize)
+        if (xsize == 192 && ysize == 96) { # T63
+            gridarea_m2_file <- paste0(host$repopath, "/echam/T63_gridarea_m2.nc")
+        } else {
+            stop("these xsize and ysize are not defined")
+        }
+        message("--> use gridarea in m2 from ", gridarea_m2_file, " ...")
+        mul_file <- paste0(postpaths[i], "/tmp_mul_", Sys.getpid())
+        cmd <- paste0(cdo, " -fldsum -mul ", gridarea_m2_file, " ", fout, " ", mul_file, 
+                      " && mv ", mul_file, " ", fout)
+        cmd <- paste0(cmd, " || echo error")
+        message("run `", cmd, "`")
+        system(cmd)
+    }
 
     # set relative time axis
     if (!own_cmd && cdo_set_rel_time && is.null(new_date_list[[i]])) {
