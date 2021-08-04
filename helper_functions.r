@@ -1,8 +1,5 @@
 # load and/or define helper functions for echam repo
 
-# load myfunctions
-source("~/scripts/r/functions/myfunctions.r")
-
 # host options
 get_host <- function() {
     message("******* get_host() *******")
@@ -10,35 +7,40 @@ get_host <- function() {
     if (any(sapply(c("ollie", "prod-", "fat-"), grepl, hostname))) {
         machine_tag <- "ollie"
         homepath <- "~/scripts/r"
-        workpath <- "/work/ollie/cdanek"
-    } else if (any(sapply(c("mlogin", "mistralpp"), grepl, hostname))) {
+        workpath <- paste0("/work/ollie/", Sys.info()["user"])
+    } else if (any(sapply(c("mlogin", 
+                            "mistralpp", 
+                            "m[0-9][0-9][0-9][0-9][0-9]"), # compute nodes: m12345 
+                          grepl, hostname))) {
         machine_tag <- "mistral"
         homepath <- "~/scripts/r"
-        #workpath <- "/work/ba0941/a270073"
-        #workpath <- "/work/ab0246/a270073"
-        workpath <- "/work/ba1103/a270073"
+        #workpath <- paste0("/work/ba0941/", Sys.info()["user"])
+        #workpath <- paste0("/work/ab0246/", Sys.info()["user"])
+        workpath <- paste0("/work/ba1103/", Sys.info()["user"])
     } else if (any(sapply(c("paleosrv1", "fu-"), grepl, hostname))) {
         machine_tag <- "paleosrv"
         homepath <- "~/scripts/r"
-        workpath <- "/isibhv/projects/paleo_work/cdanek"
+        workpath <- paste0("/isibhv/projects/paleo_work/", Sys.info()["user"])
     } else if (any(sapply("stan", grepl, hostname))) {
         machine_tag <- "stan"
         homepath <- "~/scripts/r"
-        workpath <- "/ace/user/cdanek"
+        workpath <- paste0("/ace/user/", Sys.info()["user"])
     } else { # defaults if unknown machine 
         machine_tag <- "unknown"
         homepath <- "~/scripts/r"
         workpath <- "~/data"
+        message("hostname \"", hostname, "\" unknown; Sys.info():")
+        print(Sys.info())
     }
-    repopath <- system("git rev-parse --show-toplevel", intern=T)
     message("hostname    = \"", hostname, "\"\n",
             "machine_tag = \"", machine_tag, "\"\n",
             "homepath    = \"", homepath, "\"\n",
             "workpath    = \"", workpath, "\"\n",
-            "repopath    = \"", repopath, "\"\n",
             "******* get_host() ******")
-    return(host=list(hostname=hostname, hostname_f=system("hostname -f", intern=T), 
-                     machine_tag=machine_tag, homepath=homepath, workpath=workpath,
-                     repopath=repopath))
+    return(host=list(hostname=hostname, 
+                     hostname_f=system("hostname -f", intern=T), 
+                     machine_tag=machine_tag, 
+                     homepath=homepath, 
+                     workpath=workpath))
 } # get_host()
 

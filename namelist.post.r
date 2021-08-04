@@ -17,6 +17,54 @@ cdo_nchar_max_arglist <- 2350000 # reduce this number if you get segmentation fa
 # $(getconf PAGE_SIZE)*32 = 4096*32 = 131072
 nco_nchar_max_arglist <- 131071
 
+# cdo commands for some variables
+cdo_known_cmds <- list("psl"=list(cmd=c("<cdo> merge <aps> <geosp> <t>",
+                                        "<cdo> sealevelpressure")),
+                       #"toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
+                       "toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -enssum <rsdt> -mulc,-1.0 <rsut> -mulc,-1.0 <rlut>"),
+                       "quv_direction"=list(cmd=c("<cdo> -setname,quv_direction -divc,3.141593 -mulc,180 -atan2 <qv> <qu>",
+                                                  "<nco_ncatted> -O -a long_name,quv_direction,o,c,\"direction of water vapor transport\"",
+                                                  "<nco_ncatted> -O -a units,quv_direction,o,c,\"degree\"")),
+                       "wisoaprt_d_post"=list(cmd=c("<cdo> -setname,wisoaprt_d -setcode,10 -mulc,1000. -subc,1. -div -div <wisoaprt> <aprt> <wiso_smow_files>",
+                                                    "<nco_ncatted> -O -a long_name,wisoaprt_d,o,c,\"delta of total precipitation\"",
+                                                    "<nco_ncatted> -O -a units,wisoaprt_d,o,c,\"o/oo\"")),
+                       "wisoaprl_d_post"=list(cmd="<cdo> -setname,wisoaprl_d -setcode,13 -mulc,1000. -subc,1. -div -div <wisoaprl> <aprl> <wiso_smow_files>"),
+                       "wisoaprc_d_post"=list(cmd="<cdo> -setname,wisoaprc_d -setcode,14 -mulc,1000. -subc,1. -div -div <wisoaprc> <aprc> <wiso_smow_files>"),
+                       "wisoaprs_d_post"=list(cmd="<cdo> -setname,wisoaprs_d -setcode,15 -mulc,1000. -subc,1. -div -div <wisoaprs> <aprs> <wiso_smow_files>"),
+                       "wisoevap_d_post"=list(cmd=c("<cdo> -setname,wisoevap_d -setcode,19 -mulc,1000. -subc,1. -div -div <wisoevap> <evap> <wiso_smow_files>",
+                                                    "<nco_ncatted> -O -a long_name,wisoevap_d,o,c,\"delta of evaporation\"",
+                                                    "<nco_ncatted> -O -a units,wisoevap_d,o,c,\"o/oo\"")),
+                       "wisope_d_post"=list(cmd=c("<cdo> -setname,wisope_d -setcode,20 -mulc,1000. -subc,1. -div -div <wisope> <pe> <wiso_smow_files>",
+                                                  "<nco_ncatted> -O -a long_name,wisope_d,o,c,\"delta of precip minus evap\"",
+                                                  "<nco_ncatted> -O -a units,wisope_d,o,c,\"o/oo\"")),
+                       "wisows_d_post"=list(cmd="<cdo> -setname,wisows_d -setcode,11 -mulc,1000. -subc,1. -div -div <wisows> <ws> <wiso_smow_files>"),
+                       "wisosn_d_post"=list(cmd="<cdo> -setname,wisosn_d -setcode,12 -mulc,1000. -subc,1. -div -div <wisosn> <sn> <wiso_smow_files>"),
+                       "wisosnglac_d_post"=list(cmd="<cdo> -setname,wisoasnglac_d -setcode,33 -mulc,1000. -subc,1. -div -div <wisosnglac> <snglac> <wiso_smow_files>"),
+                       "wisorunoff_d_post"=list(cmd="<cdo> -setname,wisorunoff_d -setcode,17 -mulc,1000. -subc,1. -div -div <wisorunoff> <runoff> <wiso_smow_files>"),
+                       "aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -mul <aprt> <temp2>",
+                                                     "<nco_ncatted> -O -a code,aprt_times_temp2,d,,", # delete old `code` attribute
+                                                     "<nco_ncatted> -O -a table,aprt_times_temp2,d,,", # delete old `table` attribute
+                                                     "<nco_ncatted> -O -a long_name,aprt_times_temp2,o,c,\"aprt times temp2\"",
+                                                     "<nco_ncatted> -O -a units,aprt_times_temp2,o,c,\"mm/month degC\"")),
+                       "aprt_times_tsurf"=list(cmd=c("<cdo> -setname,aprt_times_tsurf -mul <aprt> <tsurf>",
+                                                     "<nco_ncatted> -O -a code,aprt_times_tsurf,d,,",
+                                                     "<nco_ncatted> -O -a table,aprt_times_tsurf,d,,",
+                                                     "<nco_ncatted> -O -a long_name,aprt_times_tsurf,o,c,\"aprt times tsurf\"",
+                                                     "<nco_ncatted> -O -a units,aprt_times_tsurf,o,c,\"mm/month degC\"")),
+                       "temp2aprt"=list(cmd=c("<cdo> -setname,temp2aprt -div <aprt_times_temp2> <aprt>",
+                                              "<nco_ncatted> -O -a code,temp2aprt,d,,",
+                                              "<nco_ncatted> -O -a table,temp2aprt,d,,",
+                                              "<nco_ncatted> -O -a long_name,temp2aprt,o,c,\"temp2 weighted by aprt\"",
+                                              "<nco_ncatted> -O -a units,temp2aprt,o,c,\"degC\"")),
+                       "tsurfaprt"=list(cmd=c("<cdo> -setname,tsurfaprt -div <aprt_times_tsurf> <aprt>",
+                                              "<nco_ncatted> -O -a code,tsurfaprt,d,,",
+                                              "<nco_ncatted> -O -a table,tsurfaprt,d,,",
+                                              "<nco_ncatted> -O -a long_name,tsurfaprt,o,c,\"tsurf weighted by aprt\"",
+                                              "<nco_ncatted> -O -a units,tsurfaprt,o,c,\"degC\""))
+                      ) # cdo_known_cmds
+
+# <-- namelist.post.r general part end --> # keep this line for slurm_cronjob.sh
+
 # ======================================================
 # 1 setting
 if (F) { # old hist
@@ -964,11 +1012,11 @@ if (F) { # old hist
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/echam"
         fpatterns <- "esm-piControl_<YYYY><MM>.01_co2mon"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_2percboth"
-    } else if (T) {
-        datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/echam"
-        #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
-        fpatterns <- "esm-piControl_co2fsign_<YYYY><MM>.01_co2mon"
-        #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
+    } else if (F) {
+        #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/echam"
+        datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
+        #fpatterns <- "esm-piControl_co2fsign_<YYYY><MM>.01_co2mon"
+        fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
     }
     #codes <- 167
@@ -977,8 +1025,8 @@ if (F) { # old hist
     #fvarnames <- "CO2"
     #sellevels <- 1
     #cdo_after_calcs <- list(c("setunit,ppm", "mulc,658267")) # [CO2] (in ppm) = 1e6 * 0.658267 * co2mmr
-    codes <- 6
-    fvarnames <- "co2_flx_land"
+    #codes <- 6
+    #fvarnames <- "co2_flx_land"
     #codes <- 7
     #fvarnames <- "co2_flx_ocean"
     #codes <- 9
@@ -986,14 +1034,20 @@ if (F) { # old hist
     #fvarnames <- "thetaoga"
     #fvarnames <- "aCO2"
     #cdoshifttimes <- "-1dt" # for fesom
-    #modes <- "select"
-    modes <- "timmean"
+    fvarnames <- "CO2"
+    cdo_after_calcs <- list(c("setunit,ppm", "mulc,658267")) # [CO2] (in ppm) = 1e6 * 0.658267 * co2mmr
+    #sellevels <- 1 
+    sellevels <- "0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,18000,19000,20000,21000,22000,23000,24000,25000,26000"
+    modes <- "select"
+    #modes <- "timmean"
     #modes <- "fldmean"
     #modes <- "fldsum"
     #modes <- "fldint"
-    froms <- 2686
+    froms <- 2685 # last piControl og year
+    #froms <- 2686
+    tos <- 2685
     #tos <- 2686
-    tos <- 2704
+    #tos <- 2704
 
 } else if (F) { # awi-esm-1-1-lr_kh800 historical
     models <- "echam6"
@@ -1005,9 +1059,10 @@ if (F) { # old hist
     prefixes <- "awi-esm-1-1-lr_kh800_historical_day"
     codes <- 167
     fvarnames <- "temp2"
+    cdo_before_calcs <- "monmean"
     modes <- "fldmean"
     froms <- 1850
-    tos <- 1862
+    tos <- 1896
 
 # ======================================================
 # 2 settings
@@ -1182,7 +1237,7 @@ if (F) { # old hist
 
 # ======================================================
 # 12 settings
-} else if (T) { # 12 months timmeans
+} else if (F) { # 12 months timmeans
     models <- rep("echam6", t=12)
     datapaths <- rep("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/echam", t=12)
     fpatterns <- rep("esm-piControl_co2fsign_<YYYY><MM>.01_co2mon", t=12)
@@ -1196,52 +1251,22 @@ if (F) { # old hist
     froms <- rep(2686, t=12)
     tos <- rep(2704, t=12)
 
-} # which setting
+# ======================================================
+# 27 settings
+} else if (T) { # 27 levels
+    models <- rep("echam6", t=27)
+    datapaths <- rep("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_og_restart_processed/restart", t=27)
+    fpatterns <- rep("restart_test_<YYYY>1231_tracer_ncpdq_co2_aps_hl.nc", t=27) # original dims permuted; model levels -> height levels
+    prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og_restart_hl_ppm", t=27)
+    fvarnames <- rep("CO2", t=27)
+    cdo_after_calcs <- vector("list", l=27)
+    cdo_after_calcs[] <- list(c("setunit,ppm", "mulc,658267")) # [CO2] (in ppm) = 1e6 * 0.658267 * co2mmr
+    sellevels <- c(0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 
+                   11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000, 
+                   20000, 21000, 22000, 23000, 24000, 25000, 26000)
+    modes <- rep("select", t=27)
+    froms <- rep(2685, t=27) # last piControl og year
+    tos <- rep(2685, t=27)
 
-# https://gitlab.awi.de/paleodyn/model-analysis/blob/master/previous_scripts/ANALYSIS_calc_wiso_echam5_monmean.sh
-# /ace/user/paleo/utils.ace/cosmos-wiso/echam5/calc_wiso_monmean_d.cosmos-aso.sh
-cdo_known_cmds <- list("psl"=list(cmd=c("<cdo> merge <aps> <geosp> <t>",
-                                        "<cdo> sealevelpressure")),
-                       #"toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
-                       "toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -enssum <rsdt> -mulc,-1.0 <rsut> -mulc,-1.0 <rlut>"),
-                       "quv_direction"=list(cmd=c("<cdo> -setname,quv_direction -divc,3.141593 -mulc,180 -atan2 <qv> <qu>",
-                                                  "<nco_ncatted> -O -a long_name,quv_direction,o,c,\"direction of water vapor transport\"",
-                                                  "<nco_ncatted> -O -a units,quv_direction,o,c,\"degree\"")),
-                       "wisoaprt_d_post"=list(cmd=c("<cdo> -setname,wisoaprt_d -setcode,10 -mulc,1000. -subc,1. -div -div <wisoaprt> <aprt> <wiso_smow_files>",
-                                                    "<nco_ncatted> -O -a long_name,wisoaprt_d,o,c,\"delta of total precipitation\"",
-                                                    "<nco_ncatted> -O -a units,wisoaprt_d,o,c,\"o/oo\"")),
-                       "wisoaprl_d_post"=list(cmd="<cdo> -setname,wisoaprl_d -setcode,13 -mulc,1000. -subc,1. -div -div <wisoaprl> <aprl> <wiso_smow_files>"),
-                       "wisoaprc_d_post"=list(cmd="<cdo> -setname,wisoaprc_d -setcode,14 -mulc,1000. -subc,1. -div -div <wisoaprc> <aprc> <wiso_smow_files>"),
-                       "wisoaprs_d_post"=list(cmd="<cdo> -setname,wisoaprs_d -setcode,15 -mulc,1000. -subc,1. -div -div <wisoaprs> <aprs> <wiso_smow_files>"),
-                       "wisoevap_d_post"=list(cmd=c("<cdo> -setname,wisoevap_d -setcode,19 -mulc,1000. -subc,1. -div -div <wisoevap> <evap> <wiso_smow_files>",
-                                                    "<nco_ncatted> -O -a long_name,wisoevap_d,o,c,\"delta of evaporation\"",
-                                                    "<nco_ncatted> -O -a units,wisoevap_d,o,c,\"o/oo\"")),
-                       "wisope_d_post"=list(cmd=c("<cdo> -setname,wisope_d -setcode,20 -mulc,1000. -subc,1. -div -div <wisope> <pe> <wiso_smow_files>",
-                                                  "<nco_ncatted> -O -a long_name,wisope_d,o,c,\"delta of precip minus evap\"",
-                                                  "<nco_ncatted> -O -a units,wisope_d,o,c,\"o/oo\"")),
-                       "wisows_d_post"=list(cmd="<cdo> -setname,wisows_d -setcode,11 -mulc,1000. -subc,1. -div -div <wisows> <ws> <wiso_smow_files>"),
-                       "wisosn_d_post"=list(cmd="<cdo> -setname,wisosn_d -setcode,12 -mulc,1000. -subc,1. -div -div <wisosn> <sn> <wiso_smow_files>"),
-                       "wisosnglac_d_post"=list(cmd="<cdo> -setname,wisoasnglac_d -setcode,33 -mulc,1000. -subc,1. -div -div <wisosnglac> <snglac> <wiso_smow_files>"),
-                       "wisorunoff_d_post"=list(cmd="<cdo> -setname,wisorunoff_d -setcode,17 -mulc,1000. -subc,1. -div -div <wisorunoff> <runoff> <wiso_smow_files>"),
-                       "aprt_times_temp2"=list(cmd=c("<cdo> -setname,aprt_times_temp2 -mul <aprt> <temp2>",
-                                                     "<nco_ncatted> -O -a code,aprt_times_temp2,d,,", # delete old `code` attribute
-                                                     "<nco_ncatted> -O -a table,aprt_times_temp2,d,,", # delete old `table` attribute
-                                                     "<nco_ncatted> -O -a long_name,aprt_times_temp2,o,c,\"aprt times temp2\"",
-                                                     "<nco_ncatted> -O -a units,aprt_times_temp2,o,c,\"mm/month degC\"")),
-                       "aprt_times_tsurf"=list(cmd=c("<cdo> -setname,aprt_times_tsurf -mul <aprt> <tsurf>",
-                                                     "<nco_ncatted> -O -a code,aprt_times_tsurf,d,,",
-                                                     "<nco_ncatted> -O -a table,aprt_times_tsurf,d,,",
-                                                     "<nco_ncatted> -O -a long_name,aprt_times_tsurf,o,c,\"aprt times tsurf\"",
-                                                     "<nco_ncatted> -O -a units,aprt_times_tsurf,o,c,\"mm/month degC\"")),
-                       "temp2aprt"=list(cmd=c("<cdo> -setname,temp2aprt -div <aprt_times_temp2> <aprt>",
-                                              "<nco_ncatted> -O -a code,temp2aprt,d,,",
-                                              "<nco_ncatted> -O -a table,temp2aprt,d,,",
-                                              "<nco_ncatted> -O -a long_name,temp2aprt,o,c,\"temp2 weighted by aprt\"",
-                                              "<nco_ncatted> -O -a units,temp2aprt,o,c,\"degC\"")),
-                       "tsurfaprt"=list(cmd=c("<cdo> -setname,tsurfaprt -div <aprt_times_tsurf> <aprt>",
-                                              "<nco_ncatted> -O -a code,tsurfaprt,d,,",
-                                              "<nco_ncatted> -O -a table,tsurfaprt,d,,",
-                                              "<nco_ncatted> -O -a long_name,tsurfaprt,o,c,\"tsurf weighted by aprt\"",
-                                              "<nco_ncatted> -O -a units,tsurfaprt,o,c,\"degC\""))
-                      ) # cdo_known_cmds
+} # which setting
 

@@ -1,4 +1,4 @@
-# this namelist is used by `plot_loop_echam.r`
+# this namelist is used by `loop_plot_echam.r`
 
 # cols: model settings per run
 # rows: specifications for nrow plot_echam.r runs

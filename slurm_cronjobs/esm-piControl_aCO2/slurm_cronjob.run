@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# run this script once with `sbatch slurm_cronjob.run`
+
+#SBATCH --job-name=aCO2
+#SBATCH --begin now+1hour
+#SBATCH --account=ab0995
+#SBATCH --partition=shared
+#SBATCH --time=00:15:00
+#SBATCH --output=aCO2_%j.log
+
+set -e
+
+# resubmit this job script for the next execution
+echo "slurm_cronjob.run: resubmit slurm_cronjob.run at $(date)"
+sbatch slurm_cronjob.run
+
+# do actucal cronjob task
+module load r
+echo "slurm_cronjob.run: Rscript post_echam.r at $(date)"
+Rscript post_echam.r
+echo "slurm_cronjob.run: Rscript plot_echam.r at $(date)"
+Rscript plot_echam.r
+

@@ -157,6 +157,7 @@ addland <- T
 add_grid <- F
 aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for map plot
 proj <- "" # default: no projection
+echam6_global_setNA <- NA # one of 3 options: NA, "ocean", "land"
 
 # special
 plot_redfit <- F
@@ -174,12 +175,12 @@ objs <- c("postpaths", "plotpath",
           "types", "ltys", "cols", "lwds", "pchs", "text_cols", "cols_samedims")
 suppressWarnings(rm(list=objs))
 
-# <-- namelist.plot.r general part end --> # keep this line for plot_loop_echam.r
+# <-- namelist.plot.r general part end --> # keep this line for loop_plot_echam.r
 
 ## setting specific part
 
 # 1 setting
-if (T) { # awi-esm-1-1-lr_kh800 piControl og
+if (F) { # awi-esm-1-1-lr_kh800 piControl og
     #models <- "echam6"
     models <- "fesom"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og"
@@ -233,7 +234,9 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl og
     #varnames_in <- "CO2f"
     #varnames_in <- "CO2"
     varnames_in <- "co2_flx_land"
+    echam6_global_setNA <- "ocean"
     #varnames_in <- "co2_flx_ocean"
+    #echam6_global_setNA <- "land"
     addland <- F
     #varnames_in <- "co2_burden_corr_acc2"
     fromsf <- 2686
@@ -251,6 +254,16 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl og
     #modes <- "fldmean"
     #modes <- "fldint"
     #modes <- "depth"
+
+} else if (T) { # awi-esm-1-1-lr_kh800 historical
+    models <- "fesom"
+    prefixes <- "awi-esm-1-1-lr_kh800_historical"
+    names_short <- "awi-esm-1-1-lr_kh800_historical"
+    names_legend <- "historical"
+    varnames_in <- "tos"
+    fromsf <- 1850
+    tosf <- 1901
+    modes <- "fldmean"
 
 } else if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "historical_echam6_echammon_awi-esm-1-1-lr"
@@ -495,6 +508,19 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl og
     tosf <- rep(2689, t=2)
     new_origins <- rep(1, t=2)
     modes <- rep("fldint", t=2)
+
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl co2fsign vs restartall
+    #models <- rep("echam6", t=2)
+    models <- rep("fesom", t=2)
+    prefixes <- c("awi-esm-1-1-lr_kh800_esm-piControl_co2fsign", "awi-esm-1-1-lr_kh800_esm-piControl_restartall")
+    names_short <- c("co2fsign", "restartall")
+    names_legend <- c("restart fesom", "restart all")
+    varnames_in <- rep("aCO2", t=2)
+    fromsf <- c(2686, 2686)
+    tosf <- c(2737, 2691)
+    new_origins <- c(1, 1)
+    tosp <- c(6, 6)
+    modes <- rep("select", t=2)
 
 } else if (F) { # awi-esm-1-1-lr vs awi-esm-1-1_kh800
     models <- rep("fesom", t=2)
@@ -1722,7 +1748,9 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl og
     names_short <- paste0("esm_piControl_", month.abb)
     names_legend <- month.abb
     #varnames_in <- rep("co2_flx_ocean", t=12)
+    #echam6_global_setNA <- "land"
     varnames_in <- rep("co2_flx_land", t=12)
+    echam6_global_setNA <- "ocean"
     addland <- F
     fromsf <- rep(2686, t=12)
     #tosf <- rep(2703, t=12)
@@ -1730,6 +1758,36 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl og
     seasonsf <- month.abb
     new_origins <- rep(1, t=12)
     modes <- rep("timmean", t=12)
+
+# ======================================================
+# 25 settings
+} else if (F) { # 25 levels
+    models <- rep("echam6", t=25)
+    prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og_restart_hl_ppm", t=25)
+    varnames_in <- rep("CO2", t=25)
+    levs <- c(0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 
+              11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000, 
+              20000, 21000, 22000, 23000, 24000)
+    names_short <- paste0(levs, "m")
+    modes <- rep("select", t=25)
+    fromsf <- rep(2685, t=25) # last piControl og year
+    tosf <- rep(2685, t=25)
+    new_origins <- rep(736, t=25)
+
+# ======================================================
+# 27 settings
+} else if (F) { # 27 levels
+    models <- rep("echam6", t=27)
+    prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og_restart_hl_ppm", t=27)
+    varnames_in <- rep("CO2", t=27)
+    levs <- c(0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 
+              11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000, 
+              20000, 21000, 22000, 23000, 24000, 25000, 26000)
+    names_short <- paste0(levs, "m")
+    modes <- rep("select", t=27)
+    fromsf <- rep(2685, t=27) # last piControl og year
+    tosf <- rep(2685, t=27)
+    new_origins <- rep(736, t=27)
 
 } # which settings
 

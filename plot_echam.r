@@ -1,7 +1,7 @@
-## r
+# r
 
 #options(warn=2) # stop on warnings
-#options(warn=0) # back to default
+options(warn=0) # back to default
 
 if (T) {
     message("\nrm(list=ls())")
@@ -14,16 +14,26 @@ if (T) {
 }
 message("graphics.off()"); graphics.off()
 
-# load libraries necessary for plot_echam.r
-requirements <- readLines("requirements_plot.txt")
-for (r in requirements) if (substr(r, 1, 1) != "#") library(r, character.only=T)
+# machine dependent repo path; must change here if non-default
+repopath <- "~/scripts/r/echam"
+if (!dir.exists(repopath)) {
+    stop("`repopath` = \"", repopath, "\" does not exist")
+} else {
+    repopath <- normalizePath(repopath)
+}
 
-# helper functions
-message("\nload helper_functions.r ...")
-source("helper_functions.r")
+# load helper functions of this repo
+script_helper_functions <- paste0(repopath, "/helper_functions.r")
+message("\nload ", script_helper_functions, " ...")
+source(script_helper_functions) # get_host()
 
 # get host options
 host <- get_host()
+host$repopath <- repopath
+
+# load libraries necessary for plot_echam.r
+requirements <- readLines(paste0(host$repopath, "/requirements_plot.txt"))
+for (r in requirements) if (substr(r, 1, 1) != "#") library(r, character.only=T)
 
 # todo: how to load functions from another repo without the subrepo hassle?
 if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
@@ -35,9 +45,12 @@ if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
     stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
 }
 
-## check user input via namelist.plot.r
-message("\nload and check namelist.plot.r ...")
-source("namelist.plot.r")
+## check user input from namelist.plot.r
+#nml_plot <- paste0(host$repopath, "/namelist.plot.r")
+nml_plot <- "namelist.plot.r" # file from same directory as this plot_echam.r
+nml_plot <- normalizePath(nml_plot)
+message("\nload and check ", nml_plot, " ...")
+source(nml_plot)
 
 # must-have objects set by user
 objs <- c("prefixes", "models", "names_short", "fromsf", "tosf", "varnames_in", "modes")
@@ -188,28 +201,17 @@ if (!exists("pchs")) {
     }
 }
 if (!exists("scatterpchs")) scatterpchs <- rep(pchs_filled_wout_border[1], t=nsettings)
-if (nsettings == 1) { # mycols my colors nicer than R defaults
-    cols_vec <- "black"
-} else if (nsettings == 2) {
-    cols_vec <- c("black", "#E41A1C") # black, myred
-} else if (nsettings >= 3) {
-    cols_vec <- c("black", "#E41A1C", "#377EB8") # my default: (black, myred, myblue) instead of R default (black, red, blue)
-    if (nsettings > 3) {
-        if (F) {
-            cols_vec <- c(cols_vec, 4:nsettings)
-        } else if (T) {
-            library(RColorBrewer) # https://www.r-bloggers.com/palettes-in-r/
-            cols_vec <- c(cols_vec, brewer.pal(max(3, nsettings), "Dark2")[1:(nsettings-3)])
-        }
-    }
-}
+
+# colors
 if (!exists("cols")) {
-    cols <- cols_vec
+    cols <- mycols(nsettings)
 } else if (exists("cols")) {
-    #message("provided `cols`: ", paste(cols, collapse=", "))
-    if (is.numeric(cols)) {
-        cols <- as.integer(cols)
-        cols <- cols_vec[cols]
+    if (length(cols) != nsettings) {
+        stop(length(cols), " provided `cols`: ", paste(cols, collapse=", "), 
+             " must be of length `nsettings` = ", nsettings)
+    }
+    if (is.integer(cols)) { # provided color numbers; use mycols
+        cols <- mycols(nsettings)[cols]
     }
 }
 cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha_rgb)
@@ -220,8 +222,19 @@ if (F) {
 } 
 if (!exists("text_cols")) text_cols <- rep("black", t=nsettings)
 if (exists("cols_samedims")) {
-    if (class(cols_samedims) == "integer") { # user provided color numbers
-        cols_samedims <- cols_vec[cols_samedims]
+    if (is.integer(cols_samedims)) { # provided color numbers; use mycols
+        cols_samedims <- mycols(length(cols_samedims))[cols_samedims]
+    }
+}
+
+if (length(echam6_global_setNA) != nsettings) {
+    if (length(echam6_global_setNA) == 1) {
+        message("`echam6_global_setNA` is only of length 1 but nsettings = ", nsettings, 
+                " --> repeat echam6_global_setNA[1] = ", echam6_global_setNA, " ...")
+        echam6_global_setNA <- rep(echam6_global_setNA, t=nsettings)
+    } else {
+        stop("`echam6_global_setNA` is of length ", length(echam6_global_setNA), 
+             " but nsettings = ", nsettings, ". dont know how to proceed")
     }
 }
 
@@ -521,9 +534,9 @@ for (i in seq_len(nsettings)) {
 
         } else { # `fromsp` and `tosp` not provided
             fromsp[i] <- timein_lt$year[1] + 1900
-            message("fromsp not given --> fromsp[", i, "] = ", fromsp[i])
+            message("\nfromsp not given --> use first year --> fromsp[", i, "] = ", fromsp[i])
             tosp[i] <- timein_lt$year[length(timein_lt)] + 1900
-            message("tosp not given --> tosp[", i, "] = ", tosp[i])
+            message("\ntosp not given --> use last year --> tosp[", i, "] = ", tosp[i])
             time_inds <- NULL # default
             
         } # if exists("fromsp") || exists("tosp")
@@ -1536,60 +1549,66 @@ for (i in seq_len(nsettings)) {
     
     
     # apply missval to lon,lat data if necessary
-    if (models[i] == "echam6" && areas[i] == "global" &&
-        any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
-        message("\nmodels[", i, "] = echam6 and areas[", i, "] = global ",
-                "and current setting has variables with lon and lat dims ",
-                "--> apply missval to lon,lat data if possible?")
-        if (T) { # activate/deactivate here
-            echam6_lsm_name <- "slm" # "slm" or "slf
-            message("--> yes: `echam6_lsm_name` = \"", echam6_lsm_name, "\"")
-            if (!exists("echam6_lsm_global")) { # open echam6 land sea mask from nc
-                if (length(dims[[i]]$lon) == 192 && length(dims[[i]]$lat) == 96) {
-                    echam6_lsm_file <- paste0(host$repopath, "/echam/T63_", echam6_lsm_name, ".nc")
-                } else {
-                    stop("case nlon = ", length(dims[[i]]$lon), " and nlat = ", length(dims[[i]]$lat), " not defined")
+    if (models[i] == "echam6" && areas[i] == "global") {
+        if (!is.na(echam6_global_setNA[i])) {
+            message("\n`echam6_global_setNA[", i, "]` = \"", echam6_global_setNA[i], "\"", appendLF=F)
+            if (any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
+                message(" and current setting has variables with lon and lat dims ",
+                        "--> apply missval to lon,lat data if possible")
+                echam6_lsm_name <- "slm" # "slm" or "slf
+                message("`echam6_lsm_name` = \"", echam6_lsm_name, "\"")
+                if (!exists("echam6_lsm_global")) { # open echam6 land sea mask from nc
+                    if (length(dims[[i]]$lon) == 192 && length(dims[[i]]$lat) == 96) {
+                        echam6_lsm_file <- paste0(host$repopath, "/echam/T63_", echam6_lsm_name, ".nc")
+                    } else {
+                        stop("case nlon = ", length(dims[[i]]$lon), " and nlat = ", length(dims[[i]]$lat), " not defined")
+                    }
+                    if (!file.exists(echam6_lsm_file)) {
+                        warning("file ", echam6_lsm_file, " not found")
+                        echam6_lsm_global <- NULL
+                    } else {
+                        message("read ", echam6_lsm_name, " from ", echam6_lsm_file, " ...")
+                        echam6_lsm_nc <- nc_open(echam6_lsm_file)
+                        echam6_lsm_global <- ncvar_get(echam6_lsm_nc, echam6_lsm_name)
+                    }
                 }
-                if (!file.exists(echam6_lsm_file)) {
-                    warning("file ", echam6_lsm_file, " not found")
-                    echam6_lsm_global <- NULL
-                } else {
-                    message("read ", echam6_lsm_name, " from ", echam6_lsm_file, " ...")
-                    echam6_lsm_nc <- nc_open(echam6_lsm_file)
-                    echam6_lsm_global <- ncvar_get(echam6_lsm_nc, echam6_lsm_name)
-                }
-            }
-            if (!is.null(echam6_lsm_global)) { # echam6 land sea mask was successfully loaded
-                vars_with_londim_inds <- lapply(dims_per_setting, function(x) grep("lon", x) != -1)
-                vars_with_londim_inds <- which(sapply(vars_with_londim_inds, any))
-                vars_with_latdim_inds <- lapply(dims_per_setting, function(x) grep("lat", x) != -1)
-                vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
-                vars_with_lonandlatdim_inds <- intersect(vars_with_londim_inds, vars_with_latdim_inds)
-                if (length(vars_with_lonandlatdim_inds) > 0) {
-                    for (vi in seq_along(vars_with_lonandlatdim_inds)) {
-                        var_with_lonandlatdim_ind <- vars_with_lonandlatdim_inds[vi]
-                        dims_of_var <- attributes(datas[[i]][[var_with_lonandlatdim_ind]])$dims # e.g. "lon", "lat"
-                        if (length(dims_of_var) == 2) { # only 2 dims: lon and lat
-                            if (F) {
-                                message("set land to NA")
-                                nainds <- echam6_lsm_global != 0 # not ocean (`nainds` is array)
-                            } else if (T) {
-                                message("set ocean to NA")
-                                nainds <- echam6_lsm_global == 0 # not ocean (`nainds` is array)    
+                if (!is.null(echam6_lsm_global)) { # echam6 land sea mask was successfully loaded
+                    vars_with_londim_inds <- lapply(dims_per_setting, function(x) grep("lon", x) != -1)
+                    vars_with_londim_inds <- which(sapply(vars_with_londim_inds, any))
+                    vars_with_latdim_inds <- lapply(dims_per_setting, function(x) grep("lat", x) != -1)
+                    vars_with_latdim_inds <- which(sapply(vars_with_latdim_inds, any))
+                    vars_with_lonandlatdim_inds <- intersect(vars_with_londim_inds, vars_with_latdim_inds)
+                    if (length(vars_with_lonandlatdim_inds) > 0) {
+                        for (vi in seq_along(vars_with_lonandlatdim_inds)) {
+                            var_with_lonandlatdim_ind <- vars_with_lonandlatdim_inds[vi]
+                            dims_of_var <- attributes(datas[[i]][[var_with_lonandlatdim_ind]])$dims # e.g. "lon", "lat"
+                            if (length(dims_of_var) == 2) { # only 2 dims: lon and lat
+                                if (echam6_global_setNA[i] == "land") {
+                                    message("set land to NA")
+                                    nainds <- echam6_lsm_global != 0 # not ocean (`nainds` is array)
+                                } else if (echam6_global_setNA[i] == "ocean") {
+                                    message("set ocean to NA")
+                                    nainds <- echam6_lsm_global == 0 # not ocean (`nainds` is array)    
+                                } else {
+                                    stop("`echam6_global_setNA[", i, "]` = \"", echam6_global_setNA[i], "\" not defined")
+                                }
+                                datas[[i]][[var_with_lonandlatdim_ind]][nainds] <- NA
+                            } else {
+                                londimind <- which(dims_of_var == "lon")
+                                latdimind <- which(dims_of_var == "lat")
+                                stop("not implemented yet")
                             }
-                            datas[[i]][[var_with_lonandlatdim_ind]][nainds] <- NA
-                        } else {
-                            londimind <- which(dims_of_var == "lon")
-                            latdimind <- which(dims_of_var == "lat")
-                            stop("not implemented yet")
-                        }
-                    } # for vi
-                } # if no variable with lon and lat dim
-            } # if echam6 land sea mask was successfully loaded
-        } else { # if T/F
-            message("--> no. activate here if wanted")
+                        } # for vi
+                    } # if no variable with lon and lat dim
+                } # if echam6 land sea mask was successfully loaded
+            } else { # no lon and lat dims
+                message(" but current setting has no variables with lon and lat dims ",
+                        "--> do not apply missval to lon,lat data")
+            } 
+        } else { # not echam6 and or global data
+            message("\n`echam6_global_setNA[", i, "]` is NA. set to \"ocean\" or \"land\" to set ocean or land values of global echam6 data to missval (NA)")
         }
-    } # apply missval to echam6 lon,lat data if necessary
+    } # apply missval to global echam6 lon,lat data if wanted
 
     
     # reorder lons of data to (-180,...,180) if wanted and necessary
@@ -2006,7 +2025,7 @@ for (i in seq_len(nsettings)) {
                 if (modes[i] == "fldmean") {
                     data_infos[[i]][[vi]]$label <- expression(paste("global mean atm CO"[2], " [ppm]"))
                 } else {
-                    stop("not defined")
+                    data_infos[[i]][[vi]]$label <- expression(paste("atm CO"[2], " [ppm]"))
                 }
             } else {
                 stop("not defined")
@@ -4608,7 +4627,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } else if (tlab_dt_secs > 180*24*60*60) { 
                     tlablt <- tlablt$year+1900
                     tunit <- "year"
-                    if (T) {
+                    if (F) {
                         message("special time unit label")
                         tunit <- "model year"
                     }
@@ -6150,6 +6169,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 y_at <- palname <- anom_colorbar <- center_include <- NULL
             # placeholder defaults for image.plot.nxm.r:
             znames_method <- znames_pos <- legend.line <- colorbar.cex <- NULL
+            contour_only <- F
             if (any(zname == c("tos", "thetao"))) {
                 #anom_colorbar <- F
             } else if (zname == "quv") {
@@ -6198,6 +6218,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #if (max(zlevels) != zlim[2]) zlevels[length(zlevels)] <- zlim[2]
                 zlevels <- c(seq(min(zlim), 1100, l=100), zlim[2])
                 axis.labels <- c(round(zlim[1]), seq(125, 1000, b=125), round(zlim[2]))
+            } else if (zname == "CO2") {
+                #contour_only <- T
             } else if (zname == "co2_flx_ocean") {
                 nlevels <- 20
                 palname <- "colormaps_jaisnd"
@@ -6606,7 +6628,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
             }
 
             # determine number of rows and columns
-            source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             n <- m <- zoomfac <- NULL
             if (T && all(areas_p == "N30-90") || all(areas_p == "NAsiberia")) {
                 message("special nrow ncol")
@@ -6621,6 +6642,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 zoomfac <- 1.066
                 message("`proj` = \"", proj, "\" --> set `zoomfac` = ", zoomfac)
             }
+            source(paste0(host$homepath, "/functions/image.plot.nxm.r"))
             nm <- image.plot.nxm(x=d$lon, y=d$lat, z=z, n=n, m=m, ip=ip, dry=T)
 
             # open plot device 
@@ -6634,6 +6656,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (proj != "") plotname <- paste0(plotname, "_", gsub("\\s+", "_", proj))
             plotname <- paste0(plotname, ".", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
+                message("plotname \"", plotname, "\" too long ...")
                 plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                    zname, "_", 
                                    paste(unique(names_short_p), collapse="_"), "_",
@@ -6646,9 +6669,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 plotname <- paste0(plotname, ".", p$plot_type)
             }
             if (nchar(plotname) > nchar_max_foutname) {
+                message("plotname \"", plotname, "\" too long ...")
                 plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                    zname, "_", 
-                                   names_short_p[1], "_", # only 1 setting to decrease plotname size
+                                   #paste(unique(names_short_p), collapse="_"), "_",
+                                   #names_short_p[1], "_", # only 1 setting to decrease plotname size
+                                   names_short_p[1], "_", names_short_p[length(z)], "_", # only 1st and last setting to decrease plotname size
                                    paste(unique(seasonsp_p), collapse="_"), "_", 
                                    paste(unique(froms_plot_p), collapse="_"), "-", 
                                    paste(unique(tos_plot_p), collapse="_"), "_", 
@@ -6692,8 +6718,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            add_contour=F,
                            polygon_list=polygon_list,
                            quiver_list=quiver_list,
+                           contour_only=contour_only,
                            contour_list=contour_list, 
-                           contour_posneg_redblue=T, 
+                           #contour_posneg_redblue=T, 
                            #contour_smooth=T, contour_smooth_n_pixel_thr=50, contour_spar=1,
                            addland_list=addland_list,
                            point_list=point_list,
@@ -9177,6 +9204,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    xlab="Longitude [°]", ylab="Latitude [°]", 
                                    zlab=data_info$label, 
                                    znames=paste0(names_short_p[2], " minus ", names_short_p[1]),
+                                   contour_only=F,
                                    addland_list=addland_list,
                                    quiver_list=quiver_list,
                                    segment_list=segment_list,

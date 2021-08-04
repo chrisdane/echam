@@ -5,16 +5,26 @@ rm(list=ls()); graphics.off()
 options(warn=2) # stop on warnings
 #options(warn=0) # back to default
 
-# load necessary libraries
-requirements <- readLines("requirements_post.txt")
-for (r in requirements) if (substr(r, 1, 1) != "#") library(r, character.only=T)
+# machine dependent repo path; must change here if non-default
+repopath <- "~/scripts/r/echam"
+if (!dir.exists(repopath)) {
+    stop("`repopath` = \"", repopath, "\" does not exist")
+} else {
+    repopath <- normalizePath(repopath)
+}
 
 # load helper functions of this repo
-message("\nload helper_functions.r ...")
-source("helper_functions.r")
+script_helper_functions <- paste0(repopath, "/helper_functions.r")
+message("\nload ", script_helper_functions, " ...")
+source(script_helper_functions) # get_host()
 
 # get host options
 host <- get_host()
+host$repopath <- repopath
+
+# load necessary libraries
+requirements <- readLines(paste0(host$repopath, "/requirements_post.txt"))
+for (r in requirements) if (substr(r, 1, 1) != "#") library(r, character.only=T)
 
 # todo: how to load helper functions from another repo without the subrepo hassle?
 if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
@@ -27,8 +37,11 @@ if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
 }
 
 # load user input namelist for this repo
-message("\nload and check namelist.post.r ...")
-source("namelist.post.r")
+#nml_post <- paste0(host$repopath, "/namelist.post.r")
+nml_post <- "namelist.post.r" # file from same directory as this post_echam.r
+nml_post <- normalizePath(nml_post)
+message("\nload and check ", nml_post, " ...")
+source(nml_post)
 
 # Check user input and set defaults
 message("verbose = ", verbose)
@@ -206,10 +219,40 @@ if (length(inds) > 0) {
 }
 if (!exists("lev_fnames")) lev_fnames <- rep("", t=nsettings)
 if (any(!is.na(sellevels))) {
-    lev_fnames[which(!is.na(sellevels))] <- paste0("_sellevel_", sellevels[which(!is.na(sellevels))])
+    #lev_fnames[which(!is.na(sellevels))] <- paste0("_sellevel_", gsub(",", "_", sellevels[which(!is.na(sellevels))]))
+    for (i in seq_len(nsettings)) {
+        if (!is.na(sellevels[i])) {
+            levs <- sellevels[i]
+            if (is.character(levs)) {
+                levs <- strsplit(levs, ",")[[1]]
+                levs <- as.numeric(levs) # error if not successful
+            }
+            if (length(levs) == 1) {
+                lev_fnames[i] <- paste0("_sellevel_", levs)
+            } else {
+                lev_fnames[i] <- paste0("_sellevel_", min(levs), "-", max(levs))
+            }
+            rm(levs)
+        }
+    }
 }
 if (any(!is.na(sellevsidx))) {
-    lev_fnames[which(!is.na(sellevsidx))] <- paste0("_sellevidx_", sellevsidx[which(!is.na(sellevsidx))])
+    lev_fnames[which(!is.na(sellevsidx))] <- paste0("_sellevidx_", gsub(",", "_", sellevsidx[which(!is.na(sellevsidx))]))
+    for (i in seq_len(nsettings)) {
+        if (!is.na(sellevsidx[i])) {
+            levs <- sellevsidx[i]
+            if (is.character(levs)) {
+                levs <- strsplit(levs, ",")[[1]]
+                levs <- as.numeric(levs) # error if not successful
+            }
+            if (length(levs) == 1) {
+                lev_fnames[i] <- paste0("_sellevidx_", levs)
+            } else {
+                lev_fnames[i] <- paste0("_sellevidx_", min(levs), "-", max(levs))
+            }
+            rm(levs)
+        }
+    }
 }
 
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
@@ -613,20 +656,32 @@ for (i in 1:nsettings) {
 
             } else {
                 message("\nno <YYYY*> or <MM*> patterns provided --> find years/months/etc. of based on `cdo showdate` of found files ...")
-                years_filenames <- vector("list", l=length(files))
+                years_filenames <- months_filenames <- vector("list", l=length(files))
                 for (fi in seq_along(files)) {
                     cmd <- paste0(cdo, " showdate ", datapath, "/", files[fi])
-                    message("run `", cmd, "`")
+                    message("\nfile ", fi, "/", length(files), ": run `", cmd, "`")
                     dates <- system(cmd, intern=T)
                     dates <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", dates, perl=T) # remove double and leading blanks
-                    dates <- strsplit(dates, " ")[[1]]
+                    dates <- strsplit(dates, " ")[[1]] # e.g. "2731-02-01"
                     if (verbose) {
-                        message("\n", length(dates), " cdo dates of this file:")
+                        message(length(dates), " cdo dates of this file:")
                         ht(dates, n=5)
                     }
-                    years_filenames[[fi]] <- substr(dates, 1, 4)
+                    years_filenames[[fi]] <- substr(dates, 1, 4) # e.g. "2731"
+                    months_filenames[[fi]] <- substr(dates, 6, 7) # e.g. "02"
                 }
-                years_filenames <- as.numeric(unlist(years_filenames))
+                years_filenames <- as.integer(unlist(years_filenames))
+                years_filenames_unique <- unique(years_filenames)
+                if (length(years_filenames) == length(files)) { # case1: one timepoint per file
+                    df$YYYY <- years_filenames
+                    df$MM <- months_filenames
+                } else if (length(years_filenames) != length(files)) { # case2: more than one timepoint per file
+                    if (length(years_filenames_unique) == length(files)) { # case 2.1: same number of unique years as files
+                        df$YYYY <- years_filenames_unique
+                    } else {
+                        stop("not defined; maybe fesom1 output with wrong nc dates?")
+                    }
+                }
             } # if length(files) == 1 or not
 
         } # if <YYYY*> or <MM*> patterns are given by user or not
