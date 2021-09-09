@@ -32,8 +32,18 @@ host <- get_host()
 host$repopath <- repopath
 
 # load libraries necessary for plot_echam.r
+message("\nload packages defined in ", host$repopath, "/requirements_plot.txt ...")
 requirements <- readLines(paste0(host$repopath, "/requirements_plot.txt"))
-for (r in requirements) if (substr(r, 1, 1) != "#") library(r, character.only=T)
+for (r in requirements) {
+    r <- trimws(r)
+    if (substr(r, 1, 1) != "#") { # current line is not a comment
+        if (grepl(" ", r)) { # there is a space
+            r <- substr(r, 1, regexpr(" ", r)-1) # everything until first space
+        }
+        message("   ", r)
+        library(r, character.only=T)
+    }
+}
 
 # todo: how to load functions from another repo without the subrepo hassle?
 if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
@@ -210,8 +220,19 @@ if (!exists("cols")) {
         stop(length(cols), " provided `cols`: ", paste(cols, collapse=", "), 
              " must be of length `nsettings` = ", nsettings)
     }
-    if (is.integer(cols)) { # provided color numbers; use mycols
-        cols <- mycols(nsettings)[cols]
+    if (is.numeric(cols)) {
+        if (!is.integer(cols)) { 
+            msg <- paste0("\nprovided `cols` = ", paste(cols, collapse=", "), 
+                          " are \"numeric\" but not \"integer\". convert to integer ... ")
+            cols <- as.integer(cols)
+            message(msg, paste(cols, collapse=", ")); rm(msg)
+        }
+        cols <- mycols(max(cols))[cols]
+    } else if (is.character(cols)) {
+        # nothing to do
+    } else {
+        stop("provided `cols` = ", paste(cols, collapse=", "), 
+             " must be of type \"numeric\", \"integer\" or \"character\"") 
     }
 }
 cols_rgb <- rgb(t(col2rgb(cols)/255), alpha=alpha_rgb)
@@ -229,7 +250,7 @@ if (exists("cols_samedims")) {
 
 if (length(echam6_global_setNA) != nsettings) {
     if (length(echam6_global_setNA) == 1) {
-        message("`echam6_global_setNA` is only of length 1 but nsettings = ", nsettings, 
+        message("\n`echam6_global_setNA` is only of length 1 but nsettings = ", nsettings, 
                 " --> repeat echam6_global_setNA[1] = ", echam6_global_setNA, " ...")
         echam6_global_setNA <- rep(echam6_global_setNA, t=nsettings)
     } else {
@@ -517,7 +538,7 @@ for (i in seq_len(nsettings)) {
                 stop("temporal subset is of length 0")
             } else {
                 if (length(time_inds) != length(timein_lt)) { 
-                    message("found temporal subset of length ", length(time_inds), " out of ", 
+                    message("found temporal subset inds of length ", length(time_inds), " out of ", 
                             length(dims[[i]]$time), " total time points:")
                     ht(time_inds)
                     message("before range(timein_lt) = ", appendLF=F)
@@ -1551,14 +1572,25 @@ for (i in seq_len(nsettings)) {
     # apply missval to lon,lat data if necessary
     if (models[i] == "echam6" && areas[i] == "global") {
         if (!is.na(echam6_global_setNA[i])) {
+            if (!any(echam6_global_setNA[i] == c("land", "ocean"))) {
+                stop("`echam6_global_setNA[", i, "]` = \"", echam6_global_setNA[i], 
+                     "\" must be either NA, \"land\" or \"ocean\"")
+            }
             message("\n`echam6_global_setNA[", i, "]` = \"", echam6_global_setNA[i], "\"", appendLF=F)
             if (any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
-                message(" and current setting has variables with lon and lat dims ",
+                message(" and current echam6 setting has global variables with lon and lat dims ",
                         "--> apply missval to lon,lat data if possible")
-                echam6_lsm_name <- "slm" # "slm" or "slf
+                echam6_lsm_name <- "slf" # "slm" or "slf"
+                if (!any(echam6_lsm_name == c("slm", "slf"))) stop("`echam6_lsm_name` must be one of \"slm\" or \"slf\"")
+                # slm = 0 --> ocean; slm  = 1 --> land
+                # slf = 0 --> ocean; slf != 0 --> land 
+                # --> nlandpixel(slf != 0) > nlandpixel(slm == 1)
+                # e.g. panama strait T63: slm = 0      --> ocean
+                #                         slf = 0.4125 --> land
                 message("`echam6_lsm_name` = \"", echam6_lsm_name, "\"")
                 if (!exists("echam6_lsm_global")) { # open echam6 land sea mask from nc
                     if (length(dims[[i]]$lon) == 192 && length(dims[[i]]$lat) == 96) {
+                        message("--> nlon = 192; nlat = 96")
                         echam6_lsm_file <- paste0(host$repopath, "/echam/T63_", echam6_lsm_name, ".nc")
                     } else {
                         stop("case nlon = ", length(dims[[i]]$lon), " and nlat = ", length(dims[[i]]$lat), " not defined")
@@ -1567,7 +1599,7 @@ for (i in seq_len(nsettings)) {
                         warning("file ", echam6_lsm_file, " not found")
                         echam6_lsm_global <- NULL
                     } else {
-                        message("read ", echam6_lsm_name, " from ", echam6_lsm_file, " ...")
+                        message("--> read \"", echam6_lsm_name, "\" land sea mask from ", echam6_lsm_file, " ...")
                         echam6_lsm_nc <- nc_open(echam6_lsm_file)
                         echam6_lsm_global <- ncvar_get(echam6_lsm_nc, echam6_lsm_name)
                     }
@@ -1583,12 +1615,24 @@ for (i in seq_len(nsettings)) {
                             var_with_lonandlatdim_ind <- vars_with_lonandlatdim_inds[vi]
                             dims_of_var <- attributes(datas[[i]][[var_with_lonandlatdim_ind]])$dims # e.g. "lon", "lat"
                             if (length(dims_of_var) == 2) { # only 2 dims: lon and lat
+                                message("--> echam6_global_setNA[", i, "] = \"", echam6_global_setNA[i], 
+                                        "\" --> set ", echam6_lsm_name, " ", appendLF=F)
                                 if (echam6_global_setNA[i] == "land") {
-                                    message("set land to NA")
-                                    nainds <- echam6_lsm_global != 0 # not ocean (`nainds` is array)
+                                    if (echam6_lsm_name == "slm") {
+                                        message("== 1 to NA")
+                                        nainds <- echam6_lsm_global == 1
+                                    } else if (echam6_lsm_name == "slf") {
+                                        message(">= 0.4 to NA")
+                                        nainds <- echam6_lsm_global >= 0.4 # keep panama strait as land
+                                    }
                                 } else if (echam6_global_setNA[i] == "ocean") {
-                                    message("set ocean to NA")
-                                    nainds <- echam6_lsm_global == 0 # not ocean (`nainds` is array)    
+                                    if (echam6_lsm_name == "slm") {
+                                        message("== 0 to NA")
+                                        nainds <- echam6_lsm_global == 0 
+                                    } else if (echam6_lsm_name == "slf") {
+                                        message("< 0.4 to NA")
+                                        nainds <- echam6_lsm_global < 0.4 # keep panama strait as land
+                                    }
                                 } else {
                                     stop("`echam6_global_setNA[", i, "]` = \"", echam6_global_setNA[i], "\" not defined")
                                 }
@@ -1602,13 +1646,13 @@ for (i in seq_len(nsettings)) {
                     } # if no variable with lon and lat dim
                 } # if echam6 land sea mask was successfully loaded
             } else { # no lon and lat dims
-                message(" but current setting has no variables with lon and lat dims ",
+                message(" but current echam6 setting has no global variables with lon and lat dims ",
                         "--> do not apply missval to lon,lat data")
             } 
-        } else { # not echam6 and or global data
+        } else { # echam6_global_setNA[i] is NA
             message("\n`echam6_global_setNA[", i, "]` is NA. set to \"ocean\" or \"land\" to set ocean or land values of global echam6 data to missval (NA)")
         }
-    } # apply missval to global echam6 lon,lat data if wanted
+    } # apply missval if global echam6 data
 
     
     # reorder lons of data to (-180,...,180) if wanted and necessary
@@ -1923,6 +1967,8 @@ if (F) { # for testing
 # set variable specific things
 message("\nset variable specific things (define text for unit labels for specific variables here) ...")
 for (i in seq_len(nsettings)) {
+    message("setting ", i, "/", nsettings, ": ", prefixes[i], " ", names_short[i], " ...")
+    
     for (vi in seq_along(datas[[i]])) {
 
         varname <- names(datas[[i]])[vi]
@@ -2035,7 +2081,7 @@ for (i in seq_len(nsettings)) {
             data_infos[[i]][[vi]]$label <- expression(paste("global mean atm CO"[2], " [µatm]"))
         
         } else if (varname == "CO2f") { # fesom/recom
-            # original: mmol C m-2 d-1
+            # original: mmolC m-2 d-1
             # 1 mole C = 1 mole CO2; 1 mole = 6.02214076 * 1e23 particles
             # 1 mole C = 12.0107 g C
             # 1 mole CO2 = 44.0095 g CO2
@@ -2052,30 +2098,80 @@ for (i in seq_len(nsettings)) {
                 data_infos[[i]][[vi]]$units <- "mmolC m-2 yr-1"
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [mmolC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
             }
-            if (F) { # molC --> kgC
-                message("CO2f mmolC --> kgC")
-                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
-                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 12.011) # mmolC -> mgC  
+            if (T) { # mmolC --> molC
+                message("CO2f mmolC --> molC")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
-                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6) # mgC -> kgC
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3) # mmolC -> molC
+                data_infos[[i]][[vi]]$units <- "molC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [molC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+            if (T) { # molC --> gC
+                message("CO2f molC --> gC")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 12.0107) # molC -> gC  
+                data_infos[[i]][[vi]]$units <- "gC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [gC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+            if (T) { # gC --> kgC
+                message("CO2f gC --> kgC")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3) # gC -> kgC  
                 data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
             }
-            if (T) { # molC --> kgCO2
-                message("CO2f mmolC --> kgCO2")
-                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
-                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 44.0095) # mmolC -> mgCO2  
-                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
-                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6) # mgCO2 -> kgCO2
-                data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
-            }
             if (modes[i] == "fldint") {
-                message("CO2f kg --> Pg")
+                message("CO2f kgC --> PgC")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
                 data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e12) # kg -> Pg
-                data_infos[[i]][[vi]]$units <- "PgCO2 yr-1"
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgCO"[2], " yr"^paste(-1), "] (>0 into ocean)"))))
+                data_infos[[i]][[vi]]$units <- "PgC yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
+            }
+
+        } else if (varname == "NPP") { # recom
+            # original: mmolC m-2 d-1
+            # 1 mole C = 1 mole CO2; 1 mole = 6.02214076 * 1e23 particles
+            # 1 mole C = 12.0107 g C
+            # 1 mole CO2 = 44.0095 g CO2
+            # --> 12.0107 g C = 44.0095         g CO2
+            # <=>       1 g C = 44.0095/12.0107 g CO2
+            # <=>       1 g C = 3.664191        g CO2
+            # --> convert g C   to g CO2: *3.664191
+            # --> convert g CO2 to g C  : /3.664191
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NPP [mmolC m"^paste(-2), " d"^paste(-1), "]"))))
+            if (T) {
+                message("NPP d-1 --> yr-1")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 365.25) # d-1 -> yr-1
+                data_infos[[i]][[vi]]$units <- "mmolC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NPP [mmolC m"^paste(-2), " yr"^paste(-1), "]"))))
+            }
+            if (T) { # mmolC --> molC
+                message("NPP mmolC --> molC")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3) # mmolC -> molC
+                data_infos[[i]][[vi]]$units <- "molC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NPP [molC m"^paste(-2), " yr"^paste(-1), "]"))))
+            }
+            if (T) { # molC --> gC
+                message("NPP molC --> gC")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 12.0107) # molC -> gC  
+                data_infos[[i]][[vi]]$units <- "gC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NPP [gC m"^paste(-2), " yr"^paste(-1), "]"))))
+            }
+            if (T) { # gC --> kgC
+                message("NPP gC --> kgC")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3) # gC -> kgC  
+                data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NPP [kgC m"^paste(-2), " yr"^paste(-1), "]"))))
+            }
+            if (modes[i] == "fldint") {
+                message("NPP kgC --> PgC")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e12) # kg -> Pg
+                data_infos[[i]][[vi]]$units <- "PgC yr-1"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NPP [PgC yr"^paste(-1), "]"))))
             }
 
         } else if (varname == "co2_flx_ocean") {
@@ -2089,11 +2185,19 @@ for (i in seq_len(nsettings)) {
             # --> convert g C   to g CO2: *3.664191
             # --> convert g CO2 to g C  : /3.664191
             data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
-            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into atm)"))))
-            message("co2_flx_ocean: >0 into atm --> >0 into ocean")
-            data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
-            data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
-            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
+            if (any(prefixes[i] == c("awi-esm-1-1-lr_kh800_piControl_og", "awi-esm-1-1-lr_kh800_historical"))) { # old code
+                message("co2_flx_ocean: old code `exchange(:) = GloCO2flux`")
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
+            } else { # new code
+                message("co2_flx_ocean: new code `exchange(:) = -GloCO2flux`")
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into atm)"))))
+                if (T) {
+                    message("co2_flx_ocean: >0 into atm --> >0 into ocean")
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
+                }
+            }
             if (T) {
                 message("co2_flx_ocean: s-1 --> yr-1")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
@@ -2134,11 +2238,18 @@ for (i in seq_len(nsettings)) {
             # --> convert g C   to g CO2: *3.664191
             # --> convert g CO2 to g C  : /3.664191
             data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
-            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into atm)"))))
-            message("co2_flx_land: >0 into atm --> >0 into land")
-            data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
-            data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
-            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into land)"))))
+            if (F && any(prefixes[i] == c("awi-esm-1-1-lr_kh800_piControl_og", "awi-esm-1-1-lr_kh800_historical"))) { # old code --> no, only affected co2_flx_ocean!
+                message("co2_flx_land old: code `exchange(:) = GloCO2flux`")
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into land)"))))
+            } else { # new code
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into atm)"))))
+                if (T) {
+                    message("co2_flx_land: >0 into atm --> >0 into land")
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into land)"))))
+                }
+            }
             if (T) {
                 message("co2_flx_land: s-1 --> yr-1")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
@@ -2175,7 +2286,7 @@ for (i in seq_len(nsettings)) {
                 data_infos[[i]][[vi]]$units <- "t"
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("CO"[2], " correction [t]"))))
             }
-        
+       
         } else if (varname == "aprt") {
             # units can be mm/month or mm/a depending on `modes[i]`
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("P"["total"], " [", unit, "]")),
@@ -2228,7 +2339,11 @@ for (i in seq_len(nsettings)) {
         
         } else if (varname == "omldamax") {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("max MLD"["MS"], " [m]"))))
-        
+            if (T) {
+                message("omldamax special")
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("max MLD"["MS"], " [m] (>0: AWI deeper than MPI)"))))
+            }
+
         } else if (grepl("siarea", varname)) {
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NH sea ice extent [km"^2, 
                                                                             " " %*% " ", 10^6, "]"))))
@@ -6173,7 +6288,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (any(zname == c("tos", "thetao"))) {
                 #anom_colorbar <- F
             } else if (zname == "quv") {
-                message("special zlim")
+                message("quv special zlim")
                 nlevels <- 200
                 #zlim <- c(5.03, 324.37) # feb; era5: 0.0244510751217604, 294.239959716797 
                 #zlim <- c(6.05, 328.23) # may; era5: 0.00584759470075369, 297.601440429688
@@ -6181,7 +6296,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #zlim <- c(8.33, 422.71) # nov; era5: 0.108525462448597, 300.630645751953
                 zlim <- c(0.00584759470075369, 531.362243652344)
             } else if (zname == "lm_temp2_as_time_slope") {
-                #message("special zlim")
+                #message("lm_temp2_as_time_slope special zlim")
                 # Hol-T annual: c(-2.77528234243418, 2.26845881332211)
                 #zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=0.25), zlim[2]) # deg C / 7k yrs
                 #zlim <- c(-4.3802347784168293998, 2.4162697392007639330)
@@ -6191,7 +6306,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # lm_tho: 360x180: 5 season: c(-4.00305379614524, 3.54971842687043)
                 # lm_tho: 3600x1800: 5 season: c(-4.03669006075327, 3.55691367873545)
             } else if (zname == "lm_tsurf_as_time_slope") {
-                message("special zlim")
+                message("lm_tsurf_as_time_slope special zlim")
                 # Hol-T annual: c(-4.3802347784168293998, 2.4162697392007639330)
                 # Hol-T: 5 season: -9.440916  6.903386
                 # Hol-T: 3600x1800: 5 season: c(-9.46404887704723, 6.91053024191786)
@@ -6209,8 +6324,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else if (zname == "wisoaprt_d") {
                 palname <- "RdYlBu"
                 anom_colorbar <- F
-            } else if (any(zname == c("mlotst", "omldamax"))) {
-                message("special zlim")
+            } else if (F && any(zname == c("mlotst", "omldamax"))) {
+                message("mlotst omldamax special zlim")
                 #palname <- "RdYlBu"
                 # FMA: 6.053815 3650.000000
                 # SON: 6.04869794845581 4879.9344112022
@@ -6221,8 +6336,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else if (zname == "CO2") {
                 #contour_only <- T
             } else if (zname == "co2_flx_ocean") {
-                nlevels <- 20
-                palname <- "colormaps_jaisnd"
+                #nlevels <- 20
+                #palname <- "colormaps_jaisnd"
             } else if (zname == "co2_flx_land") {
                 #anom_colorbar <- F
             } else if (zname == "bgc03") { # total alkalinity
@@ -6921,7 +7036,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     nlevels <- 20
                 }
             } else if (F && any(varname == c("temp2", "tslm1", "THO"))) {
-                message("special zlim")
+                message("temp2 tslm1 THO special zlim")
                 #zlim <- c(-0.566165227890015, 2.67736038208008) # annual
                 #zlim <- c(-2.46028671264648, 2.82926086425781) # jun
                 #zlim <- c(-0.738620281219482, 6.65275375366211) # dec
@@ -8291,8 +8406,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # add variable label on y-axis
             #label_line <- 2.5
             #label_line <- 3
+            label_line <- 3.4
             #label_line <- 3.5
-            label_line <- 4
+            #label_line <- 4
             #label_line <- 4.5
             #label_cex <- 1
             label_cex <- 0.9
@@ -8370,7 +8486,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } # for i seq_along(z)
                     
                     if (add_legend && i == length(z)) {
-                        message("\nadd default stuff to ", mode_p, " legend ...")
+                        message("\nadd default stuff to ", mode_p, " datas season legend ...")
                         le <- list()
                         if (suppressPackageStartupMessages(require(Hmisc))) {
                             tmp <- Hmisc::largest.empty(x=unlist(d$time), y=unlist(z), method="area")
@@ -8455,7 +8571,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         lm <- lm(z[[i]] ~ d$time[[i]])
                         lm_summary <- summary(lm)
                         print(lm_summary)
-                        lm_labels[i] <- ifelse(diff(range(lm$fitted.values)) > 0, "+", "-")
+                        lm_labels[i] <- ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "-")
                         lm_labels[i] <- paste0(lm_labels[i], 
                                                #round(diff(range(lm$fitted.values)), 4)
                                                round(diff(range(lm$fitted.values)), 2)
@@ -8511,7 +8627,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # add obs if length(data_left) > 0
 
             # add legend if wanted
-            if (add_legend) {
+            if (T && add_legend) {
                 message("\nadd default stuff to datas vs time legend ...")
                 le <- list()
                 if (!exists("lepos")) {
@@ -8534,10 +8650,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } else {
                         message("manually set legend position: ", appendLF=F)
                         #le$pos <- "bottom" 
-                        #le$pos <- "topleft" 
+                        le$pos <- "topleft" 
                         #le$pos <- "left"
                         #le$pos <- "bottomleft"
-                        le$pos <- "topright"
+                        #le$pos <- "topright"
                         #le$pos <- "bottomright" 
                         #le$pos <- c(tatn[1], yat[length(yat)-1])
                         #le$pos <- c(as.numeric(as.POSIXct("2650-1-1", tz="UTC")), 13.45)
@@ -8949,6 +9065,242 @@ for (plot_groupi in seq_len(nplot_groups)) {
         } # if (ndims_unique == 1 && dim_names == "time")
         # finished plot `datas` as time 
         
+        if (ndims_unique == 1 && dim_names == "lat") {
+
+            xlim <- range(d$lat, na.rm=T)
+            xat <- pretty(xlim, n=20)
+            if (any(xat < min(xlim))) {
+                inds <- which(xat < min(xlim))
+                xat <- xat[-inds]
+            }
+            if (any(xat > min(xlim))) {
+                inds <- which(xat > max(xlim))
+                xat <- xat[-inds]
+            }
+            xlab <- format(xat, trim=T)
+
+            ylim <- range(z, na.rm=T)
+            yat <- pretty(ylim, n=8)
+            ylab <- format(yat, trim=T)
+            
+            # plotname
+            plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                               varname, "_",
+                               paste0(names_short_p, "_", seasonsp_p, "_",
+                                      froms_plot_p, "_to_", tos_plot_p, 
+                                      n_mas_fname_p, "_", 
+                                      areas_p, collapse="_vs_"), 
+                               ts_highlight_seasons$suffix,
+                               "_lat", 
+                               plotname_suffix,
+                               ".", p$plot_type)
+            if (nchar(plotname) > nchar_max_foutname) {
+                if (plot_groups[plot_groupi] == "samevars") {
+                    plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                       varname, "_",
+                                       paste0(names_short_p, n_mas_fname_p, "_", areas_p, collapse="_vs_"), 
+                                       "_lat", 
+                                       plotname_suffix,
+                                       ".", p$plot_type)
+                } else if (plot_groups[plot_groupi] == "samedims") {
+                    plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                       varname, "_",
+                                       paste0(names_short_p, "_", varnames_in_p, collapse="_vs_"), 
+                                       "_lat", 
+                                       plotname_suffix,
+                                       ".", p$plot_type)
+                }
+            }
+            if (nchar(plotname) > nchar_max_foutname) {
+                warning("\nplotname = ", plotname, "\nnchar(plotname) = ", nchar(plotname), 
+                        " > nchar_max_foutname = ", nchar_max_foutname, 
+                        " -> cut too long plotname ...", immediate.=T)
+                plotname <- paste0(substr(plotname, 1, nchar_max_foutname), ".", tools::file_ext(plotname))
+                # alternative to file_ext: `gsub(".+[.]", "", plotname)`
+            }
+            dir.create(dirname(plotname), recursive=T, showWarnings=F)
+            
+            # get plot sizes
+            message("open plot ", plotname, " ...")
+            source("~/scripts/r/functions/myfunctions.r") 
+            pp <- plot_sizes(width_in=p$ts_width_in, asp=p$ts_asp, verbose=T)
+            if (p$plot_type == "png") {
+                png(plotname, width=pp$png_width_px, height=pp$png_height_px,
+                    pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
+            } else if (p$plot_type == "pdf") {
+                pdf(plotname, width=pp$pdf_width_in, height=pp$pdf_height_in,
+                    family=p$pdf_family, encoding=encoding, pointsize=pp$pdf_pointsize)
+            }
+
+            # set plot margins
+            mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
+            mar[4] <- 1 # decrease right margin
+            if (!add_title && !add_data_upper_xaxis_ts) mar[3] <- 1 # decrease upper margin
+            message("decrease lower margin vs lat")
+            mar[1] <- mar[1]/1.5  # decrease lower margin
+            if (add_data_right_yaxis_ts) mar[4] <- mar[2] # right same as left  
+
+            # open plot
+            message("mar = ", paste(mar, collapse=", "))
+            par(mar=mar)
+            plot(d$lat[[1]], z[[1]], t="n",
+                 xlim=xlim, ylim=ylim, 
+                 xaxt="n", yaxt="n",
+                 xlab=NA, ylab=NA)
+            axis(1, at=xat, labels=xlab)
+            axis(2, at=yat, labels=ylab, las=2)
+
+            # add time label on x-axis
+            mtext(side=1, "Latitude [°]", line=2, cex=1)
+
+            # add variable label on y-axis
+            label_line <- 2.5
+            #label_line <- 3
+            #label_line <- 3.4
+            #label_line <- 3.5
+            #label_line <- 4
+            #label_line <- 4.5
+            #label_cex <- 1
+            label_cex <- 0.9
+            #label_cex <- 0.75
+            message("\nput datas label in `label_line` = ", label_line, 
+                    " distance with `label_cex` = ", label_cex, " ...")
+            mtext(side=2, data_info$label, line=label_line, cex=label_cex)
+            
+            # add title
+            if (add_title) {
+                title <- paste0(paste(unique(areas_p), collapse=","), 
+                                " ", mode_p, " ", varname, " ", 
+                                paste(unique(seasonsp_p), collapse=","), " ", 
+                                paste(unique(froms_plot_p), collapse=","), " to ", 
+                                paste(unique(tos_plot_p), collapse=","))
+                title(title, cex.main=0.75)
+            }
+
+            # add grid
+            if (add_xgrid) {
+                message("\nadd xgrid ...")
+                abline(v=xat, col="gray", lwd=0.5)
+            }
+            if (add_ygrid) {
+                message("\nadd ygrid ...")
+                abline(h=yat, col="gray", lwd=0.5)
+            }
+
+            # add zero line
+            if (add_zeroline) {
+                message("`add_zeroline` = T --> add zeroline") 
+                abline(h=0, col="gray", lwd=0.5)
+            }
+            
+            # add data
+            for (i in seq_along(z)) {
+                lines(d$lat[[i]], z[[i]], 
+                      col=cols_p[i], lty=ltys_p[i], lwd=lwds_p[i], pch=pchs_p[i])
+            }
+
+            # add legend if wanted
+            if (T && add_legend) {
+                message("\nadd default stuff to datas vs lat legend ...")
+                le <- list()
+                if (!exists("lepos")) {
+                    if (F && suppressPackageStartupMessages(require(Hmisc))) { # adagio::maxempty works better
+                        Hmisc_z <- NULL
+                        if (add_unsmoothed) Hmisc_z <- c(Hmisc_z, unlist(z))
+                        if (add_smoothed) Hmisc_z <- c(Hmisc_z, unlist(zma))
+                        tmp <- Hmisc::largest.empty(x=unlist(d$lat), y=unlist(Hmisc_z), method="area")
+                        le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner of Hmisc result
+                        message("automatically derived Hmisc::largest.empty legend position: ", appendLF=F) 
+                    } else if (F && suppressPackageStartupMessages(require(adagio))) { # works better than Hmisc::largest.empty
+                        adagio_z <- NULL
+                        if (add_unsmoothed) adagio_z <- c(adagio_z, unlist(z))
+                        if (add_smoothed) adagio_z <- c(adagio_z, unlist(zma))
+                        tmp <- adagio::maxempty(x=unlist(d$lat), y=adagio_z, 
+                                                ax=par("usr")[1:2], ay=par("usr")[3:4])
+                        #rect(tmp$rect[1], tmp$rect[2], tmp$rect[3], tmp$rect[4])
+                        le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
+                        message("automatically derived adagio::maxempty legend position: ", appendLF=F) 
+                    } else {
+                        message("manually set legend position: ", appendLF=F)
+                        le$pos <- "bottom" 
+                        #le$pos <- "topleft" 
+                        #le$pos <- "left"
+                        #le$pos <- "bottomleft"
+                        #le$pos <- "topright"
+                        #le$pos <- "bottomright" 
+                        #le$pos <- c(tatn[1], yat[length(yat)-1])
+                        #le$pos <- c(as.numeric(as.POSIXct("2650-1-1", tz="UTC")), 13.45)
+                        #le$pos <- c(as.numeric(as.POSIXct("2650-1-1", tz="UTC")), yat[length(yat)])
+                        #le$pos <- c(as.numeric(as.POSIXct("1946-1-1", tz="UTC")), 1.3)
+                    }
+                } else { # if exists("lepos") or not
+                    le$pos <- lepos
+                } # if exists("lepos") or not
+                message(paste(le$pos, collapse=", "))
+                #le$ncol <- ceiling(length(z)/4) 
+                #le$ncol <- length(z)
+                #le$ncol <- length(z)/2
+                le$ncol <- 1
+                #le$ncol <- 2
+                #le$ncol <- length(z)
+                if (le$ncol > length(z)) stop("defined more legend columns than data") 
+                le$cex <- 1
+                #le$cex <- 0.85
+                #le$cex <- 0.7
+                #le$cex <- 0.75
+                #le$cex <- 0.66
+                #le$cex <- 0.5
+                le$text <- names_legend_p
+                le$col <- cols_p
+                le$lty <- ltys_p
+                le$lwd <- lwds_p
+                le$pch <- pchs_p
+                for (i in seq_along(z)) {
+                    if (types_p[i] == "p") {
+                        le$lty[i] <- NA
+                    } else if (types_p[i] == "l") {
+                        le$pch[i] <- NA
+                    }
+                }
+
+                # reorder reading direction from R's default top->bottom to left->right
+                if (T) {
+                    message("reorder legend from top->bottom to left->right")
+                    le <- reorder_legend(le)
+                }
+                if (T) cat(capture.output(str(le)), sep="\n")
+                if (length(le$pos) == 1) {
+                    legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
+                           pch=le$pch, col=le$col, ncol=le$ncol,
+                           x.intersp=0.2, cex=le$cex, bty="n")
+                } else if (length(le$pos) == 2) {
+                    legend(x=le$pos[1], y=le$pos[2],
+                           legend=le$text, lty=le$lty, lwd=le$lwd,
+                           pch=le$pch, col=le$col, ncol=le$ncol,
+                           x.intersp=0.2, cex=le$cex, bty="n")
+                }
+            } # if add_legend
+
+            # add box before eventual right axis data
+            box()
+
+            message("\nsave plot ", plotname, " ...")
+            dev.off()
+            if (p$plot_type == "pdf") {
+                if (T) {
+                    message("run `", p$pdf_embed_fun, "()` ...")
+                    if (p$pdf_embed_fun == "grDevices::embedFonts") {
+                        grDevices::embedFonts(plotname, outfile=plotname)
+                    } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                        extrafont::embed_fonts(plotname, outfile=plotname)
+                    }
+                } else {
+                    message("todo: sometimes pdf font embedding blurrs colors why?")
+                }
+            }
+
+        } # if (ndims_unique == 1 && dim_names == "lat")
+        # finished plot `datas` vs lat
         
         ## plot `datas` as lat vs depth vs time
         if (ndims == 3 && all(dim_names %in% c("lat", "depth", "time"))) { # e.g. moc
@@ -9397,7 +9749,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
                 mar[4] <- 1 # decrease right margin
                 if (!add_title) mar[3] <- 1 # decrease upper margin
-                if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
+                if (tlabsrt == 0) mar[1] <- mar[1]/1.5  # decrease lower margin
                 if (add_data_right_yaxis_ts_mon) mar[4] <- mar[2] # same as left  
 
                 # open plot
@@ -9409,6 +9761,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 axis(1, at=monat, labels=NA) # line
                 axis(1, at=monat, labels=monlab, line=-0.5, lwd=0, cex.axis=0.64) # labels with reduced distance to ticks
                 axis(2, at=yat_mon, labels=ylab_mon, las=2)
+            
+                # add time label on x-axis
+                #mtext(side=1, "Month", line=2, cex=1)
             
                 # add title
                 if (add_title) {
@@ -9811,9 +10166,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
                 mar[4] <- 1 # decrease right margin
                 if (!add_title) mar[3] <- 1 # decrease upper margin
-                if (tlabsrt == 0) mar[1] <- mar[1]/2  # decrease lower margin
+                if (tlabsrt == 0) mar[1] <- mar[1]/1.5  # decrease lower margin
                 if (add_data_right_yaxis_ts_an) mar[4] <- mar[2] # same as left  
-
+                
                 # open plot
                 par(mar=mar)
                 plot(dan$year[[1]], zan[[1]], t="n",
@@ -9822,6 +10177,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                      xlab=NA, ylab=NA)
                 axis(1, at=anat, labels=anlab, cex.axis=tlabcex)
                 axis(2, at=yat_an, labels=ylab_an, las=2)
+            
+                # add time label on x-axis
+                mtext(side=1, tunit, line=2, cex=1)
 
                 # add title
                 if (add_title) {
@@ -9834,7 +10192,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 # add variable label
-                mtext(side=2, data_info$label, line=3.4, cex=0.9)
+                label_line <- 3.4
+                label_cex <- 0.9
+                message("\nput datasan label in `label_line` = ", label_line, 
+                        " distance with `label_cex` = ", label_cex, " ...")
+                mtext(side=2, data_info$label, line=label_line, cex=label_cex)
 
                 # add grid
                 if (add_xgrid) {
@@ -9883,8 +10245,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # finished adding obs
                 
                 # add legend if wanted
-                if (add_legend) {
-                    message("\nadd default stuff to ", mode_p, " an legend ...")
+                if (T && add_legend) {
+                    message("\nadd default stuff to ", mode_p, " datasan legend ...")
                     le <- list()
                     le$pos <- "topleft" 
                     #le$pos <- "top"
@@ -9908,7 +10270,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             le$pch[i] <- NA
                         }
                     }
-                    # add stuf to legend here
+                    # add stufd to datasn legend here
                     if (F) {
                         message("\nadd non default stuff to ", mode_p, " an legend ...")
 

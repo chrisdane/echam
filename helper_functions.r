@@ -3,7 +3,7 @@
 # host options
 get_host <- function() {
     message("******* get_host() *******")
-    hostname <- system("hostname", intern=T)
+    hostname <- Sys.info()["nodename"] # = system("hostname", intern=T)
     if (any(sapply(c("ollie", "prod-", "fat-"), grepl, hostname))) {
         machine_tag <- "ollie"
         homepath <- "~/scripts/r"

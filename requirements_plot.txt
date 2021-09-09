@@ -1,4 +1,5 @@
 ncdf4
+fields # imageplot.setup() in ~/scripts/r/functions/image.plot.nxm.r
 # optional:
 #RColorBrewer 
 #abind

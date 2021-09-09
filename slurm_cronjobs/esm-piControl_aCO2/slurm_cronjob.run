@@ -4,9 +4,9 @@
 
 #SBATCH --job-name=aCO2
 #SBATCH --begin now+1hour
-#SBATCH --account=ab0995
+#SBATCH --account=ba1103
 #SBATCH --partition=shared
-#SBATCH --time=00:15:00
+#SBATCH --time=01:00:00
 #SBATCH --output=aCO2_%j.log
 
 set -e

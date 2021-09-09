@@ -12,15 +12,15 @@ if (length(ind) == 0) {
 }
 source(textConnection(namelist.plot.r[seq_len(ind)]))
 
-# load slurm cronjob specific awi-esm-1-1-lr_kh800 esm-piControl
+# load slurm cronjob specific awi-esm-1-1-lr_kh800 esm-piControl co2fsign
 models <- "fesom"
 prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
-names_short <- "esm_piControl_2percboth_co2fsign"
-names_legend <- "esm-piControl_2percboth_co2fsign"
+names_short <- "esm_piControl_co2fsign"
+names_legend <- "esm-piControl"
 varnames_in <- "aCO2"
 fromsf <- 2686
 # rhs of next line will be added by step 1; dont do it by hand
-tosf <- 2737
+tosf <- 2937
 new_origins <- 1
 modes <- "select"
 

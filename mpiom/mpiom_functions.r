@@ -1,60 +1,151 @@
 # r
 
-mpiom_remap2lonlat <- function(files, cdo_select="", 
-                               mode="scalar",
-                               mpiom_model_grid="GR30s.nc",
+mpiom_remap2lonlat <- function(files, cdo_select=NULL, 
+                               mpiom_model_grid, # only needed if input is non-nc
                                reg_res=c(nlon=360, nlat=180),
                                remap_method="remapbil",
-                               outpath, fout_rename_pattern, 
+                               outpath, 
+                               fout_rename_pattern=NULL,
+                               fout_rename_variable_pattern=NULL,
                                cdo=Sys.which("cdo"), 
                                convert2nc=T, verbose=T) {
     
     # todo: cdo_get_filetype() dependence from `functions` repo
-    library(stringr)
+    source("~/scripts/r/functions/myfunctions.r")
+
+    # check host
+    host <- get_host()
+    if (host$machine_tag == "mistral") {
+        hostname <- Sys.info()["nodename"] # = system("hostname", intern=T)
+        if (any(grepl("mlogin", hostname))) {
+            stop("machine is \"mistral\" but node \"", hostname, "\" is not mistralpp.\n",
+                 "--> change to mistralpp and rerun script.")
+        }
+    }
 
     # checks
-    if (missing(files) || !is.character(files)) {
-        stop("provide `files=\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\"` or\n",
-             "`files=c(\"/path/to/expid_mpiom_YYYY0101_YYYY1231.grb\", ",
-             "\"/path/to/expd_mpiom_ZZZZ10101_ZZZZ1231.nc\")`")
+    if (missing(files) ||
+        !missing(files) && !is.character(files) && !is.list(files)) {
+        stop("provide `files=\"/path/to/mpiom_YYYY.grb/.nc\"` or\n",
+             "`files=c(\"/path/to/mpiom_YYYY.grb/.nc\", \"/path/to/mpiom_ZZZZ.grb/.nc\")` for scalar variables or\n",
+             "`files=list(u=\"/path/to/mpiom_u_YYYY.grb/.nc\", v=\"/path/to/mpiom_v_YYYY.grb/.nc\")` or\n",
+             "`files=list(u=c(\"/path/to/mpiom_u_YYYY.grb/.nc\", \"/path/to/mpiom_u_ZZZZ.grb/.nc\"), ",
+             "v=c(\"/path/to/mpiom_v_YYYY.grb/.nc\", /path/to/mpiom_v_ZZZZ.grb/.nc\")` for vector variables")
     }
-    if (missing(outpath)) {
-        outpath <- dirname(files[1])
+    if (!is.character(files)) { # files is list
+        if (length(files) != 2) {
+            stop("`files` list must be of length 2 for vector variables")
+        }
+        if (!all(names(files) == c("u", "v"))) {
+            stop("names of `files` list must be \"u\" and \"v\" for vector variables")
+        }
+        if (verbose) message("provided `files` is a list with \"u\" and \"v\" entries --> ",
+                             "assume that a vector variable should be remapped")
+        variable_type <- "vector"
+    } else { # files is character
+        if (verbose) message("provided `files` is not a list with \"u\" and \"v\" entries --> ",
+                             "assume that a scalar variable should be remapped")
+        files <- list(s=files)
+        variable_type <- "scalar"
+    }
+    # from here, `files` is either `files$s` if scalar variable is wanted or (list$u, list$v) if vector variable
+        
+    if (!missing(cdo_select) && !is.null(cdo_select)) { # `cdo_select` provided
+        if (variable_type == "scalar" && length(cdo_select) != 1) {
+            stop("variable type is scalar but provided `cdo_select` is of length ", 
+                 length(cdo_select), " but should be of length 1")
+        }
+        if (variable_type == "vector" && length(cdo_select) != 2) {
+            stop("variable type is vector but provided `cdo_select` is of length ", 
+                 length(cdo_select), " but should be of length 2 (1 for u and 1 for v file)")
+        }
+        if (any(!is.character(cdo_select))) {
+            stop("some of `cdo_select` = \"", paste(cdo_select, collapse="\", \""), "\" is not of type character")
+        }
+    }
+
+    if (missing(outpath) || is.null(outpath)) {
+        if (variable_type == "scalar") outpath <- dirname(files$s[1])
+        if (variable_type == "vector") outpath <- dirname(files$u[1])
         if (verbose) {
-            message("`outpath` not given, use `dirname(files[1] = \"", 
-                    files[1], "\")` = \"", outpath, "\"")
+            message("`outpath` not given or NULL, use `dirname` of first file = \"", outpath, "\"")
         }
     } else {
         if (length(outpath) != 1) {
             stop("`outpath` needs to be of length 1 and not ", length(outpath))
         }
     }
-    if (file.access(outpath, mode=0)) { # existance?
+    if (file.access(outpath, mode=0) == -1) { # output dir not existing
         dir.create(outpath, recursive=T)
-    } else {
-        if (file.access(outpath, mode=2)) { # write permission?
+    } else { # output dir exists
+        if (file.access(outpath, mode=2) == -1) { # no write permission
             stop("no write permission in `outpath` = \"", outpath, "\"")
         }
     }
-    if (missing(fout_rename_pattern)) {
+    if (missing(fout_rename_pattern) || is.null(fout_rename_pattern)) {
         stop("provide `fout_rename_pattern` of type character")
     } else {
         if (!is.character(fout_rename_pattern)) {
             stop("provided `fout_rename_pattern` must be of type character")
         }
+        if (variable_type == "scalar") file <- basename(files$s[1])
+        if (variable_type == "vector") file <- basename(files$u[1])
+        if (!grepl(fout_rename_pattern, file)) {
+            stop("provided `fout_rename_pattern` = \"", fout_rename_pattern, 
+                 "\" does not occur in basename(files[1]) = \"", file, "\"")
+        }
     }
-    if (!any(mode == c("scalar", "vector"))) {
-        stop("mode = \"", mode, "\" not defined. must be either \"scalar\" or \"vector\"")
+    if (variable_type == "vector") {
+        if (missing(fout_rename_variable_pattern) || is.null(fout_rename_variable_pattern)) {
+            stop("variable is of type vector --> provide `fout_rename_variable_pattern` = ",
+                 "c(\"in\"=\"<pattern_to_replace>\", \"out\"=\"<replacement>\")`")
+        }
     }
-    
-    for (fi in seq_along(files)) {
+
+    # do for all input files
+    if (variable_type == "scalar") nfiles <- length(files$s)
+    if (variable_type == "vector") nfiles <- length(files$u)
+    for (fi in seq_len(nfiles)) {
         
-        if (verbose) message("\nfile ", fi, "/", length(files), ": ", files[fi])
-       
-        if (!file.exists(files[fi])) stop("file does not exist")
+        if (variable_type == "scalar") {
+            sfile <- files$s[fi]
+            if (verbose) message("\nfile ", fi, "/", nfiles, ": ", sfile)
+            if (!file.exists(sfile)) stop("sfile does not exist")
+        } else if (variable_type == "vector") {
+            ufile <- files$u[fi]
+            vfile <- files$v[fi]
+            if (verbose) message("\nfile ", fi, "/", nfiles, ": ", ufile, ", ", vfile)
+            if (!file.exists(ufile)) stop("ufile does not exist")
+            if (!file.exists(vfile)) stop("vfile does not exist")
+        }
 
         # get format of input files
-        file_type <- cdo_get_filetype(files[fi])$file_type
+        if (variable_type == "scalar") {
+            file_type <- cdo_get_filetype(sfile)$file_type
+        } else if (variable_type == "vector") {
+            file_type <- cdo_get_filetype(ufile)$file_type
+        }
+        
+        # check availability of mpiom grid file if input files are non-nc  
+        if (file_type == "non-nc") {
+            if (missing(mpiom_model_grid) || is.null(mpiom_model_grid)) stop("provide `mpiom_model_grid`")
+            if (variable_type == "scalar") {
+                if (length(mpiom_model_grid) != 1) stop("provided `mpiom_model_grid` of length ", 
+                                                        length(mpiom_model_grid), " must be of length 1")
+            } else if (variable_type == "vector") {
+                if (length(mpiom_model_grid) != 2) stop("provided `mpiom_model_grid` of length ", 
+                                                        length(mpiom_model_grid), " must be of length 2")
+            }
+            if (any(!file.exists(mpiom_model_grid))) {
+                inds <- which(!file.exists(mpiom_model_grid))
+                stop("`mpiom_model_grid[", paste(inds, collapse=","), "]` = \"", 
+                     paste(mpiom_model_grid[inds], collapse="\", \""), "\" file", 
+                     ifelse(length(inds) > 1, "s", ""), " do", 
+                     ifelse(length(inds) > 1, "", "es"), " not exist")
+            }
+        }
+
+        # decide if conversion is wanted or not
         if (!convert2nc && file_type == "non-nc") { # if conversion is not wanted but needed
             convert2nc <- T
         }
@@ -62,10 +153,14 @@ mpiom_remap2lonlat <- function(files, cdo_select="",
             convert2nc <- F 
         }
 
-        # regridding command depends if mpiom grid is GR* or TP* (see README.md")
+        # regridding command depends if mpiom grid is GR* or TP* (see README.md)
         # --> found no way of automatic decision
         # --> workaround: use cdo ngridsize
-        cmd <- paste0(cdo, " ngridpoints ", files[fi])
+        if (variable_type == "scalar") {
+            cmd <- paste0(cdo, " ngridpoints ", sfile)
+        } else if (variable_type == "vector") {
+            cmd <- paste0(cdo, " ngridpoints ", ufile)
+        }
         message("run `", cmd, "` ...")
         ngridpoints <- system(cmd, intern=T)[1]
         options(warn=2) # stop on warnings
@@ -84,13 +179,44 @@ mpiom_remap2lonlat <- function(files, cdo_select="",
             stop("mpiom grid with `cdo ngridpoints` = ", ngridpoints, " not implemented yet")
         }
         message("--> ngridpoints = ", ngridpoints, " --> mpiom grid type = ", input_grid_type)
-
+       
+        # get output filename based on input
+        if (variable_type == "scalar") {
+            fout <- basename(sfile)
+        } else if (variable_type == "vector") {
+            fout <- basename(ufile)
+        }
+        if (verbose) message("fout = \"", fout, "\"")
+        cdo_select_fname <- "" # default: no additional cdo selection option in result filename
+        if (!is.null(cdo_select)) {
+            if (variable_type == "scalar") {
+                cdo_select_fname <- gsub("[[:punct:]]", "_", cdo_select) # e.g. "select,code=2" --> "select_code_2"
+            } else if (variable_type == "vector") {
+                cdo_select_fname <- gsub("[[:punct:]]", "_", cdo_select[1])
+                if (cdo_select[1] != cdo_select[2]) {
+                    cdo_select_fname <- paste0("u_", cdo_select_fname, "_",
+                                               "v_", gsub("[[:punct:]]", "_", cdo_select[2]))
+                }
+            }
+            cdo_select_fname <- paste0("_", cdo_select_fname)
+        } # cdo_select or not
+        replacement <- paste0(fout_rename_pattern, cdo_select_fname, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"])
+        fout <- sub(fout_rename_pattern, replacement, fout)
+        if (verbose) message("replace `fout_rename_pattern` = \"", fout_rename_pattern, 
+                             "\" with \"", replacement, "\"\n",
+                             "--> `fout` = \"", fout, "\" ...")
+        if (variable_type == "vector") {
+            fout <- sub(fout_rename_variable_pattern["in"], fout_rename_variable_pattern["out"], fout)
+            if (verbose) message("replace `fout_rename_variable_pattern[\"in\"]` = \"", 
+                                 fout_rename_variable_pattern["in"], 
+                                 "\" with `fout_rename_variable_pattern[\"out\"]` = \"", 
+                                 fout_rename_variable_pattern["out"], "\"\n",
+                                 "--> `fout` = \"", fout, "\" ...")
+        }
+        fout <- paste0(outpath, "/", fout) # add path to fout
+        
         # construct regridding cmd 
         cmd <- paste0(cdo, " -P 8")
-        
-        # output filename
-        #fout <- paste0(outpath, "/", tools::file_path_sans_ext(basename(files[fi])))
-        fout <- basename(files[fi])
         
         # add nc conversion 
         if (convert2nc) { # input is grb
@@ -98,88 +224,76 @@ mpiom_remap2lonlat <- function(files, cdo_select="",
             if (tools::file_ext(fout) != "nc") fout <- paste0(fout, ".nc")
         }
 
+        # prepare input file strings for cdo command
+        # - default: simply the filenames
+        # - if `cdo_select` is provided: filenames with cdo selection options as prefix
+        if (variable_type == "scalar") {
+            sin <- sfile
+            if (!is.null(cdo_select)) sin <- paste0(cdo_select, " ", sin)
+        } else if (variable_type == "vector") {
+            uin <- ufile
+            vin <- vfile
+            if (!is.null(cdo_select)) {
+                uin <- paste0(cdo_select[1], " ", uin)
+                vin <- paste0(cdo_select[2], " ", vin)
+            }
+        }
+
         # add remapping (see README.md")
         if (input_grid_type == "GR") {
             if (file_type == "non-nc") {
-                if (mode == "scalar") {
+                if (variable_type == "scalar") {
                     cmd <- paste0(cmd,
                                   " -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
                                   " -setgrid,", mpiom_model_grid, 
-                                  " -sethalo,-1,-1")
-                } else if (mode == "vector") {
+                                  " -sethalo,-1,-1 ", sin)
+                } else if (variable_type == "vector") {
                     stop("not yet")
                 } 
             } else if (file_type == "nc") {
-                if (mode == "scalar") {
+                if (variable_type == "scalar") {
                     cmd <- paste0(cmd,
                                   " -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
-                                  " -sethalo,-1,-1")
-                } else if (mode == "vector") {
-                    stop("not yet")
+                                  " -sethalo,-1,-1 ", sin)
+                } else if (variable_type == "vector") {
+                    cmd <- paste0(cmd,
+                                  " -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
+                                  " -sethalo,-1,-1 -mrotuvb ", uin, " ", vin)
                 }
             }
         } else if (input_grid_type == "TP") {
             if (file_type == "non-nc") {
-                if (mode == "scalar") {
+                if (variable_type == "scalar") {
                     stop("not yet")
-                } else if (mode == "vector") {
+                } else if (variable_type == "vector") {
                     stop("not yet")
                 } 
             } else if (file_type == "nc") {
-                if (mode == "scalar") {
+                if (variable_type == "scalar") {
                     cmd <- paste0(cmd,
                                   " -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
-                                  " -selindexbox,2,", input_res["nlon"]-1, ",3,", input_res["nlat"])
-                } else if (mode == "vector") {
+                                  " -selindexbox,2,", input_res["nlon"]-1, ",3,", input_res["nlat"], " ", sin)
+                } else if (variable_type == "vector") {
                     cmd <- paste0(cmd,
                                   " -", remap_method, ",r", reg_res["nlon"], "x", reg_res["nlat"], 
                                   " -selindexbox,2,", input_res["nlon"]-1, ",3,", input_res["nlat"],
-                                  " -mrotuvb")
+                                  " -mrotuvb ", uin, " ", vin)
                 }
             }
         } # which input_grid_type GR or TP
 
-        # add variable,depth,etc. selection 
-        if (cdo_select != "") {
-            if (!grepl("select", cdo_select)) {
-                stop("provided `cdo_select` = \"", cdo_select, "\" does not contain \"select\"")
-            }
-            if (convert2nc) {
-                if (!grepl("code", cdo_select)) {
-                    stop("input file needs to get converted to nc but provided `cdo_select` = \"", 
-                         cdo_select, "\" does not contain \"code\"")
-                }
-            } else {
-                if (!grepl("name", cdo_select)) {
-                    stop("provided `cdo_select` = \"", cdo_select, "\" does not contain \"name\"")
-                }
-            }
-            cmd <- paste0(cmd, " -", cdo_select)
-            tmp <- stringr::str_replace_all(cdo_select, "[[:punct:]]", "_")
-            tmp <- stringr::str_replace_all(tmp, "=", "_")
-            fout <- paste0(fout, "_", tmp)
-            # edit output filename
-            fout <- sub(fout_rename_pattern, 
-                        paste0(fout_rename_pattern, "_", tmp, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"]),
-                        fout)
-        } else {
-            # edit output filename
-            fout <- sub(fout_rename_pattern, 
-                        paste0(fout_rename_pattern, "_", remap_method, "_r", reg_res["nlon"], "x", reg_res["nlat"]),
-                        fout)
-        } # cdo_select or not
-
-        # run command with final output filename
-        fout <- paste0(outpath, "/", fout)
-        cmd <- paste0(cmd, " ", files[fi], " ", fout)
+        # add fout
+        cmd <- paste0(cmd, " ", fout)
+        
+        # run command
         if (verbose) message("run `", cmd, "` ...")
-        #cdo -P 4 -t mpiom1 -f nc copy -remapcon2,r360x180 -setgrid,../GR30.nc -select,code=183 Hol-Tx10_mpiom_32900101_32901231.grb zmld_curvilinear_setgrid_remapcon2_r360x180.nc 
+        # e.g. `cdo -P 4 -t mpiom1 -f nc copy -remapcon2,r360x180 -setgrid,../GR30.nc -select,code=183 Hol-Tx10_mpiom_32900101_32901231.grb zmld_curvilinear_setgrid_remapcon2_r360x180.nc`
         system(cmd)
         
         # fix negative values due to interpolation
-        if (cdo_select != "") {
+        if (!is.null(cdo_select)) {
             if (any(cdo_select == c("select,code=183", "select,code=15"))) {
-                message("special: set negative values to zero!")
+                message("special: set negative values to zero")
                 if (cdo_select == "select,code=183") {
                     cmd <- paste0("ncap2 -O -s \"where(zmld<0) zmld=0\" ", fout, " ", fout)
                 } else if (cdo_select == "select,code=15") {

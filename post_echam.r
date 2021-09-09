@@ -22,6 +22,15 @@ source(script_helper_functions) # get_host()
 host <- get_host()
 host$repopath <- repopath
 
+# host check
+if (T && host$machine_tag == "mistral") {
+    hostname <- Sys.info()["nodename"] # = system("hostname", intern=T)
+    if (any(grepl("mlogin", hostname))) {
+        stop("machine is \"mistral\" but node \"", hostname, 
+             "\" is not mistralpp.\n--> change to mistralpp and rerun script.")
+    }
+}
+
 # load necessary libraries
 requirements <- readLines(paste0(host$repopath, "/requirements_post.txt"))
 for (r in requirements) if (substr(r, 1, 1) != "#") library(r, character.only=T)
@@ -2520,9 +2529,9 @@ for (i in 1:nsettings) {
     if (models[i] == "mpiom1") {
         
         # run mpiom_remap2lonlat() function on timmean output
-        if (any(grepl("timmean", modes[[i]]))) {
-            message("\n`models[", i, "]` = \"", models[i], "\" and `modes[[", i, "]]` = ",
-                    "\"", paste(modes[[i]], collapse=", "), "\" --> try to run mpiom_remap2lonlat() ...")
+        if (mpiom1_remap) {
+            message("\n`models[", i, "]` = \"", models[i], 
+                    "\" and `mpiom1_remap` = T --> try to run mpiom_remap2lonlat() ...")
             
             cmd <- "mpiom_remap2lonlat(files=fout, cdo=cdo"
             message("check if `mpiom_remap2lonlat_arg_list[[", i, "]]` is provided ... ", appendLF=F)
@@ -2545,7 +2554,7 @@ for (i in 1:nsettings) {
             message("run `", cmd, "` ...")
             eval(parse(text=cmd))
 
-        } # interp result if any(grepl("timmean", modes[[i]])))
+        } # interp result if mpiom1_remap
 
         if (any(fvarnames[i] == c("amoc", "gmoc"))) { # run mpiom_moc_make_bottom_topo()
             message("\n`models[", i, "]` = \"", models[i], "\" and `fvarnames[", i, "]` = ",
@@ -2613,7 +2622,7 @@ for (i in seq_len(nsettings)) {
 }
 
 if (!interactive()) {
-    message("grep this log file for lines that begin with \"error\": grep -n \"^error\" <logfile>", 
+    message("grep this log file for lines that begin with \"error\": grep -in error <logfile>", 
             "\nbe happy if nothing is returned\n")
 }
 

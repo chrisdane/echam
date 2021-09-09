@@ -95,7 +95,7 @@ add_zeroline <- T
 add_unsmoothed <- F
 add_smoothed <- T
 add_sd <- F
-add_linear_trend <- F
+add_linear_trend <- T
 add_nonlinear_trend <- F
 add_1to1_line <- T
 add_scatter_density <- F
@@ -183,29 +183,41 @@ suppressWarnings(rm(list=objs))
 if (F) { # awi-esm-1-1-lr_kh800 piControl og
     #models <- "echam6"
     models <- "fesom"
-    #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og"
-    prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_regular_dx0.250_dy0.250"
-    names_short <- "awicm1-recom_pi_og"
+    prefixes <- "awi-esm-1-1-lr_kh800_piControl_og"
+    #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_regular_dx0.250_dy0.250"
+    names_short <- "piControl_og"
     names_legend <- "piControl"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_regular_dx0.250_dy0.250_minus_woa2018_dx0.250_dy0.250_t_an_0m"
     #names_short <- "piControl_minus_woa18"
     #names_legend <- "piControl minus WOA18"
+    #varnames_in <- "temp2"
+    #varnames_in <- "co2_flx_ocean"
+    #echam6_global_setNA <- "land"
+    #varnames_in <- "co2_flx_land"
+    #addland <- F
     #varnames_in <- "thetaoga"
     #varnames_in <- "tos"
     #varnames_in <- "thetao"
     #depths <- "0-5900"
-    varnames_in <- "bgc03"
-    depths <- "0"
-    #fromsf <- 1950
-    fromsf <- 2586
-    tosf <- 2685
+    #varnames_in <- "bgc03"
+    #depths <- "0"
+    #varnames_in <- "CO2f"
+    varnames_in <- "NPP"
+    #seasonsf <- "annual"
+    fromsf <- 1950 # chunk 1 start: 1950
+    #fromsf <- 2586 # chunk 2 last 100 years
+    #fromsf <- 2666
+    fromsf <- 2676
+    tosf <- 2685 # chunk 2 end: 2685
     #new_origins <- 1
+    new_origins <- fromsf - 1950 + 1 # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
     #remove_mean_froms <- c(1, 1)
     #remove_mean_tos <- remove_mean_froms
     #seasonsf <- "annual"
     #modes <- "select"
-    modes <- "timmean"
+    #modes <- "timmean"
     #modes <- "fldmean"
+    modes <- "fldint"
     #modes <- "depth"
 
 } else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
@@ -245,6 +257,7 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
     tosf <- 2704
     #tosf <- 2760
     new_origins <- 1
+    #new_origins <- fromsf - 2686 + 1 # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
     #fromsp <- 700
     #remove_mean_froms <- c(1, 1)
     #remove_mean_tos <- remove_mean_froms
@@ -255,15 +268,23 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
     #modes <- "fldint"
     #modes <- "depth"
 
-} else if (T) { # awi-esm-1-1-lr_kh800 historical
-    models <- "fesom"
+} else if (F) { # awi-esm-1-1-lr_kh800 historical
+    models <- "echam6"
+    #models <- "fesom"
     prefixes <- "awi-esm-1-1-lr_kh800_historical"
     names_short <- "awi-esm-1-1-lr_kh800_historical"
     names_legend <- "historical"
-    varnames_in <- "tos"
-    fromsf <- 1850
-    tosf <- 1901
-    modes <- "fldmean"
+    varnames_in <- "co2_flx_ocean"
+    echam6_global_setNA <- "land"
+    addland <- F
+    #varnames_in <- "co2_flx_land"
+    #varnames_in <- "tos"
+    #fromsf <- 1850
+    fromsf <- 1887
+    tosf <- 1906
+    modes <- "timmean"
+    #modes <- "fldmean"
+    #modes <- "fldint"
 
 } else if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "historical_echam6_echammon_awi-esm-1-1-lr"
@@ -517,9 +538,9 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
     names_legend <- c("restart fesom", "restart all")
     varnames_in <- rep("aCO2", t=2)
     fromsf <- c(2686, 2686)
-    tosf <- c(2737, 2691)
+    tosf <- c(2737, 2702)
     new_origins <- c(1, 1)
-    tosp <- c(6, 6)
+    tosp <- c(17, 17)
     modes <- rep("select", t=2)
 
 } else if (F) { # awi-esm-1-1-lr vs awi-esm-1-1_kh800
@@ -543,7 +564,7 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
     #varnames_in <- rep("thetaoga", t=2)
     fromsf <- c(2675, 1850)
     tosf <- c(2685, 1862)
-    new_origins <- c(1839, NA)
+    new_origins <- c(1839, NA) # last 11 years
     modes <- rep("fldmean", t=2)
 
 } else if (F) { # awi-esm-1-1-lr 1pct 4CO2
@@ -588,6 +609,19 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2], " ", season, " ", from, "-", to)),
                                           list(season=seasonsp[4], from=fromsp[2], to=tosp[2]))))
     }
+
+} else if (F) { # mpi-esm vs awi* mlds semmler et al.
+    host$workpath <- "/work/ab0246/a270073"
+    models <- rep("fesom_vs_mpiom1", t=2)
+    addland <- F
+    prefixes <- c("awi-esm-1-1-lr_minus_mpi-esm1-2-lr_piControl_remapbil_r1440x720_conv180",
+                  "awi-cm-1-1-mr_minus_mpi-esm1-2-hr_piControl_remapbil_r1440x720_conv180")
+    names_short <- c("AWI_minus_MPI_LR", "AWI_minus_MPI_HR")
+    names_legend <- c("AWI minus MPI (piControl LR)", "AWI minus MPI (piControl HR)")
+    fromsf <- rep(1910, t=2)
+    tosf <- rep(1930, t=2)
+    varnames_in <- rep("omldamax", t=2)
+    modes <- rep("timmean_monmax", t=2)
 
 } else if (F) { # Hol-T with vs without orbital acceleration
     #prefixes <- c("cosmos-aso-wiso_Hol-T", "cosmos-aso-wiso_Hol-Tx10")
@@ -885,6 +919,37 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
 
 # =====================================
 # 3 settings
+} else if (F) { # awicm1-recom piControl vs historical vs esm-piControl
+    models <- rep("echam6", t=3)
+    #models <- rep("fesom", t=3)
+    prefixes <- c(#"awi-esm-1-1-lr_kh800_piControl_og",
+                  "awi-esm-1-1-lr_kh800_piControl",
+                  "awi-esm-1-1-lr_kh800_historical",
+                  "awi-esm-1-1-lr_kh800_esm-piControl_restartall")
+    names_short <- c("piControl", "historical", "esm-piControl")
+    names_legend <- names_short
+    #varnames_in <- rep("temp2", t=3)
+    varnames_in <- rep("co2_flx_ocean", t=3)
+    addland <- F
+    echam6_global_setNA <- "land"
+    #varnames_in <- rep("co2_flx_land", t=3)
+    #echam6_global_setNA <- "ocean"
+    #addland <- F
+    #varnames_in <- rep("tos", t=3)
+    #varnames_in <- rep("aCO2", t=3)
+    #fromsf <- c(1950, 1850, 2686)
+    fromsf <- c(2806, 1967, 2778)
+    #tosf <- c(2685, 1906, 2702)
+    tosf <- c(2825, 1986, 2797)
+    #new_origins <- c(1114, NA, 1850) # piControl before 1850, esm-piControl from 1850
+    new_origins <- c(1850, NA, 1850) # piControl 1850, esm-piControl from 1850
+    #fromsp <- c(1750, NA, NA)
+    #fromsp <- c(1800, NA, NA)
+    #modes <- rep("select", t=3)
+    modes <- rep("timmean", t=3)
+    #modes <- rep("fldmean", t=3)
+    #modes <- rep("fldint", t=3)
+
 } else if (F) { # esm-piControl awicm1-recom
     models <- rep("echam6", t=3)
     #models <- "fesom"
@@ -1119,6 +1184,49 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
 
 # =====================================
 # 4 settings
+} else if (T) { # mpi-esm vs awi* mlds semmler et al.
+    host$workpath <- "/work/ab0246/a270073"
+    models <- rep("fesom_vs_mpiom1", t=4)
+    prefixes <- c("awi-esm-1-1-lr_minus_mpi-esm1-2-lr_piControl_remapbil_r1440x720_conv180",
+                  "awi-cm-1-1-mr_minus_mpi-esm1-2-hr_piControl_remapbil_r1440x720_conv180",
+                  "awi-esm-1-1-lr_minus_mpi-esm1-2-lr_1percCO2_remapbil_r1440x720_conv180",
+                  "awi-cm-1-1-mr_minus_mpi-esm1-2-hr_1percCO2_remapbil_r1440x720_conv180")
+    names_short <- c("AWI-MPI_PI_LR", "AWI-MPI_PI_HR", "AWI-MPI_1pcnt_LR", "AWI-MPI_1pcnt_HR")
+    names_legend <- c("AWI-MPI PI LR", "AWI-MPI PI HR", "AWI-MPI 1% LR", "AWI-MPI 1% HR")
+    cols <- c(1, 2, 1, 2)
+    ltys <- c(1, 1, 2, 2)
+    varnames_in <- rep("omldamax", t=4)
+    fromsf <- rep(1910, t=4)
+    tosf <- rep(1930, t=4)
+    modes <- rep("zonmean_timmean_monmax", t=4)
+
+} else if (F) { # awicm1-recom piControl vs historical vs esm-piControl
+    models <- rep("echam6", t=4)
+    #models <- rep("fesom", t=4)
+    prefixes <- c("awi-esm-1-1-lr_kh800_piControl_og",
+                  "awi-esm-1-1-lr_kh800_piControl",
+                  "awi-esm-1-1-lr_kh800_historical",
+                  "awi-esm-1-1-lr_kh800_esm-piControl_restartall")
+    names_short <- c("piControl_og", "piControl", "historical", "esm-piControl")
+    names_legend <- c("piControl-spinup", "piControl", "historical", "esm-piControl")
+    ltys <- c(2, 1, 1, 1)
+    cols <- c(1, 1, 2, 3)
+    #varnames_in <- rep("temp2", t=4)
+    varnames_in <- rep("co2_flx_ocean", t=4)
+    #varnames_in <- rep("co2_flx_land", t=4)
+    #n_mas <- rep(60, t=4)
+    #varnames_in <- rep("tos", t=4)
+    #varnames_in <- rep("aCO2", t=4)
+    fromsf <- c(1950, 2686, 1850, 2686)
+    #tosf <- c(2685, 2822, 1986, 2796)
+    tosf <- c(2685, 2824, 1986, 2796)
+    new_origins <- c(1114, 1850, NA, 1850) # pi before 1850, esm-piControl from 1850
+    fromsp <- c(1800, NA, NA, NA)
+    #modes <- rep("select", t=4)
+    #modes <- rep("timmean", t=4)
+    #modes <- rep("fldmean", t=4)
+    modes <- rep("fldint", t=4)
+
 } else if (F) { # awi-esm-1-1-lr deck
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
