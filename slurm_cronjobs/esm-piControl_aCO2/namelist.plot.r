@@ -18,9 +18,10 @@ prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
 names_short <- "esm_piControl_co2fsign"
 names_legend <- "esm-piControl"
 varnames_in <- "aCO2"
+add_linear_trend <- F
 fromsf <- 2686
 # rhs of next line will be added by step 1; dont do it by hand
-tosf <- 2937
+tosf <- 2939
 new_origins <- 1
 modes <- "select"
 

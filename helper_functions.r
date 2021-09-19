@@ -1,7 +1,7 @@
 # load and/or define helper functions for echam repo
 
 # host options
-get_host <- function() {
+get_host <- function(verbose=F) {
     message("******* get_host() *******")
     hostname <- Sys.info()["nodename"] # = system("hostname", intern=T)
     if (any(sapply(c("ollie", "prod-", "fat-"), grepl, hostname))) {
@@ -32,11 +32,13 @@ get_host <- function() {
         message("hostname \"", hostname, "\" unknown; Sys.info():")
         print(Sys.info())
     }
-    message("hostname    = \"", hostname, "\"\n",
-            "machine_tag = \"", machine_tag, "\"\n",
-            "homepath    = \"", homepath, "\"\n",
-            "workpath    = \"", workpath, "\"\n",
-            "******* get_host() ******")
+    if (verbose) {
+        message("hostname    = \"", hostname, "\"\n",
+                "machine_tag = \"", machine_tag, "\"\n",
+                "homepath    = \"", homepath, "\"\n",
+                "workpath    = \"", workpath, "\"\n",
+                "******* get_host() ******")
+    }
     return(host=list(hostname=hostname, 
                      hostname_f=system("hostname -f", intern=T), 
                      machine_tag=machine_tag, 

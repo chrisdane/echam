@@ -19,7 +19,7 @@ message("\nload ", script_helper_functions, " ...")
 source(script_helper_functions) # get_host()
 
 # get host options
-host <- get_host()
+host <- get_host(verbose=T)
 host$repopath <- repopath
 
 # host check
@@ -99,7 +99,7 @@ exist_checks <- c("datapaths", "fpatterns", "fvarnames",
                   "models", "froms", "tos", "modes")
 if (!all(sapply(exist_checks, exists))) {
     missing_vars <- !sapply(exist_checks, exists)
-    stop("\nyou have to define the variable", 
+    stop("\nmust provide variable", 
          ifelse(length(which(missing_vars)) > 1, "s", ""),
          " `", paste0(names(missing_vars)[missing_vars], collapse="`, `"), "`")
 }
@@ -137,6 +137,18 @@ if (any(grepl(" ", names(modes)))) { # replace space " " by "_" in mode names
             paste(paste0("   ", names(modes)[inds]), collapse="\n"))
 }
 #if (!exists("ftypes")) ftypes <- rep("f", t=nsettings)
+if (!exists("codes_files")) {
+    codes_files <- rep(NA, t=nsettings)
+} else { # codes_files was provided
+    if (length(codes_files) != nsettings) {
+        stop("provided `code_files` is of length ", length(codes_files), " but nsettings = ", nsettings)
+    }
+    if (any(!file.exists(codes_files))) {
+        inds <- which(!file.exists(codes_files))
+        stop("provided `codes_files`\n", paste(codes_files[inds], collapse="\n"), "\n",
+             ifelse(length(inds) > 1, "do", "does"), " not exist")
+    }
+}
 if (!exists("prefixes")) prefixes <- rep(NA, t=nsettings)
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
 if (!exists("areas_out")) {
@@ -234,7 +246,9 @@ if (any(!is.na(sellevels))) {
             levs <- sellevels[i]
             if (is.character(levs)) {
                 levs <- strsplit(levs, ",")[[1]]
+                options(warn=2) # stop on warnings
                 levs <- as.numeric(levs) # error if not successful
+                options(warn=0) # back to default
             }
             if (length(levs) == 1) {
                 lev_fnames[i] <- paste0("_sellevel_", levs)
@@ -252,7 +266,9 @@ if (any(!is.na(sellevsidx))) {
             levs <- sellevsidx[i]
             if (is.character(levs)) {
                 levs <- strsplit(levs, ",")[[1]]
+                options(warn=2) # stop on warnings
                 levs <- as.numeric(levs) # error if not successful
+                options(warn=0) # back to default
             }
             if (length(levs) == 1) {
                 lev_fnames[i] <- paste0("_sellevidx_", levs)
@@ -358,6 +374,14 @@ if (!exists("wiso_paramater_tables")) wiso_paramater_tables <- rep(NA, t=nsettin
 if (any(models == "mpiom1")) {
     message("\nsome of provided `models` are \"mpiom1\" --> load mpiom/mpiom_functions.r ...")
     source("mpiom/mpiom_functions.r")
+    if (length(mpiom1_remap) != nsettings) { 
+        if (length(mpiom1_remap) == 1) { # repeat for all settings
+            mpiom1_remap <- rep(mpiom1_remap, t=nsettings)
+        } else {
+            stop("`mpiom1_remap` is of length ", length(mpiom1_remap), " but nsettings = ", 
+                 nsettings, ". dont know how to proceed")
+        }
+    }
 }
 
 # special filename patterns
@@ -500,8 +524,11 @@ for (i in 1:nsettings) {
             datapath <- datapaths[i]
         } # if user provided "<...>" strings in datapaths
         
+        warn <- options()$warn
+        options(warn=0) # dont stop on warning since datapath may not exist for `cdo_known_cmds`
         datapath <- normalizePath(datapath)
-        
+        options(warn=warn) # restore
+
         # replace potential "<...>" strings in `fpatterns[i]`
         message("\ncheck `fpatterns[", i, "]` =\n   \"", fpatterns[i], "\"\nfor \"<...>\" patterns to replace ...")
         sub_list <- NULL # default
@@ -977,24 +1004,41 @@ for (i in 1:nsettings) {
         cdoconvert <- "" # default: no conversion
         if (convert_to_nc) {
 
-            ## try to apply paramter tables for conversion
-            # try 1/2: check if there is a "<filename>.codes" file in data dir
-            codes_file <- list.files(datapath, pattern=paste0(files[1], ".codes"), full.names=T)
-            if (length(codes_file) == 1) { # use found code file
-                message("--> found and use .codes file = \"", codes_file, "\" ...")
-                cdoconvert <- paste0(cdoconvert, " -t ", codes_file)
-            # try 2/2: use default parameter code table name if available for current model
-            } else {
-                if (any(models[i] == c("echam4", "echam5", "echam6", "mpiom1", 
-                                       "ecmwf", "remo", "cosmo002", "cosmo201", 
-                                       "cosmo202", "cosmo203", "cosmo205", "cosmo250"))) {
-                    message("--> did not find .codes file --> use default parameter code table for model \"", models[i], "\" ...")
-                    cdoconvert <- paste0(cdoconvert, " -t ", models[i])
+            # try to apply paramter tables for grb->nc conversion
+            message("\ngrb->nc conversion necessary --> try to determine codes file ...")
+
+            if (!is.na(codes_files[i])) {
+                message("--> use provided `codes_files[", i, "]` = \"", codes_files[i], "\"")
+                cdoconvert <- paste0(cdoconvert, " -t ", codes_files[i])
+
+            } else if (is.na(codes_files[i])) {
+                
+                message("--> `codes_files[", i, "]` is NA --> try to find one with file pattern \"",
+                        tools::file_path_sans_ext(files[1]), ".codes\" ...")
+                # try 1/2: check if there is a "<filename>.codes" file in data dir
+                codes_filesi <- list.files(datapath, pattern=paste0(tools::file_path_sans_ext(files[1]), ".codes"), full.names=T)
+                if (length(codes_filesi) == 1) { # use found code file
+                    message("--> found 1 .codes file = \"", codes_filesi, "\" ...")
+                    cdoconvert <- paste0(cdoconvert, " -t ", codes_filesi)
+                } else if (length(codes_filesi) > 1) {
+                    stop("found ", length(codes_filesi), " .codes files:\n",
+                         paste(codes_filesi, collapse="\n"))
+                } else if (length(codes_filesi) == 0) { # no .codes file found
+                    # try 2/2: use default parameter code table name if available for current model
+                    message("--> not found --> check if cdo default parameter code table for model \"", 
+                            models[i], "\" exists (check `cdo -h`) ...")
+                    if (any(models[i] == c("echam4", "echam5", "echam6", "mpiom1", 
+                                           "ecmwf", "remo", "cosmo002", "cosmo201", 
+                                           "cosmo202", "cosmo203", "cosmo205", "cosmo250"))) {
+                        message("--> yes --> use it as partab")
+                        cdoconvert <- paste0(cdoconvert, " -t ", models[i])
+                    } else {
+                        message("--> no --> cannot add any partab to grb->nc conversion cmd")
+                    }
                 }
-            }
+            } # if `codes_files` was provided or not
             cdoconvert <- paste0(cdoconvert, " -f nc")
         } # convert if wanted and input is grb
-       
 
         # run special functions instead of the default process or any entry of `cdo_known_cmds`
         if (F) { # set conditions here
@@ -1613,7 +1657,8 @@ for (i in 1:nsettings) {
                         }
                         cmd_source <- paste0(". ", scriptname)
                         message("run `", cmd_source, "`")
-                        message("this may take some time for ", nfiles_per_chunk, " files ...")
+                        message("this may take some time for ", nfiles_per_chunk, " file",
+                                ifelse(nfiles_per_chunk > 1, "s", ""), " ...")
                         #stop("asd")
 
                         # run command if cdo selection (and possible calculation) result does not exist already
@@ -2380,7 +2425,8 @@ for (i in 1:nsettings) {
                                 ticcmd <- toccmd <- NULL
                             } else {
                                 message("via `", cmd_source, "`")
-                                message("this may take some time for ", nfiles_per_chunk, " files ...")
+                                message("this may take some time for ", nfiles_per_chunk, " file",
+                                        ifelse(nfiles_per_chunk > 1, "s", ""), " ...")
                                 ticcmd <- Sys.time()
                                 system(cmd_source)
                                 toccmd <- Sys.time()
@@ -2528,33 +2574,36 @@ for (i in 1:nsettings) {
     # run special functions in the end    
     if (models[i] == "mpiom1") {
         
-        # run mpiom_remap2lonlat() function on timmean output
-        if (mpiom1_remap) {
+        # run mpiom1_remap2lonlat() function on timmean output
+        if (mpiom1_remap[i]) {
             message("\n`models[", i, "]` = \"", models[i], 
-                    "\" and `mpiom1_remap` = T --> try to run mpiom_remap2lonlat() ...")
-            
-            cmd <- "mpiom_remap2lonlat(files=fout, cdo=cdo"
-            message("check if `mpiom_remap2lonlat_arg_list[[", i, "]]` is provided ... ", appendLF=F)
-            if (exists("mpiom_remap2lonlat_arg_list")) {
-                if (!is.null(mpiom_remap2lonlat_arg_list[[i]])) {
-                    message("yes! --> use its components ...")
-                    for (argi in seq_along(mpiom_remap2lonlat_arg_list[[i]])) {
+                    "\" and `mpiom1_remap` = T --> run `mpiom1_remap2lonlat()` ...")
+            cmd <- "mpiom1_remap2lonlat(files=fout, cdo=cdo"
+            if (exists("mpiom1_remap2lonlat_arg_list")) {
+                if (!is.null(mpiom1_remap2lonlat_arg_list[[i]])) {
+                    message("--> use provided `mpiom1_remap2lonlat_arg_list[[", i, "]]`:")
+                    cat(capture.output(str(mpiom1_remap2lonlat_arg_list[[i]])), sep="\n")
+                    for (argi in seq_along(mpiom1_remap2lonlat_arg_list[[i]])) {
                         cmd <- paste0(cmd, ", ", 
-                                      names(mpiom_remap2lonlat_arg_list[[i]])[argi], 
-                                      "=mpiom_remap2lonlat_arg_list[[", i, "]]$",
-                                      names(mpiom_remap2lonlat_arg_list[[i]])[argi])
+                                      names(mpiom1_remap2lonlat_arg_list[[i]])[argi], 
+                                      "=mpiom1_remap2lonlat_arg_list[[", i, "]]$",
+                                      names(mpiom1_remap2lonlat_arg_list[[i]])[argi])
                     }
                 } else {
-                    message("yes! but mpiom_remap2lonlat_arg_list[[", i, "]] is empty")
+                    message("--> provided `mpiom1_remap2lonlat_arg_list[[", i, "]]` is NULL --> use defaults")
                 }
             } else {
-                message("no! --> use defaults")
+                message("--> `mpiom1_remap2lonlat_arg_list` not provided --> use defaults")
             }
             cmd <- paste0(cmd, ")")
             message("run `", cmd, "` ...")
             eval(parse(text=cmd))
 
-        } # interp result if mpiom1_remap
+        } else {
+            message("\n`models[", i, "]` = \"", models[i], 
+                    "\" but `mpiom1_remap` = F --> do not run `mpiom1_remap2lonlat()` ...")
+
+        } # if mpiom1_remap[i] or not
 
         if (any(fvarnames[i] == c("amoc", "gmoc"))) { # run mpiom_moc_make_bottom_topo()
             message("\n`models[", i, "]` = \"", models[i], "\" and `fvarnames[", i, "]` = ",

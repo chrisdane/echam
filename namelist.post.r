@@ -26,6 +26,7 @@ mpiom1_remap <- T
 # cdo commands for some variables
 cdo_known_cmds <- list("psl"=list(cmd=c("<cdo> merge <aps> <geosp> <t>",
                                         "<cdo> sealevelpressure")),
+                       "hvel"=list(cmd=c("<cdo> expr,'hvel=sqrt(uo*uo + vo*vo)' <uvo>")),
                        #"toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
                        "toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -enssum <rsdt> -mulc,-1.0 <rsut> -mulc,-1.0 <rlut>"),
                        "quv_direction"=list(cmd=c("<cdo> -setname,quv_direction -divc,3.141593 -mulc,180 -atan2 <qv> <qu>",
@@ -124,22 +125,24 @@ if (F) { # old hist
     codes <- 167
     modes <- "fldmean"
 
-} else if (T) { # cmip6
+} else if (F) { # cmip6 deck
     host$workpath <- "/work/ab0246/a270073"
     #models <- "echam6"
-    models <- "mpiom1"
+    models <- "jsbach"
+    #models <- "mpiom1"
     #models <- "fesom"
     # awi-cm-1-1-lr
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/PI-CTRL_nodynveg2/outdata/echam"
     #datapaths <- "/work/ab0995/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/PI-CTRL_nodynveg2/outdata/echam"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/historical/outdata/echam"
+    datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/historical/outdata/jsbach"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/1percCO2/outdata/echam"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/4CO2/outdata/echam"
     # awi-esm-1-1-lr
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam" # 1543:1941
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/outdata/fesom"
+    #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/outdata/jsbach"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/fesom"
-    #cdoshifttimes <- "-1dt"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/day/<fvarnames>/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Amon/<fvarnames>/gn/v20200212"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Omon/<fvarnames>/gn/v20200212"
@@ -171,6 +174,7 @@ if (F) { # old hist
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Oday/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Omon/<fvarnames>/gn/v20190710"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Omon/<fvarnames>/gn/v20200909"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/SImon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/historical/r1i1p1f1/day/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/historical/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
@@ -183,7 +187,7 @@ if (F) { # old hist
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/abrupt-4xCO2/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
     # mpi-esm1-2-hr
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/piControl/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
-    datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/piControl/r1i1p1f1/Oday/<fvarnames>/gn/v20190710"
+    #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/piControl/r1i1p1f1/Oday/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/piControl/r1i1p1f1/Omon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/piControl/r1i1p1f1/SImon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/historical/r1i1p1f1/day/<fvarnames>/gn/v20190710"
@@ -193,7 +197,10 @@ if (F) { # old hist
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/1pctCO2/r1i1p1f1/Omon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/1pctCO2/r1i1p1f1/SImon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/abrupt-4xCO2/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
+    # awi-cm-1-1-lr
+    fpatterns <- "historical_jsbach_jsbachmon_<YYYY><MM>.grb"
     # awi-esm-1-1-lr
+    #fpatterns <- "PI-CTRL6_jsbach_jsbachmon_<YYYY><MM>.grb"
     #fpatterns <- "PI-CTRL6_fesom_<fvarnames>_<YYYY>0101.nc"
     #fpatterns <- "1percCO2_fesom_<fvarnames>_<YYYY>0101.nc"
     #fpatterns <- "historical_echam6_echamday_<YYYY><MM>.grb"
@@ -236,7 +243,7 @@ if (F) { # old hist
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_abrupt-4xCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     # mpi-esm1-2-hr
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
+    #fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
     #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
     #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
@@ -257,7 +264,7 @@ if (F) { # old hist
     #fpatterns <- "4CO2_echam6_echam_<YYYY><MM>.nc"
     #fpatterns <- "CMIP6_HIST_echam6_echam_<YYYY><MM>.grb"
     #prefixes <- "awi-cm-1-1-lr_piControl"
-    #prefixes <- "awi-cm-1-1-lr_historical"
+    prefixes <- "awi-cm-1-1-lr_historical"
     #prefixes <- "awi-cm-1-1-lr_1percCO2"
     #prefixes <- "awi-cm-1-1-lr_4CO2"
     #prefixes <- "awi-esm-1-1-lr_piControl"
@@ -286,7 +293,7 @@ if (F) { # old hist
     #prefixes <- "mpi-esm1-2-lr_historical_day"
     #prefixes <- "mpi-esm1-2-lr_1percCO2"
     #prefixes <- "mpi-esm1-2-lr_4CO2"
-    prefixes <- "mpi-esm1-2-hr_piControl"
+    #prefixes <- "mpi-esm1-2-hr_piControl"
     #prefixes <- "mpi-esm1-2-hr_historical"
     #prefixes <- "mpi-esm1-2-hr_historical_day"
     #prefixes <- "mpi-esm1-2-hr_1percCO2"
@@ -315,30 +322,36 @@ if (F) { # old hist
     #fvarnames <- "clt" # = cmor aclcov
     #fvarnames <- "rss" # = cmor srads
     #fvarnames <- "rsus" # = cmor sradsu
+    codes <- 12
+    fvarnames <- "cover_fract"
     #fvarnames <- "tosga"
     #fvarnames <- "tob"
     #fvarnames <- "sitemptop"
     #fvarnames <- "si"
     #fvarnames <- "siextentn"
     #fvarnames <- "siextents"
-    fvarnames <- "omldamax" # mld by mix scheme
+    #fvarnames <- "omldamax" # mld by mix scheme
     #fvarnames <- "mlotst" # mld by sigma_theta
     #fvarnames <- "uo"
     #fvarnames <- "vo"
+    #fvarnames <- "hvel"
     #sellevels <- 6
-    #mpiom1_remap <- F
-    mpiom_remap2lonlat_arg_list <- list(list(#mpiom_model_grid="/pool/data/MPIOM/TP04/TP04s.nc",
-                                             reg_res=c(nlon=1440, nlat=720),
-                                             fout_rename_pattern=prefixes[1]))
+    #sellevels <- "6,17,27,37,47,57,68.5,82.5,100,122.5,150,182.5"
+    #lev_fnames <- "6-182.5"
+    if (any(fvarnames == c("uo", "vo"))) mpiom1_remap <- F # vector variables need both components for interp, not one
+    mpiom1_remap2lonlat_arg_list <- list(list(#mpiom_grid_files=list(s="/pool/data/MPIOM/TP04/TP04s.nc"),
+                                              reg_res=c(nlon=1440, nlat=720),
+                                              fout_rename_pattern=prefixes[1]))
+    #cdoshifttimes <- "-1dt"
     #froms <- 1842 # awi-cm/esm-1-1-lr piControl correct filestamp
-    froms <- 1850
+    #froms <- 1850
     #froms <- 1855 # awi-cm/esm-1-1-lr piControl wrong filestamp
     #froms <- 1870
     #froms <- 1873
     #froms <- 1910 # TCR average start
     #froms <- 1912 # awi-*-1-1-lr piControl: last 30 years: 1912:1941; last 100 years: 1842:1941 
     #froms <- 1942 # piControl-1942 = deck-1850 (correct filestamp)
-    #froms <- 1955 # piControl-1955 = deck-1850 (wrong filestamp)
+    froms <- 1955 # piControl-1955 = deck-1850 (wrong filestamp)
     #froms <- 2401 # awi-cm-1-1-lr piControl-2401 = deck-
     #froms <- 2650
     #froms <- 3106 # awi-esm-1-1-lr midHolocene on esgf
@@ -349,11 +362,13 @@ if (F) { # old hist
     #tos <- 1859
     #tos <- 1869 # 1percCO2: 1850-1869.nc
     #tos <- 1872 # 4CO2: 1850-1872.nc
+    #tos <- 1912
     #tos <- 1930 # TCR average end
     #tos <- 1941 # awi-cm/esm-1-1-lr piControl correct filestamp
     #tos <- 1954 # awi-cm/esm-1-1-lr piControl wrong filestamp
+    tos <- 1965
     #tos <- 1999
-    tos <- 2000
+    #tos <- 2000
     #tos <- 2014
     #tos <- 2099
     #tos <- 2091 # awi-cm/esm-1-1-lr piControl 2000 correct filestamp
@@ -367,13 +382,15 @@ if (F) { # old hist
     #season_inds <- list(c(12, 1, 2)) # DJF
     #season_inds <- list(c(2:4)) # FMA
     #season_inds <- list(c(9:11)) # SON
-    #modes <- "select"
+    modes <- "select"
     #modes <- "timmean"
     #modes <- "monmean"
-    modes <- "monmax"
+    #modes <- "monmax"
     #modes <- "yseasmean" 
     #modes <- "fldmean"
     #modes <- list("timmean_monmax"=c("timmean", "monmax"))
+    #modes <- "vertmean"
+    #modes <- list("vertmean_timmean"=c("vertmean", "timmean"))
     # awi-esm-1-1-lr piControl monthly (1855-1954) -> (1842-1941)
     #new_date_list <- list(list(years=rep(1842:1941, e=12), nc_time_origin=1)) 
     # awi-esm-1-1-lr piControl monthly (1955-2104) -> (1942-2091)
@@ -962,65 +979,111 @@ if (F) { # old hist
     froms <- "2650"
     tos <- "2749"
 
-} else if (F) { # awi-esm-1-1-lr_kh800 piControl og
-    models <- "echam6"
+} else if (T) { # awi-esm-1-1-lr_kh800 piControl og
+    #models <- "echam6"
+    models <- "jsbach"
     #models <- "fesom"
-    datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/echam" # chunk 1
+    # chunk 1: 1950:2029
+    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/echam" # chunk 1
+    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/jsbach" # chunk 1
     #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
-    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
-    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
     #fpatterns <- "SR_output_echam6_echam_<YYYY>01.nc" # chunk 1
-    fpatterns <- "SR_output_echam6_co2_<YYYY>01.nc" # chunk 1
-    #fpatterns <- "test_echam6_echam_<YYYY>01.nc" # chunk 2
-    #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_3hr"
+    #fpatterns <- "SR_output_echam6_co2_<YYYY>01.nc" # chunk 1
+    #fpatterns <- "SR_output_jsbach_jsbach_<YYYY>01.grb"
+    #codes_files <- paste0(datapaths, "/SR_output_195001.01_jsbach.codes")
+    #fpatterns <- "SR_output_jsbach_veg_<YYYY>01.grb"
+    #codes_files <- paste0(datapaths, "/SR_output_195001.01_veg.codes")
+    # chunk 2: 2030:2685
+    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
+    datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/jsbach" # chunk 2
+    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
     #fpatterns <- "test_echam6_g3bid_<YYYY>01.nc" # chunk 2
+    #fpatterns <- "test_echam6_echam_<YYYY>01.nc" # chunk 2
     #fpatterns <- "test_echam6_co2_<YYYY>01.nc" # chunk 2
+    fpatterns <- "test_jsbach_jsbach_<YYYY>01.grb" # chunk 2
+    codes_files <- paste0(datapaths, "/test_203001.01_jsbach.codes")
+    #fpatterns <- "test_jsbach_veg_<YYYY>01.grb" # chunk 2
+    #codes_files <- paste0(datapaths, "/test_203001.01_veg.codes")
     #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc" # chunk 1 and 2 
+    #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_3hr"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_day"
     prefixes <- "awi-esm-1-1-lr_kh800_piControl_og"
     #fvarnames <- "temp2"
+    #fvarnames <- "co2_flux"
     #fvarnames <- "co2_flx_ocean"
-    fvarnames <- "co2_flx_land"
+    #fvarnames <- "co2_flx_land" # = npp + resp + herb + lcc + harvest + fire
+    #fvarnames <- "co2_flx_npp"
+    #fvarnames <- "co2_flx_resp"
+    #fvarnames <- "co2_flx_herb"
+    #fvarnames <- "co2_flx_lcc"
+    #fvarnames <- "co2_flx_harvest"
+    #fvarnames <- "co2_flx_fire"
+    #codes <- 12
+    #fvarnames <- "cover_fract"
+    #codes <- 24
+    #fvarnames <- "box_veg_ratio"
+    #codes <- 160
+    #fvarnames <- "CO2_flux_net"
+    #codes <- 161
+    #fvarnames <- "CO2_flux_herbivory"
+    #codes <- 162
+    #fvarnames <- "CO2_emission_landcover_change"
+    #codes <- 163
+    #fvarnames <- "CO2_emission_harvest"
+    #codes <- 164
+    #fvarnames <- "CO2_flux_dynveg"
+    codes <- 20
+    fvarnames <- "veg_ratio_max"
+    #codes <- 160
+    #fvarnames <- "boxC_green"
     #fvarnames <- "thetaoga"
     #fvarnames <- "aCO2"
     #cdoshifttimes <- "-1dt" # for fesom
-    #modes <- "select"
     cdo_before_calcs <- "monmean"
-    #modes <- "select"
+    modes <- "select"
     #modes <- "timmean"
     #modes <- "fldmean"
-    modes <- "fldint"
-    froms <- 1950 # start chunk1: 1950
-    #froms <- 2030 # start chunk2: 2030
+    #modes <- "fldint"
+    #froms <- 1950 # start chunk1: 1950
+    froms <- 2030 # start chunk2: 2030
     #froms <- 2586 # chunk 2 last 100 years
     #froms <- 2666 # chunk 2 last 20 years
-    tos <- 2029 # end chunk 1: 2029 
-    #tos <- 2685 # end chunk 2: 2685
+    #tos <- 1951
+    #tos <- 2029 # end chunk 1: 2029 
+    #tos <- 2031
+    tos <- 2685 # end chunk 2: 2685
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl; chunk 3 from 2686 to 2850 (165 additional years after chunks 1 and 2 from og)
-    models <- "echam6"
+    #models <- "echam6"
+    models <- "jsbach"
     #models <- "fesom"
-    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/echam"
+    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/echam"
+    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/jsbach"
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom"
     #fpatterns <- "piControl_<YYYY><MM>.01_echam"
-    fpatterns <- "piControl_<YYYY><MM>.01_co2"
+    #fpatterns <- "piControl_<YYYY><MM>.01_co2"
+    fpatterns <- "piControl_<YYYY><MM>.01_jsbach"
     #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
     prefixes <- "awi-esm-1-1-lr_kh800_piControl"
     #codes <- 167
     #fvarnames <- "temp2"
     #codes <- 7
     #fvarnames <- "co2_flx_ocean"
-    codes <- 6
-    fvarnames <- "co2_flx_land"
+    #codes <- 6
+    #fvarnames <- "co2_flx_land"
+    codes <- 12
+    fvarnames <- "cover_fract"
     #fvarnames <- "aCO2"
-    #modes <- "select"
-    modes <- "timmean"
+    modes <- "select"
+    #modes <- "timmean"
     #modes <- "fldmean"
     #modes <- "fldint"
-    #froms <- 2686
-    froms <- 2806
+    froms <- 2686 # start chunk 3
+    #froms <- 2806
+    tos <- 2687
     #tos <- 2824
-    tos <- 2825
+    #tos <- 2825
+    #tos <- 2850 # end chunk 3
 
 } else if (F) { # awi-esm-1-1-lr_kh800 historical
     models <- "echam6"
@@ -1056,6 +1119,36 @@ if (F) { # old hist
     #tos <- 1985
     tos <- 1986
 
+} else if (F) { # awi-esm-1-1-lr_kh800 historical2
+    models <- "echam6"
+    #models <- "jsbach"
+    #models <- "fesom"
+    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam"
+    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/jsbach"
+    #fpatterns <- "historical_<YYYY>01.01_echam"
+    #prefixes <- "awi-esm-1-1-lr_kh800_historical2_3hr"
+    #fpatterns <- "historical_<YYYY>01.01_g3bid"
+    #prefixes <- "awi-esm-1-1-lr_kh800_historical2_day"
+    fpatterns <- "historical2_<YYYY>01.01_co2"
+    #fpatterns <- "historical2_<YYYY>01.01_nitro"
+    prefixes <- "awi-esm-1-1-lr_kh800_historical2"
+    #codes <- 167
+    #fvarnames <- "temp2"
+    #codes <- 6
+    #fvarnames <- "co2_flx_land"
+    #codes <- 7
+    #fvarnames <- "co2_flx_ocean"
+    codes <- 24
+    fvarnames <- "co2_flx_lcc"
+    #codes <- 85
+    #fvarnames <- "LCC_flux_box_N2atmos"
+    #cdo_before_calcs <- "monmean"
+    #modes <- "timmean"
+    #modes <- "fldmean"
+    modes <- "fldint"
+    froms <- 1850
+    tos <- 1866
+
 } else if (F) { # awi-esm-1-1-lr_kh800 og esm-piControl test
     models <- "echam6"
     datapaths <- "/mnt/lustre02/work/ba1103/a270094/AWIESM/test_esm3/outdata/echam"
@@ -1077,7 +1170,7 @@ if (F) { # old hist
     froms <- 1001
     tos <- 1010
 
-} else if (T) { # awi-esm-1-1-lr_kh800 esm-piControl
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
     models <- "echam6"
     #models <- "fesom"
     if (F) {
@@ -1104,7 +1197,8 @@ if (F) { # old hist
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
     } else if (T) {
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_restartall/outdata/echam"
-        fpatterns <- "esm-piControl_restartall_<YYYY><MM>.01_co2mon"
+        #fpatterns <- "esm-piControl_restartall_<YYYY><MM>.01_co2mon"
+        fpatterns <- "esm-piControl_restartall_<YYYY><MM>.01_vegmon"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_restartall"
     }
     #codes <- 167
@@ -1114,12 +1208,20 @@ if (F) { # old hist
     #cdo_after_calcs <- list(c("setunit,ppm", "mulc,658267")) # [CO2] (in ppm) = 1e6 * 0.658267 * co2mmr
     #sellevels <- 1 
     #sellevels <- "0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,18000,19000,20000,21000,22000,23000,24000,25000,26000"
-    codes <- 6
-    fvarnames <- "co2_flx_land"
+    #codes <- 5
+    #fvarnames <- "co2_flux"
+    #codes <- 6
+    #fvarnames <- "co2_flx_land"
     #codes <- 7
     #fvarnames <- "co2_flx_ocean"
     #codes <- 9
     #fvarnames <- "co2_burden_corr_acc2"
+    #codes <- 21
+    #fvarnames <- "co2_flx_npp"
+    #codes <- 22
+    #fvarnames <- "co2_flx_resp"
+    codes <- 160
+    fvarnames <- "boxC_green"
     #fvarnames <- "thetaoga"
     #fvarnames <- "aCO2"
     #cdoshifttimes <- "-1dt" # for fesom
@@ -1129,12 +1231,12 @@ if (F) { # old hist
     #modes <- "fldsum"
     #modes <- "fldint"
     #froms <- 2685 # last piControl og year
-    #froms <- 2686
-    froms <- 2778
-    #tos <- 2685
-    #tos <- 2686
-    #tos <- 2704
-    tos <- 2797
+    froms <- 2686 # esm-piControl start
+    #froms <- 2778
+    #froms <- 2817
+    tos <- 2687
+    #tos <- 2785 # esm-piControl 100 years
+    #tos <- 2916
 
 # ======================================================
 # 2 settings
