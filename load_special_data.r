@@ -35,7 +35,7 @@ if (F) {
 # mpiom land sea mask segments
 fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon180.txt")
 #fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon360.txt")
-if (F && any(file.exists(fs))) {
+if (T && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load mpiom land sea mask segments ...")
     for (f in fs) {
         if (file.exists(f)) {
@@ -652,21 +652,38 @@ if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
     lakes_table <- read.table(f, header=T, stringsAsFactors=F)
     PLOT_coords_cmd_list <- NULL
-    lakes <- c("A"="ladoga", 
-               #"B"="shuchye", 
-               "C"="kotokel", "D"="emanda", "E"="two-yurts", "F"="elgygytgyn")
-    if (F) {
-        col <- "black"
-    } else if (T) { # blue letters for significant negative holocene trends
-        message("special: print blue letters")
+    lakes <- c("A"="ladoga")
+    if (T) {
+        message("add shuchye lake to PLOT_coords_cmd_list")
+        lakes <- c(lakes, "B"="shuchye")
+    } else {
+        message("dont add shuchye lake to PLOT_coords_cmd_list")
+    }
+    lakes <- c(lakes, "C"="kotokel", "D"="emanda", "E"="two-yurts")
+    if (T) {
+        message("add gygy lake to PLOT_coords_cmd_list")
+        lakes <- c(lakes, "F"="elgygytgyn")
+    } else {
+        message("dont add gygy lake to PLOT_coords_cmd_list")
+    }
+    col <- "black"
+    if (varnames_in[1] == "lm_wisoaprt_d_post_as_time_slope") { # blue letters for significant negative holocene trends
+        message("special lm_wisoaprt_d_post_as_time_slope blue PLOT letters in PLOT_coords_cmd_list")
         col <- "blue"
     }
     for (lakei in seq_along(lakes)) {
         cmd <- "text("
         cmd <- paste0(cmd, "x=", lakes_table[which(lakes_table$name == lakes[lakei]),"lon_dec"])
         cmd <- paste0(cmd, ", y=", lakes_table[which(lakes_table$name == lakes[lakei]),"lat_dec"])
-        cmd <- paste0(cmd, ", labels=\"", names(lakes)[lakei], "\", cex=1")
-        cmd <- paste0(cmd, ", col=\"", col, "\"")
+        cmd <- paste0(cmd, ", labels=\"", names(lakes)[lakei], "\"")
+        cmd <- paste0(cmd, ", cex=1")
+        #cmd <- paste0(cmd, ", cex=1.5")
+        if (lakes[lakei] == "shuchye") {
+            cmd <- paste0(cmd, ", col=\"black\"")
+        } else {
+            cmd <- paste0(cmd, ", col=\"", col, "\"")
+        }
+        if (T) cmd <- paste0(cmd, ", font=2") # bold
         cmd <- paste0(cmd, ") # ", lakes[lakei])
         PLOT_coords_cmd_list[[lakei]] <- cmd 
     }
@@ -685,19 +702,23 @@ if (host$machine_tag == "paleosrv") {
 if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load hanno meyer et al. PLOT data from ", f)
     message("run read_meyer_etal_function() ...")
-    #tmp <- read_meyer_etal_function(xlsx_file=f)
-    #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, verbose=F)
-    #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-10000, verbose=F)
-    tmp <- read_meyer_etal_function(xlsx_file=f, 
-                                    #sheets_wanted=c("Lake Ladoga", "Lake Kotokel", "Two Jurts Lake", "El'gygytgyn Lake"), 
-                                    sheets_wanted=c("Lake Ladoga", "Lake Emanda unpubl.", "Lake Kotokel", "Two Jurts Lake", "El'gygytgyn Lake"), 
-                                    year_from=-10000, verbose=F)
-    #tmp <- read_meyer_etal_function(xlsx_file=f, year_from=-7000, sheets_wanted="Lake Ladoga")
-    #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Bolshoye Shchuchye unpubl.")
-    #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Emanda unpubl.")
-    #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="El'gygytgyn Lake")
-    #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Two Jurts Lake", year_from=-7000, verbose=T)
-    #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted="Lake Kotokel", verbose=F)
+    lakes <- c("A"="Lake Ladoga")
+    if (F) {
+        message("add shuchye lake to `meyer_etal`")
+        lakes <- c(lakes, "B"="Lake Bolshoye Shchuchye unpubl.")
+    } else {
+        message("dont add shuchye lake to `meyer_etal`")
+    }
+    lakes <- c(lakes, "C"="Lake Kotokel", "D"="Lake Emanda unpubl.", "E"="Two Jurts Lake")
+    if (F) {
+        message("add gygy lake to `meyer_etal`")
+        lakes <- c(lakes, "F"="El'gygytgyn Lake")
+    } else {
+        message("dont add gygy lake to `meyer_etal`")
+    }
+    
+    tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted=lakes, year_from=-7000, verbose=F)
+    #tmp <- read_meyer_etal_function(xlsx_file=f, sheets_wanted=lakes, year_from=-10000, verbose=F)
     meyer_etal <- list(data=tmp,
                        type="o", 
                        #col="#E41A1C", # myred
@@ -705,7 +726,7 @@ if (T && file.exists(f)) {
                        #col="#1B9E77", # mygreen
                        lty=1, lwd=1, pch=1, cex=1)
 } else {
-    message("enable here to load hanno meyer et al. PLOT data excel sheet ...")
+    message("enable here to load `meyer_etal` hanno meyer et al. PLOT data excel sheet ...")
 }
 
 
@@ -716,9 +737,10 @@ if (host$machine_tag == "paleosrv") {
 }
 if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load kostrova et al. 2021 emanda data from ", f)
-    kostrova_etal_2021 <- read.xlsx(f, 1,
-                                    startRow=17, endRow=62, colIndex=2:9, 
-                                    header=F, stringsAsFactors=F)
+    suppressPackageStartupMessages(library(xlsx))
+    kostrova_etal_2021 <- xlsx::read.xlsx(f, 1,
+                                          startRow=17, endRow=62, colIndex=2:9, 
+                                          header=F, stringsAsFactors=F)
     colnames(kostrova_etal_2021) <- c("core", "sample_depth_cm", "age_cal_ka_bp", "SiO2_pcnt", "Al2O3_pcnt", 
                                       "d18o_meas_perm", "C_cont_pcnt", "d18o_corr_perm")
     kostrova_etal_2021 <- kostrova_etal_2021[dim(kostrova_etal_2021)[1]:1,] # rev
@@ -731,6 +753,8 @@ if (T && file.exists(f)) {
                                col="#377EB8", # myblue
                                #col="#1B9E77", # mygreen
                                lty=1, lwd=1, pch=1, cex=1,
+                               loc="Emanda (D)",
+                               ref="Kostrova et al. 2021",
                                text="D: Emanda (Kostrova et al. 2021)")
 } else {
     message("enable here to load kostrova et al. 2021 emanda data ...")
@@ -962,7 +986,7 @@ if (host$machine_tag == "paleosrv") {
                 "gnip_ts_O18_H2_H3_H3_err_precip_tair_vapour_pressure_min_5_consecutive_complete_yrs_1953-1-15_to_2019-12-15.RData2"
                 )
 }
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load GNIP monthly station data ...\n")
     load(f) # gnip_list 
 } else {
@@ -1020,7 +1044,7 @@ if (host$machine_tag == "paleosrv") {
                 "Temp12k_v1_0_0_ts_non-scale_216_records_with_units_degC_and_variableName_temperature_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01_6kyr_trend_ge_-7_and_ge_7",
                 ".RData2")
 }
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
@@ -1078,7 +1102,7 @@ if (host$machine_tag == "paleosrv") {
                 "globalHolocene1_0_0_ts_non-scale_150_records_with_units_mm_or_mmyr_and_variableName_precipitation_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
                 ".RData2")
 }
-if (F && file.exists(f)) {
+if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load global holcene lipd precip data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
@@ -1095,9 +1119,9 @@ f <- ""
 if (host$machine_tag == "paleosrv") {
     f <- paste0("/isibhv/projects/paleo_work/cdanek/data/konecky_etal_2020/",
                 #"iso2k1_0_0_ts_non-scale_131_records_with_variableName_d18O_from_1967_to_2013_lm_p_lt_0.05",
-                #"iso2k1_0_0_ts_non-scale_37_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
                 #"iso2k1_0_0_ts_non-scale_147_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-100_to_63_from_1950_CE",
                 #"iso2k1_0_0_ts_non-scale_121_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_and_seasonality_annual_from_-100_to_61_from_1950_CE",
+                #"iso2k1_0_0_ts_non-scale_37_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_from_-7000_to_-50_lm_p_lt_0.05_6kyr_trend_ge_-10_and_le_10",
                 "iso2k1_0_0_ts_non-scale_9_records_with_variableName_d18O_and_units_permil_and_inferredMaterial_precipitation_and_seasonality_annual_from_-7000_to_0_from_1950_CE_lm_period_ge_2000_years_lm_p_lt_0.01",
                 ".RData2")
 }
@@ -1149,6 +1173,15 @@ if (T && file.exists(f)) {
                                     paste(datnames, collapse="\", \""), 
                                     "\". dont know which one to use")
     eval(parse(text=paste0("comas_bru_etal_2020_sisal_d18o_precip <- ", datnames)))
+    # remove "Soreq cave" and "Klapferloch cave" since they are already in Iso2k 1.0.0
+    if (all(varnames_in == "lm_wisoaprt_d_post_as_time_slope")) {
+        inds <- which(!is.na(match(sapply(comas_bru_etal_2020_sisal_d18o_precip, "[[", "loc"), 
+                                   c("Soreq cave", "Klapferloch cave"))))
+        if (length(inds) > 0) {
+            message("special: remove \"Soreq cave\" and \"Klapferloch cave\" from comas_bru_etal_2020_sisal_d18o_precip ...")
+            comas_bru_etal_2020_sisal_d18o_precip <- comas_bru_etal_2020_sisal_d18o_precip[-inds]
+        }
+    }
 } else {
     message("enable here to load comas-bru et al. 2020 sisal data ...")
 } # read comas-bru et al. 2020 sisal data

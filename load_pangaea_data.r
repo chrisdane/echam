@@ -1,10 +1,12 @@
 # r
 
 pg_verbose <- F
-pg_baseurl <- "https://doi.pangaea.de/"
+pg_baseurl <- "https://doi.pangaea.de"
+origin_out <- 1950 # which year time dim values should refer to?
+
 pdois <- list()
 
-# d18O_* data from antaractic ice core
+# d18O_* data from arctic ice core
 if (F) {
     pdois <- c(pdois, 
                list("holme_etal_2019"=
@@ -181,7 +183,7 @@ if (F) { # much higher resolution in 10.1594/PANGAEA.786302
                          vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW]", 
                                                       dims=list("kyr_before_1950"="Age [ka BP]"))))))
 }
-if (F) { # # much higher resolution in 10.1594/PANGAEA.716878
+if (F) { # much higher resolution in 10.1594/PANGAEA.716878
     pdois <- c(pdois, 
                list("andersen_etal_2007"=
                     list(pdoi="10.1594/PANGAEA.586836",
@@ -189,7 +191,7 @@ if (F) { # # much higher resolution in 10.1594/PANGAEA.716878
                                                       dims=list("kyr_before_1950"="Age [ka BP]"))))))
 }
 
-# d18O_* data from antaractic ice core
+# d18O_* data from antarctic ice core
 if (F) {
     pdois <- c(pdois,
                list("petit_etal_1999"=
@@ -213,7 +215,7 @@ if (F) {
 }
 
 # d18O from ice wedges
-if (F) {
+if (T) {
     pdois <- c(pdois, 
                list("vasilchuk_etal_2020"=
                     list(pdoi="10.1594/PANGAEA.917714",
@@ -224,14 +226,14 @@ if (F) {
                                    "T_air_win_deg"=list(inputname="T win [°C]",
                                                         dims=list("vasilchuk_etal_2020_time"="Comm"))))))
 }
-if (F) { # no age provided wtf?!
+if (F) { # no age provided; the two entries with time dim vals (event "JuS-Chara/8") are data values from snow
     pdois <- c(pdois, 
                list("vasilchuk_etal_2020"=
                     list(pdoi="10.1594/PANGAEA.915930",
                          vars=list("d18o_w_smow"=list(inputname="δ18O H2O [‰ SMOW]", 
-                                                      dims=list("kyr_before_1950"=NA))))))
+                                                      dims=list("date_time"="Date/Time"))))))
 }
-if (F) {
+if (T) {
     pdois <- c(pdois, 
                list("vasilchuk_etal_2020"=
                     list(pdoi="10.1594/PANGAEA.917711",
@@ -406,6 +408,9 @@ if (length(pdois) == 0) {
         if (is.null(names(pdois)[pgi])) stop("`names(pdois)[", pgi, "]` is null")
         message(": \"", pdois[[pgi]]$pdoi, "\" (", names(pdois)[pgi], ") ...")
       
+        # add url to list
+        url <- paste0(pg_baseurl, "/", pdois[[pgi]]$pdoi)
+        pdois[[pgi]]$url <- url
         pgin <- pangaear::pg_data(pdois[[pgi]]$pdoi, mssgs=F)
         
         # check every dataset of current doi for wanted variables
@@ -413,8 +418,7 @@ if (length(pdois) == 0) {
         for (datai in seq_along(pgin)) { 
             
             if (!any(names(pgin[[datai]]$metadata) == "events")) {
-                message("dataset `pgin[[", datai, "]]$metadata` (", pg_baseurl,
-                        pgin[[datai]]$doi, ") has no events -entry. skip")
+                message("dataset `pgin[[", datai, "]]$metadata` (", url, ") has no events -entry. skip")
             } else {
             
                 # get current events of current data of current doi
@@ -430,14 +434,12 @@ if (length(pdois) == 0) {
                     if (any(names(events) == "LONGITUDE")) {
                         lons <- as.numeric(events$LONGITUDE)
                     } else {
-                        warning("found no \"LONGITUDE\" in events of pangaea doi ",
-                                pg_baseurl, pgin[[datai]]$doi)
+                        warning("found no \"LONGITUDE\" in events of pangaea doi ", url)
                     }
                     if (any(names(events) == "LATITUDE")) {
                         lats <- as.numeric(events$LATITUDE)
                     } else {
-                        warning("found no \"LATITUDE\" in events of pangaea doi ",
-                                pg_baseurl, pgin[[datai]]$doi)
+                        warning("found no \"LATITUDE\" in events of pangaea doi ", url)
                     }
                     events <- names(events)[1]
 
@@ -523,8 +525,7 @@ if (length(pdois) == 0) {
                         } else {
                             lons <- c(lons, NA)
                             warning("found no \"LONGITUDE:\" in event \"", event, 
-                                    "\" of pangaea doi ", pg_baseurl,
-                                    pgin[[datai]]$doi)
+                                    "\" of pangaea doi ", url)
                         }
                         if (grepl("LATITUDE:", event)) {
                             lat <- regexpr("LATITUDE:", event)
@@ -534,8 +535,7 @@ if (length(pdois) == 0) {
                         } else {
                             lats <- c(lats, NA)
                             warning("found no \"LATITUDE:\" in event \"", event, 
-                                    "\" of pangaea doi ", pg_baseurl,
-                                    pgin[[datai]]$doi)
+                                    "\" of pangaea doi ", url)
                         }
                     } # for eventi in events of current dataset of current doi
               
@@ -634,11 +634,11 @@ if (length(pdois) == 0) {
                 for (datai in seq_along(datainds)) {
                     dataind <- datainds[datai]
                     if (pg_verbose) {
-                        message("   ", length(pgin[[dataind]]$data), " input variables of pgin[[", dataind, 
+                        message(length(pgin[[dataind]]$data), " input variables of pgin[[", dataind, 
                                 "]]-event ", eventi, "/", dim(df)[1], " \"", df$event[eventi], 
-                                "\": \"", paste(names(pgin[[dataind]]$data), collapse="\", \""), 
+                                "\":\n   \"", paste(names(pgin[[dataind]]$data), collapse="\", \""), 
                                 "\"")
-                        message("   wanted variable name of current doi: \"", 
+                        message("wanted variable name of current doi:\n   \"", 
                                 pdois[[pgi]]$vars[[vi]]$inputname, "\"")
                     }
                     
@@ -705,7 +705,7 @@ if (length(pdois) == 0) {
                             # if event-entry not already there
                             if (is.null(pg[[outputname]][[names(pdois)[pgi]]][[df$event[eventi]]])) { 
                                 pg[[outputname]][[names(pdois)[pgi]]][[df$event[eventi]]] <- 
-                                    list(doi=paste0(pg_baseurl, pdois[[pgi]]$pdoi), 
+                                    list(doi=url,
                                          loc=df$loc[eventi], 
                                          lon=df$lon[eventi], lat=df$lat[eventi])
                             } 
@@ -727,26 +727,39 @@ if (length(pdois) == 0) {
 
     # step 2/4: modify dimensions if necessary
     message("\ncheck/modify dims/data of ", length(pg), " different variables from ", 
-            length(pdois), " pangaea dois. this may take some moments ...")
+            length(pdois), " pangaea dois. this may take some time ...")
     for (vi in seq_along(pg)) {
         for (pdoi in seq_along(pg[[vi]])) {
             for (eventi in seq_along(pg[[vi]][[pdoi]])) {
                 for (dimi in seq_along(pg[[vi]][[pdoi]][[eventi]]$dims)) {
                     
-                    # original dimension values (can be anything; pangaea is unbelievable in terms of SI units)
+                    # original dimension values (can be anything; pangaea is unbelievably shitty wrt SI units)
                     dimvals <- pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]]
+                    dimin <- names(pg[[vi]][[pdoi]][[eventi]]$dims)[dimi] # my dimension names
                     data <- NULL # default: do not change data values
-                   
-                    # all dimension values of current dim are NA
-                    if (all(is.na(dimvals))) {
-                        dimvals <- NULL # do not change dim values
+                    
+                    # set dim vals "" to NA; other cases possible?
+                    inds <- which(dimvals == "")
+                    if (length(inds) > 0) {
+                        if (pg_verbose) {
+                            message("--> dim pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]] of ", 
+                                    names(pg[[vi]])[pdoi], " event ", eventi, " \"", names(pg[[vi]][[pdoi]])[eventi], 
+                                    "\" (", pg[[vi]][[pdoi]][[eventi]]$doi, ") has ", length(inds), 
+                                    " \"\" values --> set to NA")
+                        }
+                        dimvals[inds] <- NA
+                    }
 
-                    } else if (any(!is.na(dimvals))) {
-                        dimin <- names(pg[[vi]][[pdoi]][[eventi]]$dims)[dimi] # my dimension names
+                    # change input dim values if necessary
+                    if (any(!is.na(dimvals))) {
                         
                         # convert `kyr_before_1950` --> `year from 1950 CE`
                         if (dimin == "kyr_before_1950") {
                             dimout <- "time"
+                            if (pg_verbose) {
+                                message("input dim pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]] = \"", dimin, 
+                                        "\" --> output dim = \"", dimout, "\"")
+                            }
                             if (all(diff(dimvals) > 0)) { # flip both time-dim vals AND data
                                 dimvals <- rev(dimvals)
                                 data <- pg[[vi]][[pdoi]][[eventi]]$data
@@ -757,33 +770,63 @@ if (length(pdois) == 0) {
                                          length(dimvals), "(the length of the time-dimvals). solve manually")
                                 }
                                 cmd <- rep(",", t=length(dim(data)))
-                                cmd[timedimind] <- paste0(length(dimvals), ":1") # revers actual data
+                                cmd[timedimind] <- paste0(length(dimvals), ":1") # revert actual data
                                 cmd <- paste(cmd, collapse="")
                                 cmd <- paste0("data <- data[", cmd, "]")
                                 #message("   run `", cmd, "` ...")
                                 eval(parse(text=cmd))
                             } # if flip
                             dimvals <- -1000*dimvals
-                            dimvals <- make_posixlt_origin(dimvals, origin_in=1950, origin_out=1950)
+                            dimvals <- make_posixlt_origin(dimvals, origin_in=1950, origin_out=origin_out)
 
                         # convert `"Modern` --> `0 from 1950 CE` and "Holocene"` --> `-6000 from 1950 CE`
                         } else if (dimin == "vasilchuk_etal_2020_time") {
                             dimout <- "time"
+                            if (pg_verbose) {
+                                message("input dim pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]] = \"", dimin, 
+                                        "\" --> output dim = \"", dimout, "\"")
+                            }
                             dimvals <- pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]]
                             if (any(dimvals == "Modern")) dimvals[which(dimvals == "Modern")] <- 0
                             if (any(dimvals == "Holocene")) dimvals[which(dimvals == "Holocene")] <- -6000
                             dimvals <- as.numeric(dimvals)
-                            dimvals <- make_posixlt_origin(dimvals, origin_in=1950, origin_out=1950)
+                            dimvals <- make_posixlt_origin(dimvals, origin_in=1950, origin_out=origin_out)
                         
                         } else if (dimin == "yr_from_0") {
                             dimout <- "time"
-                            dimvals <- make_posixlt_origin(dimvals, origin_in=0, origin_out=1950)
+                            if (pg_verbose) {
+                                message("input dim pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]] = \"", dimin, 
+                                        "\" --> output dim = \"", dimout, "\"")
+                            }
+                            dimvals <- make_posixlt_origin(dimvals, origin_in=0, origin_out=origin_out)
+
+                        # simply convert to POSIX object
+                        } else if (dimin == "date_time") { 
+                            dimout <- "time"
+                            if (pg_verbose) {
+                                message("input dim pg[[vi]][[pdoi]][[eventi]]$dims[[dimi]] = \"", dimin, 
+                                        "\" --> output dim = \"", dimout, "\"")
+                            }
+                            dimvals <- as.POSIXlt(dimvals, tz="UTC")
+                            if (origin_out != 0) {
+                                dimvals$year <- dimvals$year - origin_out
+                            }
+                            if (!any(search() == "package:sticky")) {
+                                if (pg_verbose > 0) message("load sticky package and make `origin` attribute permanent")
+                                library(sticky)
+                            }
+                            attributes(dimvals)$origin <- origin_out
+                            dimvals <- sticky::sticky(dimvals)
 
                         } else {
-                            stop("dimin = \"", dimin, "\" not defined")
+                            stop("dim ", dimi, " of variable ", vi, " \"", names(pg)[vi], "\" of ", 
+                                 "event ", eventi, " \"", names(pg[[vi]][[pdoi]])[eventi], "\" of ",
+                                 "pdoi ", pdoi, " ", names(pg[[vi]])[pdoi], " is \"", dimin, "\" is not defined. dimvals:\n",
+                                 paste(head(dimvals), collapse=", "))
+
                         } # do dimin == "..." dim-specific things
                     
-                    } # if any dim values are not NA
+                    } # change dims and possibly data if any of input dim values are not NA
 
                     # replace original dim and/or data values with modified values
                     if (!is.null(dimvals)) {
@@ -806,12 +849,14 @@ if (length(pdois) == 0) {
         for (pdoi in seq_along(pg[[vi]])) {
             for (eventi in seq_along(pg[[vi]][[pdoi]])) {
                 if (all(sapply(lapply(pg[[vi]][[pdoi]][[eventi]]$dims, is.na), all))) {
-                    message("all values of the \"", 
-                            paste(names(pg[[vi]][[pdoi]][[eventi]]$dims), collapse="\", \""), 
-                            "\" dimension", ifelse(length(pg[[vi]][[pdoi]][[eventi]]$dims) > 1, "s", ""),
-                            " of variable \"", names(pg)[vi], "\" are NA --> ",
-                            "remove ", names(pg[[vi]])[pdoi], " event \"",
-                             names(pg[[vi]][[pdoi]])[eventi], "\" (", pg[[vi]][[pdoi]][[eventi]]$doi, ") ...")
+                    if (pg_verbose) {
+                        message("all values of the \"", 
+                                paste(names(pg[[vi]][[pdoi]][[eventi]]$dims), collapse="\", \""), 
+                                "\" dimension", ifelse(length(pg[[vi]][[pdoi]][[eventi]]$dims) > 1, "s", ""),
+                                " of variable \"", names(pg)[vi], "\" are NA --> ",
+                                "remove ", names(pg[[vi]])[pdoi], " event \"",
+                                 names(pg[[vi]][[pdoi]])[eventi], "\" (", pg[[vi]][[pdoi]][[eventi]]$doi, ") ...")
+                    }
                     pg[[vi]][[pdoi]][[eventi]] <- NA # set whole event to NA
                 } # if all values of all dimensions of current variable are NA
             } # for eventi
@@ -869,8 +914,10 @@ if (length(pdois) == 0) {
                         merged_data <- c(merged_data, 
                                          pg[[varind]][[doiind]][[eventinds[eventi]]]$data)
                         for (di in seq_along(merged_dims)) {
-                            merged_dims[[di]] <- c(merged_dims[[di]], 
-                                                   pg[[varind]][[doiind]][[eventinds[eventi]]]$dims[[di]])
+                            # next line destroys attributes, why?!
+                            merged_dims[[di]] <- c(merged_dims[[di]], pg[[varind]][[doiind]][[eventinds[eventi]]]$dims[[di]]) 
+                            # restore dim attributes
+                            attributes(merged_dims[[di]]) <- attributes(pg[[varind]][[doiind]][[eventinds[eventi]]]$dims[[di]])
                         }
                     }
                     merged_list[[1]]$data <- merged_data

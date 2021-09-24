@@ -178,7 +178,7 @@ if (!exists("lev_tosp")) lev_tosp <- lev_tosf
 if (!exists("areas")) areas <- rep("global", t=nsettings)
 if (!exists("regboxes")) {
     regboxes <- vector("list", l=nsettings)
-    regboxes <- lapply(regboxes, append, list(regbox=NA))
+    regboxes <- lapply(regboxes, base::append, list(regbox=NA))
 }
 names(regboxes) <- names_short
 areas_out <- areas
@@ -305,7 +305,7 @@ data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 
 ## load pangaea data if defined 
-if (F) {
+if (T) {
     message("\ndisable here if you do not want to load pangaea data via load_pangaea_data.r ...")
     source("load_pangaea_data.r")
 } else {
@@ -313,7 +313,7 @@ if (F) {
 }
 
 ## load special data if defined
-if (F) {
+if (T) {
     message("\ndisable here if you do not want to load special data via load_special_data.r ...")
     source("load_special_data.r")
 } else {
@@ -1201,16 +1201,21 @@ for (i in seq_len(nsettings)) {
     vars_per_file <- names(ncin$var)
     vars <- vector("list", l=ncin$nvars)
     var_infos <- vars
-    for (vi in 1:length(vars)) {
+    for (vi in seq_along(vars)) {
         message(vi, "/", length(vars), ": \"", vars_per_file[vi], "\"", appendLF=F)
         
-        # ignore variable
-        if (any(ignore_vars == vars_per_file[vi])) {
-            message(" --> this variable is included in `ignore_vars` --> ignore this variable ...")
-            next # variable of this setting
-        } else {
-            message()
+        # ignore variable based on `ignore_vars`?
+        ignore <- F # default: dont ignore
+        for (igni in seq_along(ignore_vars)) { # loop necessary to use wildcards
+            if (grepl(glob2rx(ignore_vars[igni]), vars_per_file[vi])) {
+                message(" --> this variable is included in `ignore_vars` (\"", 
+                        ignore_vars[igni], "\") --> ignore this variable ...")
+                ignore <- T
+                next # ignore_var to test 
+            }
         }
+        if (ignore) next # variable of this setting
+        message()
         
         if (vars_per_file[vi] == paste0("var", codes[i])) {
             message("variable name of variable \"", vars_per_file[vi], 
@@ -2621,7 +2626,13 @@ for (i in seq_len(nsettings)) {
             if (T) {
                 message("special unit lm_wisoaprt_d_post_as_time_slope")
                 data_infos[[i]][[vi]]$offset$operator <- "*"
-                data_infos[[i]][[vi]]$offset$value <- "6/7" # permil/7k years --> permil/6k years
+                if (grepl("cosmos-aso-wiso_Hol-Tx10_", prefixes[i])) {
+                    data_infos[[i]][[vi]]$offset$value <- "600/701" # permil/701 accelerated = 7001 not-accelerated years --> permil/6k years
+                } else if (grepl("cosmos-aso-wiso_Hol-T_", prefixes[i])) {
+                    data_infos[[i]][[vi]]$offset$value <- "6000/6997" # permil/6997 years --> permil/6k years
+                } else {
+                    stop("setting ", prefixes[i], " not defined")
+                }
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(delta^{18}, "O"["p,SMOW"], " trend [\u2030/6k years]"))))
                 data_infos[[i]][[vi]]$units <- "o/oo/6k years"
             }
@@ -2655,7 +2666,13 @@ for (i in seq_len(nsettings)) {
             if (T) {
                 message("special unit lm_temp2_as_time_slope")
                 data_infos[[i]][[vi]]$offset$operator <- "*"
-                data_infos[[i]][[vi]]$offset$value <- "6/7" # °C/7k years --> °C/6k years
+                if (grepl("cosmos-aso-wiso_Hol-Tx10_", prefixes[i])) {
+                    data_infos[[i]][[vi]]$offset$value <- "600/701" # °C/701 accelerated = 7001 not-accelerated years --> °C/6k years
+                } else if (grepl("cosmos-aso-wiso_Hol-T_", prefixes[i])) {
+                    data_infos[[i]][[vi]]$offset$value <- "6000/6997" # °C/6997 years --> °C/6k years
+                } else {
+                    stop("setting ", prefixes[i], " not defined")
+                }
                 data_infos[[i]][[vi]]$label <- expression(paste("T"["2m"], " trend [°C/6k years]"))
                 data_infos[[i]][[vi]]$units <- "°C/6k years"
             }
@@ -2688,7 +2705,13 @@ for (i in seq_len(nsettings)) {
                 if (T) {
                     message("special unit lm_aprt_as_time_slope")
                     data_infos[[i]][[vi]]$offset$operator <- "*"
-                    data_infos[[i]][[vi]]$offset$value <- "6/7" # mm/month/7k years -> mm/month/6k years
+                    if (grepl("cosmos-aso-wiso_Hol-Tx10_", prefixes[i])) {
+                        data_infos[[i]][[vi]]$offset$value <- "600/701" # mm/month / 701 accelerated = 7001 not-accelerated years --> mm/month / 6k years
+                    } else if (grepl("cosmos-aso-wiso_Hol-T_", prefixes[i])) {
+                        data_infos[[i]][[vi]]$offset$value <- "6000/6997" # mm/month / 6997 years --> mm/month / 6k years
+                    } else {
+                        stop("setting ", prefixes[i], " not defined")
+                    }
                     data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/month/6k years]"))
                     data_infos[[i]][[vi]]$units <- "mm/month 6k years"
                 }
@@ -2698,11 +2721,16 @@ for (i in seq_len(nsettings)) {
                 if (T) {
                     message("special unit lm_aprt_as_time_slope")
                     data_infos[[i]][[vi]]$offset$operator <- "*"
-                    data_infos[[i]][[vi]]$offset$value <- "6/7" # mm/a/7k years -> mm/a/6k years
+                    if (grepl("cosmos-aso-wiso_Hol-Tx10_", prefixes[i])) {
+                        data_infos[[i]][[vi]]$offset$value <- "600/701" # mm/a / 701 accelerated = 7001 not-accelerated years --> mm/a / 6k years
+                    } else if (grepl("cosmos-aso-wiso_Hol-T_", prefixes[i])) {
+                        data_infos[[i]][[vi]]$offset$value <- "6000/6997" # mm/a / 6997 years --> mm/a / 6k years
+                    } else {
+                        stop("setting ", prefixes[i], " not defined")
+                    }
                     data_infos[[i]][[vi]]$label <- expression(paste("P"["total"], " trend [mm/a/6k years]"))
                     data_infos[[i]][[vi]]$units <- "mm/a 6k years"
                 }
-            
             }
 
         } else if (varname == "lm_act_fpc_as_time_slope") {
@@ -3465,7 +3493,7 @@ if (add_smoothed &&
     any(sapply(lapply(lapply(dims, names), "==", "time"), any)) &&
     #any(seasonsp == "Jan-Dec") && 
     !all(n_mas == 1)) {
-    message("\nsome settings have \"time\" dim AND `add_smoothed` = T AND some `n_mas` != 1 --> apply moving averages ...")
+    message("\nsome settings have time dim AND `add_smoothed` = T AND some `n_mas` != 1 --> apply moving averages ...")
     datasma <- datas
     for (i in seq_len(nsettings)) {
         message(i, "/", nsettings, ": ", names_short[i], " ...")
@@ -3480,9 +3508,8 @@ if (add_smoothed &&
                     n_mas_fname[i] <- paste0("_ma", round(n_mas[i]/npy), "yr") # years
                     apply_dims <- 1:length(dim(datas[[i]][[vi]]))
                     message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi], 
-                            ": n_mas[", i, "]: ", n_mas[i], " (ntime = ", length(dims[[i]]$time), 
-                            ", npy = ", npy, " --> ", n_mas[i], "/", npy, " = ", n_mas[i]/npy, 
-                            " year running mean)")
+                            ": ntime = ", length(dims[[i]]$time), ", npy = ", npy, " --> n_ma/npy = ", 
+                            n_mas[i], "/", npy, " = ", n_mas[i]/npy, " year running mean")
                     if (length(dims_of_var) == 1) { # variable has only 1 dim and its time
                         datasma[[i]][[vi]] <- stats::filter(datas[[i]][[vi]], filter=rep(1/n_mas[i], t=n_mas[i]))
                     } else { # variable has more than 1 dims
@@ -3517,12 +3544,12 @@ if (!exists("datasma")) {
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
     
     if (!calc_monthly_and_annual_climatology) {
-        message("\nsome settings have \"time\" dim but `calc_monthly_and_annual_climatology`=F --> ",
+        message("\nsome settings have time dim but `calc_monthly_and_annual_climatology`=F --> ",
                 "do not calc monthly climatology and annual means ...") 
     
     } else if (calc_monthly_and_annual_climatology) { 
 
-        message("\nsome settings have \"time\" dim --> calc monthly climatology and annual means ...")
+        message("\nsome settings have time dim --> calc monthly climatology and annual means ...")
         datasmon <- datasan <- datas # lazy declaration
         
         for (i in 1:nsettings) {
@@ -3694,7 +3721,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
     datasltm <- datas
     for (i in seq_len(nsettings)) {
-        if (i == 1) message("\nsome settings have \"time\" dim --> calc ltm ...")
+        if (i == 1) message("\nsome settings have time dim --> calc ltm ...")
         ltm_range <- paste0(dims[[i]]$time[1], " to ", dims[[i]]$time[length(dims[[i]]$time)])
         message(i, "/", nsettings, ": ", names_short[i], " (", ltm_range, ") ...")
         for (vi in 1:length(datas[[i]])) {
@@ -3725,7 +3752,11 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                         }
                         attributes(datasltm[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims[-timedimind]
                     }
-                    message(datasltm[[i]][[vi]], " ", data_infos[[i]][[vi]]$units)
+                    if (length(apply_dims) <= 2) { # paste ltms along dims
+                        message(paste(datasltm[[i]][[vi]], collapse=", "), " ", data_infos[[i]][[vi]]$units)
+                    } else { # show just mean along all dims
+                        message(mean(datasltm[[i]][[vi]]), " ", data_infos[[i]][[vi]]$units)
+                    }
                 } else { # time dim is of length 1 
                     datasltm[[i]][[vi]] <- NA
                 }
@@ -4875,7 +4906,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # time labels
                 tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
-                if (F) {
+                if (T) {
                     message("my special tlablt")
                     tlablt <- make_posixlt_origin(seq(-7000, 0, b=1000)) 
                 }
@@ -5085,7 +5116,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } else if (zname == "wisoaprt_d") {
                     point_data_varname <- "O18"
                     #point_data_label <- expression(paste("GNIP ", delta^{18}, "O"["p,SMOW"], " [‰]"))
-                    point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
+                    #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
+                    point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
                 }
                 tmp <- list()
                 cnt <- 0
@@ -5121,8 +5153,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     tmp <- bartlein_etal_2011$mat_MH_minus_PI
                 } else if (zname == "lm_aprt_as_time_slope") {
                     point_data_varname <- "map_trend"
-                    #point_data_label <- "B11 MAP trend [mm/year/6k years]" 
-                    point_data_label <- "Proxy precipitation trend [mm/year/6k years]" 
+                    #point_data_label <- "B11 MAP trend [mm/a/6k years]" 
+                    point_data_label <- "Proxy precipitation trend [mm/a/6k years]" 
                     point_data_legend <- "B11"
                     tmp <- bartlein_etal_2011$map_MH_minus_PI
                 }
@@ -5162,7 +5194,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data_legend <- "K20"
                 tmp <- kaufman_etal_2020_temp12k
                 for (i in seq_along(tmp)) { # add the linear trend as data point
-                    tmp[[i]]$time_ts <- tmp[[i]]$time # save ts time
+                    tmp[[i]]$time_ts <- tmp[[i]]$time # save original time series time
                     tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
                     tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     tmp[[i]]$varname <- point_data_varname 
@@ -5181,11 +5213,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (T && exists("global_holocene_lipd_precip") && zname == "lm_aprt_as_time_slope") {
                 point_data_fname <- "global_holocene_lipd_precip"
                 point_data_varname <- "precipitation_trend"
-                point_data_label <- "Proxy precipitation trend [mm/year/6k years]" # mean annual temperature
+                point_data_label <- "Proxy precipitation trend [mm/a/6k years]" # mean annual temperature
                 point_data_legend <- "LiPD"
                 tmp <- global_holocene_lipd_precip
                 for (i in seq_along(tmp)) { # add the linear trend as data point
-                    tmp[[i]]$time_ts <- tmp[[i]]$time # save ts time
+                    tmp[[i]]$time_ts <- tmp[[i]]$time # save original time series time
                     tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder for point data
                     tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     tmp[[i]]$varname <- point_data_varname 
@@ -5212,6 +5244,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
                 tmp <- kaufman_etal_2020_temp12k_d18o
                 for (i in seq_along(tmp)) { # add the linear trend as data point
+                    tmp[[i]]$time_ts <- tmp[[i]]$time # save original time series time
                     tmp[[i]]$time <- make_posixlt_origin(-6000) # placeholder for trend
                     tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     tmp[[i]]$varname <- point_data_varname 
@@ -5227,8 +5260,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 rm(tmp)
             } # if konecky_etal_2020_iso2k_d18o_precip
             
-            if (F && exists("konecky_etal_2020_iso2k_d18o_precip") && 
-                any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
+            if (T && exists("konecky_etal_2020_iso2k_d18o_precip") && 
+                any(zname == c("wisoaprt_d" 
+                               #, "lm_wisoaprt_d_post_as_time_slope" # d18o trends are already included in temp12k
+                               ))) {
                 point_data_fname <- "iso2k-precip"
                 point_data_legend <- "Iso2k 1.0.0"
                 if (zname == "wisoaprt_d") {
@@ -5242,6 +5277,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
                 tmp <- konecky_etal_2020_iso2k_d18o_precip
                 for (i in seq_along(tmp)) { # add the linear trend as data point
+                    tmp[[i]]$time_ts <- tmp[[i]]$time # save original time series time
                     if (zname == "wisoaprt_d") {
                         # nothing to do
                     } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
@@ -5252,8 +5288,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     tmp[[i]]$fname <- point_data_fname
                     tmp[[i]]$label <- point_data_label
                     tmp[[i]]$legend <- point_data_legend
-                    tmp[[i]]$colno <- 2 #1 2
-                    tmp[[i]]$pchno <- 2 #1 2
+                    tmp[[i]]$colno <- 2 #2 4
+                    tmp[[i]]$pchno <- 2 #2 4
                 }
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
                         point_data_fname, " to point_data ...")
@@ -5262,7 +5298,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # if konecky_etal_2020_iso2k_d18o_precip
             
             if (T && exists("konecky_etal_2020_iso2k_d18o_nonprecip") && 
-                any(zname == c("wisoaprt_d", "lm_wisoaprt_d_post_as_time_slope"))) {
+                any(zname == c(#"wisoaprt_d"
+                               "lm_wisoaprt_d_post_as_time_slope"
+                               ))) {
                 point_data_fname <- "iso2k-nonprecip"
                 point_data_legend <- "Iso2k-nonprecip"
                 if (zname == "wisoaprt_d") {
@@ -5277,6 +5315,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
                 tmp <- konecky_etal_2020_iso2k_d18o_nonprecip
                 for (i in seq_along(tmp)) { # add the linear trend as data point
+                    tmp[[i]]$time_ts <- tmp[[i]]$time # save original time series time
                     if (zname == "wisoaprt_d") {
                         # nothing to do
                         if (F) {
@@ -5285,7 +5324,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             tmp[[i]][[point_data_varname]] <- mean(tmp[[i]], na.rm=T)
                         }
                     } else  if (zname == "lm_wisoaprt_d_post_as_time_slope") {
-                        tmp[[i]]$time_orig <- tmp[[i]]$time
                         tmp[[i]]$time <- make_posixlt_origin(-6000) # placeholder for trend
                         tmp[[i]][[point_data_varname]] <- tmp[[i]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
                     }
@@ -5293,8 +5331,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     tmp[[i]]$fname <- point_data_fname
                     tmp[[i]]$label <- point_data_label
                     tmp[[i]]$legend <- point_data_legend
-                    tmp[[i]]$colno <- 3 #2
-                    tmp[[i]]$pchno <- 3 #2
+                    tmp[[i]]$colno <- 3 #2 3
+                    tmp[[i]]$pchno <- 3 #2 3
                 }
                 message("add ", length(tmp), " ", point_data_varname, " from ", 
                         point_data_fname, " to point_data ...")
@@ -5318,11 +5356,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
                 tmp <- comas_bru_etal_2020_sisal_d18o_precip
                 for (i in seq_along(comas_bru_etal_2020_sisal_d18o_precip)) {
+                    tmp[[i]]$time_ts <- tmp[[i]]$time # save original time series time
                     timeinds <- seq_along(tmp[[i]]$time) # default: all
                     if (F) { 
                         if (i == 1) message("use only PI from comas_bru_etal_2020_sisal_d18o_precip")
                         # PI mean: cauquoin et al. 2019: "defined as the interval 1850–1990 CE" 
-                        #--> from -100 before 1950 CE to 40 from 1950 CE
+                        #--> from 100 before 1950 CE to 40 from 1950 CE
                         if (attributes(tmp[[i]]$time)$origin == 1950) {
                             timeinds <- which(tmp[[i]]$time$year+1900 >= -100 &
                                               tmp[[i]]$time$year+1900 <= 40)
@@ -5335,7 +5374,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             # nothing to do
                         } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
                             # add linear trend as data point
-                            tmp[[i]]$time_orig <- tmp[[i]]$time
+                            tmp[[i]]$from <- min(tmp[[i]]$time$year + 1900)
+                            tmp[[i]]$to <- max(tmp[[i]]$time$year + 1900)
+                            tmp[[i]][["lm_label"]] <- tmp[[i]][[point_data_varname]]$lm_label
+                            # next lines overwrite input data
                             tmp[[i]]$time <- make_posixlt_origin(-6000) # placeholder for trend
                             tmp[[i]][[point_data_varname]] <- 
                                 tmp[[i]][[point_data_varname]]$lm_slope_per_year*6000 # trend/yr --> trend/6k yrs
@@ -5344,8 +5386,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         tmp[[i]]$fname <- point_data_fname
                         tmp[[i]]$label <- point_data_label
                         tmp[[i]]$legend <- point_data_legend
-                        tmp[[i]]$colno <- 2
-                        tmp[[i]]$pchno <- 2
+                        tmp[[i]]$colno <- 2 #2 3
+                        tmp[[i]]$pchno <- 2 #2 3
                     } else {
                         tmp[[i]] <- NA
                     } # if timeinds
@@ -5373,40 +5415,53 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     message("replace meyer et al. xlsx emanda with kostrova et al. 2021 emanda ...")
                     emandaind <- which(names(meyer_etal$data) == "emanda")
                     inds <- seq_along(kostrova_etal_2021$data$time)
-                    if (T) {
+                    if (F) {
                         message("  --> use only younger than 10k BP ...")
                         inds <- which(kostrova_etal_2021$data$time$year + 1900 > -10000)
+                    } else if (T) {
+                        message("  --> use only younger than 7k BP ...")
+                        inds <- which(kostrova_etal_2021$data$time$year + 1900 > -7000)
                     }
                     meyer_etal$data[[emandaind]]$data <- list(d18o_corr_perm=kostrova_etal_2021$data$d18o_corr_perm[inds],
                                                               timelt=kostrova_etal_2021$data$time[inds])
                     meyer_etal$data[[emandaind]]$data$time <- as.POSIXct(meyer_etal$data[[emandaind]]$data$timelt)
+                    meyer_etal$data[[emandaind]]$loc <- kostrova_etal_2021$loc
+                    meyer_etal$data[[emandaind]]$ref <- kostrova_etal_2021$ref
+                    meyer_etal$data[[emandaind]]$text <- kostrova_etal_2021$text
                 }
                 # add swann et al. 2010 from pangaea to meyer et al xlsx at elgygytgyn
                 if (exists("pg")) {
                     varind <- which(names(pg) == "d18o_w_smow")
-                    if (T && any(names(meyer_etal$data) == "elgygytgyn") && any(names(pg[[varind]]) == "swann_etal_2010")) {
-                        gygyind <- which(names(meyer_etal$data) == "elgygytgyn")
-                        meyer_etal$data[[length(meyer_etal$data)+1]] <- meyer_etal$data[[gygyind]] # copy lon,lat etc.
+                    if (T && any(names(pg[[varind]]) == "swann_etal_2010")) {
                         doiind <- which(names(pg[[varind]]) == "swann_etal_2010")
                         eventind <- 1
                         message("add d18o_smow pangaea event \"", names(pg[[varind]][[doiind]])[eventind], 
                                 "\" from swann_etal_2010 to meyer et al xlsx ...")
                         inds <- seq_along(pg[[varind]][[doiind]][[eventind]]$dims$time)
-                        if (T) {
+                        if (F) {
                             message("  --> only use younger than 10k BP ...")
                             inds <- which(pg[[varind]][[doiind]][[eventind]]$dims$time$year + 1900 > -10000)
+                        } else if (T) {
+                            message("  --> only use younger than 7k BP ...")
+                            inds <- which(pg[[varind]][[doiind]][[eventind]]$dims$time$year + 1900 > -7000)
                         }
-                        meyer_etal$data[[length(meyer_etal$data)]]$data <- list(timelt=pg[[varind]][[doiind]][[eventind]]$dims$time[inds],
-                                                                                d18o_corr_perm=pg[[varind]][[doiind]][[eventind]]$data[inds])
+                        meyer_etal$data[[length(meyer_etal$data) + 1]] <- list(data=list(timelt=pg[[varind]][[doiind]][[eventind]]$dims$time[inds],
+                                                                                         d18o_corr_perm=pg[[varind]][[doiind]][[eventind]]$data[inds]),
+                                                                               ref="Swann et al. 2010",
+                                                                               loc="El’gygytgyn (F)",
+                                                                               lon=pg[[varind]][[doiind]][[eventind]]$lon,
+                                                                               lat=pg[[varind]][[doiind]][[eventind]]$lat,
+                                                                               text="F: El’gygytgyn (Swann et al. 2010)")
                         meyer_etal$data[[length(meyer_etal$data)]]$data$time <- as.POSIXct(meyer_etal$data[[length(meyer_etal$data)]]$data$timelt)
                         names(meyer_etal$data)[length(meyer_etal$data)] <- "elgygytgyn_swann_etal_2010"
-                        meyer_etal$data[[length(meyer_etal$data)]]$text <- "F: El’gygytgyn (Swann et al. 2010)"
                     }
                 }
                 # calc lm of scaled PLOT time series
                 tmp <- vector("list", l=length(meyer_etal$data))
                 for (i in seq_along(tmp)) { # loop through lakes
                     tmp[[i]] <- list(PLOT_lake=names(meyer_etal$data)[i],
+                                     ref=meyer_etal$data[[i]]$ref,
+                                     loc=meyer_etal$data[[i]]$loc,
                                      lon=meyer_etal$data[[i]]$lon,
                                      lat=meyer_etal$data[[i]]$lat,
                                      varname=point_data_varname,
@@ -5414,17 +5469,25 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                      label=point_data_label,
                                      legend=point_data_legend,
                                      colno=4, pchno=4)
+                    tmp[[i]]$time_ts <- meyer_etal$data[[i]]$data$timelt # save original time series time
+                    tmp[[i]]$from <- min(meyer_etal$data[[i]]$data$timelt$year + 1900)
+                    tmp[[i]]$to <- max(meyer_etal$data[[i]]$data$timelt$year + 1900)
+                    
+                    # calc lm
                     x <- meyer_etal$data[[i]]$data$time
                     y <- scale(meyer_etal$data[[i]]$data$d18o_corr_perm)
+                    message("calc lm of lake ", tmp[[i]]$PLOT_lake, " of `meyer_etal` data from ",
+                            min(x), " to ", max(x), " for `point_data` ...")
                     if (zname == "wisoaprt_d") {
                         tmp[[i]]$time <- x
                         tmp[[i]][[point_data_varname]] <- y
                     } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
                         lm <- lm(y ~ x)
-                        pval <- summary(lm)$coefficients[2,4] #get_pval(lm)
+                        lm_summary <- summary(lm)
+                        pval <- lm_summary$coefficients[2,4] # get_pval(lm)
+                        message("--> trend pval = ", pval, " ", appendLF=F)
                         if (pval > 0.01) {
-                            message("lake ", i, " ", tmp[[i]]$PLOT_lake, " has trend pval = ", 
-                                    pval, " > 0.01 --> ignore this lake") 
+                            message("> 0.01 --> ignore this lake") 
                             tmp[[i]] <- NA
                         } else {
                             nyears <- diff(range(as.POSIXlt(x)$year)) # --> zero if all data points from same year
@@ -5432,6 +5495,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             if (lm$coefficients[2] < 0) slope_per_year <- -1*slope_per_year
                             tmp[[i]]$time <- make_posixlt_origin(-6000) # just placeholder
                             tmp[[i]][[point_data_varname]] <- slope_per_year*6000 # trend/yr --> trend/6k yrs
+                            lm_label <- paste0("r=", round(sqrt(lm_summary$r.squared), 2), ", p")
+                            if (pval < 1e-4) {
+                                lm_label <- paste0(lm_label, "<1e-4")
+                            } else {
+                                lm_label <- paste0(lm_label, "=", round(pval, 4)) 
+                            }
+                            lm_label <- paste0(lm_label, ", df=", lm_summary$fstatistic["dendf"])
+                            message("--> slope_per_year = ", slope_per_year, " --> ", lm_label)
+                            tmp[[i]]$lm_label <- lm_label
                         }
                     }
                 } # for i
@@ -5446,7 +5518,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (T && exists("pg")) {
                 if (zname == "wisoaprt_d" && any(names(pg) == "d18o_w_smow")) {
                     point_data_varname <- "d18o_w_smow"
-                    point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
+                    #point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p,SMOW"], " [‰]"))
+                    point_data_label <- expression(paste("Proxy ", delta^{18}, "O"["p/w,SMOW"], " [‰]"))
                     # find time series of wanted time
                     for (i in seq_along(pg$d18o_w_smow)) { # dois
                         point_data_fname <- names(pg$d18o_w_smow)[i]
@@ -5521,25 +5594,27 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     stop("there are ", length(point_data_label_unique), 
                          " different `point_data_label_unique`: \"",
                          paste(point_data_label_unique, collapse="\", \""), "\"")
+                    #options(width=200); data.frame(point_data_fname, point_data_labelp)
                 }
-
-                # find model data points from z_points locations
                 message("--> ", length(point_data), " point_data defined for zname = \"", 
                         zname, "\": \"", 
                         paste(unique(sapply(point_data, "[[", "fname")), collapse="\", \""), "\"") 
+
+                # find obs and model data points from same area and interpolate
+                message("\nfind obs and model data points from same area ...")
                 xp <- yp <- z
                 for (i in seq_along(z)) { # for all settings
                     xp[[i]] <- yp[[i]] <- NA # default
                     # reduce data: use only locations within lon,lat lims
                     z_lonlim <- range(d$lon[[i]]); z_latlim <- range(d$lat[[i]])
-                    message("******\nsetting ", i, " ", names_short[i], 
-                            " lon,lat-data within area ",
-                            areas_p[i], ": ",
+                    message("\n****************************************************\n",
+                            "setting ", i, "/", length(z), ": ", names_short[i], 
+                            " lon,lat-data within area ", areas_p[i], ": ",
                             z_lonlim[1], " to ", z_lonlim[2], "° lon ", 
                             z_latlim[1], " to ", z_latlim[2], "° lat ...")
                     point_data_lons <- sapply(point_data, "[[", "lon")
                     point_data_lats <- sapply(point_data, "[[", "lat")
-                    message("check ", length(point_data), 
+                    message("--> check ", length(point_data), 
                             " point_datap locations with lon,lat-coords ", 
                             min(point_data_lons), " to ", 
                             max(point_data_lons), "° lon and ", 
@@ -5549,8 +5624,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                         point_data_lons <= z_lonlim[2] &
                                         point_data_lats >= z_latlim[1] & 
                                         point_data_lats <= z_latlim[2])
-                    message("found ", length(lonlatinds), "/", length(point_data), 
-                            " point_datap locations within this model data area")
+                    message("--> found ", length(lonlatinds), "/", length(point_data), 
+                            " point_datap locations within model data area")
                         
                     # some point_data locations are within model data area
                     if (length(lonlatinds) > 0) { 
@@ -5571,7 +5646,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
                         
                         # check for duplicate lon,lat pairs in point_datap
-                        message("\ncheck for duplicate point_data locations ...")
+                        message("--> check for duplicate point_data locations ...")
                         lons <- sapply(point_datap, "[[", "lon")
                         lats <- sapply(point_datap, "[[", "lat")
                         cnt <- 0
@@ -5585,9 +5660,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                    paste(unique(paste0(fnames, "_", varnames)), collapse="_"),
                                                    ".pdf")
                                 if (!file.exists(plotname)) { # not already covered before
-                                    message("****************************************************",
-                                            "\nlon,lat-combination ", j, "/", length(point_datap), 
-                                            " = ", lons[j], "°lon and ", lats[j], "°lat occurs ", 
+                                    message("lon,lat-combination ", j, "/", length(point_datap), 
+                                            " = ", lons[j], "° lon and ", lats[j], "° lat occurs ", 
                                             length(inds), " times in point_datap: inds = c(", 
                                             paste(inds, collapse=", "), ")")
                                     x <- lapply(point_datap[inds], "[[", "time")
@@ -5633,9 +5707,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
                         
                         # apply seasonal subset and apply temporal mean to all point data coords within lon,lat-lims
-                        message("\ncalc seasonal mean seasonsp_p[", i, "] = ", seasonsp_p[i], " of ",
-                                length(point_datap), " point_datap locations (use months ", 
-                                paste(season_inds, collapse=","), ") ...") 
+                        message("--> calc seasonal mean seasonsp_p[", i, "] = ", seasonsp_p[i], " of ",
+                                length(point_datap), " point_datap locations ...")
+                        message("--> use months ", paste(season_inds, collapse=","))
                         for (j in seq_along(point_datap)) { # for every point data location
                             mu <- n_mu <- range_mu <- NA # default mean
                             if (!is.null(point_datap[[j]][[point_data_varname[j]]]) && # if current location has wanted varname
@@ -5705,26 +5779,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         # interp closest model locations to remaining point data locations
                         if (!is.null(point_datap)) {
                             rangetot <- range(lapply(point_datap, "[[", "data_mean_rangetime"))
-                            message("interp model data to ", length(point_datap), " non-NA ", 
-                                    seasonsp_p[i], " point_datap locations from\n   ", 
+                            message("--> interp model data to ", length(point_datap), " non-NA ", 
+                                    seasonsp_p[i], " point_datap locations from ", 
                                     as.POSIXlt(rangetot, o="1970-1-1")[1], " to ", 
-                                    as.POSIXlt(rangetot, o="1970-1-1")[2], "\nwith interp_method = ", 
-                                    interp_method, " ...")
+                                    as.POSIXlt(rangetot, o="1970-1-1")[2], " ...")
+                            message("--> interp_method = ", interp_method, " ...")
                             model_data <- rep(NA, t=length(point_datap))
                             for (j in seq_along(point_datap)) {
                                 if (!any(search() == "package:pracma")) suppressMessages(library(pracma))
                                 if (interp_method == "barylag2d") {
                                     stop("not yet")
                                 } else {
-                                    # pracma::interp2 uses x,y in oppsite order
+                                    # pracma::interp2 uses x,y in flipped order
                                     model_data[j] <- pracma::interp2(x=d$lat[[i]], y=d$lon[[i]], Z=z[[i]],
                                                                      xp=point_datap[[j]]$lat, 
                                                                      yp=point_datap[[j]]$lon, 
-                                                                     method=interp_method)
+                                                                     method=interp_method) # result is NaN if model input is NA
                                 }
                             } # for j in point data lon,lat-subset data
                             
-                            # save for scatter plot
+                            # save in xp and yp for plot
                             xp[[i]] <- sapply(point_datap, "[[", "data_mean")
                             attributes(xp[[i]])$lon <- sapply(point_datap, "[[", "lon")
                             attributes(xp[[i]])$lat <- sapply(point_datap, "[[", "lat")
@@ -5740,24 +5814,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             attributes(xp[[i]])$from <- apply(sapply(point_datap, "[[", "data_mean_rangetime"), 2, min)
                             attributes(xp[[i]])$to <- apply(sapply(point_datap, "[[", "data_mean_rangetime"), 2, max) 
                             #attributes(xp[[i]])$origin <- sapply(lapply(sapply(point_datap, "[[", "time"), attributes), "[[", "origin")
-                            yp[[i]] <- model_data
+                            yp[[i]] <- model_data # possibly NA data
+
+                            if (length(xp[[i]]) != length(yp[[i]])) stop("this should not happen")
                         
                             # make attributes sticky (not removed by subsetting)
                             if (!any(search() == "package:sticky")) suppressPackageStartupMessages(library(sticky))
                             xp[[i]] <- sticky::sticky(xp[[i]])
                             yp[[i]] <- sticky::sticky(yp[[i]])
-
-                            # remove NA
-                            if (any(is.na(xp[[i]]))) {
-                                inds <- which(is.na(xp[[i]]))
-                                xp[[i]] <- xp[[i]][-inds]
-                                yp[[i]] <- yp[[i]][-inds]
-                            }
-                            if (any(is.na(yp[[i]]))) {
-                                inds <- which(is.na(yp[[i]]))
-                                xp[[i]] <- xp[[i]][-inds]
-                                yp[[i]] <- yp[[i]][-inds]
-                            }
 
                             # save obs as netcdf
                             if (F && length(xp[[i]]) > 0) {
@@ -5804,10 +5868,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             } # save temporally averaged point data as netcdf or not 
                         } # if any point_data points remain after seasonal subset
                     } # if any point_data lon,lat coords are within model data area
-                } # for i in z
+                } # for i nsettings
 
-                ## different model setups (yp) vs respective obs (xp) in one scatter plot
-                if (!all(sapply(lapply(xp, is.na), all))) {
+
+                ## scatter plot: different model setups (yp) vs respective obs (xp)
+                if (!all(sapply(lapply(yp, is.na), all))) {
 
                     # survived point_datap
                     xp_colno <- lapply(lapply(xp, attributes), "[[", "colno") # list of length nsettings
@@ -5821,116 +5886,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     xp_tlims <- lapply(lapply(xp, attributes), "[[", "ranges") # list of length nsettings, each having dims = (2,nxp) 
                   
                     # special: save survived point_datap as latex table
-                    if (T) {
+                    if (T && length(xp) == 1) {
                         message("\nspecial: save survived point_datap as latex table")
                         
-                        # table a2 jqs paper
-                        if (all(xp_legend_unique[[1]] == "LiPD")) {
-                            inds <- which(xp_legend[[1]] == "LiPD")
-                            if (zname == "lm_aprt_as_time_slope") {
-                                latex_varname <- "$P$"
-                                latex_varname_thead <- "$P$\\\\trend"
-                                latex_unit <- "mm/year/6k years"
-                                latex_caption <- paste0("Linked Paleo Data (LiPD) records used for linear trends of ",
-                                                        "annual precipitation ", latex_varname, " (in ", latex_unit, ") shown in Fig. ",
-                                                        "\\ref{fig:trend_tsurf_aprt_annual_bartlein_kaufman_lipd} ",
-                                                        "and \\ref{fig:scatter_linear_midHolocene_bartlein_kaufman_lipd}. ",
-                                                        "Only those proxy records were included whose database fields ",
-                                                        "\\textit{variableName} = \"precipitation\", \\textit{units} = \"mm\" ",
-                                                        "or \"mm/yr\", \\textit{seasonality} = \"annual\", ",
-                                                        "which cover a period of at least 2000 years and where the p-value of ",
-                                                        "the least square trend from 7k to 0 BP is smaller than 0.01. ",
-                                                        "The LiPD reference denotes the suffix to the URL ",
-                                                        "\\href{https://lipdverse.org/globalHolocene/1_0_0/}",
-                                                        "{https://lipdverse.org/globalHolocene/1\\_0\\_0/$<$LiPD reference$>$.html}, ",
-                                                        "maintained by Nicholas McKay. Duplicate LiPD references denote different samples per site. ",
-                                                        "Start and End columns provide years before 0 BP.")
-                            } else {
-                                stop("not defined")
-                            }
-                            columns <- paste0("\\thead{No}",
-                                              " & \\theadl{LiPD reference}",
-                                              " & \\thead{lon [$^{\\circ}$]}",
-                                              " & \\thead{lat [$^{\\circ}$]}",
-                                              " & \\thead{Start}",
-                                              " & \\thead{End}",
-                                              " & \\thead{", latex_varname_thead, "}",
-                                              " & \\thead{Trend\\\\summary}",
-                                              "\\\\")
-                            lines <- c("\\fontsize{9}{6}\\selectfont",
-                                       "\\begin{longtable}{@{}rlrrrrrr@{}}",
-                                       paste0("\\caption{", latex_caption, "}\\label{tab:appendix_lipd}\\\\"),
-                                       "\\toprule",
-                                       columns,
-                                       "\\endfirsthead",
-                                       "\\toprule",
-                                       columns,
-                                       "\\midrule",
-                                       "\\endhead",
-                                       "\\midrule")
-                            for (i in seq_along(inds)) {
-                                line <- paste0(i, " &")
-                                lipd_ref <- tools::file_path_sans_ext(basename(point_datap[[inds[i]]]$lipd$lipdverseLink))
-                                #if (grepl("yCorMontana", lipd_ref)) stop("asdasd")
-                                if (grepl("_", lipd_ref)) {
-                                    lipd_ref <- sub("_", "\\\\_", lipd_ref)
-                                }
-                                line <- paste0(line, " \\href{", point_datap[[inds[i]]]$lipd$lipdverseLink, 
-                                               "}{", lipd_ref, "}")
-                                line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lon, 3))
-                                line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lat, 3))
-                                o <- attributes(point_datap[[inds[i]]]$time_ts)$origin
-                                if (o == 1950) {
-                                    fromto_1950 <- abs(range(point_datap[[inds[i]]]$time_ts$year + 1900)) # years before 1950
-                                    #fromto_1950 <- as.Date(fromto_1950)
-                                } else if (o == 0) {
-                                    stop("not defined")
-                                } else {
-                                    stop("not defined")
-                                }
-                                line <- paste0(line, " & ", fromto_1950[1])
-                                line <- paste0(line, " & ", fromto_1950[2])
-                                line <- paste0(line, " & ", round(point_datap[[inds[i]]]$data_mean))
-                                lm_summary <- point_datap[[inds[i]]]$lm_label
-                                if (grepl("<", lm_summary)) {
-                                    lm_summary <- sub("<", "$<$", lm_summary)
-                                }
-                                line <- paste0(line, " & ", lm_summary)
-                                line <- paste0(line, "\\\\")
-                                lines <- c(lines, line)
-                            } # for i inds
-                            lines <- c(lines, 
-                                       "\\bottomrule",
-                                       "\\end{longtable}", 
-                                       "\\normalsize")
-                            fout <- paste0("LiPD_", zname, "_table.txt")
-                            message("save ", fout, " ...")
-                            writeLines(lines, con=fout)
-                    
-                        # table a3 jqs paper
-                        } else if (all(grepl(paste(c("Temp12", "Iso2k", "SISAL", "PLOT"), collapse="|"), xp_legend_unique[[1]]))) {
-                            for (i in seq_along(xp_legend_unique[[1]])) {
-                                message("############################ ", xp_legend_unique[[1]][i])
-                                inds <- which(xp_legend[[1]] == xp_legend_unique[[1]][i])
-                                for (j in seq_along(inds)) {
-                                    if (j == 1) {
-                                        message(inds[j], ":")
-                                        print(str(point_datap[[inds[j]]], max.level=1))
-                                    }
-                                }
-                                #if (grepl("Temp12", xp_legend_unique[[1]][i])) { # 
-                                    
-                                #}
-                            } # for i in xp_legend_unique[[1]]
-                            stop("table stop")
-
                         # table a1 jqs paper
-                        } else if (all(xp_legend_unique[[1]] == "Pangaea")) {
+                        if (T && any(xp_legend_unique[[1]] == "Pangaea")) {
                             # save survived pangaea dois as latex table
                             # one multi-row per unique pangaea bibtex entry (and not DOI) because:
                             # different pangaea DOIs may have the same bibtex entry! 
                             message("\nspecial: save survived pangaea dois as latex table")
-                            inds <- which(xp_legend == "Pangaea")
+                            inds <- which(xp_legend[[1]] == "Pangaea")
                             pdois <- sapply(point_datap[inds], "[[", "doi")
                             pdois_unique <- unique(pdois)
                             bibtex <- vector("list", l=length(pdois_unique))
@@ -5995,6 +5960,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$lon, 3))
                                     line[j] <- paste0(line[j], " & ", round(point_datap[[inds2[j]]]$lat, 3))
                                     o <- attributes(point_datap[[inds2[j]]]$time)$origin
+                                    if (is.null(o)) stop("posixlt object does not yet have `origin` attribute")
                                     if (o == 1950) {
                                         fromto_1950 <- as.POSIXlt(point_datap[[inds2[j]]]$data_mean_rangetime, o="1970-1-1", tz="UTC")
                                         fromto_1950 <- fromto_1950$year + 1900
@@ -6032,15 +5998,207 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             fout <- paste0("pangaea_table_", paste(prefs, collapse="_"), ".txt")
                             message("save ", fout, " ...")
                             writeLines(lines, con=fout)
-                        } # if any(xp_legend_unique[[1]] == "Pangaea")
-                    
+                        
+                        } # if table a1
+                        
+                        # table a2 jqs paper
+                        if (F && any(xp_legend_unique[[1]] == "LiPD")) {
+                            inds <- which(xp_legend[[1]] == "LiPD")
+                            if (zname == "lm_aprt_as_time_slope") {
+                                latex_varname <- "$P$"
+                                latex_varname_thead <- "$P$\\\\trend"
+                                latex_unit <- "mm/year/6k years"
+                                latex_caption <- paste0("Linked Paleo Data (LiPD) records used for linear trends of ",
+                                                        "annual precipitation ", latex_varname, " (in ", latex_unit, ") shown in Fig. ",
+                                                        "\\ref{fig:trend_tsurf_aprt_annual_bartlein_kaufman_lipd} ",
+                                                        "and \\ref{fig:scatter_linear_midHolocene_bartlein_kaufman_lipd}. ",
+                                                        "Only those proxy records were included whose database fields ",
+                                                        "\\textit{variableName} = \"precipitation\", \\textit{units} = \"mm\" ",
+                                                        "or \"mm/yr\", \\textit{seasonality} = \"annual\", ",
+                                                        "which cover a period of at least 2000 years and where the p-value of ",
+                                                        "the least square trend from 7k to 0 BP is smaller than 0.01. ",
+                                                        "The LiPD reference denotes the suffix to the URL ",
+                                                        "\\href{https://lipdverse.org/globalHolocene/1_0_0/}",
+                                                        "{https://lipdverse.org/globalHolocene/1\\_0\\_0/$<$LiPD reference$>$.html}, ",
+                                                        "maintained by Nicholas McKay. Duplicate LiPD references denote different samples per site. ",
+                                                        "Start and End columns provide years before 0 BP.")
+                            } else {
+                                stop("not defined")
+                            }
+                            columns <- paste0("\\thead{No}",
+                                              " & \\theadl{LiPD reference}",
+                                              " & \\thead{lon [$^{\\circ}$]}",
+                                              " & \\thead{lat [$^{\\circ}$]}",
+                                              " & \\thead{Start}",
+                                              " & \\thead{End}",
+                                              " & \\thead{", latex_varname_thead, "}",
+                                              " & \\thead{Trend\\\\summary}",
+                                              "\\\\")
+                            lines <- c("\\fontsize{9}{6}\\selectfont",
+                                       "\\begin{longtable}{@{}rlrrrrrr@{}}",
+                                       paste0("\\caption{", latex_caption, "}\\label{tab:appendix_lipd}\\\\"),
+                                       "\\toprule",
+                                       columns,
+                                       "\\endfirsthead",
+                                       "\\toprule",
+                                       columns,
+                                       "\\midrule",
+                                       "\\endhead",
+                                       "\\midrule")
+                            for (i in seq_along(inds)) {
+                                line <- paste0(i, " &")
+                                lipd_ref <- tools::file_path_sans_ext(basename(point_datap[[inds[i]]]$lipd$lipdverseLink))
+                                #if (grepl("yCorMontana", lipd_ref)) stop("asdasd")
+                                if (grepl("_", lipd_ref)) lipd_ref <- gsub("_", "\\\\_", lipd_ref)
+                                line <- paste0(line, " \\href{", point_datap[[inds[i]]]$lipd$lipdverseLink, 
+                                               "}{", lipd_ref, "}")
+                                line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lon, 3))
+                                line <- paste0(line, " & ", round(point_datap[[inds[i]]]$lat, 3))
+                                o <- attributes(point_datap[[inds[i]]]$time_ts)$origin
+                                if (is.null(o)) stop("posixlt object does not yet have `origin` attribute")
+                                if (o == 1950) {
+                                    fromto_1950 <- abs(range(point_datap[[inds[i]]]$time_ts$year + 1900)) # years before 1950
+                                    #fromto_1950 <- as.Date(fromto_1950)
+                                } else if (o == 0) {
+                                    stop("not defined")
+                                } else {
+                                    stop("not defined")
+                                }
+                                line <- paste0(line, " & ", fromto_1950[1])
+                                line <- paste0(line, " & ", fromto_1950[2])
+                                line <- paste0(line, " & ", round(point_datap[[inds[i]]]$data_mean))
+                                lm_summary <- point_datap[[inds[i]]]$lm_label
+                                if (grepl("<", lm_summary)) {
+                                    lm_summary <- sub("<", "$<$", lm_summary)
+                                }
+                                line <- paste0(line, " & ", lm_summary)
+                                line <- paste0(line, "\\\\")
+                                lines <- c(lines, line)
+                            } # for i inds
+                            lines <- c(lines, 
+                                       "\\bottomrule",
+                                       "\\end{longtable}", 
+                                       "\\normalsize")
+                            fout <- paste0("LiPD_", zname, "_table.txt")
+                            message("save ", fout, " ...")
+                            writeLines(lines, con=fout)
+                        
+                        } # if table a2 
+                        
+                        # table a3 jqs paper
+                        if (T && all(grepl("Temp12k|Iso2k|SISAL|PLOT", xp_legend_unique[[1]]))) {
+                            if (zname == "lm_wisoaprt_d_post_as_time_slope") {
+                                latex_varname_thead <- "$\\delta^{18}$O\\\\trend"
+                                latex_caption <- paste0("Temp12k 1.0.0 \\citep{kaufman_etal_2020}, Iso2k 1.0.0 \\citep{konecky_etal_2020}, ",
+                                                        "SISAL 2.0 \\citep{comas-bru_etal_2020} and Eurasian lake (index time series) records used for ",
+                                                        "linear trends of annual mean $\\delta^{18}$O$_\\text{p/w/diatom,SMOW}$ ",
+                                                        "(in \\textperthousand/6k years) shown in Fig. ",
+                                                        "\\ref{fig:trend_wisoaprt_d_post_annual_kaufman_konecky_comas-bru_plot}. ",
+                                                        "Only those proxy records were included which cover a period of at least 2000 years and ",
+                                                        "where the p-value of the least square regression trend from 7k to 0 BP is smaller than 0.01 ",
+                                                        "(see methods). Start and End columns provide years before 0 BP.")
+                                columns <- paste0("\\mythead{No}",
+                                                  " & \\mytheadl{Data set}",
+                                                  #" & \\mytheadl{Reference}",
+                                                  " & \\mytheadl{Location}", 
+                                                  " & \\mythead{lon [$^{\\circ}$]}",
+                                                  " & \\mythead{lat [$^{\\circ}$]}",
+                                                  " & \\mythead{Start}",
+                                                  " & \\mythead{End}",
+                                                  " & \\mythead{", latex_varname_thead, "}",
+                                                  " & \\mythead{Trend\\\\summary}",
+                                                  "\\\\")
+                                lines <- c("\\fontsize{9}{6}\\selectfont", # % fontsize linespacing
+                                           #"\\begin{longtable}{@{}rlrrrrrrrr@{}}", # with ref and loc
+                                           "\\begin{longtable}{@{}rllrrrrrr@{}}", # with ref or loc
+                                           #"\\begin{longtable}{@{}rlrrrrrr@{}}", # without ref and loc
+                                           paste0("\\caption{", latex_caption, "}\\label{tab:appendix_d18O_trend}\\\\"),
+                                           "\\toprule",
+                                           columns,
+                                           "\\endfirsthead",
+                                           "\\toprule",
+                                           columns,
+                                           "\\midrule",
+                                           "\\endhead",
+                                           "\\midrule")
+                                inds <- seq_along(point_datap) # use all
+                                for (i in seq_along(inds)) {
+                                    dataset <- point_datap[[inds[i]]]$legend
+                                    if (dataset == "Iso2k-nonprecip") dataset <- "Iso2k 1.0.0"
+                                    if (dataset == "PLOT") dataset <- "Lake diatoms"
+                                    ref <- NA
+                                    if (any(point_datap[[inds[i]]]$fname == c("kaufman_etal_2020_temp12k_d18o", 
+                                                                              "iso2k-nonprecip",
+                                                                              "iso2k-precip"))) {
+                                        ref <- tools::file_path_sans_ext(basename(point_datap[[inds[i]]]$lipd$lipdverseLink))
+                                        ref <- paste0("\\href{", point_datap[[inds[i]]]$lipd$lipdverseLink, "}{", ref, "}")
+                                    } else if (point_datap[[inds[i]]]$fname == "sisal") {
+                                        ref <- "todo"
+                                    } else if (point_datap[[inds[i]]]$fname == "PLOT") {
+                                        ref <- point_datap[[inds[i]]]$ref
+                                    }
+                                    if (is.na(ref)) stop("implement")
+                                    if (grepl("_", ref)) ref <- gsub("_", "\\\\_", ref)
+                                    loc <- NA
+                                    if (any(point_datap[[inds[i]]]$fname == c("kaufman_etal_2020_temp12k_d18o", 
+                                                                              "iso2k-nonprecip",
+                                                                              "iso2k-precip"))) {
+                                        loc <- point_datap[[inds[i]]]$lipd$geo_siteName
+                                    } else if (any(point_datap[[inds[i]]]$fname == c("sisal", "PLOT"))) {
+                                        loc <- point_datap[[inds[i]]]$loc
+                                    }
+                                    if (is.na(loc)) stop("implement")
+                                    if (grepl("_", loc)) loc <- gsub("_", "\\\\_", loc)
+                                    lon <- round(point_datap[[inds[i]]]$lon, 3)
+                                    lat <- round(point_datap[[inds[i]]]$lat, 3)
+                                    o <- attributes(point_datap[[inds[i]]]$time_ts)$origin
+                                    if (is.null(o)) stop("posixlt object does not yet have `origin` attribute")
+                                    if (o == 1950) {
+                                        fromto_1950 <- abs(range(point_datap[[inds[i]]]$time_ts$year + 1900)) # years before 1950
+                                    } else if (o == 0) {
+                                        stop("not defined")
+                                    } else {
+                                        stop("not defined")
+                                    }
+                                    trend_val <- round(point_datap[[inds[i]]]$data_mean, 2)
+                                    lm_summary <- point_datap[[inds[i]]]$lm_label
+                                    if (grepl("<", lm_summary)) lm_summary <- sub("<", "$<$", lm_summary)
+
+                                    # add entries to line
+                                    line <- i # no
+                                    line <- paste0(line, " & ", dataset)
+                                    #line <- paste0(line, " & ", ref)
+                                    line <- paste0(line, " & ", loc)
+                                    line <- paste0(line, " & ", lon)
+                                    line <- paste0(line, " & ", lat)
+                                    line <- paste0(line, " & ", fromto_1950[1])
+                                    line <- paste0(line, " & ", fromto_1950[2])
+                                    line <- paste0(line, " & ", trend_val)
+                                    line <- paste0(line, " & ", lm_summary)
+                                    line <- paste0(line, "\\\\")
+                                    lines <- c(lines, line)
+                                } # for i inds
+                                lines <- c(lines, 
+                                           "\\bottomrule",
+                                           "\\end{longtable}", 
+                                           "\\normalsize")
+                                fout <- paste0("temp12k_iso2k_sisal_plot_", zname, "_table.txt")
+                                message("save ", fout, " ...")
+                                writeLines(lines, con=fout)
+
+                            } else {
+                                stop("not defined")
+                            }
+
+                        } # which latex table
+
                     } else {
-                        message("enable here to export latex tables ...")
+                        message("\nenable here to export latex tables ...")
                     } # if saved survived point_datap as latex table
                     # finished special: save survived point_data as latex table 
 
                     # group scatter point_data by?
-                    message("\ngroup color and pch of point_data xp/yp by what?")
+                    message("\ngroup color and pch of point_data xp and yp by what?")
                     scatterobscols <- scatterobspchs <- vector("list", l=length(xp))
                     for (i in seq_along(xp)) {
 
@@ -6053,7 +6211,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     known_seasons[[which(names(known_seasons) == seasonsp_p[i])]]$col,
                                                        t=length(xp[[i]]))
                         # color by xp_fname_unique
-                        } else if (F) { 
+                        } else if (T) { 
                             if (i == 1) message("color scatter by xp_fname_unique ...")
                             scatterobscols[[i]] <- mycols(max(xp_colno[[i]]))[xp_colno[[i]]]
                         
@@ -6090,17 +6248,29 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         
                     } # for i in xp
                     
-                    # scatter point_datap legend
+                    # scatter plot point_datap vs model legend
                     scatterobsle <- list(text=unique(unlist(xp_legend)))
+                    if (T) { # add number of individual datasets to scatter legend text
+                        message("add numbers of individual datasets of setting 1 to scatter legend text")
+                        tmp <- rep(NA, t=length(scatterobsle$text))
+                        for (i in seq_along(tmp)) {
+                            tmp[i] <- length(which(xp_legend[[1]] == scatterobsle$text[i]))
+                        }
+                        scatterobsle$text <- paste0(scatterobsle$text, " (n=", tmp, ")")
+                    }
                     if (T) {
+                        message("scatter legend cols by unique cols of setting 1 = ", appendLF=F)
+                        scatterobsle$col <- unique(scatterobscols[[1]])
+                    } else if (F) {
+                        message("scatter legend cols by first obs col = ", appendLF=F)
                         scatterobsle$col <- rep(unique(unlist(scatterobscols))[1], t=length(xp))
-                        message("scatter legend cols by first obs col = ", scatterobsle$col[1])
                     }
+                    message(paste(scatterobsle$col, collapse=", "))
                     if (T) {
+                        message("scatter legend pchs by first ", length(xp), " pchs = ", appendLF=F)
                         scatterobsle$pch <- unique(scatterobspchs[[1]])
-                        message("scatter legend pchs by first ", length(xp), " pchs = ", 
-                                paste(scatterobsle$pch, collapse=", "))
-                    }
+                    } 
+                    message(paste(scatterobsle$pch, collapse=", "))
                     scatterobsle$lty <- rep(NA, t=length(scatterobsle$pch))
                     scatterobsle$lwd <- rep(NA, t=length(scatterobsle$pch))
                    
@@ -6127,20 +6297,34 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                     point_datap_suffix <- paste(unique(point_datap_suffix), collapse="_and_")
                     
-                    # xlim 
-                    xlim <- range(xp, na.rm=T)
-                    if (all(!is.na(match(unique(unlist(xp_varname_unique)), c("map_trend", "precipitation_trend"))))) { 
-                        message("special map_trend and/or precipitation_trend xlim ...")
-                        xlim <- c(-1000, 650)
+                    # xlim and ylim at inds where both obs and model are not NA
+                    xlim <- ylim <- vector("list", l=length(xp))
+                    for (i in seq_along(xlim)) {
+                        okinds <- which(!is.na(xp[[i]]) & !is.na(yp[[i]]))
+                        if (length(okinds) > 0) {
+                            xlim[[i]] <- range(xp[[i]][okinds])
+                            ylim[[i]] <- range(yp[[i]][okinds])
+                        } else {
+                            xlim[[i]] <- c(0, 0) # so that plot works without error in case no common non-NA locations
+                            ylim[[i]] <- c(0, 0)
+                        }
                     }
+                    xlim <- range(xlim)
+                    ylim <- range(ylim)
+                    
+                    # special
+                    if (T && all(!is.na(match(unique(unlist(xp_varname_unique)), c("map_trend", "precipitation_trend"))))) { 
+                        message("special map_trend and/or precipitation_trend xlim ...")
+                        xlim[1] <- -900 # do not show one very large Bartlein et al. 2011 negative precip trend -3150 mm/a/6k years
+                    }
+                   
+                    # xlim ylim summary
                     message("xlim (", paste(unique(unlist(xp_varname_unique)), collapse=", "), 
                             " of point_data) = ", appendLF=F)
                     dput(xlim)
                     xat <- pretty(xlim, n=10)
                     xlab <- format(xat, trim=T)
 
-                    # ylim
-                    ylim <- range(yp, na.rm=T)
                     message("ylim (", zname, " of models) = ", appendLF=F)
                     dput(ylim)
                     yat <- pretty(ylim, n=10)
@@ -6172,6 +6356,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     dir.create(dirname(plotname), recursive=T, showWarnings=F)
                     source("~/scripts/r/functions/myfunctions.r") 
                     pp <- plot_sizes(width_in=p$scatter_width_in, asp=p$scatter_asp, verbose=T)
+                    if (T) {
+                        message("increase pointsize")
+                        pp$png_pointsize <- 14
+                        pp$pdf_pointsize <- 14
+                    }
                     if (p$plot_type == "png") {
                         png(plotname, width=pp$png_width_px, height=pp$png_height_px,
                             pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
@@ -6206,7 +6395,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } else if (zname == "lm_tsurf_as_time_slope") {
                         lab <- expression(paste("Model T"["surf"], " trend [°C/6k years]"))
                     } else if (zname == "lm_aprt_as_time_slope") {
-                        lab <- expression(paste("Model P"["total"], " trend [mm/year/6k years]"))
+                        lab <- expression(paste("Model P"["total"], " trend [mm/a/6k years]"))
                     } else if (zname == "lm_wisoaprt_d_post_as_time_slope") {
                         lab <- eval(substitute(expression(paste("Model ", delta^{18}, "O"["p,SMOW"], " trend [\u2030/6k years]"))))
                     } else {
@@ -6320,16 +6509,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
                             message("automatically derived adagio::maxempty legend position: ", le$pos[1], ", ", le$pos[2])
                         } else {
-                            #le$pos <- "topleft" 
+                            le$pos <- "topleft" 
                             #le$pos <- "topright" 
-                            le$pos <- "bottomright" 
+                            #le$pos <- "bottomright" 
                         }
                         le$ncol <- 1
                         #le$ncol <- 2 
-                        le$cex <- 1
+                        #le$cex <- 1
+                        le$cex <- 1.25
+                        #le$cex <- 1.5
                         #le$cex <- 0.85
-                        #le$text <- paste0(names_legend, " (n=", sapply(lapply(xp, attributes), "[[", "ntot"), ")")
                         le$text <- names_legend
+                        if (F) {
+                            message("special legend names")
+                            le$text <- paste0(names_legend, " (n=", sapply(lapply(xp, attributes), "[[", "ntot"), ")")
+                        }
                         le$col <- cols_p #"black"
                         le$lty <- rep(NA, t=length(yp))
                         le$lwd <- rep(NA, t=length(yp))
@@ -6337,15 +6531,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pch <- rep(15, t=length(yp)) # filled square for just showing the color
                         le$pt.cex <- rep(1.5, t=length(yp))
                         if (T && length(scatterobsle) > 0) {
-                            if (F) {
-                                message("specialllll legendddddd")
+                            if (T) {
+                                message("replace model legend by scatterobsle")
                                 le$text <- scatterobsle$text
                                 le$col <- scatterobsle$col
                                 le$lty <- scatterobsle$lty
                                 le$lwd <- scatterobsle$lwd
                                 le$pch <- scatterobsle$pch
-                            } else {
-                                message("add point_data legend to model legend ...")
+                            }
+                            if (F) {
+                                message("add scatterobsle to model legend ...")
                                 le$text <- c(le$text, scatterobsle$text)
                                 le$col <- c(le$col, scatterobsle$col)
                                 le$lty <- c(le$lty, scatterobsle$lty)
@@ -6416,17 +6611,18 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     # finished plot model point data vs model data in n scatter plots for nsettings separately
                 
                 } else {
-                    message("\no point_data found in lonlatlims ...\n")
-                } # if xp is NA or not
+                    message("\n--> model point data yp[[", i, "]] all NA in lonlatlims ...\n")
+                } # if yp is NA or not
 
             } else {
                 message("--> no point_data defined for zname = ", zname, " ...\n")
             } # if point_data was properly defined or not for current zname
 
 
+            ## continue with lon-lat stuff
             # make lat regular for `image(..., useRaster=T)` usage
-            if (!all(sapply(lapply(lapply(d$lat, diff), unique), length) == 1)) {
-                message("make constant dlat for `image(..., useRaster=T)` usage ...")
+            if (p$plot_type == "png" && !all(sapply(lapply(lapply(d$lat, diff), unique), length) == 1)) {
+                message("make constant dlat for `image(..., useRaster=T)` usage in png plot ...")
                 for (i in seq_along(d$lat)) {
                     d$lat[[i]] <- array(seq(min(d$lat[[i]]), max(d$lat[[i]]), l=length(d$lat[[i]])))
                 }
@@ -6556,9 +6752,23 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("special zlim lm_aprt_as_time_slope")
                 # Hol-T and Hol-Tx10 annual: -404.457947500465 233.716296217084
                 #zlevels <- c(zlim[1], seq(trunc(zlim[1]), trunc(zlim[2]), b=25), zlim[2]) # mm/month / 7k yrs
-                zlevels <- c(-500, -200, -100, -50, -20, 0, 20, 50, 100, 200, 500) # bartlein et al. 2011 Fig. 6
+                zlevels <- c(-500, -200, -100, -50, -20, 0, 20, 50, 100, 200, 500) # as in bartlein et al. 2011 Fig. 6
                 palname <- "BrBG"
             } else if (zname == "wisoaprt_d") {
+                if (T && exists("xp") && !all(sapply(lapply(xp, is.na), all))) {
+                    message("wisoaprt_d special zlim")
+                    zlevels <- c(zlim[1], -30, -28, -26, -24, -22, -20, -18, -16, 
+                                 -14, -12, -10, -8, -6, -4, -2, zlim[2])
+                    if (min(range(xp)) < min(zlevels)) {
+                        zlim[1] <- min(range(xp))
+                        zlevels[1] <- zlim[1]
+                    }
+                    if (max(range(xp)) > max(zlevels)) {
+                        zlim[2] <- max(range(xp))
+                        zlevels[2] <- zlim[2] 
+                    }
+                }
+                message("wisoaprt_d special colors")
                 palname <- "RdYlBu"
                 anom_colorbar <- F
             } else if (F && any(zname == c("mlotst", "omldamax"))) {
@@ -6859,11 +7069,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # add point data to lon,lat plot
             # --> `point_list` must have at least the 4 entries lon,lat,col,pch
             if (T && exists("xp") && !all(sapply(lapply(xp, is.na), all))) {
-                message("not all `xp` are NA: add ", 
-                        point_datap_suffix, " xp to lon,lat plot via `point_list` ...")
+                message("\nnot all `xp` are NA: reorder `xp` data ", point_datap_suffix, 
+                        " into `point_list` and add to lon,lat plot ...")
                 point_list <- text_list <- vector("list", l=length(z))
                 for (i in seq_along(z)) {
                     if (!all(is.na(xp[[i]]))) {
+                        
+                        message("set plot specs for `point_list` ", i, "/", length(z), ": ", names_short[i])
                         
                         point_list[[i]] <- list(x=attributes(xp[[i]])$lon,
                                                 y=attributes(xp[[i]])$lat)
@@ -6879,51 +7091,53 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         # special cols
                         cols <- NULL
                         if (F) { # constant color
-                            message("   --> color xp by its sign ...")
+                            message("--> color `point_list[[", i, "]]` by its sign ...")
                             cols <- rep("brown", t=length(xp[[i]])) # color for dry trend
                             if (any(xp[[i]] > 0)) cols[which(xp[[i]] > 0)] <- "blue" # color for wet trend
                         } else if (T) { # same colors as z
-                            message("   --> color `point_list[[", i, "]]` by the values of xp[[", i, "]] ...")
+                            message("--> color `point_list[[", i, "]]` by the values of xp[[", i, 
+                                    "]] with respect to model levels `ip$levels` ...")
                             cols <- findInterval(x=xp[[i]], vec=ip$levels, all.inside=T)
                             cols <- ip$cols[cols]
-                            if (T && any(xp_varname_unique[[i]] == "d18Ononp_scaled_trend")) {
-                                message("   --> special d18Ononp_scaled: show red/blue symbols")
-                                inds <- which(xp_varname[[i]] == "d18Ononp_scaled_trend")
-                                cols[inds] <- NA
-                                posinds <- which(xp[[i]][inds] >= 0)
-                                neginds <- which(xp[[i]][inds] < 0)
-                                if (length(posinds) > 0) text_list[[i]]$col[inds][posinds] <- "red"
-                                if (length(neginds) > 0) text_list[[i]]$col[inds][neginds] <- "blue"
-                            } else if (T && any(xp_varname_unique[[i]]  == "d18Odiatom_scaled_trend")) {
-                                message("   --> special d18Odiatom_scaled: show red/blue symbols")
-                                inds <- which(xp_varname == "d18Odiatom_scaled")
-                                cols[inds] <- NA # dont show symbols on lon,lat plot; use the PLOT letters instead
-                            }
+                        }
+                        # special:
+                        if (T && any(xp_varname_unique[[i]] == "d18Ononp_scaled_trend")) {
+                            inds <- which(xp_varname[[i]] == "d18Ononp_scaled_trend")
+                            message("--> color special d18Ononp_scaled: show red/blue symbols at ", length(inds), " locations")
+                            cols[inds] <- NA
+                            posinds <- which(xp[[i]][inds] >= 0)
+                            neginds <- which(xp[[i]][inds] < 0)
+                            if (length(posinds) > 0) text_list[[i]]$col[inds][posinds] <- "red"
+                            if (length(neginds) > 0) text_list[[i]]$col[inds][neginds] <- "blue"
+                        } else if (T && any(xp_fname_unique[[i]] == "PLOT" & xp_varname_unique[[i]]  == "d18Odiatom_scaled_trend")) {
+                            inds <- which(xp_fname[[i]] == "PLOT" & xp_varname[[i]] == "d18Odiatom_scaled_trend")
+                            message("--> color special PLOT d18Odiatom_scaled: show red/blue symbols at ", length(inds), " locations")
+                            cols[inds] <- NA # dont show symbols on lon,lat plot; use the PLOT letters instead
                         }
                         if (!is.null(cols)) point_list[[i]]$bg <- cols
                         
                         # special pchs
                         pchs <- NULL
                         if (T) { # distinguish xp by pch
-                            message("   --> pch `point_list[[", i, "]]` by the pchs of xp[[", i, "]] (use filled pchs) ...")
+                            message("--> pch `point_list[[", i, "]]` by the pchs of xp[[", i, "]] (use filled pchs) ...")
                             pchs_unique <- c(pchs_filled_w_border, (21:25)[!match(21:25, pchs_filled_w_border, nomatch=F)]) # declare
                             pchs <- pchs_unique[xp_pchno[[i]]]
-                            if (T && any(xp_varname_unique[[i]]  == "d18Ononp_scaled_trend")) {
-                                message("   --> special d18Ononp_scaled_trend: show plus/minus")
-                                inds <- which(xp_varname[[i]]  == "d18Ononp_scaled_trend")
-                                pchs[inds] <- NA
-                                text_list[[i]]$x[inds] <- attributes(xp[[i]])$lon[inds]
-                                text_list[[i]]$y[inds] <- attributes(xp[[i]])$lat[inds]
-                                posinds <- which(xp[[i]][inds] >= 0)
-                                neginds <- which(xp[[i]][inds] < 0)
-                                if (length(posinds) > 0) text_list[[i]]$labels[inds][posinds] <- "+"
-                                if (length(neginds) > 0) text_list[[i]]$labels[inds][neginds] <- "-"
-                            }
-                            if (T && any(xp_varname_unique[[i]]  == "d18Odiatom_scaled_trend")) {
-                                message("   --> special d18Odiatom_scaled: show PLOT letters")
-                                inds <- which(xp_varname[[i]]  == "d18Odiatom_scaled_trend")
-                                pchs[inds] <- NA # dont show symbols on lon,lat plot; use the PLOT letters instead
-                            }
+                        }
+                        if (T && any(xp_varname_unique[[i]]  == "d18Ononp_scaled_trend")) {
+                            message("--> pch special d18Ononp_scaled_trend: show plus/minus")
+                            inds <- which(xp_varname[[i]]  == "d18Ononp_scaled_trend")
+                            pchs[inds] <- NA
+                            text_list[[i]]$x[inds] <- attributes(xp[[i]])$lon[inds]
+                            text_list[[i]]$y[inds] <- attributes(xp[[i]])$lat[inds]
+                            posinds <- which(xp[[i]][inds] >= 0)
+                            neginds <- which(xp[[i]][inds] < 0)
+                            if (length(posinds) > 0) text_list[[i]]$labels[inds][posinds] <- "+"
+                            if (length(neginds) > 0) text_list[[i]]$labels[inds][neginds] <- "-"
+                        }
+                        if (T && any(xp_fname_unique[[i]] == "PLOT" & xp_varname_unique[[i]]  == "d18Odiatom_scaled_trend")) {
+                            inds <- which(xp_fname[[i]] == "PLOT" & xp_varname[[i]]  == "d18Odiatom_scaled_trend")
+                            message("--> pch special PLOT d18Odiatom_scaled: show PLOT letters at ", length(inds), " locations")
+                            pchs[inds] <- NA # dont show symbols on lon,lat plot; use the PLOT letters instead
                         }
                         if (!is.null(pchs)) point_list[[i]]$pch <- pchs
 
@@ -6960,6 +7174,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     #segment_list[[i]] <- mpiom_TP04s_land_sea_mask_segments_lon180
                 }
                 if (addland) addland_list[] <- NA
+            } else {
+                message("did not find `mpiom_*_land_sea_mask_segments_lon*` in current work space")
             }
 
             if (exists("add_echam_TR31GR30_oromea_contour") && add_echam_TR31GR30_oromea_contour) {
@@ -6982,7 +7198,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # determine number of rows and columns
             n <- m <- zoomfac <- NULL
             if (T && all(areas_p == "N30-90") || all(areas_p == "NAsiberia")) {
-                message("special nrow ncol")
+                message("NAsiberia special nrow ncol")
                 n <- length(z); m <- 1
                 y_at <- pretty(d$lat[[1]], n=5)
             }
@@ -7067,6 +7283,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            zlab=data_info$label, 
                            znames_method=znames_method, znames_pos=znames_pos,
                            znames_labels=names_legend_p, 
+                           #useRaster=F,
                            add_contour=F,
                            polygon_list=polygon_list,
                            quiver_list=quiver_list,
@@ -7128,9 +7345,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     mpiom_lsm_segments <- ls(pattern=glob2rx("mpiom_*_land_sea_mask_segments_lon*"))
                     if (T && length(mpiom_lsm_segments) > 0) {
                         message("add mpiom land sea mask segments")
-                        segment_list <- mpiom_GR30s_land_sea_mask_segments_lon180
-                        #segment_list <- mpiom_GR15s_land_sea_mask_segments_lon180
-                        #segment_list <- mpiom_TP04s_land_sea_mask_segments_lon180
+                        segment_list <- list(mpiom_GR30s_land_sea_mask_segments_lon180)
+                        #segment_list <- list(mpiom_GR15s_land_sea_mask_segments_lon180)
+                        #segment_list <- list(mpiom_TP04s_land_sea_mask_segments_lon180)
                         if (addland) addland_list[] <- NA
                     }
                     
@@ -7294,17 +7511,24 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #zlim <- c(-2.46028671264648, 2.82926086425781) # jun
                 #zlim <- c(-0.738620281219482, 6.65275375366211) # dec
                 message("min, max = ", zlim[1], ", ", zlim[2])
-                addland_list <- list(data="world", ylim="ylim")
-            }
-                
-            if (any(models == "mpiom1")) {
-                message("special: add mpiom land sea mask segments to plot ...")
-                if (F) { # default
-                    addland_list <- list(data=mpiom_GR30_lsm_seg, ylim="ylim")
-                } else if (T) { # use regbox xlims
-                    addland_list <- list(data=mpiom_GR30_lsm_seg, xlim=range(lapply(regboxes, "[[", "lons")), ylim="ylim")
+                addland_list <- vector("list", l=length(z))
+                for (i in seq_along(z)) {
+                    addland_list[[i]] <- list(data="world", ylim="ylim")
                 }
             }
+                
+            if (T && exists("mpiom_GR30s_land_sea_mask_segments_lon180")) {
+                message("special: add mpiom land sea mask segments to plot ...")
+                addland_list <- vector("list", l=length(z))
+                for (i in seq_along(z)) {
+                    addland_list[[i]] <- list(data=mpiom_GR30s_land_sea_mask_segments_lon180, 
+                                              ylim="ylim")
+                    if (T) { # use regbox xlims
+                        addland_list[[i]]$xlim <- range(lapply(regboxes, "[[", "lons")) 
+                    }
+                }
+            }
+
             if (exists("PLOT_coords_cmd_list")) {
                 message("special: add PLOT coords to plot ...")
                 cmd_list <- c(cmd_list, PLOT_coords_cmd_list)
@@ -7334,12 +7558,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                  , ip=ip, dry=T
                                  )
             
+            pp <- plot_sizes(width_in=p$map_width_in, asp=p$map_asp, verbose=T)
             if (p$plot_type == "png") {
-                png(plotname, width=nm$ncol*p$map_width, height=nm$nrow*p$map_height,
-                    res=p$ppi, family=p$family_png)
+                png(plotname, width=nm$ncol*pp$png_width_px, height=nm$nrow*pp$png_height_px,
+                    pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
             } else if (p$plot_type == "pdf") {
-                pdf(plotname, width=p$inch, height=p$inch/(p$map_width/p$map_height),
-                    family=p$family_pdf, encoding=encoding)
+                pdf(plotname, width=nm$ncol*pp$pdf_width_in, height=nm$nrow*pp$pdf_height_in,
+                    family=p$pdf_family, encoding=encoding, pointsize=pp$pdf_pointsize)
             }
 
             # plot
@@ -7349,14 +7574,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            , n=2, m=2 # special
                            , ip=ip, verbose=T,
                            individual_zlim=T,
-                           contour_only=T, contour_posneg_redblue=T,
+                           contour_only=T, 
+                           contour_posneg_soliddashed=F,
+                           contour_posneg_redblue=T,
                            #add_contour=T,
                            addland_list=addland_list,
                            cmd_list=cmd_list
                            #xlim=tlimct, 
                            , x_at=tatn, x_labels=tlablt, xlab=tunit, 
                            ylab="Latitude [°]",
-                           zlab=data_info$label, znames=names_legend_p)
+                           zlab=data_info$label, znames_labels=names_legend_p)
         
             message("\nsave plot ", plotname, " ...")
             dev.off()
@@ -8282,12 +8509,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                      text="F: El’gygytgyn (Swann et al. 2010)")
 
                         }
-                    } 
-                }
+                    } # special case elgygytgyn
+                } # for all d18o_w_smow pg records
+
+                # thruo
             } # if zname == "wisoaprt_d" && any(names(pg) == "d18o_w_smow"))
             
             # add to data_left
-            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d"))) {
+            if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post", "wisoevap_d", "wisope_d"))) {
                 if (T && exists("kostrova_etal_2021") && all(grepl("emanda", areas))) {
                     message("add kostrova et al. 2021 d18o emanda data to data_left ...")
                     inds <- seq_along(kostrova_etal_2021$data$time)
@@ -8343,7 +8572,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                  legend.pos=meyer_etal_tmp$legend.pos)
                     }
                 } # if exists("meyer_etal")
-            } # if any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d"))
+            } # if any(varname == c("wisoaprt_d", "wisoaprt_d_post", "wisoevap_d", "wisope_d"))
 
             # add to data_left
             if (T && exists("noaa_ghcdn")) {
@@ -8458,7 +8687,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # if (length(data_left) > 0)
 
             # special manual ylim
-            if (F) { # special PLOT ylim
+            if (T) { # special PLOT ylim
                 message("special PLOT ylim")
                 if (center_ts) {
                     # ladoga: c(-3.30543235329369, 1.8024062688112) 
@@ -8553,7 +8782,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # get plot sizes
             message("open plot ", plotname, " ...")
             source("~/scripts/r/functions/myfunctions.r") 
-            pp <- plot_sizes(width_in=p$ts_width_in, asp=p$ts_asp, verbose=T)
+            if (F) {
+                message("special ts plot width")
+                pp <- plot_sizes(width_in=p$map_width_in, asp=p$map_asp, verbose=T)
+            } else {
+                pp <- plot_sizes(width_in=p$ts_width_in, asp=p$ts_asp, verbose=T)
+            }
             if (p$plot_type == "png") {
                 png(plotname, width=pp$png_width_px, height=pp$png_height_px,
                     pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
@@ -8824,16 +9058,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         lm <- lm(z[[i]] ~ d$time[[i]])
                         lm_summary <- summary(lm)
                         print(lm_summary)
-                        lm_trend_tot <- diff(range(lm$fitted.values))
+                        lm_trend_tot <- lm$fitted.values[length(lm$fitted.values)] - lm$fitted.values[1]
                         lm_dt_tot_day <- as.numeric(difftime(max(d$time[[i]]), min(d$time[[i]]), units="day"))
                         lm_dt_tot_a <- lm_dt_tot_day/365.25
                         if (lm_dt_tot_a > 1) { # use trend per year
                             if (lm_dt_tot_a > 10) { # use trend per decade
                                 if (lm_dt_tot_a > 100) { # use trend per century
                                     if (lm_dt_tot_a > 1000) { # use trend per millenium
-                                        lm_trend_tot_pretty <- lm_trend_tot * 1000 / lm_dt_tot_a
-                                        lm_dt_tot <- 1000
-                                        attributes(lm_dt_tot)$units <- "years"
+                                        lm_trend_pretty <- lm_trend_tot * 1000 / lm_dt_tot_a
+                                        lm_dt_pretty <- 1000
+                                        attributes(lm_dt_pretty)$units <- "years"
                                     } else { # < 1000 a
                                         lm_trend_pretty <- lm_trend_tot * 100 / lm_dt_tot_a
                                         lm_dt_pretty <- 100
@@ -8853,14 +9087,25 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             stop("not yet")
                         }
                         lm_labels[i] <- ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "-")
-                        lm_labels[i] <- paste0(lm_labels[i], 
-                                               round(lm_trend_pretty, 4)
-                                               #round(lm_trend_pretty, 2)
-                                               , " ", data_info$units, 
-                                               " / ", lm_dt_pretty, " ", attributes(lm_dt_pretty)$units
-                                               )
-                        message("--> total trend ", lm_trend_tot, " ", data_info$units, " in ",
-                                lm_dt_tot_day, " days ~ ", length(unique(dims[[i]]$timelt$year+1900)), " years from ",
+                        if (F) { # add `trend / <time>` with <time> being 1, 10, 100 or 1000 years
+                            lm_labels[i] <- paste0(lm_labels[i], 
+                                                   #round(lm_trend_pretty, 2)
+                                                   round(lm_trend_pretty, 4)
+                                                   , " ", data_info$units, 
+                                                   " / ", lm_dt_pretty, " ", attributes(lm_dt_pretty)$units
+                                                   )
+                        } else if (T) { # add total trend
+                            lm_labels[i] <- paste0(lm_labels[i], 
+                                                   round(lm_trend_tot, 2)
+                                                   #round(lm_trend_tot, 4)
+                                                   , " ", data_info$units)
+                        }
+                        if (T) {
+                            message("put brackets around lm_label")
+                            lm_labels[i] <- paste0("(", lm_labels[i], ")")
+                        }
+                        message("--> total trend ", round(lm_trend_tot, 4), " ", data_info$units, " in ",
+                                lm_dt_tot_day, " days ~ ", round(lm_dt_tot_a, 3), " years from ",
                                 min(d$time[[i]]), " to ", max(d$time[[i]]), "\n",
                                 "--> ", lm_labels[i])
                         # plot regression line within data limits only
@@ -8933,10 +9178,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } else {
                         message("manually set legend position: ", appendLF=F)
                         #le$pos <- "bottom" 
-                        #le$pos <- "topleft" 
+                        le$pos <- "topleft" 
                         #le$pos <- "left"
                         #le$pos <- "bottomleft"
-                        le$pos <- "topright"
+                        #le$pos <- "topright"
                         #le$pos <- "bottomright" 
                         #le$pos <- c(tatn[1], yat[length(yat)-1])
                         #le$pos <- c(as.numeric(as.POSIXct("2650-1-1", tz="UTC")), 13.45)
@@ -9054,7 +9299,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                      t="n", xlim=tlim, ylim=ylim_right, 
                      xlab=NA, ylab=NA, axes=F)
                 # add zero line
-                if (add_zeroline) abline(h=0, col="gray", lwd=0.5, lty=2)
+                #if (add_zeroline) abline(h=0, col="gray", lwd=0.5, lty=2)
                 
                 # add right axes in same color as the right data if 
                 # all colors of the right data are the same
@@ -9838,7 +10083,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     image.plot.nxm(x=d$lon[1], y=d$lat[1], z=zanom, ip=ip, verbose=T,
                                    xlab="Longitude [°]", ylab="Latitude [°]", 
                                    zlab=data_info$label, 
-                                   znames=paste0(names_short_p[2], " minus ", names_short_p[1]),
+                                   znames_labels=paste0(names_short_p[2], " minus ", names_short_p[1]),
                                    contour_only=F,
                                    addland_list=addland_list,
                                    quiver_list=quiver_list,
@@ -10789,7 +11034,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # plot
                 image.plot.nxm(dltm$lat, dltm$depth, z=zltm, ip=ip, verbose=F,
                                xlab="Latitude [°]", ylab=ylab,
-                               zlab=data_info$label, znames=names_legend_pltm,
+                               zlab=data_info$label, znames_labels=names_legend_pltm,
                                image_list=moc_topo)
             
                 message("\nsave plot ", plotname, " ...")
