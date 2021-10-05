@@ -284,6 +284,9 @@ if (length(add_linear_trend) != nsettings) {
         }
     }
 }
+if (!exists("add_linear_trend_froms")) add_linear_trend_froms <- rep(NA, t=nsettings)
+if (!exists("add_linear_trend_tos")) add_linear_trend_tos <- rep(NA, t=nsettings)
+
 if (length(add_scatter_density) != nsettings) {
     if (length(add_scatter_density) == 1) {
         message("\ngiven `add_scatter_density` but of length ", length(add_scatter_density), 
@@ -305,7 +308,7 @@ data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 
 ## load pangaea data if defined 
-if (T) {
+if (F) {
     message("\ndisable here if you do not want to load pangaea data via load_pangaea_data.r ...")
     source("load_pangaea_data.r")
 } else {
@@ -313,7 +316,7 @@ if (T) {
 }
 
 ## load special data if defined
-if (T) {
+if (F) {
     message("\ndisable here if you do not want to load special data via load_special_data.r ...")
     source("load_special_data.r")
 } else {
@@ -667,6 +670,11 @@ for (i in seq_len(nsettings)) {
     }
     froms_plot[i] <- fromsp[i]
     tos_plot[i] <- tosp[i]
+
+    if (add_linear_trend[i]) {
+        if (is.na(add_linear_trend_froms[i])) add_linear_trend_froms[i] <- fromsp[i]
+        if (is.na(add_linear_trend_tos[i])) add_linear_trend_tos[i] <- tosp[i]
+    }
     # finfished time dim stuff
 
 
@@ -2194,6 +2202,9 @@ for (i in seq_len(nsettings)) {
         
         } else if (varname == "co2_flux") {
             # original: total upward surface CO2 flux (acc.) kg m-2 s-1 --> its actually kgCO2 m-2 s-1
+            # if fesom-recom coupled to echam, output of old code `exchange(:) = GloCO2flux` and not 
+            # new code `exchange(:) = -GloCO2flux` is not correct!
+            # --> use sum of `co2_flx_ocean` (with correct sign!) and `co2_flx_land` instead
             data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("Total CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into atm)"))))
             if (T) {
@@ -2219,23 +2230,11 @@ for (i in seq_len(nsettings)) {
 
         } else if (varname == "co2_flx_ocean") {
             # original: upward ocean CO2 flux (acc.) kg m-2 s-1 --> its actually kgCO2 m-2 s-1
+            # if fesom-recom coupled to echam, output of old code `exchange(:) = GloCO2flux` and not 
+            # new code `exchange(:) = -GloCO2flux` needs to get multiplied by -1!
+            # --> do this before
             data_infos[[i]][[vi]]$units <- "kgCO2 m-2 yr-1"
-            # if fesom-recom coupled to echam, need to distinguish between
-            # old code: `exchange(:) = GloCO2flux`
-            # and new code: `exchange(:) = -GloCO2flux`
-            # --> sign flip
-            if (any(prefixes[i] == c("awi-esm-1-1-lr_kh800_piControl_og",
-                                     "awi-esm-1-1-lr_kh800_esm-piControl_2percatm",
-                                     "awi-esm-1-1-lr_kh800_esm-piControl_2percboth",
-                                     "awi-esm-1-1-lr_kh800_esm-piControl_2percfalse"))) { # old code
-                message("co2_flx_ocean setting: old fesom-recom coupled to echam code `exchange(:) = GloCO2flux` --> is this correct?!")
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
-                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
-                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1) # flip sign to correct old code
-            } else { # new code
-                message("co2_flx_ocean: new fesom-recom coupled to echam code `exchange(:) = -GloCO2flux` --> is this correct?!")
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into atm)"))))
-            }
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgCO"[2], " m"^paste(-2), " s"^paste(-1), "] (>0 into atm)"))))
             if (T) {
                 message("co2_flx_ocean: >0 into atm --> >0 into ocean, s-1 --> yr-1, kgCO2 --> kgC")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*", "*", "/")
@@ -2506,14 +2505,17 @@ for (i in seq_len(nsettings)) {
             }
        
         } else if (varname == "pft_fract_box") {
-            data_infos[[i]][[vi]]$offset$operator <- "*"
-            data_infos[[i]][[vi]]$offset$value <- 100
-            data_infos[[i]][[vi]]$label <- "% of global land cover"
-            if (F) {
-                message("pft_fract_box special: values with respect to glacier-free land")
-                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "+")
-                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 0.3315377*100) # t63 global glacier fract box
-                data_infos[[i]][[vi]]$label <- "% of global glacier-free land cover"
+            if (modes[i] == "fldsum") {
+                message("pft_fract_box fldsum divide through nland = 6126")
+                stop("todo: get nland from nc att")
+                data_infos[[i]][[vi]]$offset$operator <- "/"
+                data_infos[[i]][[vi]]$offset$value <- 6126
+            }
+            if (T) {
+                message("pft_fract_box fraction --> percent")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 100)
+                data_infos[[i]][[vi]]$label <- "% of global land cover"
             }
 
         } else if (varname == "aprt") {
@@ -4905,8 +4907,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 anlim <- range(tlimlt$year+1900)
 
                 # time labels
-                tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # this does not work with large negative years, e.g. -800000 (800ka) 
-                if (T) {
+                tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # todo: this does not work with large negative years, e.g. -800000 (800ka) 
+                if (F) {
                     message("my special tlablt")
                     tlablt <- make_posixlt_origin(seq(-7000, 0, b=1000)) 
                 }
@@ -8687,7 +8689,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # if (length(data_left) > 0)
 
             # special manual ylim
-            if (T) { # special PLOT ylim
+            if (F) { # special PLOT ylim
                 message("special PLOT ylim")
                 if (center_ts) {
                     # ladoga: c(-3.30543235329369, 1.8024062688112) 
@@ -8783,9 +8785,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
             message("open plot ", plotname, " ...")
             source("~/scripts/r/functions/myfunctions.r") 
             if (F) {
-                message("special ts plot width")
-                pp <- plot_sizes(width_in=p$map_width_in, asp=p$map_asp, verbose=T)
-            } else {
+                message("special ts plot size")
+                #pp <- plot_sizes(width_in=p$map_width_in, asp=p$map_asp, verbose=T)
+                pp <- plot_sizes(width_in=p$ts_width_in, asp=1, verbose=T)
+            } else { # default
                 pp <- plot_sizes(width_in=p$ts_width_in, asp=p$ts_asp, verbose=T)
             }
             if (p$plot_type == "png") {
@@ -9048,70 +9051,105 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # add first data point
 
             # add linear regression trend if wanted
+            lm_labels <- names_legend_p
             if (any(add_linear_trend)) {
                 message("\ncalc and add linear trend against time ...")
-                lm_labels <- rep(NA, t=length(z))
-                names(lm_labels) <- names_short_p
                 for (i in seq_along(z)) {
                     if (add_linear_trend[i]) {
-                        message("\nsetting ", i, " ", names_short_p[i], ":")
-                        lm <- lm(z[[i]] ~ d$time[[i]])
+                        lm_nyear <- length(add_linear_trend_froms[i]:add_linear_trend_tos[i]) # not accurate
+                        message("\nsetting ", i, " ", names_short_p[i], " from ", 
+                                add_linear_trend_froms[i], " to ", add_linear_trend_tos[i],
+                                " (", lm_nyear, " nyears)")
+                        inds <- which(dims[[i]]$timelt$year+1900 >= add_linear_trend_froms[i] &
+                                      dims[[i]]$timelt$year+1900 <= add_linear_trend_tos[i])
+                        if (length(inds) == 0) stop("no times are within those years")
+                        lm <- lm(z[[i]][inds] ~ d$time[[i]][inds])
                         lm_summary <- summary(lm)
                         print(lm_summary)
                         lm_trend_tot <- lm$fitted.values[length(lm$fitted.values)] - lm$fitted.values[1]
-                        lm_dt_tot_day <- as.numeric(difftime(max(d$time[[i]]), min(d$time[[i]]), units="day"))
+                        lm_from_to <- d$time[[i]][range(inds)]
+                        lm_dt_tot_day <- as.numeric(difftime(max(lm_from_to), min(lm_from_to), units="day"))
                         lm_dt_tot_a <- lm_dt_tot_day/365.25
-                        if (lm_dt_tot_a > 1) { # use trend per year
-                            if (lm_dt_tot_a > 10) { # use trend per decade
-                                if (lm_dt_tot_a > 100) { # use trend per century
-                                    if (lm_dt_tot_a > 1000) { # use trend per millenium
+                        lm_trend_a <- lm_trend_tot/lm_dt_tot_a
+                        lm_trend_day <- lm_trend_tot/lm_dt_tot_day
+                        if (lm_dt_tot_a >= 1) { # show trend per year
+                            lm_from_to_pretty <- paste(dims[[i]]$timelt[range(inds)]$year+1900, collapse="-")
+                            lm_dt_tot_pretty <- diff(dims[[i]]$timelt[range(inds)]$year) + 1
+                            attributes(lm_dt_tot_pretty)$units <- "a"
+                            if (lm_nyear >= 10) { # show trend per decade
+                                if (lm_nyear >= 100) { # show trend per century
+                                    if (lm_nyear >= 1000) { # show trend per millenium
                                         lm_trend_pretty <- lm_trend_tot * 1000 / lm_dt_tot_a
                                         lm_dt_pretty <- 1000
-                                        attributes(lm_dt_pretty)$units <- "years"
+                                        attributes(lm_dt_pretty)$units <- "a"
                                     } else { # < 1000 a
                                         lm_trend_pretty <- lm_trend_tot * 100 / lm_dt_tot_a
                                         lm_dt_pretty <- 100
-                                        attributes(lm_dt_pretty)$units <- "years"
+                                        attributes(lm_dt_pretty)$units <- "a"
                                     }
                                 } else { # < 100 a
                                     lm_trend_pretty <- lm_trend_tot * 10 / lm_dt_tot_a
                                     lm_dt_pretty <- 10
-                                    attributes(lm_dt_pretty)$units <- "years"
+                                    attributes(lm_dt_pretty)$units <- "a"
                                 }
                             } else { # < 10 a
                                 lm_trend_pretty <- lm_trend_tot * 10 / lm_dt_tot_a
                                 lm_dt_pretty <- 10
-                                attributes(lm_dt_pretty)$units <- "years"
+                                attributes(lm_dt_pretty)$units <- "a"
                             }
                         } else { # use trend per day
                             stop("not yet")
                         }
-                        lm_labels[i] <- ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "-")
-                        if (F) { # add `trend / <time>` with <time> being 1, 10, 100 or 1000 years
-                            lm_labels[i] <- paste0(lm_labels[i], 
-                                                   #round(lm_trend_pretty, 2)
-                                                   round(lm_trend_pretty, 4)
-                                                   , " ", data_info$units, 
-                                                   " / ", lm_dt_pretty, " ", attributes(lm_dt_pretty)$units
-                                                   )
-                        } else if (T) { # add total trend
-                            lm_labels[i] <- paste0(lm_labels[i], 
-                                                   round(lm_trend_tot, 2)
-                                                   #round(lm_trend_tot, 4)
-                                                   , " ", data_info$units)
-                        }
-                        if (T) {
-                            message("put brackets around lm_label")
-                            lm_labels[i] <- paste0("(", lm_labels[i], ")")
-                        }
+                        # add mean only to label
+                        if (F) { # add trend only to label
+                            lm_labels[i] <- eval(substitute(expression(paste(lab, " (tr", ""[lm_from_to_pretty], "=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
+                                                            list(lab=names_legend_p[i],
+                                                                 lm_from_to_pretty=lm_from_to_pretty,
+                                                                 sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
+                                                                 , trend=round(lm_trend_pretty, 4), 
+                                                                 #, trend=round(lm_trend_tot, 4), 
+                                                                 unit=data_info$units
+                                                                 , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units)
+                                                                 #, lm_dt_unit=paste0(lm_dt_tot_pretty, attributes(lm_dt_tot_pretty)$units)
+                                                                 )
+                                                            )
+                                                )
+                        } else if (T) { # add mean and trend to label
+                            lm_labels[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
+                                                                               "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
+                                                            list(lab=names_legend_p[1],
+                                                                 lm_from_to_pretty=lm_from_to_pretty,
+                                                                 muval=round(mean(z[[1]][inds], na.rm=T), 2),
+                                                                 sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
+                                                                 , trend=round(lm_trend_pretty, 4), 
+                                                                 #, trend=round(lm_trend_tot, 4),
+                                                                 unit=data_info$units
+                                                                 , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units)
+                                                                 #, lm_dt_unit=paste0(lm_dt_tot_pretty, attributes(lm_dt_tot_pretty)$units)
+                                                                 )
+                                                            )
+                                                )
+                        } # if add trend to label
                         message("--> total trend ", round(lm_trend_tot, 4), " ", data_info$units, " in ",
-                                lm_dt_tot_day, " days ~ ", round(lm_dt_tot_a, 3), " years from ",
-                                min(d$time[[i]]), " to ", max(d$time[[i]]), "\n",
-                                "--> ", lm_labels[i])
+                                lm_dt_tot_a, " years ~ ", lm_dt_tot_day, " days from ",
+                                min(lm_from_to), " to ", max(lm_from_to), "\n",
+                                "--> trend per year = ", lm_trend_a, " ", data_info$units, "\n", 
+                                "--> trend per day = ", lm_trend_day, " ", data_info$units, "\n", 
+                                "--> last trend value = ", lm$fitted.values[length(lm$fitted.values)], " ", data_info$units)
+                        if (lm$coefficients[2] != 0) { # trend line has some slope
+                            if (lm$fitted.values[length(lm$fitted.values)] >= 0 && lm$coefficients[2] < 0 || # positive values with negative trend (slope)
+                                lm$fitted.values[length(lm$fitted.values)] < 0 && lm$coefficients[2] > 0) { # negative values with positive trend (slope)
+                                lm_zero_time <- lm$coefficients[1]/abs(lm$coefficients[2]) # intercept/slope = [time]
+                                lm_zero_time <- as.POSIXlt(lm_zero_time, o="1970-1-1", tz="UTC")
+                                message("--> trendline crosses zero at time ", lm_zero_time, ", i.e. in ", 
+                                        round(difftime(lm_zero_time, max(d$time[[i]][inds]), unit="day")/365.25, 3), " years ~ ",
+                                        round(difftime(lm_zero_time, max(d$time[[i]][inds]), unit="day"), 3), " days")
+                            }
+                        }
                         # plot regression line within data limits only
                         if (F) {
                             message("draw linear regression line within regression limits only ...")
-                            lines(d$time[[i]], lm$fitted.values, 
+                            lines(d$time[[i]][inds], lm$fitted.values, 
                                   col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
                         # or plot line through whole plot with regression coefficients
                         } else if (T) {
@@ -9178,10 +9216,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } else {
                         message("manually set legend position: ", appendLF=F)
                         #le$pos <- "bottom" 
-                        le$pos <- "topleft" 
+                        #le$pos <- "topleft" 
                         #le$pos <- "left"
                         #le$pos <- "bottomleft"
-                        #le$pos <- "topright"
+                        le$pos <- "topright"
                         #le$pos <- "bottomright" 
                         #le$pos <- c(tatn[1], yat[length(yat)-1])
                         #le$pos <- c(as.numeric(as.POSIXct("2650-1-1", tz="UTC")), 13.45)
@@ -9206,21 +9244,18 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #le$cex <- 0.66
                 #le$cex <- 0.5
                 names_legend_p_w_lm <- names_legend_p
-                if (any(add_linear_trend)) {
-                    names_legend_p_w_lm[which(!is.na(lm_labels))] <- 
-                        paste0(names_legend_p_w_lm[which(!is.na(lm_labels))], " ", 
-                               lm_labels[which(!is.na(lm_labels))])
-                }
-                le$text <- names_legend_p_w_lm
-                le$col <- cols_p
-                le$lty <- ltys_p
-                le$lwd <- lwds_p
-                le$pch <- pchs_p
-                for (i in seq_along(z)) {
-                    if (types_p[i] == "p") {
-                        le$lty[i] <- NA
-                    } else if (types_p[i] == "l") {
-                        le$pch[i] <- NA
+                if (typeof(lm_labels) == "expression") names_legend_p_w_lm <- lm_labels # use lm result
+                inds <- which(!is.na(names_legend_p)) # throw out user provided NA
+                le$text <- names_legend_p_w_lm[inds]
+                le$col <- cols_p[inds]
+                le$lty <- ltys_p[inds]
+                le$lwd <- lwds_p[inds]
+                le$pch <- pchs_p[inds]
+                for (i in seq_along(inds)) {
+                    if (types_p[inds[i]] == "p") {
+                        le$lty[inds[i]] <- NA
+                    } else if (types_p[inds[i]] == "l") {
+                        le$pch[inds[i]] <- NA
                     }
                 }
 
@@ -9269,7 +9304,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     message("reorder legend from top->bottom to left->right")
                     le <- reorder_legend(le)
                 }
-                if (T) cat(capture.output(str(le)), sep="\n")
+                cat(capture.output(str(le)), sep="\n")
                 if (length(le$pos) == 1) {
                     legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                            pch=le$pch, col=le$col, ncol=le$ncol,
@@ -10747,6 +10782,98 @@ for (plot_groupi in seq_len(nplot_groups)) {
                           col=cols_pan[i], lty=ltys_pan[i], lwd=lwds_pan[i], pch=pchs_pan[i])
                 }
 
+                # add linear regression trend if wanted
+                if (any(add_linear_trend)) {
+                    message("\ncalc and add linear trend against years ...")
+                    lm_labels <- rep(NA, t=length(zan))
+                    names(lm_labels) <- names_short_p
+                    for (i in seq_along(zan)) {
+                        if (add_linear_trend[i]) {
+                            message("\nsetting ", i, " ", names_short_p[i], " from ", 
+                                    add_linear_trend_froms[i], " to ", add_linear_trend_tos[i])
+                            inds <- which(dan$year[[i]] >= add_linear_trend_froms[i] &
+                                          dan$year[[i]] <= add_linear_trend_tos[i])
+                            if (length(inds) == 0) stop("no years are within those years")
+                            lm <- lm(zan[[i]][inds] ~ dan$year[[i]][inds])
+                            lm_summary <- summary(lm)
+                            print(lm_summary)
+                            lm_trend_tot <- lm$fitted.values[length(lm$fitted.values)] - lm$fitted.values[1]
+                            lm_dt_tot_a <- max(dan$year[[i]][inds]) - min(dan$year[[i]][inds]) + 1
+                            lm_dt_tot_day <- lm_dt_tot_a*365.25
+                            lm_trend_a <- lm_trend_tot/lm_dt_tot_a
+                            lm_trend_day <- lm_trend_tot/lm_dt_tot_day
+                            if (lm_dt_tot_a > 1) { # use trend per year
+                                if (lm_dt_tot_a > 10) { # use trend per decade
+                                    if (lm_dt_tot_a > 100) { # use trend per century
+                                        if (lm_dt_tot_a > 1000) { # use trend per millenium
+                                            lm_trend_pretty <- lm_trend_tot * 1000 / lm_dt_tot_a
+                                            lm_dt_pretty <- 1000
+                                            attributes(lm_dt_pretty)$units <- "a"
+                                        } else { # < 1000 a
+                                            lm_trend_pretty <- lm_trend_tot * 100 / lm_dt_tot_a
+                                            lm_dt_pretty <- 100
+                                            attributes(lm_dt_pretty)$units <- "a"
+                                        }
+                                    } else { # < 100 a
+                                        lm_trend_pretty <- lm_trend_tot * 10 / lm_dt_tot_a
+                                        lm_dt_pretty <- 10
+                                        attributes(lm_dt_pretty)$units <- "a"
+                                    }
+                                } else { # < 10 a
+                                    lm_trend_pretty <- lm_trend_tot * 10 / lm_dt_tot_a
+                                    lm_dt_pretty <- 10
+                                    attributes(lm_dt_pretty)$units <- "a"
+                                }
+                            } else { # use trend per day
+                                stop("not yet")
+                            }
+                            # time when trend line crosses zero
+                            lm_labels[i] <- ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "") # minus comes from lm trend value itself
+                            if (T) { # add pretty `trend / <time>` with <time> being 1, 10, 100 or 1000 years
+                                lm_labels[i] <- paste0(lm_labels[i], 
+                                                       #round(lm_trend_pretty, 2)
+                                                       round(lm_trend_pretty, 4)
+                                                       , " ", data_info$units, 
+                                                       "/", lm_dt_pretty, attributes(lm_dt_pretty)$units
+                                                       )
+                            } else if (F) { # add total trend
+                                lm_labels[i] <- paste0(lm_labels[i], 
+                                                       round(lm_trend_tot, 2)
+                                                       #round(lm_trend_tot, 4)
+                                                       , " ", data_info$units,
+                                                       "/", lm_dt_tot_a, "a"
+                                                       )
+                            }
+                            if (T) {
+                                message("put brackets around lm_label")
+                                lm_labels[i] <- paste0("(", lm_labels[i], ")")
+                            }
+                            lm_zero_time <- lm$coefficients[1]/abs(lm$coefficients[2]) # intercept/slope = [time]
+                            message("--> total trend ", round(lm_trend_tot, 4), " ", data_info$units, " in ",
+                                    lm_dt_tot_a, " years ~ ", lm_dt_tot_day, " days from ",
+                                    min(dan$year[[i]][inds]), " to ", max(dan$year[[i]][inds]), "\n",
+                                    "--> trend per year = ", lm_trend_a, " ", data_info$units, "\n", 
+                                    "--> trend per day = ", lm_trend_day, " ", data_info$units, "\n", 
+                                    "--> `lm_labels[i]` = \"", lm_labels[i], "\"\n",
+                                    "--> last trend value = ", lm$fitted.values[length(lm$fitted.values)], " ", data_info$units, "\n",
+                                    "--> trendline crosses zero at time ", lm_zero_time, ", i.e. in ", 
+                                    round(lm_zero_time - max(dan$year[[i]][inds]), 2), " years ~ ", 
+                                    round((lm_zero_time - max(dan$year[[i]][inds]))*365.25, 2), " days") 
+                            # plot regression line within data limits only
+                            if (F) {
+                                message("draw linear regression line within regression limits only ...")
+                                lines(dan$year[[i]][inds], lm$fitted.values, 
+                                      col=cols_pan[i], lwd=lwds_pan[i], lty=ltys_pan[i])
+                            # or plot line through whole plot with regression coefficients
+                            } else if (T) {
+                                message("draw linear regression line through whole plot ...")
+                                abline(a=lm$coefficients[1], b=lm$coefficients[2],
+                                       col=cols_pan[i], lwd=lwds_pan[i], lty=ltys_pan[i])
+                            }
+                        }
+                    }
+                } # add_linear_trend
+
                 # add obs 
                 if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) &&
                     exists("kostrova_etal_2019") &&
@@ -10784,9 +10911,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     #le$ncol <- nsettings/2
                     le$ncol <- 1
                     #le$ncol <- 2 
-                    le$text <- names_legend_pan
+                    names_legend_pan_w_lm <- names_legend_pan
+                    if (any(add_linear_trend)) {
+                        names_legend_pan_w_lm[which(!is.na(lm_labels))] <- 
+                            paste0(names_legend_pan_w_lm[which(!is.na(lm_labels))], " ", 
+                                   lm_labels[which(!is.na(lm_labels))])
+                    }
+                    le$text <- names_legend_pan_w_lm
                     le$cex <- 1
-                    le$cex <- 0.85
+                    #le$cex <- 0.85
                     le$col <- cols_pan
                     le$lty <- ltys_pan
                     le$lwd <- lwds_pan
@@ -10800,12 +10933,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                     # add stufd to datasn legend here
                     if (F) {
-                        message("\nadd non default stuff to ", mode_p, " an legend ...")
+                        message("add non default stuff to ", mode_p, " an legend ...")
 
                     }
                     if (T && exists("noaa_ghcdn")) {
                         if (any(varname == c("temp2", "tsurf", "aprt"))) {
-                            message("\nadd noadd ghcdn monthly data to annual legend ...")
+                            message("add noadd ghcdn monthly data to annual legend ...")
                             le$text <- c(le$text, noaa_ghcdn_tmp$text)
                             le$col <- c(le$col, noaa_ghcdn_tmp$col)
                             le$lty <- c(le$lty, noaa_ghcdn_tmp$lty)
@@ -10817,6 +10950,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     if (T) {
                         le <- reorder_legend(le)
                     }
+                    cat(capture.output(str(le)), sep="\n")
                     if (length(le$pos) == 1) {
                         legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                pch=le$pch, col=le$col, ncol=le$ncol,

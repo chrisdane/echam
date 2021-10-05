@@ -45,8 +45,9 @@ png_family <- NULL
 if (host$machine_tag == "mistral") {
     png_family <- "Nimbus Sans L" # mistral R36 default png font Helvetica broken
 }
-p <- myDefaultPlotOptions(#plot_type="png"
+p <- myDefaultPlotOptions(plot_type="png"
                           #plot_type="active"
+                          ,png_family=png_family
                           #,png_family="Droid Sans Mono" 
                           #,png_family="Helvetica" 
                           #,pdf_family="CM Roman"
@@ -107,7 +108,7 @@ add_nonlinear_trend <- F
 add_1to1_line <- T
 add_scatter_density <- F
 center_ts <- F # either center_ts or scale_ts or none but not both
-scale_ts <- T
+scale_ts <- F
 ts_highlight_seasons <- list(#bool=T,
                              bool=F,
                              seasons=c("DJF", "MAM", "JJA", "SON"),
@@ -187,29 +188,32 @@ suppressWarnings(rm(list=objs))
 ## setting specific part
 
 # 1 setting
-if (F) { # awi-esm-1-1-lr_kh800 piControl og
+if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
     models <- "echam6"
     #models <- "jsbach"
     #models <- "fesom"
-    prefixes <- "awi-esm-1-1-lr_kh800_piControl_og"
+    #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_regular_dx0.250_dy0.250"
-    names_short <- "piControl_og"
+    prefixes <- "awi-esm-1-1-lr_kh800_piControl"
+    #names_short <- "piControl_og"
+    names_short <- "awicm1-recom_piControl"
     names_legend <- "piControl"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_regular_dx0.250_dy0.250_minus_woa2018_dx0.250_dy0.250_t_an_0m"
     #names_short <- "piControl_minus_woa18"
     #names_legend <- "piControl minus WOA18"
     #varnames_in <- "temp2"
+    #varnames_in <- "co2_flux"
     #varnames_in <- "co2_flx_ocean"
     #echam6_global_setNA <- "land"
-    varnames_in <- "co2_flx_land" # = npp + resp + herb + lcc + harvest + fire
-    echam6_global_setNA <- "ocean"
-    addland <- F
+    #varnames_in <- "co2_flx_land" # = npp + resp + herb + lcc + harvest + fire
+    #echam6_global_setNA <- "ocean"
+    #addland <- F
     #varnames_in <- "co2_flx_npp"
     #varnames_in <- "co2_flx_resp"
     #varnames_in <- "co2_flx_herb"
     #varnames_in <- "co2_flx_lcc"
     #varnames_in <- "co2_flx_harvest"
-    #varnames_in <- "co2_flx_fire"
+    varnames_in <- "co2_flx_fire"
     #varnames_in <- "CO2_flux_net"
     #varnames_in <- "CO2_flux_dynveg"
     #varnames_in <- "thetaoga"
@@ -222,12 +226,13 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
     #varnames_in <- "NPP"
     #seasonsf <- "annual"
     fromsf <- 1950 # chunk 1 start: 1950
-    #fromsf <- 2586 # chunk 2 last 100 years
-    #fromsf <- 2666 # chunk 2 last 20 years
-    #fromsf <- 2676
-    tosf <- 2685 # chunk 2 end: 2685
+    #fromsf <- 2686 # chunk 2 start: 2686
+    #tosf <- 2685 # chunk 1 end: 2585
+    tosf <- 2850
     tunit <- "model year"
     new_origins <- fromsf - 1950 + 1 # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
+    add_linear_trend <- T
+    add_linear_trend_froms <- 802
     #remove_mean_froms <- c(1, 1)
     #remove_mean_tos <- remove_mean_froms
     #seasonsf <- "annual"
@@ -673,7 +678,7 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
     varnames_in <- rep("omldamax", t=2)
     modes <- rep("timmean_monmax", t=2)
 
-} else if (T) { # Hol-T with vs without orbital acceleration
+} else if (F) { # Hol-T with vs without orbital acceleration
     models <- c("echam5", "echam5")
     #models <- c("mpiom1", "mpiom1")
     #prefixes <- c("cosmos-aso-wiso_Hol-T", "cosmos-aso-wiso_Hol-Tx10")
@@ -1948,7 +1953,11 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
 
 } else if (F) { # compare jsbach pft levels awi-esm-1-1-lr_kh800 piControl
     models <- rep("jsbach", t=12)
-    prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og", t=12)
+    host$workpath <- "/work/ab0246/a270073"
+    prefixes <- rep("awi-esm-1-1-lr_piControl", t=12)
+    #prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og", t=12)
+    #prefixes <- rep("awi-esm-1-1-lr_kh800_piControl", t=12)
+    #prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og_and_esm-piControl_restartall", t=12)
     names_short <- paste0("pft", c(2, 3, 4, 5, 10, 11, 12, 13, 15, 16, 20, 21))
     names_legend <- c("tropical broadleaf evergreen (2)",
                       "tropical broadleaf deciduous (3)",
@@ -1963,23 +1972,70 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
                       "C3 crops (20)",
                       "C4 crops (21)")
     varnames_in <- rep("pft_fract_box", t=12)
-    levs <- c(2, 3, 4, 5, 10, 11, 12, 13, 15, 16, 20, 21) # not glacier
-    cols <- c("darkgreen", "darkgreen", "darkgreen", "darkgreen",
-              "orange", "orange",
-              "brown", "brown",
-              3, 3,
-              1, 1)
+    levs <- c(2, 3, 4, 5, 10, 11, 12, 13, 15, 16, 20, 21) # not glacier and not bare land
+    cols <- c(rep("#7fc97f", t=4),
+              rep("#beaed4", t=2),
+              rep("#fdc086", t=2),
+              rep("black", t=2),
+              rep("#386cb0", t=2))
     ltys <- c(1, 2, 3, 4,
               1, 2,
               1, 2,
               1, 2,
               1, 2)
+    lwds <- rep(2, t=12)
     seasonsf <- rep("annual", t=12)
-    fromsf <- rep(1950, t=12) # piControl chunk 1 start: 1950
-    tosf <- rep(2685, t=12) # piControl chunk 2 end: 2685
+    #fromsf <- rep(1950, t=12) # piControl chunk 1 start: 1950
+    fromsf <- rep(1955, t=12) # awi-esm-1-1-lr deck piControl spinup year 1942
+    tosf <- rep(2104, t=12) # awi-esm-1-1-lr deck piControl spinup year 2091
+    #tosf <- rep(2685, t=12) # piControl chunk 2 end: 2685
+    #tosf <- rep(2850, t=12) # piControl chunk 3 end: 2850
+    #tosf <- rep(2962, t=12) # esm-piControl
     tunit <- "model year"
-    new_origins <- rep(fromsf - 1950 + 1, t=12) # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
+    #new_origins <- fromsf - 1950 + 1 # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
+    new_origins <- rep(400, t=12) 
     modes <- rep("fldsum", t=12)
+
+# ======================================================
+# 24 settings
+} else if (F) { # compare jsbach pft levels awi-esm-1-1-lr_kh800 piControl
+    models <- rep("jsbach", t=24)
+    prefixes <- c(rep("awi-esm-1-1-lr_kh800_piControl", t=12),
+                  rep("awi-esm-1-1-lr_kh800_esm-piControl_restartall", t=12))
+    names_short <- rep(paste0("pft", c(2, 3, 4, 5, 10, 11, 12, 13, 15, 16, 20, 21)), t=2)
+    names_legend <- c("tropical broadleaf evergreen (2)",
+                      "tropical broadleaf deciduous (3)",
+                      "extra-tropical evergreen (4)",
+                      "extra-tropical deciduous (5)",
+                      "raingreen shrubs (10)",
+                      "deciduous shrubs (11)",
+                      "C3 grass (12)",
+                      "C4 grass (13)",
+                      "C3 pasture (15)",
+                      "C4 pasture (16)",
+                      "C3 crops (20)",
+                      "C4 crops (21)")
+    varnames_in <- rep("pft_fract_box", t=24)
+    levs <- rep(c(2, 3, 4, 5, 10, 11, 12, 13, 15, 16, 20, 21), t=2) # not glacier and not bare land
+    cols <- c(rep("#7fc97f", t=4),
+              rep("#beaed4", t=2),
+              rep("#fdc086", t=2),
+              rep("black", t=2),
+              rep("#386cb0", t=2))
+    cols <- c(cols, col2rgba(cols, 0.5))
+    ltys <- c(1, 2, 3, 4,
+              1, 2,
+              1, 2,
+              1, 2,
+              1, 2)
+    ltys <- rep(ltys, t=2)
+    lwds <- rep(2, t=24)
+    seasonsf <- rep("annual", t=24)
+    fromsf <- c(rep(1950, t=12), rep(2686, t=12)) # piControl chunk 1 start: 1950
+    tosf <- c(rep(2850, t=12), rep(2962, t=12)) # piControl chunk 3 end: 2850
+    tunit <- "model year"
+    new_origins <- fromsf - 1950 + 1 # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
+    modes <- rep("fldsum", t=24)
     
 # ======================================================
 # 25 settings
@@ -1998,7 +2054,7 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl og
 
 # ======================================================
 # 27 settings
-} else if (F) { # 27 levels
+} else if (F) { # 27 atm levels
     models <- rep("echam6", t=27)
     prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og_restart_hl_ppm", t=27)
     varnames_in <- rep("CO2", t=27)

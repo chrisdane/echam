@@ -2560,7 +2560,7 @@ for (i in 1:nsettings) {
 
     # set relative time axis
     if (!own_cmd && cdo_set_rel_time && is.null(new_date_list[[i]])) {
-        message("\n", "`cdo_set_rel_time`=T --> set relative time axis ...")
+        message("\n`cdo_set_rel_time`=T --> set relative time axis ...")
         reltime_file <- paste0(postpaths[i], "/tmp_reltime_", Sys.getpid())
         cmd <- paste0("cdo ", cdo_silent, " --no_history -r copy ", fout, " ", reltime_file, 
                       " && mv ", reltime_file, " ", fout)
@@ -2571,7 +2571,39 @@ for (i in 1:nsettings) {
         message("\n", "`cdo_set_rel_time`=F --> do not set relative time axis ...")
     }
 
-    # run special functions in the end    
+    # set time_bnds if needed (if there is time dim) and not already there
+    message("\ncheck if time_bnds are needed and not there yet ...") 
+    # todo: how to check if file has time_dims?
+    cmd <- paste0(cdo, " sinfo ", fout) # short info 
+    message("run `", cmd, "` ...")
+    sinfo <- system(cmd, intern=T)
+    if (any(grepl("   Time coordinate :", sinfo))) { # there is time dim
+        sinfo <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # "RefTime =  2686-01-31 00:00:00  Units = days  Calendar = proleptic_gregorian"
+        message("--> \"", trimws(sinfo), "\"")
+        if (grepl("Bounds = true", sinfo)) { 
+            message("--> time_bnds already set")
+        } else { # time_bnds not set
+            message("--> time_bnds not set (\"Bounds = true\" missing)")
+            if (!exists("nco_ncap2")) {
+                message("`nco_ncap2` not set by user -> check if ncap2 binary can be found to set new times of nc file: run `which(ncap2)`")
+                nco_ncap2 <- Sys.which("ncap2")
+                if (nco_ncap2 == "") {
+                    warning("ncap2 not found, cannot set time_bnds, skip")
+                } else {
+                    message("--> ncap2 = ", nco_ncap2)
+                }
+            }
+            if (nco_ncap2 != "") {
+                cmd <- paste0(nco_ncap2, " -O -s 'defdim(\"bnds\",2); time_bnds=make_bounds(time,$bnds,\"time_bnds\");' ", 
+                              fout, " ", fout)
+                message("run `", cmd, "` ...")
+                system(cmd)
+            } # if ncap2 found
+        } # if time_bnds not yet set
+    } # if fout has time dim
+
+
+    ## run special functions at the end    
     if (models[i] == "mpiom1") {
         
         # run mpiom1_remap2lonlat() function on timmean output
