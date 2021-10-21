@@ -1,6 +1,6 @@
 ncdf4
-fields # imageplot.setup() in ~/scripts/r/functions/image.plot.nxm.r
-# optional:
+fields # for fields::imageplot.setup() in ~/scripts/r/functions/image.plot.nxm.r
+# optional depending on namelist.plot options:
 #RColorBrewer 
 #abind
 #pangaear

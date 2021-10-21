@@ -1,26 +1,11 @@
 # r
 
-rm(list=ls()); graphics.off()
+# post processing of echam, jsbach, mpiom output
 
+graphics.off()
+options(show.error.locations=T)
 options(warn=2) # stop on warnings
 #options(warn=0) # back to default
-
-# machine dependent repo path; must change here if non-default
-repopath <- "~/scripts/r/echam"
-if (!dir.exists(repopath)) {
-    stop("`repopath` = \"", repopath, "\" does not exist")
-} else {
-    repopath <- normalizePath(repopath)
-}
-
-# load helper functions of this repo
-script_helper_functions <- paste0(repopath, "/helper_functions.r")
-message("\nload ", script_helper_functions, " ...")
-source(script_helper_functions) # get_host()
-
-# get host options
-host <- get_host(verbose=T)
-host$repopath <- repopath
 
 # host check
 if (T && host$machine_tag == "mistral") {
@@ -31,29 +16,24 @@ if (T && host$machine_tag == "mistral") {
     }
 }
 
-# load necessary libraries
+# load libraries necessary for plot_echam.r
+message("\nload packages defined in ", host$repopath, "/requirements_post.txt ...")
 requirements <- readLines(paste0(host$repopath, "/requirements_post.txt"))
-for (r in requirements) if (substr(r, 1, 1) != "#") library(r, character.only=T)
-
-# todo: how to load helper functions from another repo without the subrepo hassle?
-if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
-    message("\nload ", host$homepath, "/functions/myfunctions.r ...")
-    source(paste0(host$homepath, "/functions/myfunctions.r"))
-    # dependencies: 
-    # ht(), make_posixlt_origin(), is.leap(), tryCatch.W.E(), identical_list(), cdo_get_filetype()
-} else {
-    stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
+for (r in requirements) {
+    r <- trimws(r)
+    if (substr(r, 1, 1) != "#") { # current line is not a comment
+        if (grepl(" ", r)) { # there is a space
+            r <- substr(r, 1, regexpr(" ", r)-1) # everything until first space
+        }
+        message("   ", r)
+        suppressPackageStartupMessages(library(r, character.only=T))
+    }
 }
 
-# load user input namelist for this repo
-#nml_post <- paste0(host$repopath, "/namelist.post.r")
-nml_post <- "namelist.post.r" # file from same directory as this post_echam.r
-nml_post <- normalizePath(nml_post)
-message("\nload and check ", nml_post, " ...")
-source(nml_post)
+## check user input from namelist.post.r
 
-# Check user input and set defaults
 message("verbose = ", verbose)
+message("post_force = ", post_force) 
 message("clean = ", clean)
 
 # check if cdo is available
@@ -89,23 +69,22 @@ if (any(tmp)) {
 message("cdo_version = ", paste(cdo_version, collapse="."))
 message("cdo_silent = \"", cdo_silent, "\"")
 message("cdo_select_no_history = \"", cdo_select_no_history, "\"")
-message("cdo_force = ", cdo_force) #  -O necessary for ens<STAT>, merge, mergetime
 message("cdo_OpenMP_threads = \"", cdo_OpenMP_threads, "\"") # OMP supported operators: https://code.mpimet.mpg.de/projects/cdo/wiki/OpenMP_support
 message("cdo_set_rel_time = ", cdo_set_rel_time)
 message("cdo_run_from_script = ", cdo_run_from_script)
+# -O necessary for ens<STAT>, merge, mergetime
 
-# check if necessary user variables exist
+# check if necessary user variables exist and are of correct length
 exist_checks <- c("datapaths", "fpatterns", "fvarnames",
                   "models", "froms", "tos", "modes")
 if (!all(sapply(exist_checks, exists))) {
     missing_vars <- !sapply(exist_checks, exists)
     stop("\nmust provide variable", 
          ifelse(length(which(missing_vars)) > 1, "s", ""),
-         " `", paste0(names(missing_vars)[missing_vars], collapse="`, `"), "`")
+         " `", paste0(names(missing_vars)[missing_vars], collapse="`, `"), 
+         "` in post namelist ", nml_post)
 }
 nsettings <- length(datapaths)
-
-# check if all necessary variables are of correct length
 for (i in seq_along(exist_checks)) {
     cmd <- paste0("length(", exist_checks[i], ")")
     length_of_obj <- eval(parse(text=cmd))
@@ -171,30 +150,21 @@ if (!exists("areas_out")) {
 }
 if (!exists("cdoshifttimes")) cdoshifttimes <- rep("", t=nsettings)
 
-# check if postpaths can be created/have writing rights
+# check postpaths
+if (exists("workpath")) host$workpath <- workpath # overwrite default
 if (!exists("postpaths")) {
     postpaths <- paste(host$workpath, "post", models, names(modes), fvarnames, sep="/")
-} else {
-    postpaths <- normalizePath(postpaths)
 }
-if (any(file.access(postpaths, mode=0) != 0)) { # check existance
-    nonexisting_paths <- which(file.access(postpaths, mode=0) != 0)
-    for (i in postpaths[nonexisting_paths]) {
-        if (file.access(i, mode=0) == 0) {
-            # postpath was created in a step before
-            next # path
-        }
-        permission_check <- tryCatch(dir.create(i, recursive=T), error=function(e) e, warning=function(w) w)
-        if (typeof(permission_check) == "logical" || # dir creation permission
-            grepl("already exists", permission_check$message)) { # just warning that directory already exists
-            message("create postpath \"", i, "\"")
-            dir.create(i, recursive=T, showWarnings=F)
-        } else { # no dir creation permission
-            stop("have no write permission to create postpath \"", i, "\". error message:\n",
-                 permission_check)
-        }
+if (any(!dir.exists(postpaths))) {
+    nonexisting_paths <- postpaths[which(!dir.exists(postpaths))]
+    for (i in nonexisting_paths) { # try to create
+        message("create postpath \"", i, "\"")
+        dir.create(i, recursive=T, showWarnings=F)
+        if (!dir.exists(i)) stop("no sucess")
     }
 }
+postpaths <- normalizePath(postpaths)
+
 if (exists("season_names")) {
     if (exists("season_inds")) {
         # check is user provided season_names and season_inds fit to each other
@@ -392,6 +362,12 @@ special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>",
 message("\nnameslist.post.r checks finished. start running post_echam.r for ", nsettings, 
         " model setup", ifelse(nsettings > 1, "s", ""), " ...")
 
+# clear lastfiles_post file
+lastfiles_post_fname <- paste0("lastfiles_post_", Sys.getpid(), ".txt") # in same path as this post_echam.r-call
+lastfiles_post_fname <- paste0(normalizePath(dirname(lastfiles_post_fname)), "/", lastfiles_post_fname)
+message("\ncreate file for storing post filenames \"", lastfiles_post_fname, "\" ...")
+invisible(file.create(lastfiles_post_fname)) # error if no success
+
 # do for every model setting
 elapsed <- vector("list", l=nsettings)
 for (i in 1:nsettings) {
@@ -438,22 +414,22 @@ for (i in 1:nsettings) {
     message("fout = ", fout)
     
     fout_exist_check <- file.access(fout, mode=0)
-    if (T && fout_exist_check == 0) {
+    if (F && fout_exist_check == 0) {
         message("\n ************** redo although output exists for testing **************")
         fout_exist_check <- -1
     }
     
     # fout already exists 
-    if (fout_exist_check == 0 && cdo_force == F) {
+    if (fout_exist_check == 0 && post_force == F) {
 
-        message("final fout=\n   ", fout, "\nalready exists and `cdo_force=F`. skip.")
+        message("final fout=\n   ", fout, "\nalready exists and `post_force=F`. skip.")
 
     # fout does not exist --> run chained cdo operators for all files
     } else { 
         
         # delete fout if it already exists 
-        if (fout_exist_check == 0 && cdo_force == T) {
-            message("final fout=\n   ", fout, "\nalready exists and `cdo_force=T`. delete already existing file ...")
+        if (fout_exist_check == 0 && post_force == T) {
+            message("final fout=\n   ", fout, "\nalready exists and `post_force=T`. delete already existing file ...")
             check <- file.remove(fout)
             if (!check) warning("something went wrong deleting file ", fout)
         }
@@ -1664,18 +1640,18 @@ for (i in 1:nsettings) {
                         # run command if cdo selection (and possible calculation) result does not exist already
                         ticcmd <- toccmd <- NULL # default
                         if (cdo_chain == "separate" && !is.null(new_date_list[[i]])) {
-                            if (file.exists(selfile_vec[chunki]) && !cdo_force) {
+                            if (file.exists(selfile_vec[chunki]) && !post_force) {
                                 message("`selfile_vec[", chunki, "]` =\n",
                                         "   \"", selfile_vec[chunki], "\n",
-                                        "already exists and `cdo_force`=F. skip ...")
+                                        "already exists and `post_force`=F. skip ...")
                             } else {
                                 ticcmd <- toccmd <- 0
                             }
                         } else {
-                            if (file.exists(fout_vec[chunki]) && !cdo_force) {
+                            if (file.exists(fout_vec[chunki]) && !post_force) {
                                 message("`fout_vec[", chunki, "]` =\n",
                                         "   \"", fout_vec[chunki], "\"\n",
-                                        "already exists and `cdo_force`=F. skip ...")
+                                        "already exists and `post_force`=F. skip ...")
                             } else {
                                 ticcmd <- toccmd <- 0
                             }
@@ -2418,10 +2394,10 @@ for (i in 1:nsettings) {
                             writeLines(cmd_calc_chunki, con=scriptname)
                             nfiles_per_chunk <- cmd_select_list[[chunki]]$n
                             cmd_source <- paste0(". ", scriptname)
-                            if (file.exists(fout_vec[chunki]) && !cdo_force) {
+                            if (file.exists(fout_vec[chunki]) && !post_force) {
                                 message("fout_vec[", chunki, "] =\n",
                                         "   \"", fout_vec[chunki], "\"\n",
-                                        "already exists and `cdo_force`=F. skip ...")
+                                        "already exists and `post_force`=F. skip ...")
                                 ticcmd <- toccmd <- NULL
                             } else {
                                 message("via `", cmd_source, "`")
@@ -2521,191 +2497,180 @@ for (i in 1:nsettings) {
             system(cmd)
         } # if !is.null(new_date_list[[i]]$years)
 
-    } # if fout_exist_check (if output file already exists or not)
-                
-    if (all(modes[[i]] == "fldint")) {
-        message("\nmodes[[", i, "]] = \"fldint\" --> find gridarea in m2 ...")
-        if (!any(models[i] == c("echam6", "jsbach"))) {
-            stop("mode \"fldint\" only supported for models echam6 or jsbach")
-        }
-        # get correct grid area
-        cmd <- paste0(cdo, " griddes ", datapath, "/", files[1])
-        message("run `", cmd, "` ...")
-        griddes <- system(cmd, intern=T)
-        xsize <- which(base::startsWith(griddes, "xsize"))
-        if (length(xsize) == 0) stop("cdo griddes did not yield \"xsize\" entry.")
-        xsize <- gsub(" ", "", griddes[xsize])
-        xsize <- strsplit(xsize, "=")[[1]][2]
-        xsize <- as.integer(xsize) # will stop on error if not successful 
-        message("--> xsize = ", xsize)
-        ysize <- which(base::startsWith(griddes, "ysize"))
-        if (length(ysize) == 0) stop("cdo griddes did not yield \"ysize\" entry.")
-        ysize <- gsub(" ", "", griddes[ysize])
-        ysize <- strsplit(ysize, "=")[[1]][2]
-        ysize <- as.integer(ysize) # will stop on error if not successful 
-        message("--> ysize = ", ysize)
-        if (xsize == 192 && ysize == 96) { # T63
-            gridarea_m2_file <- paste0(host$repopath, "/echam/T63_gridarea_m2.nc")
-        } else {
-            stop("these xsize and ysize are not defined")
-        }
-        message("--> use gridarea in m2 from ", gridarea_m2_file, " ...")
-        mul_file <- paste0(postpaths[i], "/tmp_mul_", Sys.getpid())
-        cmd <- paste0(cdo, " -fldsum -mul ", gridarea_m2_file, " ", fout, " ", mul_file, 
-                      " && mv ", mul_file, " ", fout)
-        cmd <- paste0(cmd, " || echo error")
-        message("run `", cmd, "`")
-        system(cmd)
-    }
-
-    # set relative time axis
-    if (!own_cmd && cdo_set_rel_time && is.null(new_date_list[[i]])) {
-        message("\n`cdo_set_rel_time`=T --> set relative time axis ...")
-        reltime_file <- paste0(postpaths[i], "/tmp_reltime_", Sys.getpid())
-        cmd <- paste0("cdo ", cdo_silent, " --no_history -r copy ", fout, " ", reltime_file, 
-                      " && mv ", reltime_file, " ", fout)
-        cmd <- paste0(cmd, " || echo error")
-        message("run `", cmd, "`")
-        system(cmd)
-    } else {
-        message("\n", "`cdo_set_rel_time`=F --> do not set relative time axis ...")
-    }
-
-    # set time_bnds if needed (if there is time dim) and not already there
-    message("\ncheck if time_bnds are needed and not there yet ...") 
-    # todo: how to check if file has time_dims?
-    cmd <- paste0(cdo, " sinfo ", fout) # short info 
-    message("run `", cmd, "` ...")
-    sinfo <- system(cmd, intern=T)
-    if (any(grepl("   Time coordinate :", sinfo))) { # there is time dim
-        sinfo <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # "RefTime =  2686-01-31 00:00:00  Units = days  Calendar = proleptic_gregorian"
-        message("--> \"", trimws(sinfo), "\"")
-        if (grepl("Bounds = true", sinfo)) { 
-            message("--> time_bnds already set")
-        } else { # time_bnds not set
-            message("--> time_bnds not set (\"Bounds = true\" missing)")
-            if (!exists("nco_ncap2")) {
-                message("`nco_ncap2` not set by user -> check if ncap2 binary can be found to set new times of nc file: run `which(ncap2)`")
-                nco_ncap2 <- Sys.which("ncap2")
-                if (nco_ncap2 == "") {
-                    warning("ncap2 not found, cannot set time_bnds, skip")
-                } else {
-                    message("--> ncap2 = ", nco_ncap2)
-                }
+        if (all(modes[[i]] == "fldint")) {
+            message("\nmodes[[", i, "]] = \"fldint\" --> find gridarea in m2 ...")
+            if (!any(models[i] == c("echam6", "jsbach"))) {
+                stop("mode \"fldint\" only supported for models echam6 or jsbach")
             }
-            if (nco_ncap2 != "") {
-                cmd <- paste0(nco_ncap2, " -O -s 'defdim(\"bnds\",2); time_bnds=make_bounds(time,$bnds,\"time_bnds\");' ", 
-                              fout, " ", fout)
-                message("run `", cmd, "` ...")
-                system(cmd)
-            } # if ncap2 found
-        } # if time_bnds not yet set
-    } # if fout has time dim
+            # get correct grid area
+            cmd <- paste0(cdo, " griddes ", datapath, "/", files[1])
+            message("run `", cmd, "` ...")
+            griddes <- system(cmd, intern=T)
+            xsize <- which(base::startsWith(griddes, "xsize"))
+            if (length(xsize) == 0) stop("cdo griddes did not yield \"xsize\" entry.")
+            xsize <- gsub(" ", "", griddes[xsize])
+            xsize <- strsplit(xsize, "=")[[1]][2]
+            xsize <- as.integer(xsize) # will stop on error if not successful 
+            message("--> xsize = ", xsize)
+            ysize <- which(base::startsWith(griddes, "ysize"))
+            if (length(ysize) == 0) stop("cdo griddes did not yield \"ysize\" entry.")
+            ysize <- gsub(" ", "", griddes[ysize])
+            ysize <- strsplit(ysize, "=")[[1]][2]
+            ysize <- as.integer(ysize) # will stop on error if not successful 
+            message("--> ysize = ", ysize)
+            if (xsize == 192 && ysize == 96) { # T63
+                gridarea_m2_file <- paste0(host$repopath, "/echam/T63_gridarea_m2.nc")
+            } else {
+                stop("these xsize and ysize are not defined")
+            }
+            message("--> use gridarea in m2 from ", gridarea_m2_file, " ...")
+            mul_file <- paste0(postpaths[i], "/tmp_mul_", Sys.getpid())
+            cmd <- paste0(cdo, " -fldsum -mul ", gridarea_m2_file, " ", fout, " ", mul_file, 
+                          " && mv ", mul_file, " ", fout)
+            cmd <- paste0(cmd, " || echo error")
+            message("run `", cmd, "`")
+            system(cmd)
+        }
+
+        # set relative time axis
+        if (!own_cmd && cdo_set_rel_time && is.null(new_date_list[[i]])) {
+            message("\n`cdo_set_rel_time`=T --> set relative time axis ...")
+            reltime_file <- paste0(postpaths[i], "/tmp_reltime_", Sys.getpid())
+            cmd <- paste0("cdo ", cdo_silent, " --no_history -r copy ", fout, " ", reltime_file, 
+                          " && mv ", reltime_file, " ", fout)
+            cmd <- paste0(cmd, " || echo error")
+            message("run `", cmd, "`")
+            system(cmd)
+        } else {
+            message("\n", "`cdo_set_rel_time`=F --> do not set relative time axis ...")
+        }
+
+        # set time_bnds if needed (if there is time dim) and not already there
+        message("\ncheck if time_bnds are needed and not there yet ...") 
+        # todo: how to check if file has time_dims?
+        cmd <- paste0(cdo, " sinfo ", fout) # short info 
+        message("run `", cmd, "` ...")
+        sinfo <- system(cmd, intern=T)
+        if (any(grepl("   Time coordinate :", sinfo))) { # there is time dim
+            sinfo <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # "RefTime =  2686-01-31 00:00:00  Units = days  Calendar = proleptic_gregorian"
+            message("--> \"", trimws(sinfo), "\"")
+            if (grepl("Bounds = true", sinfo)) { 
+                message("--> time_bnds already set")
+            } else { # time_bnds not set
+                message("--> time_bnds not set (\"Bounds = true\" missing)")
+                if (!exists("nco_ncap2")) {
+                    message("`nco_ncap2` not set by user -> check if ncap2 binary can be found to set new times of nc file: run `which(ncap2)`")
+                    nco_ncap2 <- Sys.which("ncap2")
+                    if (nco_ncap2 == "") {
+                        warning("ncap2 not found, cannot set time_bnds, skip")
+                    } else {
+                        message("--> ncap2 = ", nco_ncap2)
+                    }
+                }
+                if (nco_ncap2 != "") {
+                    cmd <- paste0(nco_ncap2, " -O -s 'defdim(\"bnds\",2); time_bnds=make_bounds(time,$bnds,\"time_bnds\");' ", 
+                                  fout, " ", fout)
+                    message("run `", cmd, "` ...")
+                    system(cmd)
+                } # if ncap2 found
+            } # if time_bnds not yet set
+        } # if fout has time dim
 
 
-    ## run special functions at the end    
-    if (models[i] == "mpiom1") {
-        
-        # run mpiom1_remap2lonlat() function on timmean output
-        if (mpiom1_remap[i]) {
-            message("\n`models[", i, "]` = \"", models[i], 
-                    "\" and `mpiom1_remap` = T --> run `mpiom1_remap2lonlat()` ...")
-            cmd <- "mpiom1_remap2lonlat(files=fout, cdo=cdo"
-            if (exists("mpiom1_remap2lonlat_arg_list")) {
-                if (!is.null(mpiom1_remap2lonlat_arg_list[[i]])) {
-                    message("--> use provided `mpiom1_remap2lonlat_arg_list[[", i, "]]`:")
-                    cat(capture.output(str(mpiom1_remap2lonlat_arg_list[[i]])), sep="\n")
-                    for (argi in seq_along(mpiom1_remap2lonlat_arg_list[[i]])) {
-                        cmd <- paste0(cmd, ", ", 
-                                      names(mpiom1_remap2lonlat_arg_list[[i]])[argi], 
-                                      "=mpiom1_remap2lonlat_arg_list[[", i, "]]$",
-                                      names(mpiom1_remap2lonlat_arg_list[[i]])[argi])
+        ## run special functions at the end    
+        if (models[i] == "mpiom1") {
+            
+            # run mpiom1_remap2lonlat() function on timmean output
+            if (mpiom1_remap[i]) {
+                message("\n`models[", i, "]` = \"", models[i], 
+                        "\" and `mpiom1_remap` = T --> run `mpiom1_remap2lonlat()` ...")
+                cmd <- "mpiom1_remap2lonlat(files=fout, cdo=cdo"
+                if (exists("mpiom1_remap2lonlat_arg_list")) {
+                    if (!is.null(mpiom1_remap2lonlat_arg_list[[i]])) {
+                        message("--> use provided `mpiom1_remap2lonlat_arg_list[[", i, "]]`:")
+                        cat(capture.output(str(mpiom1_remap2lonlat_arg_list[[i]])), sep="\n")
+                        for (argi in seq_along(mpiom1_remap2lonlat_arg_list[[i]])) {
+                            cmd <- paste0(cmd, ", ", 
+                                          names(mpiom1_remap2lonlat_arg_list[[i]])[argi], 
+                                          "=mpiom1_remap2lonlat_arg_list[[", i, "]]$",
+                                          names(mpiom1_remap2lonlat_arg_list[[i]])[argi])
+                        }
+                    } else {
+                        message("--> provided `mpiom1_remap2lonlat_arg_list[[", i, "]]` is NULL --> use defaults")
                     }
                 } else {
-                    message("--> provided `mpiom1_remap2lonlat_arg_list[[", i, "]]` is NULL --> use defaults")
+                    message("--> `mpiom1_remap2lonlat_arg_list` not provided --> use defaults")
                 }
+                cmd <- paste0(cmd, ")")
+                message("run `", cmd, "` ...")
+                eval(parse(text=cmd))
+
             } else {
-                message("--> `mpiom1_remap2lonlat_arg_list` not provided --> use defaults")
-            }
-            cmd <- paste0(cmd, ")")
-            message("run `", cmd, "` ...")
-            eval(parse(text=cmd))
+                message("\n`models[", i, "]` = \"", models[i], 
+                        "\" but `mpiom1_remap` = F --> do not run `mpiom1_remap2lonlat()` ...")
 
-        } else {
-            message("\n`models[", i, "]` = \"", models[i], 
-                    "\" but `mpiom1_remap` = F --> do not run `mpiom1_remap2lonlat()` ...")
+            } # if mpiom1_remap[i] or not
 
-        } # if mpiom1_remap[i] or not
-
-        if (any(fvarnames[i] == c("amoc", "gmoc"))) { # run mpiom_moc_make_bottom_topo()
-            message("\n`models[", i, "]` = \"", models[i], "\" and `fvarnames[", i, "]` = ",
-                    "\"", fvarnames[i], "\" --> run mpiom_moc_make_bottom_topo() ...")
-            
-            cmd <- "mpiom_moc_make_bottom_topo(cdo=cdo, varname=fvarnames[i], fin=fout, fout=fout"
-            if (exists("mpiom_moc_make_bottom_topo_arg_list")) {
-                for (argi in seq_along(mpiom_moc_make_bottom_topo_arg_list[[i]])) {
-                    cmd <- paste0(cmd, ", ", 
-                                  names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi], 
-                                  "=mpiom_moc_make_bottom_topo_arg_list[[", i, "]]$",
-                                  names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi])
-                }
-            }
-            cmd <- paste0(cmd, ")")
-            message("run `", cmd, "`")
-            eval(parse(text=cmd))
-
-            # get moc time series if not timmean
-            if (!(any(grepl("timmean", modes[[i]])))) {
-                message("\n`modes[", i, "] = \"", modes[i], "\" != \"timmean", 
-                        "\" --> get moc time series --> run mpiom_moc_extract_ts() ...")
-               
-                cmd <- "mpiom_moc_extract_ts(fin=fout"
-                if (exists("mpiom_moc_extract_ts_arg_list")) {
-                    for (argi in seq_along(mpiom_moc_extract_ts_arg_list[[i]])) {
+            if (any(fvarnames[i] == c("amoc", "gmoc"))) { # run mpiom_moc_make_bottom_topo()
+                message("\n`models[", i, "]` = \"", models[i], "\" and `fvarnames[", i, "]` = ",
+                        "\"", fvarnames[i], "\" --> run mpiom_moc_make_bottom_topo() ...")
+                
+                cmd <- "mpiom_moc_make_bottom_topo(cdo=cdo, varname=fvarnames[i], fin=fout, fout=fout"
+                if (exists("mpiom_moc_make_bottom_topo_arg_list")) {
+                    for (argi in seq_along(mpiom_moc_make_bottom_topo_arg_list[[i]])) {
                         cmd <- paste0(cmd, ", ", 
-                                      names(mpiom_moc_extract_ts_arg_list[[i]])[argi], 
-                                      "=mpiom_moc_extract_ts_arg_list[[", i, "]]$",
-                                      names(mpiom_moc_extract_ts_arg_list[[i]])[argi])
+                                      names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi], 
+                                      "=mpiom_moc_make_bottom_topo_arg_list[[", i, "]]$",
+                                      names(mpiom_moc_make_bottom_topo_arg_list[[i]])[argi])
                     }
                 }
                 cmd <- paste0(cmd, ")")
                 message("run `", cmd, "`")
                 eval(parse(text=cmd))
 
-            } # if !(any(grepl("timmean", modes[[i]])))
+                # get moc time series if not timmean
+                if (!(any(grepl("timmean", modes[[i]])))) {
+                    message("\n`modes[", i, "] = \"", modes[i], "\" != \"timmean", 
+                            "\" --> get moc time series --> run mpiom_moc_extract_ts() ...")
+                   
+                    cmd <- "mpiom_moc_extract_ts(fin=fout"
+                    if (exists("mpiom_moc_extract_ts_arg_list")) {
+                        for (argi in seq_along(mpiom_moc_extract_ts_arg_list[[i]])) {
+                            cmd <- paste0(cmd, ", ", 
+                                          names(mpiom_moc_extract_ts_arg_list[[i]])[argi], 
+                                          "=mpiom_moc_extract_ts_arg_list[[", i, "]]$",
+                                          names(mpiom_moc_extract_ts_arg_list[[i]])[argi])
+                        }
+                    }
+                    cmd <- paste0(cmd, ")")
+                    message("run `", cmd, "`")
+                    eval(parse(text=cmd))
 
-        } # if *moc
+                } # if !(any(grepl("timmean", modes[[i]])))
+
+            } # if *moc
+        
+        } # which model
+        # finished running model-dependent stuff in the end
+        
+        toc <- Sys.time()
+        elapsed[[i]] <- toc - tic
+        message("\nsetting ", i, "/", nsettings , " took ", elapsed[[i]], " ", 
+                attributes(elapsed[[i]])$units, " for ", models[i], " ", names(modes)[i], 
+                " = ", paste(modes[[i]], collapse=", "), " calculation of ",
+                length(files), " file", ifelse(length(files) > 1, "s", ""))
+
+        # restore user options for next setting
+        cdo_set_rel_time <- cdo_set_rel_time_old
     
-    } # which model
-    # finished running model-dependent stuff in the end
-
-    toc <- Sys.time()
-    elapsed[[i]] <- toc - tic
-    message("\nsetting ", i, "/", nsettings , " took ", elapsed[[i]], " ", 
-            attributes(elapsed[[i]])$units, " for ", models[i], " ", names(modes)[i], 
-            " = ", paste(modes[[i]], collapse=", "), " calculation of ",
-            length(files), " file", ifelse(length(files) > 1, "s", ""))
-
-    # restore user options for next setting
-    cdo_set_rel_time <- cdo_set_rel_time_old
+    } # if fout_exist_check (if output file already exists or not)            
+        
+    # add output to lastfiles post file
+    write(fout, file=lastfiles_post_fname, append=T)
 
 } # for i nsettings
 
-message("\nfinished")
+if (options()$warn != 0) options(warn=0) # back to default
 
-for (i in seq_len(nsettings)) {
-    message("\nsetting ", i, "/", nsettings , "\n",
-            "  ", datapaths[i], "/", fpatterns[i], "\n",
-            "took ", elapsed[[i]], " ", 
-            attributes(elapsed[[i]])$units, " for ", models[i], " ", names(modes)[i], 
-            " = ", paste(modes[[i]], collapse=", "), " calculation of ", 
-            length(files), " file", ifelse(length(files) > 1, "s", ""), "\n")
-}
-
-if (!interactive()) {
-    message("grep this log file for lines that begin with \"error\": grep -in error <logfile>", 
-            "\nbe happy if nothing is returned\n")
-}
-
-options(warn=0) # back to default
+message("\nfinished\n")
 

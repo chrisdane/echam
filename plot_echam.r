@@ -1,35 +1,15 @@
 # r
 
+# plotting post processing results of echam, jsbach, mpiom output
+
+graphics.off()
+options(show.error.locations=T)
 #options(warn=2) # stop on warnings
-options(warn=0) # back to default
-
-if (T) {
-    message("\nrm(list=ls())")
-    rm(list=ls())
-    # dont drop len=1 dimensions by subsetting:
-    fctbackup <- `[`
-    `[` <- function(...) { fctbackup(..., drop=F) } # set back to default: `[` <- fctbackup 
-} else {
-    message("\ndo not clear work space ...")
+if (T && options()$warn != 0) {
+    options(warn=0) # back to default
 }
-message("graphics.off()"); graphics.off()
-
-# machine dependent repo path; must change here if non-default
-repopath <- "~/scripts/r/echam"
-if (!dir.exists(repopath)) {
-    stop("`repopath` = \"", repopath, "\" does not exist")
-} else {
-    repopath <- normalizePath(repopath)
-}
-
-# load helper functions of this repo
-script_helper_functions <- paste0(repopath, "/helper_functions.r")
-message("\nload ", script_helper_functions, " ...")
-source(script_helper_functions) # get_host()
-
-# get host options
-host <- get_host()
-host$repopath <- repopath
+fctbackup <- `[`
+`[` <- function(...) { fctbackup(..., drop=F) } # set back to default: `[` <- fctbackup 
 
 # load libraries necessary for plot_echam.r
 message("\nload packages defined in ", host$repopath, "/requirements_plot.txt ...")
@@ -41,34 +21,16 @@ for (r in requirements) {
             r <- substr(r, 1, regexpr(" ", r)-1) # everything until first space
         }
         message("   ", r)
-        library(r, character.only=T)
+        suppressPackageStartupMessages(library(r, character.only=T))
     }
 }
 
-# todo: how to load functions from another repo without the subrepo hassle?
-if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
-    # dependencies from myfuncions.r: 
-    # setDefaultPlotOptions(), reorder_legend(), mycols(), get_pval(), make_posixlt_origin()
-    message("\nload ", host$homepath, "/functions/myfunctions.r ...")
-    source(paste0(host$homepath, "/functions/myfunctions.r"))
-} else {
-    stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
-}
-
 ## check user input from namelist.plot.r
-#nml_plot <- paste0(host$repopath, "/namelist.plot.r")
-nml_plot <- "namelist.plot.r" # file from same directory as this plot_echam.r
-nml_plot <- normalizePath(nml_plot)
-message("\nload and check ", nml_plot, " ...")
-source(nml_plot)
 
-# must-have objects set by user
+# check if must-have objects are set by user and are of correct length
 objs <- c("prefixes", "models", "names_short", "fromsf", "tosf", "varnames_in", "modes")
-for (obj in objs) if (!exists(obj)) stop("provide `", obj, "` in namelist.plot.r")
-
+for (obj in objs) if (!exists(obj)) stop("provide `", obj, "` in ", nml_plot)
 nsettings <- length(prefixes)
-
-# check if must-have objects are of correct length
 for (i in seq_along(objs)) {
     cmd <- paste0("length(", objs[i], ")")
     length_of_obj <- eval(parse(text=cmd))
@@ -81,16 +43,20 @@ for (i in seq_along(objs)) {
 # replace blanks and special chars in `names_short`
 names_short <- gsub("\\s+", "_", names_short)
 names_short <- gsub("[[:punct:]]", "_", names_short)
+
 if (exists("varnames_uv")) {
     if (!all(sapply(varnames_uv, length) == 3)) {
         stop("every list in `varnames_uv` must have 3 entries (name of uv-, u- and v-components)")
     }
 }
+
 if (center_ts && scale_ts) {
     stop("both `center_ts` and `scale_ts` are true. choose one: center = x-mu; scale = (x-mu)/sd.")
 }
 
 ## possible objects set by user: set defaults if not set by user 
+if (exists("workpath")) host$workpath <- workpath
+
 # defaults: general stuff
 if (!exists("postpaths")) { # default from post_echam.r
     postpaths <- rep(paste0(host$workpath, "/post"), t=nsettings)
@@ -125,11 +91,11 @@ if (any(is.na(seasonsp))) seasonsp[is.na(seasonsp)] <- seasonsf[is.na(seasonsp)]
 if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effect
 if (all(n_mas == 1)) {
     if (add_unsmoothed == F) {
-        message("\nall `n_mas` = 1, change `add_unsmoothed` from F to T ...")
+        message("all `n_mas` = 1, change `add_unsmoothed` from F to T ...")
         add_unsmoothed <- T
     }
     if (add_smoothed == T) {
-        message("\nall `n_mas` = 1, change `add_smoothed` from T to F ...")
+        message("all `n_mas` = 1, change `add_smoothed` from T to F ...")
         add_smoothed <- F
     }
 }
@@ -183,7 +149,10 @@ if (!exists("regboxes")) {
 names(regboxes) <- names_short
 areas_out <- areas
 if (any(!is.na(sapply(regboxes, "[[", "regbox")))) { # run namelist.area.r to get lon/lat of regional boxes
-    message("\nsome regboxes$regbox are not NA -> load and check namelist.area.r ...")
+    message("some regboxes$regbox are not NA -> load and check coordinates from namelist.area.r ...")
+    if (!file.exists("namelist.area.r")) {
+        stop("cannot find file namelist.area.r")
+    } 
     source("namelist.area.r")
     areas_out[which(!is.na(sapply(regboxes, "[[", "regbox")))] <- sapply(regboxes, "[[", "regbox")
 }
@@ -211,8 +180,13 @@ if (!exists("pchs")) {
     }
 }
 if (!exists("scatterpchs")) scatterpchs <- rep(pchs_filled_wout_border[1], t=nsettings)
+if (!exists("lecex")) {
+    lecex <- 1
+} else {
+    if (!is.finite(lecex)) stop("provided `lecex` = ", lecex, " is not finite")
+}
 
-# colors
+# defaults: colors
 if (!exists("cols")) {
     cols <- mycols(nsettings)
 } else if (exists("cols")) {
@@ -222,7 +196,7 @@ if (!exists("cols")) {
     }
     if (is.numeric(cols)) {
         if (!is.integer(cols)) { 
-            msg <- paste0("\nprovided `cols` = ", paste(cols, collapse=", "), 
+            msg <- paste0("provided `cols` = ", paste(cols, collapse=", "), 
                           " are \"numeric\" but not \"integer\". convert to integer ... ")
             cols <- as.integer(cols)
             message(msg, paste(cols, collapse=", ")); rm(msg)
@@ -257,7 +231,7 @@ if (exists("cols_samedims")) {
 
 if (length(echam6_global_setNA) != nsettings) {
     if (length(echam6_global_setNA) == 1) {
-        message("\n`echam6_global_setNA` is only of length 1 but nsettings = ", nsettings, 
+        message("`echam6_global_setNA` is only of length 1 but nsettings = ", nsettings, 
                 " --> repeat echam6_global_setNA[1] = ", echam6_global_setNA, " ...")
         echam6_global_setNA <- rep(echam6_global_setNA, t=nsettings)
     } else {
@@ -274,12 +248,12 @@ if (!ts_highlight_seasons$bool) ts_highlight_seasons$suffix <- ""
 
 if (length(add_linear_trend) != nsettings) {
     if (length(add_linear_trend) == 1) {
-        message("\ngiven `add_linear_trend` but of length ", length(add_linear_trend), 
+        message("given `add_linear_trend` but of length ", length(add_linear_trend), 
                 " and nsettings = ", nsettings, " --> repeat ", nsettings, " times ...") 
         add_linear_trend <- rep(add_linear_trend, t=nsettings)
     } else {
         if (length(add_linear_trend) != nsettings) {
-            stop("\ngiven `add_linear_trend` but of length ", length(add_linear_trend), 
+            stop("given `add_linear_trend` but of length ", length(add_linear_trend), 
                 " and nsettings = ", nsettings, " --> dont know how to interpret this")
         }
     }
@@ -289,17 +263,22 @@ if (!exists("add_linear_trend_tos")) add_linear_trend_tos <- rep(NA, t=nsettings
 
 if (length(add_scatter_density) != nsettings) {
     if (length(add_scatter_density) == 1) {
-        message("\ngiven `add_scatter_density` but of length ", length(add_scatter_density), 
+        message("given `add_scatter_density` but of length ", length(add_scatter_density), 
                 " and nsettings = ", nsettings, " --> repeat ", nsettings, " times ...") 
         add_scatter_density <- rep(add_scatter_density, t=nsettings)
     } else {
         if (length(add_scatter_density) != nsettings) {
-            stop("\ngiven `add_scatter_density` but of length ", length(add_scatter_density), 
+            stop("given `add_scatter_density` but of length ", length(add_scatter_density), 
                 " and nsettings = ", nsettings, " --> dont know how to interpret this")
         }
     }
 }
 
+# clear lastfiles_plot file
+lastfiles_plot_fname <- paste0("lastfiles_plot_", Sys.getpid(), ".txt") # in same path as this plot_echam.r-call
+lastfiles_plot_fname <- paste0(normalizePath(dirname(lastfiles_plot_fname)), "/", lastfiles_plot_fname)
+message("\ncreate file for storing plotnames \"", lastfiles_plot_fname, "\" ...")
+invisible(file.create(lastfiles_plot_fname)) # error if no success
 
 ## allocate
 datas <- vector("list", l=nsettings)
@@ -333,6 +312,7 @@ if (F) {
 
 # read data
 inpaths <- fnames <- rep(NA, t=nsettings)
+mtimes <- as.POSIXct(Sys.time()) # placeholder
 message("\n===================================\nread model data ...")
 for (i in seq_len(nsettings)) {
 
@@ -350,7 +330,8 @@ for (i in seq_len(nsettings)) {
                     reg_dxsf[i], reg_dysf[i],
                     ".nc")
     inpaths[i] <- inpath; fnames[i] <- fname
-
+    mtimes[i] <- file.info(paste0(inpath, "/", fname))$mtime
+        
     message("\nopen ", inpath, "/", fname, " ...")
     ncin <- nc_open(paste0(inpath, "/", fname))
 
@@ -1956,6 +1937,9 @@ for (i in seq_len(nsettings)) {
 } # for i nsettings
 message("\n****************** reading model data finished ***************************")
 
+# add most recent mtime of loaded post files to last files list
+write(format(max(mtimes), usetz=T), file=lastfiles_plot_fname, append=T)
+
 varnames_unique <- unique(as.vector(unlist(sapply(datas, names))))
 
 # save data before applying offset, multiplication factors, etc. for later
@@ -2507,7 +2491,7 @@ for (i in seq_len(nsettings)) {
         } else if (varname == "pft_fract_box") {
             if (modes[i] == "fldsum") {
                 message("pft_fract_box fldsum divide through nland = 6126")
-                stop("todo: get nland from nc att")
+                warning("todo: get nland from nc att")
                 data_infos[[i]][[vi]]$offset$operator <- "/"
                 data_infos[[i]][[vi]]$offset$value <- 6126
             }
@@ -3794,8 +3778,8 @@ if (exists("datasltm")) {
 # bilinear interpolation of data for smoother plot using fields::interp.surface.grid
 if (any(sapply(lapply(lapply(dims, names), "==", "lon"), any)) &&
     any(sapply(lapply(lapply(dims, names), "==", "lat"), any)) &&
-    bilinear_interp_factor != 1) {
-    message("\n`bilinear_interp_factor` = ", bilinear_interp_factor, " != 1 (default) --> ",
+    bilinear_interp_factor > 1) {
+    message("\n`bilinear_interp_factor` = ", bilinear_interp_factor, " > 1 (default) --> ",
             "interp data for smoother plot using fields::interp.surface.grid() ...")
     cnt <- 0 # just for `plot_suffix`
     for (i in seq_len(nsettings)) {
@@ -3890,7 +3874,6 @@ for (vi in 1:length(varnames_unique)) {
     } # for i nsettings
 } # for vi varnames_unique
 # finished saving data for later
-
 
 ## plotting
 # 1st: plot all vars with same name together (datas, datasma, datasmon, datasltm)
@@ -5477,7 +5460,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     
                     # calc lm
                     x <- meyer_etal$data[[i]]$data$time
-                    y <- scale(meyer_etal$data[[i]]$data$d18o_corr_perm)
+                    y <- base::scale(meyer_etal$data[[i]]$data$d18o_corr_perm)
                     message("calc lm of lake ", tmp[[i]]$PLOT_lake, " of `meyer_etal` data from ",
                             min(x), " to ", max(x), " for `point_data` ...")
                     if (zname == "wisoaprt_d") {
@@ -5691,6 +5674,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     legend("topleft", legend=legend, col=seq_along(inds), lty=seq_along(inds))
                                     box()
                                     dev.off()
+                                    write(plotname, file=lastfiles_plot_fname, append=T)
                                     cnt <- cnt + 1
                                     #if (cnt == 9) stop("asd")
                                 } # if plot not already existing
@@ -6517,8 +6501,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
                         le$ncol <- 1
                         #le$ncol <- 2 
-                        #le$cex <- 1
-                        le$cex <- 1.25
+                        le$cex <- lecex
+                        #le$cex <- 1.25
                         #le$cex <- 1.5
                         #le$cex <- 0.85
                         le$text <- names_legend
@@ -6570,7 +6554,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             le$pos <- "bottomright" 
                             le$ncol <- 1
                             #le$ncol <- 2 
-                            le$cex <- 1
+                            le$cex <- lecex
                             le$text <- scatter_labels
                             le$col <- "black" #scatterobscols #"black"
                             le$lty <- NA
@@ -6592,6 +6576,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     box()
                     message("save plot ", plotname, " ...")
                     dev.off()
+                    write(plotname, file=lastfiles_plot_fname, append=T)
                     if (p$plot_type == "pdf") {
                         if (T) {
                             message("run `", p$pdf_embed_fun, "()` ...")
@@ -7304,6 +7289,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             message("save plot ", plotname, " ...")
             if (p$plot_type != "active") dev.off()
+            write(plotname, file=lastfiles_plot_fname, append=T)
             if (p$plot_type == "pdf") {
                 if (T) {
                     message("run `", p$pdf_embed_fun, "()` ...")
@@ -7431,6 +7417,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     
                     message("\nsave plot ", plotname, " ...")
                     dev.off()
+                    write(plotname, file=lastfiles_plot_fname, append=T)
                     if (p$plot_type == "pdf") {
                         if (T) {
                             message("run `", p$pdf_embed_fun, "()` ...")
@@ -7589,6 +7576,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         
             message("\nsave plot ", plotname, " ...")
             dev.off()
+            write(plotname, file=lastfiles_plot_fname, append=T)
             if (p$plot_type == "pdf") {
                 if (T) {
                     message("run `", p$pdf_embed_fun, "()` ...")
@@ -7676,6 +7664,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         
             message("\nsave plot ", plotname, " ...")
             dev.off()
+            write(plotname, file=lastfiles_plot_fname, append=T)
             if (p$plot_type == "pdf") {
                 if (T) {
                     message("run `", p$pdf_embed_fun, "()` ...")
@@ -7746,6 +7735,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         
             message("\nsave plot ", plotname, " ...")
             dev.off()
+            write(plotname, file=lastfiles_plot_fname, append=T)
             if (p$plot_type == "pdf") {
                 if (T) {
                     message("run `", p$pdf_embed_fun, "()` ...")
@@ -7850,14 +7840,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                suffix="_with_volcanic_aerosols")
                         } else if (T) {
                             data_right <- list(data=list("tau_hist"=list(x=as.POSIXlt(ncin$dim$time$vals*86400, origin="1538-01-01", tz="UTC"), 
-                                                                         y=scale(ncvar_get(ncin, "tau_aero_550")),
+                                                                         y=base::scale(ncvar_get(ncin, "tau_aero_550")),
                                                                          text="Aerosol optical thickness", col="#377EB8", lty=1, 
                                                                          lwd=0.5, pch=NA),
-                                                         "tsi_hist"=list(x=tsi_hist_annual$time, y=scale(tsi_hist_annual$tsi_hist),
+                                                         "tsi_hist"=list(x=tsi_hist_annual$time, y=base::scale(tsi_hist_annual$tsi_hist),
                                                                          text="Total solar irradiance", 
                                                                          col=tsi_hist_annual$col, lty=tsi_hist_annual$lty, 
                                                                          lwd=tsi_hist_annual$lwd, pch=tsi_hist_annual$pch),
-                                                         "co2_hist"=list(x=co2_hist$time, y=scale(co2_hist$co2_ppm),
+                                                         "co2_hist"=list(x=co2_hist$time, y=base::scale(co2_hist$co2_ppm),
                                                                          text=eval(substitute(expression(paste("CO"[2])))),
                                                                          col=co2_hist$col, lty=co2_hist$lty, 
                                                                          lwd=co2_hist$lwd, pch=co2_hist$pch)),
@@ -8314,11 +8304,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 for (i in seq_along(z)) {
                     if (center_ts) {
-                        z[[i]] <- scale(z[[i]], scale=F)
-                        if (exists("zma")) zma[[i]] <- scale(zma[[i]], scale=F)
+                        z[[i]] <- base::scale(z[[i]], scale=F)
+                        if (exists("zma")) zma[[i]] <- base::scale(zma[[i]], scale=F)
                     } else if (scale_ts) {
-                        z[[i]] <- scale(z[[i]])
-                        if (exists("zma")) zma[[i]] <- scale(zma[[i]])
+                        z[[i]] <- base::scale(z[[i]])
+                        if (exists("zma")) zma[[i]] <- base::scale(zma[[i]])
                     }
                 }
             } # if center_ts or scale_ts
@@ -8417,20 +8407,20 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                     for (i in seq_along(data_left_before)) {
                         if (center_ts) {
-                            data_left_before[[i]]$y <- scale(data_left_before[[i]]$y, scale=F)
+                            data_left_before[[i]]$y <- base::scale(data_left_before[[i]]$y, scale=F)
                             if (!is.null(data_left_before[[i]]$y_lower)) {
-                                data_left_before[[i]]$y_lower <- scale(data_left_before[[i]]$y_lower, scale=F)
+                                data_left_before[[i]]$y_lower <- base::scale(data_left_before[[i]]$y_lower, scale=F)
                             }
                             if (!is.null(data_left_before[[i]]$y_upper)) {
-                                data_left_before[[i]]$y_upper <- scale(data_left_before[[i]]$y_upper, scale=F)
+                                data_left_before[[i]]$y_upper <- base::scale(data_left_before[[i]]$y_upper, scale=F)
                             }
                         } else if (scale_ts) {
-                            data_left_before[[i]]$y <- scale(data_left_before[[i]]$y)
+                            data_left_before[[i]]$y <- base::scale(data_left_before[[i]]$y)
                             if (!is.null(data_left_before[[i]]$y_lower)) {
-                                data_left_before[[i]]$y_lower <- scale(data_left_before[[i]]$y_lower)
+                                data_left_before[[i]]$y_lower <- base::scale(data_left_before[[i]]$y_lower)
                             }
                             if (!is.null(data_left_before[[i]]$y_upper)) {
-                                data_left_before[[i]]$y_upper <- scale(data_left_before[[i]]$y_upper)
+                                data_left_before[[i]]$y_upper <- base::scale(data_left_before[[i]]$y_upper)
                             }
                         }
                     }
@@ -8646,20 +8636,20 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                     for (i in seq_along(data_left)) {
                         if (center_ts) {
-                            data_left[[i]]$y <- scale(data_left[[i]]$y, scale=F)
+                            data_left[[i]]$y <- base::scale(data_left[[i]]$y, scale=F)
                             if (!is.null(data_left[[i]]$y_lower)) {
-                                data_left[[i]]$y_lower <- scale(data_left[[i]]$y_lower, scale=F)
+                                data_left[[i]]$y_lower <- base::scale(data_left[[i]]$y_lower, scale=F)
                             }
                             if (!is.null(data_left[[i]]$y_upper)) {
-                                data_left[[i]]$y_upper <- scale(data_left[[i]]$y_upper, scale=F)
+                                data_left[[i]]$y_upper <- base::scale(data_left[[i]]$y_upper, scale=F)
                             }
                         } else if (scale_ts) {
-                            data_left[[i]]$y <- scale(data_left[[i]]$y)
+                            data_left[[i]]$y <- base::scale(data_left[[i]]$y)
                             if (!is.null(data_left[[i]]$y_lower)) {
-                                data_left[[i]]$y_lower <- scale(data_left[[i]]$y_lower)
+                                data_left[[i]]$y_lower <- base::scale(data_left[[i]]$y_lower)
                             }
                             if (!is.null(data_left[[i]]$y_upper)) {
-                                data_left[[i]]$y_upper <- scale(data_left[[i]]$y_upper)
+                                data_left[[i]]$y_upper <- base::scale(data_left[[i]]$y_upper)
                             }
                         }
                     }
@@ -8750,35 +8740,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       areas_p, collapse="_vs_"), 
                                data_right$suffix, data_upper$suffix, 
                                ts_highlight_seasons$suffix,
-                               "_ts", 
-                               plotname_suffix,
-                               ".", p$plot_type)
-            if (nchar(plotname) > nchar_max_foutname) {
+                               plotname_suffix)
+            if (nchar(plotname) > nchar_max_foutname - 3) { # - 3 for "_ts"
                 if (plot_groups[plot_groupi] == "samevars") {
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, n_mas_fname_p, "_", areas_p, collapse="_vs_"), 
                                        data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
-                                       "_ts", 
-                                       plotname_suffix,
-                                       ".", p$plot_type)
+                                       plotname_suffix)
                 } else if (plot_groups[plot_groupi] == "samedims") {
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, "_", varnames_in_p, collapse="_vs_"), 
                                        data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
-                                       "_ts", 
-                                       plotname_suffix,
-                                       ".", p$plot_type)
+                                       plotname_suffix)
                 }
             }
-            if (nchar(plotname) > nchar_max_foutname) {
-                warning("\nplotname = ", plotname, "\nnchar(plotname) = ", nchar(plotname), 
-                        " > nchar_max_foutname = ", nchar_max_foutname, 
-                        " -> cut too long plotname ...", immediate.=T)
-                plotname <- paste0(substr(plotname, 1, nchar_max_foutname), ".", tools::file_ext(plotname))
-                # alternative to file_ext: `gsub(".+[.]", "", plotname)`
+            if (nchar(plotname) > nchar_max_foutname - 3) {
+                plotname <- substr(plotname, 1, nchar_max_foutname - 3)
             }
+            plotname <- paste0(plotname, "_ts.", p$plot_type)
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             
             # get plot sizes
@@ -8985,6 +8966,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             le$pos <- "bottom" 
                         }
                         le$ncol <- length(ts_highlight_seasons$seasons)
+                        le$cex <- lecex
                         le$cex <- 0.85
                         le$text <- ts_highlight_seasons$seasons
                         le$col <- ts_highlight_seasons$cols
@@ -8993,7 +8975,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$lwd <- rep(NA, t=length(ts_highlight_seasons$seasons))
                         # reorder reading direction from R's default "top-to-bottom-and-then-left-to-right" 
                         # to "left-to-right-and-then-top-to-bottom"
-                        le <- reorder_legend(le)
+                        if (T) le <- reorder_legend(le)
                         if (length(le$pos) == 1) {
                             legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                    pch=le$pch, col=le$col, ncol=le$ncol,
@@ -9053,7 +9035,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # add linear regression trend if wanted
             lm_labels <- names_legend_p
             if (any(add_linear_trend)) {
-                message("\ncalc and add linear trend against time ...")
+                message("\ncalc and add linear trend against time with `stats::lm()` ...")
                 for (i in seq_along(z)) {
                     if (add_linear_trend[i]) {
                         lm_nyear <- length(add_linear_trend_froms[i]:add_linear_trend_tos[i]) # not accurate
@@ -9062,12 +9044,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 " (", lm_nyear, " nyears)")
                         inds <- which(dims[[i]]$timelt$year+1900 >= add_linear_trend_froms[i] &
                                       dims[[i]]$timelt$year+1900 <= add_linear_trend_tos[i])
-                        if (length(inds) == 0) stop("no times are within those years")
-                        lm <- lm(z[[i]][inds] ~ d$time[[i]][inds])
+                        if (length(inds) == 0) {
+                            warning("no times found within those years -> use complete time series instead")
+                            inds <- seq_along(z[[i]])
+                        }
+                        lm <- stats::lm(z[[i]][inds] ~ d$time[[i]][inds])
                         lm_summary <- summary(lm)
                         print(lm_summary)
                         lm_trend_tot <- lm$fitted.values[length(lm$fitted.values)] - lm$fitted.values[1]
-                        lm_from_to <- d$time[[i]][range(inds)]
+                        lm_from_to <- d$time[[i]][range(inds)] # exact
                         lm_dt_tot_day <- as.numeric(difftime(max(lm_from_to), min(lm_from_to), units="day"))
                         lm_dt_tot_a <- lm_dt_tot_day/365.25
                         lm_trend_a <- lm_trend_tot/lm_dt_tot_a
@@ -9100,7 +9085,18 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         } else { # use trend per day
                             stop("not yet")
                         }
-                        # add mean only to label
+                        # calc time when trend line reaches zero (if possible) 
+                        lm_zero_time <- NA
+                        if (lm$coefficients[2] != 0) { # trend line has some slope
+                            if (lm$fitted.values[length(lm$fitted.values)] >= 0 && lm$coefficients[2] < 0 || # positive fit values with negative slope
+                                lm$fitted.values[length(lm$fitted.values)] < 0 && lm$coefficients[2] > 0) { # negative fit values with positive slope
+                                lm_zero_time <- abs(lm$coefficients[1]/lm$coefficients[2]) # intercept/slope = [x]/([x/time]) = [time]
+                                lm_zero_time <- as.POSIXlt(lm_zero_time, o="1970-1-1", tz="UTC")
+                                lm_zero_dt_day <- as.numeric(difftime(lm_zero_time, max(d$time[[i]][inds]), unit="day"))
+                                lm_zero_dt_a <- lm_zero_dt_day/365.25
+                            }
+                        }
+                        # add trend results to legend label
                         if (F) { # add trend only to label
                             lm_labels[i] <- eval(substitute(expression(paste(lab, " (tr", ""[lm_from_to_pretty], "=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
                                                             list(lab=names_legend_p[i],
@@ -9115,20 +9111,39 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                             )
                                                 )
                         } else if (T) { # add mean and trend to label
-                            lm_labels[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
-                                                                               "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
-                                                            list(lab=names_legend_p[1],
-                                                                 lm_from_to_pretty=lm_from_to_pretty,
-                                                                 muval=round(mean(z[[1]][inds], na.rm=T), 2),
-                                                                 sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
-                                                                 , trend=round(lm_trend_pretty, 4), 
-                                                                 #, trend=round(lm_trend_tot, 4),
-                                                                 unit=data_info$units
-                                                                 , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units)
-                                                                 #, lm_dt_unit=paste0(lm_dt_tot_pretty, attributes(lm_dt_tot_pretty)$units)
-                                                                 )
-                                                            )
-                                                )
+                            if (!is.na(lm_zero_time)) { # add time when trend crosses zero
+                                lm_labels[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
+                                                                                 "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, " " 
+                                                                                 %->% " 0 in ", lm_zero_dt, ")")),
+                                                                list(lab=names_legend_p[i],
+                                                                     lm_from_to_pretty=lm_from_to_pretty,
+                                                                     muval=round(mean(z[[i]][inds], na.rm=T), 2),
+                                                                     sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
+                                                                     , trend=round(lm_trend_pretty, 4), 
+                                                                     #, trend=round(lm_trend_tot, 4),
+                                                                     unit=data_info$units
+                                                                     , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units),
+                                                                     #, lm_dt_unit=paste0(lm_dt_tot_pretty, attributes(lm_dt_tot_pretty)$units),
+                                                                     lm_zero_dt=paste0(round(lm_zero_dt_a, 2), "a")
+                                                                     )
+                                                                )
+                                                    )
+                            } else {
+                                lm_labels[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
+                                                                                 "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
+                                                                list(lab=names_legend_p[i],
+                                                                     lm_from_to_pretty=lm_from_to_pretty,
+                                                                     muval=round(mean(z[[i]][inds], na.rm=T), 2),
+                                                                     sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
+                                                                     , trend=round(lm_trend_pretty, 4), 
+                                                                     #, trend=round(lm_trend_tot, 4),
+                                                                     unit=data_info$units
+                                                                     , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units)
+                                                                     #, lm_dt_unit=paste0(lm_dt_tot_pretty, attributes(lm_dt_tot_pretty)$units)
+                                                                     )
+                                                                )
+                                                    )
+                            }
                         } # if add trend to label
                         message("--> total trend ", round(lm_trend_tot, 4), " ", data_info$units, " in ",
                                 lm_dt_tot_a, " years ~ ", lm_dt_tot_day, " days from ",
@@ -9136,15 +9151,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 "--> trend per year = ", lm_trend_a, " ", data_info$units, "\n", 
                                 "--> trend per day = ", lm_trend_day, " ", data_info$units, "\n", 
                                 "--> last trend value = ", lm$fitted.values[length(lm$fitted.values)], " ", data_info$units)
-                        if (lm$coefficients[2] != 0) { # trend line has some slope
-                            if (lm$fitted.values[length(lm$fitted.values)] >= 0 && lm$coefficients[2] < 0 || # positive values with negative trend (slope)
-                                lm$fitted.values[length(lm$fitted.values)] < 0 && lm$coefficients[2] > 0) { # negative values with positive trend (slope)
-                                lm_zero_time <- lm$coefficients[1]/abs(lm$coefficients[2]) # intercept/slope = [time]
-                                lm_zero_time <- as.POSIXlt(lm_zero_time, o="1970-1-1", tz="UTC")
-                                message("--> trendline crosses zero at time ", lm_zero_time, ", i.e. in ", 
-                                        round(difftime(lm_zero_time, max(d$time[[i]][inds]), unit="day")/365.25, 3), " years ~ ",
-                                        round(difftime(lm_zero_time, max(d$time[[i]][inds]), unit="day"), 3), " days")
-                            }
+                        if (!is.na(lm_zero_time)) {        
+                            message("--> linear trendline crosses zero ", data_info$units, " at time ", lm_zero_time, ", i.e. in ", 
+                                    round(lm_zero_dt_a, 3), " years ~ ", round(lm_zero_dt_day, 3), " days")
                         }
                         # plot regression line within data limits only
                         if (F) {
@@ -9237,14 +9246,17 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #le$ncol <- 2
                 #le$ncol <- length(z)
                 if (le$ncol > length(z)) stop("defined more legend columns than data") 
-                le$cex <- 1
+                le$cex <- lecex
                 #le$cex <- 0.85
                 #le$cex <- 0.7
                 #le$cex <- 0.75
                 #le$cex <- 0.66
                 #le$cex <- 0.5
                 names_legend_p_w_lm <- names_legend_p
-                if (typeof(lm_labels) == "expression") names_legend_p_w_lm <- lm_labels # use lm result
+                if (typeof(lm_labels) == "expression") {
+                    names_legend_p_w_lm <- lm_labels # use lm result
+                    le$cex <- 0.85
+                }
                 inds <- which(!is.na(names_legend_p)) # throw out user provided NA
                 le$text <- names_legend_p_w_lm[inds]
                 le$col <- cols_p[inds]
@@ -9300,10 +9312,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # if (length(data_left) > 0)
 
                 # reorder reading direction from R's default top->bottom to left->right
-                if (T) {
-                    message("reorder legend from top->bottom to left->right")
-                    le <- reorder_legend(le)
-                }
+                if (T) le <- reorder_legend(le)
                 cat(capture.output(str(le)), sep="\n")
                 if (length(le$pos) == 1) {
                     legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
@@ -9405,7 +9414,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le$pos <- "bottomright" 
                     }
                     le$ncol <- 1
-                    le$cex <- 1
+                    le$cex <- lecex
                     le$cex <- 0.85
                     le$text <- sapply(data_right$data, "[[", "text")
                     le$col <- sapply(data_right$data, "[[", "col")
@@ -9431,7 +9440,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         message("\nadd non default stuff to ", mode_p, " legend ...")
                     }
                     # reorder reading direction from R's default top->bottom to left->right
-                    le <- reorder_legend(le)
+                    if (T) le <- reorder_legend(le)
                     if (length(le$pos) == 1) {
                         legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                pch=le$pch, col=le$col, ncol=le$ncol,
@@ -9522,7 +9531,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le <- list()
                     le$pos <- "topleft" 
                     le$ncol <- 1
-                    le$cex <- 1
+                    le$cex <- lecex
                     le$cex <- 0.85
                     le$text <- sapply(data_upper$data, "[[", "text")
                     le$col <- sapply(data_upper$data, "[[", "col")
@@ -9541,7 +9550,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         message("\nadd non default stuff to ", mode_p, " legend ...")
                     }
                     # reorder reading direction from R's default top->bottom to left->upper
-                    le <- reorder_legend(le)
+                    if (T) le <- reorder_legend(le)
                     if (length(le$pos) == 1) {
                         legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                pch=le$pch, col=le$col, ncol=le$ncol,
@@ -9558,6 +9567,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             message("\nsave plot ", plotname, " ...")
             dev.off()
+            write(plotname, file=lastfiles_plot_fname, append=T)
             if (p$plot_type == "pdf") {
                 if (T) {
                     message("run `", p$pdf_embed_fun, "()` ...")
@@ -9622,6 +9632,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                          y_lab=y_lab, ynames=names_legend_p,
                          verbose=T)
                 dev.off()
+                write(plotname, file=lastfiles_plot_fname, append=T)
 
             } # if ts_plot_each_setting_in_subplot
 
@@ -9654,33 +9665,24 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       n_mas_fname_p, "_", 
                                       areas_p, collapse="_vs_"), 
                                ts_highlight_seasons$suffix,
-                               "_lat", 
-                               plotname_suffix,
-                               ".", p$plot_type)
-            if (nchar(plotname) > nchar_max_foutname) {
+                               plotname_suffix)
+            if (nchar(plotname) > nchar_max_foutname - 4) { # 4 for "_lat"
                 if (plot_groups[plot_groupi] == "samevars") {
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, n_mas_fname_p, "_", areas_p, collapse="_vs_"), 
-                                       "_lat", 
-                                       plotname_suffix,
-                                       ".", p$plot_type)
+                                       plotname_suffix)
                 } else if (plot_groups[plot_groupi] == "samedims") {
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
                                        paste0(names_short_p, "_", varnames_in_p, collapse="_vs_"), 
-                                       "_lat", 
-                                       plotname_suffix,
-                                       ".", p$plot_type)
+                                       plotname_suffix)
                 }
             }
-            if (nchar(plotname) > nchar_max_foutname) {
-                warning("\nplotname = ", plotname, "\nnchar(plotname) = ", nchar(plotname), 
-                        " > nchar_max_foutname = ", nchar_max_foutname, 
-                        " -> cut too long plotname ...", immediate.=T)
-                plotname <- paste0(substr(plotname, 1, nchar_max_foutname), ".", tools::file_ext(plotname))
-                # alternative to file_ext: `gsub(".+[.]", "", plotname)`
+            if (nchar(plotname) > nchar_max_foutname - 4) {
+                plotname <- substr(plotname, 1, nchar_max_foutname-4)
             }
+            plotname <- paste0(plotname, "_lat.", p$plot_type)
             dir.create(dirname(plotname), recursive=T, showWarnings=F)
             
             # get plot sizes
@@ -9807,7 +9809,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 #le$ncol <- 2
                 #le$ncol <- length(z)
                 if (le$ncol > length(z)) stop("defined more legend columns than data") 
-                le$cex <- 1
+                le$cex <- lecex
                 #le$cex <- 0.85
                 #le$cex <- 0.7
                 #le$cex <- 0.75
@@ -9827,10 +9829,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 # reorder reading direction from R's default top->bottom to left->right
-                if (T) {
-                    message("reorder legend from top->bottom to left->right")
-                    le <- reorder_legend(le)
-                }
+                if (T) le <- reorder_legend(le)
                 if (T) cat(capture.output(str(le)), sep="\n")
                 if (length(le$pos) == 1) {
                     legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
@@ -9849,6 +9848,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             message("\nsave plot ", plotname, " ...")
             dev.off()
+            write(plotname, file=lastfiles_plot_fname, append=T)
             if (p$plot_type == "pdf") {
                 if (T) {
                     message("run `", p$pdf_embed_fun, "()` ...")
@@ -10127,6 +10127,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     
                     message("\nsave plot ", plotname, " ...")
                     dev.off()
+                    write(plotname, file=lastfiles_plot_fname, append=T)
                     if (p$plot_type == "pdf") {
                         if (T) {
                             message("run `", p$pdf_embed_fun, "()` ...")
@@ -10275,26 +10276,24 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    paste0(names_short_pmon, "_", seasonsp_pmon, "_",
                                           froms_plot_pmon, "_to_", tos_plot_pmon, "_", 
                                           areas_pmon, collapse="_vs_"), 
-                                   "_months",
-                                   data_right_mon$suffix,
-                                   ".", p$plot_type)
-                if (nchar(plotname) > nchar_max_foutname) {
+                                   data_right_mon$suffix)
+                if (nchar(plotname) > nchar_max_foutname - 7) { # 7 for "_months"
                     if (plot_groups[plot_groupi] == "samevars") {
                         plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_",
                                            paste0(names_short_pmon, "_", areas_pmon, collapse="_vs_"), 
-                                           "_months",
-                                           data_right$suffix, 
-                                           ".", p$plot_type)
+                                           data_right$suffix) 
                     } else if (plot_groups[plot_groupi] == "samedims") {
                         plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_",
                                            paste0(names_short_pmon, "_", varnames_in_pmon, collapse="_vs_"), 
-                                           "_months",
-                                           data_right$suffix, 
-                                           ".", p$plot_type)
+                                           data_right$suffix)
                     }
                 }
+                if (nchar(plotname) > nchar_max_foutname - 7) {
+                    plotname <- substr(plotname, 1, nchar_max_foutname - 7)
+                }
+                plotname <- paste0(plotname, "_months.", p$plot_type)
                 dir.create(dirname(plotname), recursive=T, showWarnings=F)
                
                 # get plot sizes
@@ -10392,7 +10391,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     #le$ncol <- nsettings/2
                     le$ncol <- 1
                     #le$ncol <- 2 
-                    le$cex <- 1
+                    le$cex <- lecex
                     #le$cex <- 0.85
                     le$text <- names_legend_pmon
                     le$col <- cols_pmon
@@ -10422,9 +10421,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
                     }
                     # reorder reading direction from R's default top->bottom to left->right
-                    if (T) {
-                        le <- reorder_legend(le)
-                    }
+                    if (T) le <- reorder_legend(le)
                     if (length(le$pos) == 1) {
                         legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                pch=le$pch, col=le$col, ncol=le$ncol,
@@ -10481,7 +10478,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le <- list()
                         le$pos <- "top" 
                         le$ncol <- 1
-                        le$cex <- 1
+                        le$cex <- lecex
                         le$cex <- 0.85
                         le$text <- names_legend_pmon
                         le$col <- cols_pmon
@@ -10507,7 +10504,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             }
                         }
                         # reorder reading direction from R's default top->bottom to left->right
-                        le <- reorder_legend(le)
+                        if (T) le <- reorder_legend(le)
                         if (length(le$pos) == 1) {
                             legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                    pch=le$pch, col=le$col, ncol=le$ncol,
@@ -10525,6 +10522,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 box()
                 message("\nsave plot ", plotname, " ...")
                 dev.off()
+                write(plotname, file=lastfiles_plot_fname, append=T)
                 if (p$plot_type == "pdf") {
                     if (T) {
                         message("run `", p$pdf_embed_fun, "()` ...")
@@ -10692,26 +10690,24 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    paste0(names_short_pan, "_", seasonsp_pan, "_", 
                                           froms_plot_pan, "_to_", tos_plot_pan, "_", 
                                           areas_pan, collapse="_vs_"), 
-                                   "_annual",
-                                   data_right_an$suffix,
-                                   ".", p$plot_type)
-                if (nchar(plotname) > nchar_max_foutname) {
+                                   data_right_an$suffix)
+                if (nchar(plotname) > nchar_max_foutname - 7) { # 7 for "_annual"
                     if (plot_groups[plot_groupi] == "samevars") {
                         plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_",
                                            paste0(names_short_pan, "_", areas_pan, collapse="_vs_"), 
-                                           "_annual",
-                                           data_right_an$suffix,
-                                           ".", p$plot_type)
+                                           data_right_an$suffix)
                     } else if (plot_groups[plot_groupi] == "samedims") {
                         plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                            varname, "_",
                                            paste0(names_short_pan, "_", varnames_in_pan, collapse="_vs_"), 
-                                           "_annual",
-                                           data_right_an$suffix,
-                                           ".", p$plot_type)
+                                           data_right_an$suffix)
                     }
                 }
+                if (nchar(plotname) > nchar_max_foutname - 7) {
+                    plotname <- substr(plotname, 1, nchar_max_foutname - 7)
+                }
+                plotname <- paste0(plotname, "_annual.", p$plot_type)
                 dir.create(dirname(plotname), recursive=T, showWarnings=F)
                 
                 # get plot sizes
@@ -10783,29 +10779,37 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 # add linear regression trend if wanted
+                lm_labels_an <- names_legend_pan
                 if (any(add_linear_trend)) {
-                    message("\ncalc and add linear trend against years ...")
-                    lm_labels <- rep(NA, t=length(zan))
-                    names(lm_labels) <- names_short_p
-                    for (i in seq_along(zan)) {
+                    message("\ncalc and add linear trend against years with `stats::lm()` ...")
+                    for (i in seq_along(z)) {
                         if (add_linear_trend[i]) {
+                            lm_nyear <- length(add_linear_trend_froms[i]:add_linear_trend_tos[i]) # not accurate
                             message("\nsetting ", i, " ", names_short_p[i], " from ", 
-                                    add_linear_trend_froms[i], " to ", add_linear_trend_tos[i])
+                                    add_linear_trend_froms[i], " to ", add_linear_trend_tos[i],
+                                    " (", lm_nyear, " nyears)")
                             inds <- which(dan$year[[i]] >= add_linear_trend_froms[i] &
                                           dan$year[[i]] <= add_linear_trend_tos[i])
-                            if (length(inds) == 0) stop("no years are within those years")
-                            lm <- lm(zan[[i]][inds] ~ dan$year[[i]][inds])
+                            if (length(inds) == 0) {
+                                warning("no years found within those years -> use complete time series instead")
+                                inds <- seq_along(zan[[i]])
+                            }
+                            lm <- stats::lm(zan[[i]][inds] ~ dan$year[[i]][inds])
                             lm_summary <- summary(lm)
                             print(lm_summary)
                             lm_trend_tot <- lm$fitted.values[length(lm$fitted.values)] - lm$fitted.values[1]
+                            lm_from_to <- dan$year[[i]][range(inds)]
                             lm_dt_tot_a <- max(dan$year[[i]][inds]) - min(dan$year[[i]][inds]) + 1
                             lm_dt_tot_day <- lm_dt_tot_a*365.25
                             lm_trend_a <- lm_trend_tot/lm_dt_tot_a
                             lm_trend_day <- lm_trend_tot/lm_dt_tot_day
-                            if (lm_dt_tot_a > 1) { # use trend per year
-                                if (lm_dt_tot_a > 10) { # use trend per decade
-                                    if (lm_dt_tot_a > 100) { # use trend per century
-                                        if (lm_dt_tot_a > 1000) { # use trend per millenium
+                            if (lm_dt_tot_a >= 1) { # show trend per year
+                                lm_from_to_pretty <- paste(lm_from_to, collapse="-")
+                                lm_dt_tot_pretty <- lm_dt_tot_a
+                                attributes(lm_dt_tot_pretty)$units <- "a"
+                                if (lm_nyear >= 10) { # show trend per decade
+                                    if (lm_nyear >= 100) { # show trend per century
+                                        if (lm_nyear >= 1000) { # show trend per millenium
                                             lm_trend_pretty <- lm_trend_tot * 1000 / lm_dt_tot_a
                                             lm_dt_pretty <- 1000
                                             attributes(lm_dt_pretty)$units <- "a"
@@ -10827,48 +10831,85 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             } else { # use trend per day
                                 stop("not yet")
                             }
-                            # time when trend line crosses zero
-                            lm_labels[i] <- ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "") # minus comes from lm trend value itself
-                            if (T) { # add pretty `trend / <time>` with <time> being 1, 10, 100 or 1000 years
-                                lm_labels[i] <- paste0(lm_labels[i], 
-                                                       #round(lm_trend_pretty, 2)
-                                                       round(lm_trend_pretty, 4)
-                                                       , " ", data_info$units, 
-                                                       "/", lm_dt_pretty, attributes(lm_dt_pretty)$units
-                                                       )
-                            } else if (F) { # add total trend
-                                lm_labels[i] <- paste0(lm_labels[i], 
-                                                       round(lm_trend_tot, 2)
-                                                       #round(lm_trend_tot, 4)
-                                                       , " ", data_info$units,
-                                                       "/", lm_dt_tot_a, "a"
-                                                       )
+                            # calc time when trend line reaches zero (if possible) 
+                            lm_zero_year <- NA
+                            if (lm$coefficients[2] != 0) { # trend line has some slope
+                                if (lm$fitted.values[length(lm$fitted.values)] >= 0 && lm$coefficients[2] < 0 || # positive fit values with negative slope
+                                    lm$fitted.values[length(lm$fitted.values)] < 0 && lm$coefficients[2] > 0) { # negative fit values with positive slope
+                                    lm_zero_year <- abs(lm$coefficients[1]/lm$coefficients[2]) # intercept/slope = [x]/([x/year]) = [year]
+                                    lm_zero_dt_a <- lm_zero_year - max(dan$year[[i]][inds])
+                                    lm_zero_dt_day <- lm_zero_dt_a*365.25
+                                }
                             }
-                            if (T) {
-                                message("put brackets around lm_label")
-                                lm_labels[i] <- paste0("(", lm_labels[i], ")")
-                            }
-                            lm_zero_time <- lm$coefficients[1]/abs(lm$coefficients[2]) # intercept/slope = [time]
+                            # add trend results to legend label
+                            if (F) { # add trend only to label
+                                lm_labels_an[i] <- eval(substitute(expression(paste(lab, " (tr", ""[lm_from_to_pretty], "=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
+                                                                   list(lab=names_legend_pan[i],
+                                                                        lm_from_to_pretty=lm_from_to_pretty,
+                                                                        sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
+                                                                        , trend=round(lm_trend_pretty, 4), 
+                                                                        #, trend=round(lm_trend_tot, 4), 
+                                                                        unit=data_info$units
+                                                                        , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units)
+                                                                        #, lm_dt_unit=paste0(lm_dt_tot_pretty, attributes(lm_dt_tot_pretty)$units)
+                                                                        )
+                                                                   )
+                                                       )
+                            } else if (T) { # add mean and trend to label
+                                if (!is.na(lm_zero_year)) { # add time when trend crosses zero
+                                    lm_labels_an[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
+                                                                                        "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, " " 
+                                                                                        %->% " 0 in ", lm_zero_dt, ")")),
+                                                                       list(lab=names_legend_pan[i],
+                                                                            lm_from_to_pretty=lm_from_to_pretty,
+                                                                            muval=round(mean(zan[[i]][inds], na.rm=T), 2),
+                                                                            sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
+                                                                            , trend=round(lm_trend_pretty, 4), 
+                                                                            #, trend=round(lm_trend_tot, 4),
+                                                                            unit=data_info$units
+                                                                            , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units),
+                                                                            #, lm_dt_unit=paste0(lm_dt_tot_pretty, attributes(lm_dt_tot_pretty)$units),
+                                                                            lm_zero_dt=paste0(round(lm_zero_dt_a, 2), "a")
+                                                                            )
+                                                                       )
+                                                           )
+                                } else {
+                                    lm_labels_an[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
+                                                                                        "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
+                                                                       list(lab=names_legend_pan[i],
+                                                                            lm_from_to_pretty=lm_from_to_pretty,
+                                                                            muval=round(mean(zan[[i]][inds], na.rm=T), 2),
+                                                                            sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
+                                                                            , trend=round(lm_trend_pretty, 4), 
+                                                                            #, trend=round(lm_trend_tot, 4),
+                                                                            unit=data_info$units
+                                                                            , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units)
+                                                                            #, lm_dt_unit=paste0(lm_dt_tot_pretty, attributes(lm_dt_tot_pretty)$units)
+                                                                            )
+                                                                       )
+                                                           )
+                                }
+                            } # if add trend to label
                             message("--> total trend ", round(lm_trend_tot, 4), " ", data_info$units, " in ",
                                     lm_dt_tot_a, " years ~ ", lm_dt_tot_day, " days from ",
-                                    min(dan$year[[i]][inds]), " to ", max(dan$year[[i]][inds]), "\n",
+                                    min(lm_from_to), " to ", max(lm_from_to), "\n",
                                     "--> trend per year = ", lm_trend_a, " ", data_info$units, "\n", 
                                     "--> trend per day = ", lm_trend_day, " ", data_info$units, "\n", 
-                                    "--> `lm_labels[i]` = \"", lm_labels[i], "\"\n",
-                                    "--> last trend value = ", lm$fitted.values[length(lm$fitted.values)], " ", data_info$units, "\n",
-                                    "--> trendline crosses zero at time ", lm_zero_time, ", i.e. in ", 
-                                    round(lm_zero_time - max(dan$year[[i]][inds]), 2), " years ~ ", 
-                                    round((lm_zero_time - max(dan$year[[i]][inds]))*365.25, 2), " days") 
+                                    "--> last trend value = ", lm$fitted.values[length(lm$fitted.values)], " ", data_info$units)
+                            if (!is.na(lm_zero_year)) {        
+                                message("--> linear trendline crosses zero ", data_info$units, " at year ", lm_zero_year, ", i.e. in ", 
+                                        round(lm_zero_dt_a, 3), " years ~ ", round(lm_zero_dt_day, 3), " days")
+                            }
                             # plot regression line within data limits only
                             if (F) {
                                 message("draw linear regression line within regression limits only ...")
-                                lines(dan$year[[i]][inds], lm$fitted.values, 
-                                      col=cols_pan[i], lwd=lwds_pan[i], lty=ltys_pan[i])
+                                lines(d$time[[i]][inds], lm$fitted.values, 
+                                      col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
                             # or plot line through whole plot with regression coefficients
                             } else if (T) {
                                 message("draw linear regression line through whole plot ...")
                                 abline(a=lm$coefficients[1], b=lm$coefficients[2],
-                                       col=cols_pan[i], lwd=lwds_pan[i], lty=ltys_pan[i])
+                                       col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
                             }
                         }
                     }
@@ -10912,23 +10953,23 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le$ncol <- 1
                     #le$ncol <- 2 
                     names_legend_pan_w_lm <- names_legend_pan
-                    if (any(add_linear_trend)) {
-                        names_legend_pan_w_lm[which(!is.na(lm_labels))] <- 
-                            paste0(names_legend_pan_w_lm[which(!is.na(lm_labels))], " ", 
-                                   lm_labels[which(!is.na(lm_labels))])
+                    if (typeof(lm_labels_an) == "expression") {
+                        names_legend_pan_w_lm <- lm_labels_an # use lm result
+                        le$cex <- 0.85
                     }
-                    le$text <- names_legend_pan_w_lm
-                    le$cex <- 1
+                    inds <- which(!is.na(names_legend_pan)) # throw out user provided NA
+                    le$text <- names_legend_pan_w_lm[inds]
+                    le$cex <- lecex
                     #le$cex <- 0.85
-                    le$col <- cols_pan
-                    le$lty <- ltys_pan
-                    le$lwd <- lwds_pan
-                    le$pch <- pchs_pan
-                    for (i in seq_along(zan)) {
-                        if (types_pan[i] == "p") {
-                            le$lty[i] <- NA
-                        } else if (types_pan[i] == "l") {
-                            le$pch[i] <- NA
+                    le$col <- cols_pan[inds]
+                    le$lty <- ltys_pan[inds]
+                    le$lwd <- lwds_pan[inds]
+                    le$pch <- pchs_pan[inds]
+                    for (i in seq_along(inds)) {
+                        if (types_pan[inds[i]] == "p") {
+                            le$lty[inds[i]] <- NA
+                        } else if (types_pan[inds[i]] == "l") {
+                            le$pch[inds[i]] <- NA
                         }
                     }
                     # add stufd to datasn legend here
@@ -10947,9 +10988,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
                     }
                     # reorder reading direction from R's default top->bottom to left->right
-                    if (T) {
-                        le <- reorder_legend(le)
-                    }
+                    if (T) le <- reorder_legend(le)
                     cat(capture.output(str(le)), sep="\n")
                     if (length(le$pos) == 1) {
                         legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
@@ -11017,7 +11056,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         le <- list()
                         le$pos <- "top" 
                         le$ncol <- 1
-                        le$cex <- 1
+                        le$cex <- lecex
                         le$cex <- 0.85
                         le$text <- names_legend_pan
                         le$col <- cols_pan
@@ -11043,7 +11082,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             }
                         }
                         # reorder reading direction from R's default top->bottom to left->right
-                        le <- reorder_legend(le)
+                        if (T) le <- reorder_legend(le)
                         if (length(le$pos) == 1) {
                             legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                    pch=le$pch, col=le$col, ncol=le$ncol,
@@ -11080,6 +11119,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 box()
                 message("\nsave plot ", plotname, " ...")
                 dev.off()
+                write(plotname, file=lastfiles_plot_fname, append=T)
                 if (p$plot_type == "pdf") {
                     if (T) {
                         message("run `", p$pdf_embed_fun, "()` ...")
@@ -11173,6 +11213,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
                 message("\nsave plot ", plotname, " ...")
                 dev.off()
+                write(plotname, file=lastfiles_plot_fname, append=T)
                 if (p$plot_type == "pdf") {
                     if (T) {
                         message("run `", p$pdf_embed_fun, "()` ...")
@@ -11333,7 +11374,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 #le$pos <- "topright"
                                 le$ncol <- 1
                                 #le$ncol <- 2 
-                                le$cex <- 1
+                                le$cex <-lecex
                                 le$cex <- 0.85
                                 le$text <- names(season_cols) #names_legend[i]
                                 le$col <- season_cols #"black"
@@ -11341,9 +11382,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 le$lwd <- NA
                                 #le$pchs <- scatterpchs_vstime[i]
                                 le$pch <- scatterpchs_vstime
-                                if (T) {
-                                    le <- reorder_legend(le)
-                                }
+                                if (T) le <- reorder_legend(le)
                                 if (length(le$pos) == 1) {
                                     legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                            pch=le$pch, col=le$col, ncol=le$ncol,
@@ -11359,6 +11398,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             box()
                             message("\nsave plot ", plotname, " ...")
                             dev.off()
+                            write(plotname, file=lastfiles_plot_fname, append=T)
                             if (p$plot_type == "pdf") {
                                 if (T) {
                                     message("run `", p$pdf_embed_fun, "()` ...")
@@ -11971,7 +12011,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                     le$pos <- "bottomright"
                     le$ncol <- 1
                     #le$ncol <- 2 
-                    le$cex <- 1
+                    le$cex <- lecex
                     le$text <- names_legend_p_w_lm # = names_legend_p if no lm
                     le$col <- cols_p
                     #le$col <- cols_rgb
@@ -11991,9 +12031,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
 
                     }
                     # reorder reading direction from R's default top->bottom to left->right
-                    if (T) {
-                        le <- reorder_legend(le)
-                    }
+                    if (T) le <- reorder_legend(le)
                     if (length(le$pos) == 1) {
                         legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                pch=le$pch, col=le$col, text.col=le$text_cols, ncol=le$ncol,
@@ -12009,6 +12047,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                 box()
                 message("save v1 vs v2 plot\n   \"", plotname, "\"\n...")
                 dev.off()
+                write(plotname, file=lastfiles_plot_fname, append=T)
                 if (p$plot_type == "pdf") {
                     if (T) {
                         message("run `", p$pdf_embed_fun, "()` ...")
@@ -12145,7 +12184,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                                 le$pos <- "topright"
                                 le$ncol <- 1
                                 #le$ncol <- 2 
-                                le$cex <- 1
+                                le$cex <- lecex
                                 le$cex <- 0.85
                                 le$text <- names(season_cols) #names_legend[i]
                                 le$col <- season_cols #"black"
@@ -12153,9 +12192,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                                 le$lwds <- NA
                                 #le$pchs <- scatterpchs_vstime[i]
                                 le$pchs <- scatterpchs_vstime
-                                if (T) {
-                                    le <- reorder_legend(le)
-                                }
+                                if (T) le <- reorder_legend(le)
                                 if (length(le$pos) == 1) {
                                     legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                                            pch=le$pch, col=le$col, ncol=le$ncol,
@@ -12171,6 +12208,7 @@ alpha, ""[paste("4" %*% "")], " = ", alph, "" %+-% "", alpha_error, " W m"^paste
                             box()
                             message("save v1 vs v2 plot colored by time or season or ...\n   \"", plotname, "\"\n...")
                             dev.off()
+                            write(plotname, file=lastfiles_plot_fname, append=T)
                             if (p$plot_type == "pdf") {
                                 if (T) {
                                     message("run `", p$pdf_embed_fun, "()` ...")

@@ -1,194 +1,13 @@
-# input for plot.echam.r
+# r
 
-# dependencies: myfunctions.r
+# input for plot_echam.r
 
-## general part
-# <-- namelist.plot.r general part start --> # keep this line for plot_loop_echam.r
-
-# ignore these netcdf variables
-ignore_vars <- c("time_bnds", "timestamp", 
-                 "hyai", "hybi", "hyam", "hybm",
-                 "plev", "height", 
-                 "depthvec", 
-                 "lm_*_as_time_std_error", "lm_*_as_time_t_val", "lm_*_as_time_p_val",
-                 "timevec", "xi", "yi", # old rfesom 
-                 "moc_reg_lat")
-message("\nthese variables will be ignored:\n",
-		"\"", paste(ignore_vars, collapse="\", \""), "\"")
-
-# general script options
-squeeze <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
-nchar_max_foutname <- 255 - 4 # -4 for extension (".png" or ".pdf")
-
-# stats options
-ttest_alternative <- "two.sided" # differences in means
-ttest_significance <- 0.05 # p-value (*100 for %)
-
-# calc options
-calc_monthly_and_annual_climatology <- T
-calc_ttest_lon_lat_time <- T
-
-# plot options
-bilinear_interp_factor <- 1
-plot_samedims <- T
-add_title <- F
-add_legend <- T
-# my wanted pch order: 1: circle, 2: triangle up, 3: square, 4: diamond
-# --> bring hollow, filled wout borders and filled with borders symbols in same order
-pchs_hollow <- c(1, 2, 0, 5) 
-pchs_filled_wout_border <- c(16, 17, 15, 18) 
-pchs_filled_w_border <- c(21, 24, 22, 23)
-
-message("\nrun myfunctions.r:myDefaultPlotOptions() ...")
-source("~/scripts/r/functions/myfunctions.r")
-png_family <- NULL
-if (host$machine_tag == "mistral") {
-    png_family <- "Nimbus Sans L" # mistral R36 default png font Helvetica broken
-}
-p <- myDefaultPlotOptions(plot_type="png"
-                          #plot_type="active"
-                          ,png_family=png_family
-                          #,png_family="Droid Sans Mono" 
-                          #,png_family="Helvetica" 
-                          #,pdf_family="CM Roman"
-                          #,ts_asp=0.75
-                          #,verbose=T
-                          )
-# encoding <- getOption("encoding") leads to "failed to load encoding file 'native.enc'"
-encoding <- NULL 
-alpha_rgb <- 0.2 # transparent: 0,1 (0 fully transparent)
-if (p$plot_type == "pdf") {
-    minus_symbol_dash <- "-"
-} else {
-    minus_symbol_dash <- "\u2013"
-}
-
-known_seasons <- list("Jan"=list(inds=1),
-                      "Feb"=list(inds=2),
-                      "Mar"=list(inds=3),
-                      "Apr"=list(inds=4),
-                      "May"=list(inds=5),
-                      "Jun"=list(inds=6),
-                      "Jul"=list(inds=7),
-                      "Aug"=list(inds=8),
-                      "Sep"=list(inds=9),
-                      "Oct"=list(inds=10),
-                      "Nov"=list(inds=11),
-                      "Dec"=list(inds=12),
-                      "DJF"=list(inds=c(12, 1, 2), col="blue"),
-                      "MAM"=list(inds=3:5, col="darkgreen"),
-                      "JJA"=list(inds=6:8, col="red"),
-                      "SON"=list(inds=9:11, col="brown"),
-                      "NDJFM"=list(inds=c(11:12, 1:3), col="black"),
-                      "Jan-Dec"=list(inds=1:12, col="black"))
-# defaultseascols: "blue", "darkgreen", "red", "brown"
-# myseascols: blue: "#377EB8", green: "#1B9E77", red: "#E41A1C", brown: "#D95F02"
-for (i in seq_along(known_seasons)) {
-    if (names(known_seasons)[i] != "Jan-Dec") {
-        known_seasons[[paste0(names(known_seasons)[i], "mean")]] <- known_seasons[[i]]
-    } else if (names(known_seasons)[i] == "Jan-Dec") {
-        known_seasons$annual <- known_seasons[["Jan-Dec"]]
-    }
-    if (is.null(known_seasons[[i]]$col)) known_seasons[[i]]$col <- "black"
-    known_seasons[[i]]$col_rgb <- rgb(t(col2rgb(known_seasons[[i]]$col)/255), alpha=alpha_rgb)
-}
-
-# time series plot options
-# woa13 seasons: "JFM" "AMJ" "JAS" "OND"
-# other seasons: "Jan-Dec" "DJF" "MAM" "JJA" "SON" "JJ"
-# months: "Feb" "Jul" "Jan"  "Jul"
-add_xgrid <- F
-add_ygrid <- F
-add_zeroline <- T
-add_unsmoothed <- F
-add_smoothed <- T
-add_sd <- F
-add_linear_trend <- F
-add_nonlinear_trend <- F
-add_1to1_line <- T
-add_scatter_density <- F
-center_ts <- F # either center_ts or scale_ts or none but not both
-scale_ts <- F
-ts_highlight_seasons <- list(#bool=T,
-                             bool=F,
-                             seasons=c("DJF", "MAM", "JJA", "SON"),
-                             #t="l",
-                             t="p",
-                             #cols=c("blue", "darkgreen", "red", "brown")
-                             cols=rgb(t(col2rgb(c("blue", "darkgreen", "red", "brown"))/255), alpha=alpha_rgb),
-                             ltys=c(1,2,3,4),
-                             lwds=c(1,1,1,1),
-                             #pchs=1:4,
-                             pchs=c(16, 16, 16, 16),
-                             suffix="_highlight_seasons") 
-show_first_data_point <- F
-ts_plot_each_setting_in_subplot <- F
-add_data_left_yaxis_before_ts <- T
-add_data_right_yaxis_ts <- T
-add_cor_data_left_and_right_ts <- F
-add_data_upper_xaxis_ts <- F
-add_data_right_yaxis_ts_mon <- F
-add_data_right_yaxis_ts_an <- F
-add_cor_data_left_and_right_ts_an <- F
-add_legend_right_yaxis <- T
-add_legend_upper_xaxis <- F
-add_legend_left_yaxis_before <- T
-
-plot_scatter_s1_vs_s2 <- F
-#scatter_s1_vs_s1_varname <- "temp2"
-scatter_s1_vs_s1_varname <- "tsurf"
-#scatter_s1_vs_s1_varname <- "aprt"
-#scatter_s1_vs_s1_varname <- "wisoaprt_d"
-
-plot_scatter_v1_vs_v2 <- T # uses `datas`
-varnamex <- varnamey <- "abc_datas" # default
-#varnamex <- "temp2_datas" # temp2 vs toa_imbalance: TOA imbalance gregory et al. 2004 stuff 
-varnamex <- "tas_datas"
-#varnamex <- "tsurf_datas"
-#varnamex <- "tsurfaprt_datas"
-#varnamex <- "quv_datas"
-#varnamex <- "quv_direction_datasan"
-#varnamex <- "lm_temp2_as_time_slope_datas"
-#varnamex <- "aprt_datas"
-varnamey <- "toa_imbalance_datas"
-#varnamey <- "quv_direction_datas"
-#varnamey <- "wisoaprt_d_datas"
-#varnamey <- "lm_wisoaprt_d_post_as_time_slope_datas"
-
-# time vs depth:
-add_ts_to_time_vs_depth <- T
-
-# map (lon vs lat) plot options
-plot_lon_lat_anomaly <- T
-reorder_lon_from_0360_to_180180 <- T
-addland <- T
-add_grid <- F
-aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for map plot
-proj <- "" # default: no projection
-echam6_global_setNA <- NA # one of 3 options: NA, "ocean", "land"
-
-# special
-plot_redfit <- F
-
-# clear work space if non-clean restart of plot_echam.r (i.e. without rm of everything)
-objs <- c("postpaths", "plotpath", 
-          "names_legend", 
-          "codes", 
-          "seasonsf", "fromsp", "tosp", "seasonsp", "n_mas", "new_origins", "time_ref",
-          "remove_setting", "remove_mean_froms", "remove_mean_tos",
-          "levs", "levsf", 
-          "depths", "depthsf", "depth_fromsf", "depth_tosf", "depth_fromsp", "depth_tosp",
-          "areas", "regboxes",
-          "reg_dxs", "reg_dys", 
-          "types", "ltys", "cols", "lwds", "pchs", "text_cols", "cols_samedims")
-suppressWarnings(rm(list=objs))
-
-# <-- namelist.plot.r general part end --> # keep this line for loop_plot_echam.r
-
-## setting specific part
+# machine dependent repo path; change somewhere in namelist if needed
+repopath <- "~/scripts/r/echam"
+source(paste0(repopath, "/namelist.general.plot.r"))
 
 # 1 setting
-if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
+if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
     models <- "echam6"
     #models <- "jsbach"
     #models <- "fesom"
@@ -205,7 +24,7 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
     #varnames_in <- "co2_flux"
     #varnames_in <- "co2_flx_ocean"
     #echam6_global_setNA <- "land"
-    #varnames_in <- "co2_flx_land" # = npp + resp + herb + lcc + harvest + fire
+    varnames_in <- "co2_flx_land" # = npp + resp + herb + lcc + harvest + fire
     #echam6_global_setNA <- "ocean"
     #addland <- F
     #varnames_in <- "co2_flx_npp"
@@ -213,7 +32,7 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
     #varnames_in <- "co2_flx_herb"
     #varnames_in <- "co2_flx_lcc"
     #varnames_in <- "co2_flx_harvest"
-    varnames_in <- "co2_flx_fire"
+    #varnames_in <- "co2_flx_fire"
     #varnames_in <- "CO2_flux_net"
     #varnames_in <- "CO2_flux_dynveg"
     #varnames_in <- "thetaoga"
@@ -666,7 +485,7 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
     }
 
 } else if (F) { # mpi-esm vs awi* mlds semmler et al.
-    host$workpath <- "/work/ab0246/a270073"
+    workpath <- "/work/ab0246/a270073"
     models <- rep("fesom_vs_mpiom1", t=2)
     addland <- F
     prefixes <- c("awi-esm-1-1-lr_minus_mpi-esm1-2-lr_remapbil_r1440x720_conv180_piControl",
@@ -941,12 +760,12 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
         depthsf <- c("_int0-3600m", "_int0-4150m")
         add_legend <- F; add_legend_right_yaxis <- T; add_legend_left_yaxis_before <- T
     }
-    polyl <- read.table(paste0(host$workpath, 
+    polyl <- read.table(paste0("/work/ba0941/a270073", 
                                #"/post/fesom/CbSCL_mesh_LS_ge_3000m.and.hvel_lt_5_cms-1_chull.txt"),
                                "/post/fesom/CbSCL_mesh_LS_ge_3000m.and.hvel_lt_6.1_cms-1_chull.txt"),
                         header=F, col.names=c("x", "y"))
-    polyh <- read.table(#paste0(host$workpath, "/post/fesom/LSea2_mesh_LS_ge_3500m_chull.txt"),
-                        paste0(host$workpath, "/post/fesom/CbSCL_mesh_LS_ge_3000m_chull.txt"),
+    polyh <- read.table("/work/ba0941/a270073/post/fesom/LSea2_mesh_LS_ge_3500m_chull.txt",
+                        "/work/ba0941/a270073/post/fesom/CbSCL_mesh_LS_ge_3000m_chull.txt",
                         header=F, col.names=c("x", "y"))
     #areas <- rep("lsea", t=2)
     #areas <- c("LS30l2", "LS30l")
@@ -1026,6 +845,7 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
     #modes <- rep("fldint", t=3)
 
 } else if (F) { # awi-esm-1-1-lr deck anomlies vs pi
+    workpath <- "/work/ab0246/a270073"
     models <- rep("echam6", t=3)
     #models <- rep("fesom", t=3)
     if (F) {
@@ -1245,7 +1065,7 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
 # =====================================
 # 4 settings
 } else if (F) { # mpi-esm* vs awi* mlds semmler et al.
-    host$workpath <- "/work/ab0246/a270073"
+    workpath <- "/work/ab0246/a270073"
     if (F) {
         models <- rep("fesom_vs_mpiom1", t=4)
         addland <- F
@@ -1312,6 +1132,7 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
     modes <- rep("fldint", t=4)
 
 } else if (F) { # awi-esm-1-1-lr deck
+    workpath <- "/work/ab0246/a270073"
     models <- rep("echam6", t=4)
     #models <- rep("fesom", t=4)
     if (F) { # awi-cm-1-1-lr
@@ -1952,8 +1773,8 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
     modes <- rep("timmean", t=12)
 
 } else if (F) { # compare jsbach pft levels awi-esm-1-1-lr_kh800 piControl
+    workpath <- "/work/ab0246/a270073"
     models <- rep("jsbach", t=12)
-    host$workpath <- "/work/ab0246/a270073"
     prefixes <- rep("awi-esm-1-1-lr_piControl", t=12)
     #prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og", t=12)
     #prefixes <- rep("awi-esm-1-1-lr_kh800_piControl", t=12)
@@ -2068,4 +1889,15 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) - x (my)
     new_origins <- rep(736, t=27)
 
 } # which settings
+
+
+### do not change below this line
+repopath <- normalizePath(repopath, mustWork=T) # error if not found
+if (interactive()) {
+    user_runscript_filename <- normalizePath(sys.frames()[[1]]$ofile)
+} else {
+    args <- commandArgs(trailingOnly=F)
+    user_runscript_filename <- normalizePath(sub("--file=", "", args[grep("--file=", args)]))
+}
+source(paste0(repopath, "/plot_echam.r"))
 

@@ -1,5 +1,7 @@
 # r
 
+# executed from plot_echam.r
+
 for (i in seq_along(regboxes)) {
 
     if (!is.na(regboxes[[i]]$regbox)) {

@@ -4,6 +4,7 @@
 # except
 !README.md
 !echam/
+!indices/
 !jsbach/
 !mpiom/
 !wiso/
@@ -11,6 +12,8 @@
 !load_pangaea_data.r
 !load_special_data.r
 !plot_special_data.r
+!namelist.general.plot.r
+!namelist.general.post.r
 !namelist.loop.plot.r
 !namelist.plot.r
 !namelist.post.r

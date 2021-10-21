@@ -19,10 +19,10 @@ siberian_high_index <- function(DJF_slp_fldmean_detrend, sd_thr=1.5, varname) {
     
     # load data
     message("load ", varname, " (this data must be fldmean of detrended DJF slp data) ...")
-    slp <- ncvar_get(nc, varname)
+    slp <- ncdf4::ncvar_get(nc, varname)
     
     # normalize data
-    slp <- scale(slp)[,1]
+    slp <- base::scale(slp)[,1]
     
     # find values below/above `sd_thr` std devs
     sd_plus_inds <- which(slp > sd_thr)
