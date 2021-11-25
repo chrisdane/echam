@@ -7,24 +7,27 @@ repopath <- "~/scripts/r/echam"
 source(paste0(repopath, "/namelist.general.plot.r"))
 
 # 1 setting
-if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
-    models <- "echam6"
-    #models <- "jsbach"
+if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
+    #models <- "echam6"
+    models <- "jsbach"
     #models <- "fesom"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_regular_dx0.250_dy0.250"
     prefixes <- "awi-esm-1-1-lr_kh800_piControl"
     #names_short <- "piControl_og"
     names_short <- "awicm1-recom_piControl"
-    names_legend <- "piControl"
+    #names_legend <- "piControl"
+    names_legend <- "AWICM1-RECOM piControl"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_og_regular_dx0.250_dy0.250_minus_woa2018_dx0.250_dy0.250_t_an_0m"
     #names_short <- "piControl_minus_woa18"
     #names_legend <- "piControl minus WOA18"
+    # echam echamstream
     #varnames_in <- "temp2"
+    # echam co2stream
     #varnames_in <- "co2_flux"
     #varnames_in <- "co2_flx_ocean"
     #echam6_global_setNA <- "land"
-    varnames_in <- "co2_flx_land" # = npp + resp + herb + lcc + harvest + fire
+    #varnames_in <- "co2_flx_land" # = npp + resp + herb + fire
     #echam6_global_setNA <- "ocean"
     #addland <- F
     #varnames_in <- "co2_flx_npp"
@@ -33,33 +36,42 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
     #varnames_in <- "co2_flx_lcc"
     #varnames_in <- "co2_flx_harvest"
     #varnames_in <- "co2_flx_fire"
+    #varnames_in <- "nbp" # = co2_flx_land + co2_flx_lcc + co2_flx_harvest
+    # jsbach jsbachstream
     #varnames_in <- "CO2_flux_net"
     #varnames_in <- "CO2_flux_dynveg"
+    # jsbach yassostream
+    varnames_in <- "soilSlow" # = vertsum(boxYC_humus_1) + vertsum(boxYC_humus_2)
+    # fesom
     #varnames_in <- "thetaoga"
     #varnames_in <- "tos"
     #varnames_in <- "thetao"
     #depths <- "0-5900"
+    # recom
     #varnames_in <- "bgc03"
     #depths <- "0"
     #varnames_in <- "CO2f"
     #varnames_in <- "NPP"
-    #seasonsf <- "annual"
-    fromsf <- 1950 # chunk 1 start: 1950
-    #fromsf <- 2686 # chunk 2 start: 2686
-    #tosf <- 2685 # chunk 1 end: 2585
-    tosf <- 2850
-    tunit <- "model year"
-    new_origins <- fromsf - 1950 + 1 # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
-    add_linear_trend <- T
-    add_linear_trend_froms <- 802
-    #remove_mean_froms <- c(1, 1)
-    #remove_mean_tos <- remove_mean_froms
-    #seasonsf <- "annual"
     #modes <- "select"
     #modes <- "timmean"
     #modes <- "fldmean"
     modes <- "fldint"
     #modes <- "depth"
+    #seasonsf <- "annual"
+    fromsf <- 1950 # chunk 1 start: 1950
+    #fromsf <- 2686 # chunk 2 start: 2686
+    #tosf <- 2685 # chunk 1 end: 2585
+    #tosf <- 2850
+    tosf <- 2905
+    #tosf <- 2995
+    #tosf <- 2996
+    #fromsp <- 948
+    tunit <- "model year"
+    new_origins <- fromsf - 1950 + 1 # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
+    add_linear_trend <- T
+    add_linear_trend_froms <- 857
+    #remove_mean_froms <- c(1, 1)
+    #remove_mean_tos <- remove_mean_froms
 
 } else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
     models <- "echam6"
@@ -136,6 +148,18 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
     modes <- "timmean"
     #modes <- "fldmean"
     #modes <- "fldint"
+
+} else if (T) { # awi-esm-1-1-lr piControl
+    workpath <- "/work/ab0246/a270073"
+    models <- "echam6"
+    prefixes <- "awi-esm-1-1-lr_piControl"
+    names_short <- "awi-esm-1-1-lr_piControl"
+    names_legend <- "AWI-ESM-1-1-LR piControl"
+    varnames_in <- "co2_flx_ocean"
+    modes <- "fldint"
+    fromsf <- 1955
+    tosf <- 2119
+    new_origins <- 1850
 
 } else if (F) { # awi-esm-1-1-lr hist
     #prefixes <- "historical_echam6_echammon_awi-esm-1-1-lr"
@@ -796,6 +820,26 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
 
 # =====================================
 # 3 settings
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl vs historical vs historical2 
+    models <- rep("echam6", t=3)
+    prefixes <- c("awi-esm-1-1-lr_kh800_piControl", "awi-esm-1-1-lr_kh800_historical", "awi-esm-1-1-lr_kh800_historical2")
+    names_short <- c("piControl", "historical", "historical2")
+    names_legend <- names_short
+    #varnames_in <- rep("co2_flx_ocean", t=3)
+    #varnames_in <- rep("co2_flx_lcc", t=3)
+    varnames_in <- rep("co2_flx_harvest", t=3)
+    #varnames_in <- rep("nbp", t=3)
+    #varnames_in <- rep("co2_flx_total", t=3)
+    modes <- rep("fldint", t=3)
+    fromsf <- c(1950, 1850, 1850)
+    tosf <- c(2995, 2006, 2006)
+    #tosf <- c(2996, 2006, 2006)
+    new_origins <- c(1114, NA, NA) # historical starts from pi 2686 = spinup year 737 --> 1850 - 737 + 1 = 1114
+    fromsp <- c(1850, NA, NA)
+    tosp <- c(2006, NA, NA)
+    #n_mas <- rep(5*12, t=3)
+    #n_mas <- rep(10*12, t=3)
+
 } else if (F) { # awicm1-recom piControl vs historical vs esm-piControl
     models <- rep("echam6", t=3)
     #models <- rep("fesom", t=3)
@@ -1754,6 +1798,47 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
     modes <- c(rep("timmean", t=4), rep("timmean_monmax", t=4))
 
 # ==================================================
+# 9 settings
+} else if (F) { # cmip6 piControl
+    models <- c("CESM2", "CESM2-FV2", "CESM2-WACCM", "CESM2-WACCM-FV2", "IPSL-CM6A-LR", 
+                "MPI-ESM-1-2-HAM", "MPI-ESM1-2-LR", "NorCPM1", "TaiESM1")
+    prefixes <- paste0(models, "_piControl")
+    r1i1p1f1_inds <- match(c("CESM2", "CESM2-FV2", "CESM2-WACCM", "CESM2-WACCM-FV2", 
+                             "MPI-ESM-1-2-HAM", "MPI-ESM1-2-LR", "NorCPM1", "TaiESM1"), models)
+    prefixes[r1i1p1f1_inds] <- paste0(prefixes[r1i1p1f1_inds], "_r1i1p1f1")
+    r1i2p1f1_inds <- match(c("IPSL-CM6A-LR"), models)
+    prefixes[r1i2p1f1_inds] <- paste0(prefixes[r1i2p1f1_inds], "_r1i2p1f1")
+    names_legend <- models
+    names_short <- names_legend
+    varnames_in <- rep("fHarvest", t=9)
+    plotprefix <- "cmip6"
+    modes <- rep("fldint", t=9)
+    fromsf <- c(1101, 401, 400, 401, 2000, 2750, 2750, 401, 601) # last 100a
+    tosf <- c(1200, 500, 499, 500, 2099, 2849, 2849, 500, 700) # last 100a
+
+# ==================================================
+# 11 settings
+} else if (F) { # cmip6 piControl
+    models <- c("AWI-ESM-1-1-LR", "echam6", "CanESM5", "CESM2-FV2", "CESM2-WACCM", "CESM2-WACCM-FV2", 
+                "CMCC-CM2-SR5", "CNRM-ESM2-1", "MIROC-ES2L", "MPI-ESM-1-2-HAM", "MPI-ESM1-2-LR")
+    prefixes <- paste0(models, "_piControl")
+    r1i1p1f1_inds <- match(c("AWI-ESM-1-1-LR", "CanESM5", "CESM2-FV2", "CESM2-WACCM", "CESM2-WACCM-FV2", 
+                             "CMCC-CM2-SR5", "MPI-ESM-1-2-HAM", "MPI-ESM1-2-LR"), models)
+    prefixes[r1i1p1f1_inds] <- paste0(prefixes[r1i1p1f1_inds], "_r1i1p1f1")
+    r1i1p1f2_inds <- match(c("CNRM-ESM2-1", "MIROC-ES2L"), models)
+    prefixes[r1i1p1f2_inds] <- paste0(prefixes[r1i1p1f2_inds], "_r1i1p1f2")
+    names_legend <- models
+    names_legend[names_legend == "echam6"] <- "AWICM1-RECOM" # my echam6 output
+    names_short <- names_legend
+    prefixes[which(names_legend == "AWICM1-RECOM")] <- "awi-esm-1-1-lr_kh800_piControl"
+    varnames_in <- rep("netAtmosLandCO2Flux", t=11)
+    plotprefix <- "cmip6"
+    modes <- rep("fldint", t=11)
+    #modes <- rep("fldint_timmean", t=20)
+    fromsf <- c(1855, 2686, 6101, 401, 400, 401, 2250, 2250, 2250, 2750, 2750) # last 100a
+    tosf <- c(1954, 2850, 6200, 500, 499, 500, 2349, 2349, 2349, 2849, 2849) # last 100a
+
+# ==================================================
 # 12 settings
 } else if (F) {
     models <- rep("echam6", t=12)
@@ -1772,12 +1857,12 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
     new_origins <- rep(1, t=12)
     modes <- rep("timmean", t=12)
 
-} else if (F) { # compare jsbach pft levels awi-esm-1-1-lr_kh800 piControl
-    workpath <- "/work/ab0246/a270073"
+} else if (F) { # compare jsbach pft levels
+    #workpath <- "/work/ab0246/a270073"
     models <- rep("jsbach", t=12)
-    prefixes <- rep("awi-esm-1-1-lr_piControl", t=12)
+    #prefixes <- rep("awi-esm-1-1-lr_piControl", t=12)
     #prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og", t=12)
-    #prefixes <- rep("awi-esm-1-1-lr_kh800_piControl", t=12)
+    prefixes <- rep("awi-esm-1-1-lr_kh800_piControl", t=12)
     #prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og_and_esm-piControl_restartall", t=12)
     names_short <- paste0("pft", c(2, 3, 4, 5, 10, 11, 12, 13, 15, 16, 20, 21))
     names_legend <- c("tropical broadleaf evergreen (2)",
@@ -1793,6 +1878,7 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
                       "C3 crops (20)",
                       "C4 crops (21)")
     varnames_in <- rep("pft_fract_box", t=12)
+    modes <- rep("fldsum", t=12)
     levs <- c(2, 3, 4, 5, 10, 11, 12, 13, 15, 16, 20, 21) # not glacier and not bare land
     cols <- c(rep("#7fc97f", t=4),
               rep("#beaed4", t=2),
@@ -1806,17 +1892,46 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
               1, 2)
     lwds <- rep(2, t=12)
     seasonsf <- rep("annual", t=12)
-    #fromsf <- rep(1950, t=12) # piControl chunk 1 start: 1950
-    fromsf <- rep(1955, t=12) # awi-esm-1-1-lr deck piControl spinup year 1942
-    tosf <- rep(2104, t=12) # awi-esm-1-1-lr deck piControl spinup year 2091
-    #tosf <- rep(2685, t=12) # piControl chunk 2 end: 2685
-    #tosf <- rep(2850, t=12) # piControl chunk 3 end: 2850
+    fromsf <- rep(1950, t=12) # piControl chunk 1 start: 1950
+    #fromsf <- rep(1955, t=12) # awi-esm-1-1-lr deck piControl spinup year 1942
+    #tosf <- rep(2104, t=12) # awi-esm-1-1-lr deck piControl spinup year 2091
+    #tosf <- rep(2685, t=12)
+    #tosf <- rep(2850, t=12)
     #tosf <- rep(2962, t=12) # esm-piControl
+    tosf <- rep(2996, t=12)
     tunit <- "model year"
-    #new_origins <- fromsf - 1950 + 1 # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
-    new_origins <- rep(400, t=12) 
-    modes <- rep("fldsum", t=12)
+    new_origins <- fromsf - 1950 + 1 # awi-esm-1-1-lr_kh800 piControl: 1950 = 1 --> new_origin = `fromsf` - 1950 + 1 
+    #new_origins <- rep(400, t=12) 
 
+# ======================================================
+# 18 settings
+} else if (F) { # cmip6 piControl co2_flx_total
+    models <- c("ACCESS-ESM1-5", "echam6", "CanESM5", "CanESM5-CanOE", "CESM2", "CESM2-FV2", "CESM2-WACCM-FV2", 
+                "CMCC-ESM2", "CNRM-ESM2-1", "GFDL-ESM4", "INM-CM4-8", "INM-CM5-0", "IPSL-CM6A-LR", "MIROC-ES2L", 
+                "MPI-ESM-1-2-HAM", "MPI-ESM1-2-LR", "MRI-ESM2-0", "UKESM1-0-LL")
+    prefixes <- paste0(models, "_piControl")
+    r1i1p1f1_inds <- match(c("ACCESS-ESM1-5", "echam6", "CanESM5", "CESM2", "CESM2-FV2", "CESM2-WACCM-FV2", 
+                             "CMCC-ESM2", "GFDL-ESM4", "INM-CM4-8", "INM-CM5-0", "IPSL-CM6A-LR", 
+                             "MPI-ESM-1-2-HAM", "MPI-ESM1-2-LR"), models)
+    prefixes[r1i1p1f1_inds] <- paste0(prefixes[r1i1p1f1_inds], "_r1i1p1f1")
+    r1i1p2f1_inds <- match(c("CanESM5-CanOE"), models)
+    prefixes[r1i1p2f1_inds] <- paste0(prefixes[r1i1p2f1_inds], "_r1i1p2f1")
+    r1i1p1f2_inds <- match(c("CNRM-ESM2-1", "MIROC-ES2L", "UKESM1-0-LL"), models)
+    prefixes[r1i1p1f2_inds] <- paste0(prefixes[r1i1p1f2_inds], "_r1i1p1f2")
+    r1i2p1f1_inds <- match(c("MRI-ESM2-0"), models)
+    prefixes[r1i2p1f1_inds] <- paste0(prefixes[r1i2p1f1_inds], "_r1i2p1f1")
+    names_legend <- models
+    names_legend[names_legend == "echam6"] <- "AWICM1-RECOM" # my echam6 output
+    names_short <- names_legend
+    prefixes[which(names_legend == "AWICM1-RECOM")] <- "awi-esm-1-1-lr_kh800_piControl"
+    varnames_in <- rep("co2_flx_total", t=18)
+    plotprefix <- "cmip6"
+    modes <- rep("fldint", t=18)
+    fromsf <- c(901, 2896, 6101, 5901, 1101, 401, 401, 2000, 2250, 401, 
+                2281, 3097, 3750, 2250, 2750, 2750, 2001, 3740)
+    tosf <- c(1000, 2995, 6200, 6000, 1200, 500, 500, 2099, 2349, 500, 
+              2380, 3196, 3849, 2349, 2849, 2849, 2100, 3839)
+                
 # ======================================================
 # 24 settings
 } else if (F) { # compare jsbach pft levels awi-esm-1-1-lr_kh800 piControl
@@ -1857,9 +1972,71 @@ if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
     tunit <- "model year"
     new_origins <- fromsf - 1950 + 1 # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
     modes <- rep("fldsum", t=24)
+
+} else if (F) { # cmip6 piControl fgco2
+    models <- c("ACCESS-ESM1-5", "echam6", "CanESM5", "CanESM5-CanOE", "CESM2", "CESM2-FV2", 
+                "CESM2-WACCM", "CESM2-WACCM-FV2", "CMCC-ESM2", "CNRM-ESM2-1", 
+                "EC-Earth3-CC", "GFDL-CM4", "GFDL-ESM4", "INM-CM4-8", "INM-CM5-0", 
+                "IPSL-CM6A-LR", "MIROC-ES2L", "MPI-ESM-1-2-HAM", "MPI-ESM1-2-HR", 
+                "MPI-ESM1-2-LR", "MRI-ESM2-0", "NorCPM1", "NorESM1-F", "UKESM1-0-LL")
+    prefixes <- paste0(models, "_piControl")
+    r1i1p1f1_inds <- match(c("ACCESS-ESM1-5", "CanESM5", "CESM2", "CESM2-FV2", "CESM2-WACCM", 
+                             "CESM2-WACCM-FV2", "CMCC-ESM2", "EC-Earth3-CC", "GFDL-CM4", 
+                             "GFDL-ESM4", "INM-CM4-8", "INM-CM5-0", "IPSL-CM6A-LR", "MPI-ESM-1-2-HAM", 
+                             "MPI-ESM1-2-HR", "MPI-ESM1-2-LR", "NorCPM1", "NorESM1-F"), models)
+    prefixes[r1i1p1f1_inds] <- paste0(prefixes[r1i1p1f1_inds], "_r1i1p1f1")
+    r1i1p1f2_inds <- match(c("CNRM-ESM2-1", "MIROC-ES2L", "UKESM1-0-LL"), models)
+    prefixes[r1i1p1f2_inds] <- paste0(prefixes[r1i1p1f2_inds], "_r1i1p1f2")
+    r1i2p1f1_inds <- match(c("MRI-ESM2-0"), models) 
+    prefixes[r1i2p1f1_inds] <- paste0(prefixes[r1i2p1f1_inds], "_r1i2p1f1")
+    r1i1p2f1_inds <- match(c("CanESM5-CanOE"), models) 
+    prefixes[r1i1p2f1_inds] <- paste0(prefixes[r1i1p2f1_inds], "_r1i1p2f1")
+    names_legend <- models
+    names_legend[names_legend == "echam6"] <- "AWICM1-RECOM" # my echam6 output
+    names_short <- names_legend
+    prefixes[which(names_legend == "AWICM1-RECOM")] <- "awi-esm-1-1-lr_kh800_piControl"
+    varnames_in <- rep("fgco2", t=24)
+    plotprefix <- "cmip6"
+    modes <- rep("fldint", t=24)
+    #modes <- rep("fldint_timmean", t=20)
+    fromsf <- c(901, 2896, 6101, 5901, 1101, 401, 400, 401, 2000, 2250, 2255, 551, 401, 
+                2281, 3097, 3750, 2250, 2750, 2250, 2750, 2001, 401, 1601, 3740) # last 100a
+    tosf <- c(1000, 2995, 6200, 6000, 1200, 500, 499, 500, 2099, 2349, 2354, 650, 500, 
+              2380, 3196, 3849, 2349, 2849, 2349, 2849, 2100, 500, 1700, 3839) # last 100a
     
 # ======================================================
 # 25 settings
+} else if (F) { # cmip6 piControl npb
+    models <- c("ACCESS-ESM1-5", "echam6", "CanESM5", "CanESM5-CanOE", "CESM2", "CESM2-FV2", 
+                "CESM2-WACCM-FV2", "CMCC-CM2-SR5", "CMCC-ESM2", "CNRM-ESM2-1", 
+                "EC-Earth3-Veg", "EC-Earth3-Veg-LR", "GFDL-ESM4", "INM-CM4-8", "INM-CM5-0", 
+                "IPSL-CM6A-LR", "MIROC-ES2L", "MPI-ESM-1-2-HAM", "MPI-ESM1-2-LR", 
+                "MRI-ESM2-0", "NorCPM1", "NorESM2-LM", "SAM0-UNICON", "TaiESM1", "UKESM1-0-LL")
+    prefixes <- paste0(models, "_piControl")
+    r1i1p1f1_inds <- match(c("ACCESS-ESM1-5", "CanESM5", "CESM2", "CESM2-FV2", "CESM2-WACCM-FV2", 
+                             "CMCC-CM2-SR5", "CMCC-ESM2", "EC-Earth3-Veg", "EC-Earth3-Veg-LR", 
+                             "GFDL-ESM4", "INM-CM4-8", "INM-CM5-0", "IPSL-CM6A-LR", 
+                             "MPI-ESM-1-2-HAM", "MPI-ESM1-2-LR", "NorCPM1", "NorESM2-LM", 
+                             "SAM0-UNICON", "TaiESM1"), models)
+    prefixes[r1i1p1f1_inds] <- paste0(prefixes[r1i1p1f1_inds], "_r1i1p1f1")
+    r1i1p2f1_inds <- match(c("CanESM5-CanOE"), models) 
+    prefixes[r1i1p2f1_inds] <- paste0(prefixes[r1i1p2f1_inds], "_r1i1p2f1")
+    r1i1p1f2_inds <- match(c("CNRM-ESM2-1", "MIROC-ES2L", "UKESM1-0-LL"), models)
+    prefixes[r1i1p1f2_inds] <- paste0(prefixes[r1i1p1f2_inds], "_r1i1p1f2")
+    r1i2p1f1_inds <- match(c("MRI-ESM2-0"), models)
+    prefixes[r1i2p1f1_inds] <- paste0(prefixes[r1i2p1f1_inds], "_r1i2p1f1")
+    names_legend <- models
+    names_legend[names_legend == "echam6"] <- "AWICM1-RECOM" # my echam6 output
+    names_short <- names_legend
+    prefixes[which(names_legend == "AWICM1-RECOM")] <- "awi-esm-1-1-lr_kh800_piControl"
+    varnames_in <- rep("nbp", t=25)
+    plotprefix <- "cmip6"
+    modes <- rep("fldint", t=25)
+    fromsf <- c(1001, 2686, 6101, 5951, 1101, 401, 401, 2250, 2000, 2250, 2250, 2701, 401, 
+                2281, 3097, 3750, 2250, 2750, 2750, 2001, 401, 2001, 601, 601, 3740)
+    tosf <- c(1100, 2850, 6200, 6050, 1200, 500, 500, 2349, 2099, 2349, 2349, 2800, 500, 
+              2380, 3196, 3849, 2349, 2849, 2849, 2100, 500, 2100, 700, 700, 3839)
+
 } else if (F) { # 25 levels
     models <- rep("echam6", t=25)
     prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_og_restart_hl_ppm", t=25)

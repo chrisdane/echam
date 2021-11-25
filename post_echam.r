@@ -75,14 +75,14 @@ message("cdo_run_from_script = ", cdo_run_from_script)
 # -O necessary for ens<STAT>, merge, mergetime
 
 # check if necessary user variables exist and are of correct length
-exist_checks <- c("datapaths", "fpatterns", "fvarnames",
-                  "models", "froms", "tos", "modes")
+exist_checks <- c("models", "datapaths", "fpatterns", "prefixes", 
+                  "fvarnames", "froms", "tos", "modes")
 if (!all(sapply(exist_checks, exists))) {
     missing_vars <- !sapply(exist_checks, exists)
     stop("\nmust provide variable", 
          ifelse(length(which(missing_vars)) > 1, "s", ""),
          " `", paste0(names(missing_vars)[missing_vars], collapse="`, `"), 
-         "` in post namelist ", nml_post)
+         "` in post namelist")
 }
 nsettings <- length(datapaths)
 for (i in seq_along(exist_checks)) {
@@ -128,7 +128,6 @@ if (!exists("codes_files")) {
              ifelse(length(inds) > 1, "do", "does"), " not exist")
     }
 }
-if (!exists("prefixes")) prefixes <- rep(NA, t=nsettings)
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
 if (!exists("areas_out")) {
     if (exists("areas_out_list")) {
@@ -744,7 +743,7 @@ for (i in 1:nsettings) {
         #if (any(years_wanted %in% years_filenames == F)) {
         message("\ngiven `froms[", i, "]` = ", froms[i], " and `tos[", i, "]` = ", tos[i])
         if (as.integer(froms[i]) < min(years_filenames) || 
-            as.integer(tos[i]) > max(years_filenames)) {
+            as.integer(tos[i]) > max(years_filenames)) { # some wanted years out of years_filenames
             if (fvarnames[i] %in% names(cdo_known_cmds)) {
                 years_wanted <- froms[i]:tos[i] 
                 # try to apply command later
@@ -752,13 +751,19 @@ for (i in 1:nsettings) {
                 stop("--> these given years are not within found years: ", 
                      min(years_filenames), " to ", max(years_filenames))
             }
-        } else {
+        } else { # all wanted years within years_filenames
             #from_ind <- which.min(abs(years_filenames - as.integer(froms[i])))[1]
             #to_ind <- which.min(abs(years_filenames - as.integer(tos[i])))
             #to_ind <- to_ind[length(to_ind)]
             from_ind <- which(years_filenames == as.integer(froms[i]))[1]
+            if (is.na(from_ind)) {
+                stop("wanted start year `froms[", i, "]` = ", froms[i], " not available in `years_filenames`")
+            }
             to_ind <- which(years_filenames == as.integer(tos[i]))
             to_ind <- to_ind[length(to_ind)]
+            if (is.na(to_ind)) {
+                stop("wanted end year `tos[", i, "]` = ", tos[i], " not available in `years_filenames`")
+            }
             years_wanted <- years_filenames[from_ind:to_ind]
             message("--> found filename years from inds ", from_ind, " to ", to_ind, 
                     " (from total 1 to ", length(years_filenames), "): ",
@@ -791,7 +796,8 @@ for (i in 1:nsettings) {
                     } else {
                         print(df)
                     }
-                } 
+                }
+                if (length(files) == 0) stop("zero files")
         
             # else remove _timepoints_ of years outside of wanted range if more than one year per file
             } else if (length(files) != length(years_filenames)) {
@@ -835,6 +841,7 @@ for (i in 1:nsettings) {
                             print(df)
                         }
                     } 
+                    if (length(files) == 0) stop("zero files")
                 } # case b1 or case b2
                 cdoselyear <- paste0("-selyear,", froms[i], "/", tos[i]) # for case b1 and b2
                 message("      --> `cdoselyear` = \"", cdoselyear, "\"")
@@ -989,29 +996,61 @@ for (i in 1:nsettings) {
 
             } else if (is.na(codes_files[i])) {
                 
-                message("--> `codes_files[", i, "]` is NA --> try to find one with file pattern \"",
-                        tools::file_path_sans_ext(files[1]), ".codes\" ...")
-                # try 1/2: check if there is a "<filename>.codes" file in data dir
-                codes_filesi <- list.files(datapath, pattern=paste0(tools::file_path_sans_ext(files[1]), ".codes"), full.names=T)
-                if (length(codes_filesi) == 1) { # use found code file
-                    message("--> found 1 .codes file = \"", codes_filesi, "\" ...")
-                    cdoconvert <- paste0(cdoconvert, " -t ", codes_filesi)
+                message("--> `codes_files[", i, "]` not provided --> try to find one ...")
+                
+                # try 1/3: check if there is a "<filename_wout_ext>.codes" file in data dir
+                codes_filesi <- paste0(tools::file_path_sans_ext(files[1]), ".codes")
+                message("try 1/3: find pattern \"", datapath, "/", codes_filesi, "\" ... ", appendLF=F)
+                codes_filesi <- list.files(datapath, pattern=codes_filesi, full.names=T)
+                if (length(codes_filesi) == 1) {
+                    message()
+                } else if (length(codes_filesi) == 0) { # no .codes file found
+                    message("no")
+                    codes_filesi <- NULL
                 } else if (length(codes_filesi) > 1) {
                     stop("found ", length(codes_filesi), " .codes files:\n",
                          paste(codes_filesi, collapse="\n"))
-                } else if (length(codes_filesi) == 0) { # no .codes file found
-                    # try 2/2: use default parameter code table name if available for current model
-                    message("--> not found --> check if cdo default parameter code table for model \"", 
-                            models[i], "\" exists (check `cdo -h`) ...")
+                }
+                
+                # try 2/3: check if there is a "<filename_wout_ext_and_wout_year>.codes" file in path `datadir/../../log`
+                # data: piControl_2801_jsbach_jsbach_YYYY.grb
+                # code: piControl_2801_jsbach_jsbach.codes 
+                if (is.null(codes_filesi)) {
+                    codes_filesi <- tools::file_path_sans_ext(files[1])
+                    codes_filesi <- paste0(substr(codes_filesi, 1, nchar(codes_filesi)-5), ".codes")
+                    message("try 2/3: find pattern \"", datapath, "/../../log/", codes_filesi, "\" ... ", appendLF=F)
+                    # if last 5 characters of datafile wout extenstion ends with "_YYYY" and if path `datadir/../../log` exists
+                    codes_filesi <- list.files(paste0(datapath, "/../../log"), pattern=codes_filesi, full.names=T)
+                    if (length(codes_filesi) == 1) {
+                        message()
+                        codes_filesi <- normalizePath(codes_filesi)
+                    } else if (length(codes_filesi) == 0) {
+                        message("no")
+                        codes_filesi <- NULL
+                    } else if (length(codes_filesi) > 1) {
+                        stop("found ", length(codes_filesi), " .codes files:\n",
+                             paste(codes_filesi, collapse="\n"))
+                    }
+                }
+
+                # try 3/3: use default parameter code table name if available for current model
+                if (is.null(codes_filesi)) {
+                    message("try 3/3: check if current model \"", models[i], "\" is one of `cdo -t` default partables (check `cdo -h`) ... ", appendLF=F)
                     if (any(models[i] == c("echam4", "echam5", "echam6", "mpiom1", 
                                            "ecmwf", "remo", "cosmo002", "cosmo201", 
                                            "cosmo202", "cosmo203", "cosmo205", "cosmo250"))) {
-                        message("--> yes --> use it as partab")
-                        cdoconvert <- paste0(cdoconvert, " -t ", models[i])
+                        message()
+                        codes_filesi <- models[i] 
                     } else {
-                        message("--> no --> cannot add any partab to grb->nc conversion cmd")
+                        message("no")
                     }
                 }
+                
+                if (!is.null(codes_filesi)) {
+                    message("--> use partab \"", codes_filesi, "\" ...")
+                    cdoconvert <- paste0(cdoconvert, " -t ", codes_filesi)
+                }
+
             } # if `codes_files` was provided or not
             cdoconvert <- paste0(cdoconvert, " -f nc")
         } # convert if wanted and input is grb
@@ -1245,19 +1284,20 @@ for (i in 1:nsettings) {
                     #stop("cat/mergetime not defined for mode '", modes[[i]], "' not defined.")
                 } # which cat/mergetime depending on mode
 
-                ## calculation
+                ## calculation cmd
                 
-                cdocalc <- paste(paste0("-", modes[[i]]), collapse=" ") # default; e.g. "-fldmean" or "-timmean -monmax"
-                
-                # if special cdo calc case
-                if (all(modes[[i]] == "select")) {
-                    cdocalc <- "" # variable selection only
-                
-                } else if (all(modes[[i]] == "fldint")) {
-                    cdocalc <- "" # combination `-mul -select` does not work; need to apply -mul at the end
-
-                } # which cdo calculation depending on mode
-                
+                cdocalc <- rep("", t=length(modes[[i]]))
+                for (cdocalci in seq_along(cdocalc)) {
+                    # if special cdo calc case
+                    if (modes[[i]][cdocalci] == "select") {
+                        cdocalc[cdocalci] <- "" # variable selection only
+                    } else if (modes[[i]][cdocalci] == "fldint") {
+                        cdocalc[cdocalci] <- "" # combination `-mul -select` does not work; need to apply -mul at the end
+                    } else { # default
+                        cdocalc[cdocalci] <- paste0("-", modes[[i]][cdocalci]) # e.g. "-fldmean"
+                    } # which cdo calculation depending on mode
+                } # for all cdo calc operators
+                cdocalc <- paste(cdocalc, collapse=" ")
                 message("\n`modes[[", i, "]]` = \"", paste(modes[[i]], collapse=", "), 
                         "\" --> `cdocalc` = \"", cdocalc, "\" ...")
                 
@@ -2497,40 +2537,49 @@ for (i in 1:nsettings) {
             system(cmd)
         } # if !is.null(new_date_list[[i]]$years)
 
-        if (all(modes[[i]] == "fldint")) {
-            message("\nmodes[[", i, "]] = \"fldint\" --> find gridarea in m2 ...")
-            if (!any(models[i] == c("echam6", "jsbach"))) {
-                stop("mode \"fldint\" only supported for models echam6 or jsbach")
+        if (any(modes[[i]] == "fldint")) {
+            message("\nmodes[[", i, "]] = \"", paste(modes[[i]], collapse="\", \""), "\" include \"fldint\" --> ",
+                    "calc spatial integral via result of `cdo gridarea` ...")
+            check <- T # default
+            # check if model is already supported
+            if (any(models[i] == c("fesom", "mom4"))) {
+                message("model \"", models[i], "\" is not supported yet --> skip fldint calculation")
+                check <- F
             }
-            # get correct grid area
-            cmd <- paste0(cdo, " griddes ", datapath, "/", files[1])
+            # check if fout still has lon,lat dims
+            cmd <- paste0(cdo, " griddes ", fout)
             message("run `", cmd, "` ...")
             griddes <- system(cmd, intern=T)
+            #gridtype <- which(base::startsWith(griddes, "gridtype"))
+            #gridtype <- gsub(" ", "", griddes[gridtype]) # e.g. "gridtype  = curvilinear"
+            #gridtype <- strsplit(gridtype, "=")[[1]][2]
+            #message("--> gridtype = \"", gridtype, "\"")
             xsize <- which(base::startsWith(griddes, "xsize"))
-            if (length(xsize) == 0) stop("cdo griddes did not yield \"xsize\" entry.")
-            xsize <- gsub(" ", "", griddes[xsize])
-            xsize <- strsplit(xsize, "=")[[1]][2]
-            xsize <- as.integer(xsize) # will stop on error if not successful 
-            message("--> xsize = ", xsize)
+            xsize <- gsub(" ", "", griddes[xsize]) # e.g. "xsize=192"
+            xsize <- as.integer(strsplit(xsize, "=")[[1]][2])
+            message("--> xsize= \"", xsize, "\"")
             ysize <- which(base::startsWith(griddes, "ysize"))
-            if (length(ysize) == 0) stop("cdo griddes did not yield \"ysize\" entry.")
-            ysize <- gsub(" ", "", griddes[ysize])
-            ysize <- strsplit(ysize, "=")[[1]][2]
-            ysize <- as.integer(ysize) # will stop on error if not successful 
-            message("--> ysize = ", ysize)
-            if (xsize == 192 && ysize == 96) { # T63
-                gridarea_m2_file <- paste0(host$repopath, "/echam/T63_gridarea_m2.nc")
-            } else {
-                stop("these xsize and ysize are not defined")
+            ysize <- gsub(" ", "", griddes[ysize]) # e.g. "ysize=96"
+            ysize <- as.integer(strsplit(ysize, "=")[[1]][2])
+            message("--> ysize= \"", ysize, "\"")
+            if (xsize == 1 && ysize == 1) {
+                message("xsize and ysize = 1 --> skip fldint calculation")
+                check <- F
             }
-            message("--> use gridarea in m2 from ", gridarea_m2_file, " ...")
-            mul_file <- paste0(postpaths[i], "/tmp_mul_", Sys.getpid())
-            cmd <- paste0(cdo, " -fldsum -mul ", gridarea_m2_file, " ", fout, " ", mul_file, 
-                          " && mv ", mul_file, " ", fout)
-            cmd <- paste0(cmd, " || echo error")
-            message("run `", cmd, "`")
-            system(cmd)
-        }
+            if (check) {
+                area_file <- paste0(postpaths[i], "/tmp_area_m2_", Sys.getpid())
+                cmd <- paste0(cdo, " gridarea ", fout, " ", area_file)
+                message("run `", cmd, "`")
+                system(cmd)
+                mul_file <- paste0(postpaths[i], "/tmp_mul_", Sys.getpid())
+                cmd <- paste0(cdo, " -fldsum -mul ", fout, " ", area_file, " ", mul_file, 
+                              " && mv ", mul_file, " ", fout)
+                cmd <- paste0(cmd, " || echo error")
+                message("run `", cmd, "`")
+                system(cmd)
+                invisible(file.remove(area_file))
+            } # if check
+        } # if fldint
 
         # set relative time axis
         if (!own_cmd && cdo_set_rel_time && is.null(new_date_list[[i]])) {
@@ -2568,7 +2617,8 @@ for (i in 1:nsettings) {
                     }
                 }
                 if (nco_ncap2 != "") {
-                    cmd <- paste0(nco_ncap2, " -O -s 'defdim(\"bnds\",2); time_bnds=make_bounds(time,$bnds,\"time_bnds\");' ", 
+                    # -4 for ncdf4 support and large files
+                    cmd <- paste0(nco_ncap2, " -O -4 -s 'defdim(\"bnds\",2); time_bnds=make_bounds(time,$bnds,\"time_bnds\");' ", 
                                   fout, " ", fout)
                     message("run `", cmd, "` ...")
                     system(cmd)

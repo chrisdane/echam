@@ -31,10 +31,11 @@ if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
 }
 
 # ignore these netcdf variables
-ignore_vars <- c("time_bnds", "timestamp", 
+ignore_vars <- c("bnds",
+                 "time_bnds", "timestamp", 
                  "hyai", "hybi", "hyam", "hybm",
                  "plev", "height", 
-                 "depthvec", 
+                 "depth", "depthvec", 
                  "lm_*_as_time_std_error", "lm_*_as_time_t_val", "lm_*_as_time_p_val",
                  "timevec", "xi", "yi", # old rfesom 
                  "moc_reg_lat")
@@ -192,6 +193,9 @@ echam6_global_setNA <- NA # one of 3 options: NA, "ocean", "land"
 
 # special
 plot_redfit <- F
+
+# constants
+Aearth <- 5.100656e14 # m2
 
 # clear work space if non-clean restart of plot_echam.r, i.e. without rm of everything
 objs <- c("postpaths", "plotpath", 
