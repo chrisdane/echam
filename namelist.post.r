@@ -1088,6 +1088,19 @@ if (F) { # old hist
     #tos <- 2995
     #tos <- 2996
 
+} else if (T) { # awi-esm-1-1-lr_kh800 piControl LUtrans1850
+    models <- "echam6"
+    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/echam"
+    fpatterns <- "piControl_LUtrans1850_<YYYY><MM>.01_co2"
+    prefixes <- "awi-esm-1-1-lr_kh800_LUtrans1850"
+    codes <- 6
+    fvarnames <- "co2_flx_land"
+    #codes <- 24
+    #fvarnames <- "co2_flx_lcc"
+    modes <- "fldint"
+    froms <- 2951
+    tos <- 2970
+
 } else if (F) { # cmip6 esgf ACCESS-ESM1-5
     models <- "ACCESS-ESM1-5" # ocean: mom5: native: tripolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CSIRO/ACCESS-ESM1-5/piControl/r1i1p1f1/Omon/fgco2/gn/v20191214"
@@ -1754,7 +1767,7 @@ if (F) { # old hist
     froms <- 2801
     tos <- 2802
 
-} else if (T) { # foci from seb wahl
+} else if (F) { # foci from seb wahl
     models <- "echam6"
     datapaths <- "/work/bb0519/b350071/tmp/"
     fpatterns <- "FOCI1.3-SW038_echam6_co2_co2_flx_lcc_<YYYY_from>-<YYYY_to>.nc"

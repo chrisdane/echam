@@ -369,7 +369,7 @@ invisible(file.create(lastfiles_post_fname)) # error if no success
 
 # do for every model setting
 elapsed <- vector("list", l=nsettings)
-for (i in 1:nsettings) {
+for (i in seq_len(nsettings)) {
 
     tic <- Sys.time()
     message("\n", "*********** setting ", i, "/", nsettings, " *************")
@@ -956,11 +956,10 @@ for (i in 1:nsettings) {
         # get format of input files
         convert_to_nc <- F # default: no conversion to nc needed or wanted
         message("\nget input file format from first found file ...")
-        cmd <- paste0("cdo showformat ", datapath, "/", files[1])
-        input_file_type <- cdo_get_filetype(paste0(datapath, "/", files[1]))
+        input_file_type <- ncdump_get_filetype(paste0(datapath, "/", files[1]))
         # conversion is needed if:
-        if ((input_file_type$file_type == "non-nc" && cdo_convert_grb2nc) || # case1: wanted
-            (input_file_type$file_type == "non-nc" && !is.null(new_date_list[[i]]))) { # case2: needed
+        if ((input_file_type == "non-nc" && cdo_convert_grb2nc) || # case1: wanted
+            (input_file_type == "non-nc" && !is.null(new_date_list[[i]]))) { # case2: needed
             if (verbose > 0) {
                 message("--> input is not of type nc and ", appendLF=F)
                 if (cdo_convert_grb2nc && !is.null(new_date_list[[i]])) {
@@ -975,7 +974,7 @@ for (i in 1:nsettings) {
             }
             convert_to_nc <- T
         } else { # conversion is not needded and/or wanted
-            message("--> input is ", input_file_type$file_type, 
+            message("--> input is ", input_file_type, 
                     " --> conversion of postprocessing result to nc not necessary")
         }
 
@@ -2608,7 +2607,7 @@ for (i in 1:nsettings) {
             } else { # time_bnds not set
                 message("--> time_bnds not set (\"Bounds = true\" missing)")
                 if (!exists("nco_ncap2")) {
-                    message("`nco_ncap2` not set by user -> check if ncap2 binary can be found to set new times of nc file: run `which(ncap2)`")
+                    message("`nco_ncap2` not set by user -> check if ncap2 binary can be found to set time_bnds of nc file: run `which(ncap2)`")
                     nco_ncap2 <- Sys.which("ncap2")
                     if (nco_ncap2 == "") {
                         warning("ncap2 not found, cannot set time_bnds, skip")

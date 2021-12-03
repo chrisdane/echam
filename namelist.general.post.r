@@ -25,7 +25,7 @@ if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
     message("\nload ", host$homepath, "/functions/myfunctions.r ...")
     source(paste0(host$homepath, "/functions/myfunctions.r"))
     # dependencies: 
-    # ht(), make_posixlt_origin(), is.leap(), tryCatch.W.E(), identical_list(), cdo_get_filetype()
+    # ht(), make_posixlt_origin(), is.leap(), identical_list(), ncdump_get_filetype()
 } else {
     stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
 }
