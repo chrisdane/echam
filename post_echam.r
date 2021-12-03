@@ -1,11 +1,9 @@
 # r
 
-# post processing of echam, jsbach, mpiom output
-
-graphics.off()
-options(show.error.locations=T)
-options(warn=2) # stop on warnings
-#options(warn=0) # back to default
+# post processing of model output
+# 1: namelist.general.post.r
+# 2: namelist.post.r (user namelist)
+# 3: this script
 
 # host check
 if (T && host$machine_tag == "mistral") {
@@ -31,7 +29,6 @@ for (r in requirements) {
 }
 
 ## check user input from namelist.post.r
-
 message("verbose = ", verbose)
 message("post_force = ", post_force) 
 message("clean = ", clean)
@@ -150,7 +147,12 @@ if (!exists("areas_out")) {
 if (!exists("cdoshifttimes")) cdoshifttimes <- rep("", t=nsettings)
 
 # check postpaths
-if (exists("workpath")) host$workpath <- workpath # overwrite default
+if (exists("workpath")) {
+    host$workpath <- workpath # overwrite default
+} else {
+    workpath <- host$workpath
+    message("`workpath` not given --> use result from helper_functions.r:get_host() = ", workpath)
+}
 if (!exists("postpaths")) {
     postpaths <- paste(host$workpath, "post", models, names(modes), fvarnames, sep="/")
 }

@@ -2,8 +2,9 @@
 
 # input for post_echam.r
 
-# machine dependent repo path; change somewhere in namelist if needed
-repopath <- "~/scripts/r/echam"
+# load defaults
+repopath <- getwd()
+repopath <- normalizePath(repopath, mustWork=T) # error if not found
 source(paste0(repopath, "/namelist.general.post.r"))
 
 # ======================================================
@@ -1984,14 +1985,6 @@ if (F) { # old hist
 
 } # which setting
 
-
-### do not change below this line
-repopath <- normalizePath(repopath, mustWork=T) # error if not found
-if (interactive()) {
-    user_runscript_filename <- normalizePath(sys.frames()[[1]]$ofile)
-} else {
-    args <- commandArgs(trailingOnly=F)
-    user_runscript_filename <- normalizePath(sub("--file=", "", args[grep("--file=", args)]))
-}
+# run
 source(paste0(repopath, "/post_echam.r"))
 

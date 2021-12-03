@@ -2,8 +2,9 @@
 
 # input for plot_echam.r
 
-# machine dependent repo path; change somewhere in namelist if needed
+# load defaults
 repopath <- "~/scripts/r/echam"
+repopath <- normalizePath(repopath, mustWork=T) # error if not found
 source(paste0(repopath, "/namelist.general.plot.r"))
 
 # 1 setting
@@ -2067,14 +2068,6 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1 (og) to x (my)
 
 } # which settings
 
-
-### do not change below this line
-repopath <- normalizePath(repopath, mustWork=T) # error if not found
-if (interactive()) {
-    user_runscript_filename <- normalizePath(sys.frames()[[1]]$ofile)
-} else {
-    args <- commandArgs(trailingOnly=F)
-    user_runscript_filename <- normalizePath(sub("--file=", "", args[grep("--file=", args)]))
-}
+# run
 source(paste0(repopath, "/plot_echam.r"))
 

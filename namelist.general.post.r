@@ -1,11 +1,17 @@
 # r
 
 # input for post_echam.r
-message("################################ namelist.general.post.r ################################")
+
+message("###################### namelist.general.post.r start ##########################")
+
+graphics.off()
+options(show.error.locations=T)
+options(warn=2) # stop on warnings
+#options(warn=0) # back to default
 
 # clear work space
 if (T) {
-    message("clear work space ...")
+    message("\nclear work space ...")
     ws <- ls()
     ws <- ws[-which(ws == "repopath")]
     rm(list=ws)
@@ -13,22 +19,18 @@ if (T) {
 
 # load helper functions of this repo
 script_helper_functions <- paste0(repopath, "/helper_functions.r")
-message("load `repopath`/helper_functions.r = ", script_helper_functions, " ...")
+message("\nload `repopath`/helper_functions.r = ", script_helper_functions, " ...")
 source(script_helper_functions) # get_host()
 
 # get host options
 host <- get_host()
 host$repopath <- repopath
 
-# todo: how to load helper functions from another repo without the subrepo hassle?
-if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
-    message("\nload ", host$homepath, "/functions/myfunctions.r ...")
-    source(paste0(host$homepath, "/functions/myfunctions.r"))
-    # dependencies: 
-    # ht(), make_posixlt_origin(), is.leap(), identical_list(), ncdump_get_filetype()
-} else {
-    stop("\ncould not load ", host$homepath, "/functions/myfunctions.r")
-}
+# load functions from submodule
+message("\nload functions from submodule dir ", host$repopath, "/functions\" ...")
+# needed myfunctions.r functions: 
+# ht(), is.leap(), identical_list(), make_posixlt_origin(), ncdump_get_filetype()  
+for (i in c("myfunctions.r")) source(paste0(host$repopath, "/functions/", i))
 
 # general options
 verbose <- 1 # 0,1
@@ -149,4 +151,6 @@ cdo_known_cmds <- list(
                          "<nco_ncatted> -O -a units,cSoilSlow,o,c,\"kgC m-2\"",
                          "<nco_ncatted> -O -a long_name,cSoilSlow,o,c,\"Carbon Mass in Slow Soil Pool\""))
                       ) # cdo_known_cmds
+
+message("###################### namelist.general.post.r finish ##########################")
 
