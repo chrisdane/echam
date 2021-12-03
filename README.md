@@ -8,15 +8,15 @@ git clone --recurse-submodules https://github.com/chrisdane/echam
 
 # run
 
-After a potentially necessary
+Load R if necessary:
 ```bash
 module load r # or R
 ```
-or similar, running 
+Running 
 ```R
 source("example_namelist.post.r")
 ```
-in an active R session or 
+in an active R session or
 ```bash
 nohup Rscript example_namelist.post.r > example.log 2>&1 &
 ```
