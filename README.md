@@ -63,7 +63,7 @@ Several settings can be used in one call via
 # my settings
 models <- c("model1", "model2")
 datapaths <- c("path1", "path2")
-fpatterns <- c("fpattern1, "fpattern2")
+fpatterns <- c("fpattern1", "fpattern2")
 fvarnames <- c("variable1", "variable2")
 prefixes <- c("prefix1", "prefix2")
 modes <- c("mode1", "mode2")
