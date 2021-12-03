@@ -4,6 +4,7 @@
 # except
 !README.md
 !echam/
+!functions/
 !indices/
 !jsbach/
 !mpiom/
