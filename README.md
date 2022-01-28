@@ -53,7 +53,7 @@ will calculate fldint from years 6150 to 6200 of variable fgco2 of all files fou
 Allowed special patterns in `fpatterns` are printed in log. `modes` can be anything from `cdo`. The mode "fldint" works as soon as `cdo gridarea` does not return an error.
 
 Adding 
-```
+```R
 cdo_after_calcs <- list(c("setunit,\"PgC yr-1\"", "mulc,365.25", "mulc,86400", "divc,1e12")) # kgC s-1 --> PgC yr-1
 ```
 to the namelist adds the given cdo commands to the calculation.

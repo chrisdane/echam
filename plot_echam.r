@@ -9,6 +9,10 @@ if (T && options()$warn != 0) options(warn=0) # back to default
 fctbackup <- `[`
 `[` <- function(...) { fctbackup(..., drop=F) } # set back to default: `[` <- fctbackup 
 
+if (!exists("host")) {
+    stop("`host` does not exist. did you accidentally run `source(\"plot.echam.r\")` instead of `source(\"namelist.plot.r\")`?")
+}
+
 # load libraries necessary for plot_echam.r
 message("\nload packages defined in ", host$repopath, "/requirements_plot.txt ...")
 requirements <- readLines(paste0(host$repopath, "/requirements_plot.txt"))
@@ -52,10 +56,8 @@ if (center_ts && scale_ts) {
     stop("both `center_ts` and `scale_ts` are true. choose one: center = x-mu; scale = (x-mu)/sd.")
 }
 
-## possible objects set by user: set defaults if not set by user 
+# set defaults
 if (exists("workpath")) host$workpath <- workpath
-
-# defaults: general stuff
 if (!exists("postpaths")) { # default from post_echam.r
     postpaths <- rep(paste0(host$workpath, "/post"), t=nsettings)
 } else {
@@ -78,12 +80,10 @@ if (!dir.exists(plotpath)) dir.create(plotpath, recursive=T, showWarnings=F)
 plotpath <- normalizePath(plotpath)
 if (!exists("names_legend")) names_legend <- names_short
 
-# defaults: code stuff
 if (!exists("codes")) codes <- rep("", t=nsettings)
 codesf <- codes
 codesf[codes != ""] <- paste0("_selcode_", codesf[codes != ""])
 
-# defaults: time stuff
 if (!exists("seasonsf")) seasonsf <- rep("Jan-Dec", t=nsettings)
 if (any(is.na(seasonsf))) seasonsf[is.na(seasonsf)] <- "Jan-Dec"
 if (!exists("fromsp")) fromsp <- rep(NA, t=nsettings)
@@ -113,7 +113,6 @@ if (!is.na(remove_setting) &&
          "choose either `remove_setting` OR `remove_mean_froms` (and `remove_mean_tos`)")
 }
 
-# defaults: level stuff
 if (!exists("levs") && !exists("levsf")) {
     levs <- levsf <- rep("", t=nsettings)
 } else if (exists("levs") && !exists("levsf")) {
@@ -124,7 +123,6 @@ if (!exists("levs") && !exists("levsf")) {
     levs[levsf != ""] <- gsub("_", "", levsf[levsf != ""])
 }
 
-# defaults: depth stuff
 if (!exists("depths") && !exists("depthsf")) {
     depths <- depthsf <- rep("", t=nsettings)
 } else if (exists("depths") && !exists("depthsf")) {
@@ -143,7 +141,6 @@ if (!exists("depth_tosp")) depth_tosp <- depth_tosf
 if (!exists("lev_fromsp")) lev_fromsp <- lev_fromsf
 if (!exists("lev_tosp")) lev_tosp <- lev_tosf
 
-# defaults: area stuff
 if (!exists("areas")) areas <- rep("global", t=nsettings)
 if (!exists("regboxes")) {
     regboxes <- vector("list", l=nsettings)
@@ -160,15 +157,13 @@ if (any(!is.na(sapply(regboxes, "[[", "regbox")))) { # run namelist.area.r to ge
     areas_out[which(!is.na(sapply(regboxes, "[[", "regbox")))] <- sapply(regboxes, "[[", "regbox")
 }
 
-# defaults: regular interp stuff; for back compatility old fesom post
 if (!exists("reg_dxs")) reg_dxs <- rep("", t=nsettings)
 if (!exists("reg_dys")) reg_dys <- rep("", t=nsettings)
 reg_dxsf <- reg_dxs
-reg_dxsf[reg_dxs != ""] <- paste0("_regular_dx", reg_dxs[reg_dxs != ""])
+reg_dxsf[reg_dxs != ""] <- paste0("_regular_dx", reg_dxs[reg_dxs != ""]) # for back compatility old fesom post
 reg_dysf <- reg_dys
 reg_dysf[reg_dys != ""] <- paste0("_dy", reg_dys[reg_dys != ""])
 
-# defaults: plot stuff
 if (!exists("types")) types <- rep("l", t=nsettings) # default: lines plots and not points
 if (!exists("ltys")) ltys <- rep(1, t=nsettings)
 if (!exists("lwds")) lwds <- rep(1, t=nsettings)
@@ -178,18 +173,21 @@ if (!exists("pchs")) {
         if (types[i] == "l") {
             pchs[i] <- NA
         } else {
-            pchs[i] <- pchs_filled_wout_border[1]
+            pchs[i] <- pchs_hollow[1]
+            #pchs[i] <- pchs_filled_wout_border[1]
         }
     }
 }
-if (!exists("scatterpchs")) scatterpchs <- rep(pchs_filled_wout_border[1], t=nsettings)
+if (!exists("scatterpchs")) {
+    scatterpchs <- rep(pchs_hollow[1], t=nsettings)
+    #scatterpchs <- rep(pchs_filled_wout_border[1], t=nsettings)
+}
 if (!exists("lecex")) {
     lecex <- 1
 } else {
     if (!is.finite(lecex)) stop("provided `lecex` = ", lecex, " is not finite")
 }
 
-# defaults: colors
 if (!exists("cols")) {
     cols <- mycols(nsettings)
 } else if (exists("cols")) {
@@ -232,6 +230,15 @@ if (exists("cols_samedims")) {
     }
 }
 
+plotname_suffix <- "" # default: nothing
+if (center_ts) plotname_suffix <- "_center_ts"
+if (scale_ts) plotname_suffix <- "_scale_ts"
+if (!ts_highlight_seasons$bool) ts_highlight_seasons$suffix <- ""
+
+if (!exists("add_linear_trend_froms")) add_linear_trend_froms <- rep(NA, t=nsettings)
+if (!exists("add_linear_trend_tos")) add_linear_trend_tos <- rep(NA, t=nsettings)
+
+# repeat things if necessary
 if (length(echam6_global_setNA) != nsettings) {
     if (length(echam6_global_setNA) == 1) {
         message("`echam6_global_setNA` is only of length 1 but nsettings = ", nsettings, 
@@ -242,28 +249,6 @@ if (length(echam6_global_setNA) != nsettings) {
              " but nsettings = ", nsettings, ". dont know how to proceed")
     }
 }
-
-# check suffixes
-plotname_suffix <- "" # default: nothing
-if (center_ts) plotname_suffix <- "_center_ts"
-if (scale_ts) plotname_suffix <- "_scale_ts"
-if (!ts_highlight_seasons$bool) ts_highlight_seasons$suffix <- ""
-
-if (length(add_linear_trend) != nsettings) {
-    if (length(add_linear_trend) == 1) {
-        message("given `add_linear_trend` but of length ", length(add_linear_trend), 
-                " and nsettings = ", nsettings, " --> repeat ", nsettings, " times ...") 
-        add_linear_trend <- rep(add_linear_trend, t=nsettings)
-    } else {
-        if (length(add_linear_trend) != nsettings) {
-            stop("given `add_linear_trend` but of length ", length(add_linear_trend), 
-                " and nsettings = ", nsettings, " --> dont know how to interpret this")
-        }
-    }
-}
-if (!exists("add_linear_trend_froms")) add_linear_trend_froms <- rep(NA, t=nsettings)
-if (!exists("add_linear_trend_tos")) add_linear_trend_tos <- rep(NA, t=nsettings)
-
 if (length(add_scatter_density) != nsettings) {
     if (length(add_scatter_density) == 1) {
         message("given `add_scatter_density` but of length ", length(add_scatter_density), 
@@ -276,6 +261,25 @@ if (length(add_scatter_density) != nsettings) {
         }
     }
 }
+if (length(add_linear_trend) != nsettings) {
+    if (length(add_linear_trend) == 1) {
+        message("given `add_linear_trend` but of length ", length(add_linear_trend), 
+                " and nsettings = ", nsettings, " --> repeat ", nsettings, " times ...") 
+        add_linear_trend <- rep(add_linear_trend, t=nsettings)
+    } else {
+        if (length(add_linear_trend) != nsettings) {
+            stop("given `add_linear_trend` but of length ", length(add_linear_trend), 
+                " and nsettings = ", nsettings, " --> dont know how to interpret this")
+        }
+    }
+}
+
+# do this here and not in namelist since user could change in namelist from namelist.general
+if (p$plot_type == "pdf") {
+    minus_symbol_dash <- "-"
+} else {
+    minus_symbol_dash <- "\u2013"
+}
 
 # clear lastfiles_plot file
 lastfiles_plot_fname <- paste0("lastfiles_plot_", Sys.getpid(), ".txt") # in same path as this plot_echam.r-call
@@ -283,30 +287,30 @@ lastfiles_plot_fname <- paste0(normalizePath(dirname(lastfiles_plot_fname)), "/"
 message("\ncreate file for storing plotnames \"", lastfiles_plot_fname, "\" ...")
 invisible(file.create(lastfiles_plot_fname)) # error if no success
 
-## allocate
+# allocate
 datas <- vector("list", l=nsettings)
 names(datas) <- names_short
 data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
 
 
-## load pangaea data if defined 
-if (F) {
+# load pangaea data if defined 
+if (load_pangaea_data) {
     message("\ndisable here if you do not want to load pangaea data via load_pangaea_data.r ...")
     source("load_pangaea_data.r")
 } else {
     message("\nenable here to load pangaea data via load_pangaea_data.r ...")
 }
 
-## load special data if defined
-if (F) {
+# load special data if defined
+if (load_special_data) {
     message("\ndisable here if you do not want to load special data via load_special_data.r ...")
     source("load_special_data.r")
 } else {
     message("\nenable here to load special data via load_special_data.r ...")
 }
 
-## plot special data if defined
-if (F) {
+# plot special data if defined
+if (plot_special_data) {
     message("\ndisable here if you do not want to plot special data via plot_special_data.r ...")
     source("plot_special_data.r")
 } else {
@@ -411,9 +415,16 @@ for (i in seq_len(nsettings)) {
             timein_units <- ncin$var$time$units
         }
         if (all(dims[[i]]$time == 0)) { # my phd stuff
-            message("make my special monthly time from `fromsf[i]` = ", fromsf[i], " to `tosf[i]` = ", tosf[i])
+            message("make my phd special monthly time from `fromsf[i]` = ", fromsf[i], " to `tosf[i]` = ", tosf[i])
             timein_units <- "months"
-            dims[[i]]$time <- rep(fromsf[i]:tosf[i], e=12) + rep((0:11)/12, t=length(fromsf[i]:tosf[i]))
+            if (length(dims[[i]]$time) == 743) { # dt
+                dims[[i]]$time <- rep(fromsf[i]:tosf[i], e=12) + rep((0:11)/12, t=length(fromsf[i]:tosf[i]))
+                dims[[i]]$time <- dims[[i]]$time[2:744]
+            } else if (length(dims[[i]]$time) == 744) {
+                dims[[i]]$time <- rep(fromsf[i]:tosf[i], e=12) + rep((0:11)/12, t=length(fromsf[i]:tosf[i]))
+            } else {
+                stop("time length ", length(dims[[i]]$time), " not defined here")
+            }
             if (grepl("Arc22_sub_daily", prefixes[i])) { # every (also leap) year has ntime=365; dt=86400 sec 
                 message("days!!!")
                 timein_units <- "days"
@@ -486,7 +497,7 @@ for (i in seq_len(nsettings)) {
             print(range(timein_lt))
             #shift_by <- -(timein_lt$year[1] + 1900 - new_origins[i]) 
             shift_by <- new_origins[i] - (timein_lt$year[1] + 1900) #- 1
-            message("by `shift_by` = ", 
+            message("by `shift_by` = `new_origins[", i, "]` - `years[1]` = ", 
                     new_origins[i], " - ", timein_lt$year[1] + 1900, #" - 1 ", 
                     " = ", shift_by, " years") 
             if (any(is.na(timein_lt))) stop("some NA in timein_lt before shift_by")
@@ -710,7 +721,11 @@ for (i in seq_len(nsettings)) {
                                   "/fesom/timmean/mixlay/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_mixlay_lsea_Mar_1948-2009.nc",
                                   "/fesom/timmean/hvel/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_hvel_0m_lsea_Jan-Dec_1948-2009.nc",
                                   "/fesom/timmean/hvel/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_hvel_0m_lsea_Jan-Dec_1948-2009.nc",
-                                  "/fesom/timmean/eke/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_eke_int0-3600m_lsea_Mar_1948-2009.nc",
+                                  #"/fesom/timmean/hvel/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_hvel_0m_lsea_Mar_1948-2009.nc",
+                                  #"/fesom/timmean/hvel/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_hvel_0m_lsea_Mar_1948-2009.nc",
+                                  "/fesom/timmean/eke/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_eke_0m_lsea_Jan-Dec_1948-2009.nc",
+                                  #"/fesom/timmean/eke/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_eke_0m_lsea_Mar_1948-2009.nc",
+                                  #"/fesom/timmean/eke/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_eke_int0-3600m_lsea_Mar_1948-2009.nc",
                                   "/fesom/timmean/sic/Low01_sub_lsea_s52_regular_dx0.100_dy0.100_fesom_timmean_sic_lsea_Mar_1948-2009.nc"))
         } else if (T && grepl("LSea5", prefixes[i])) {
             ll_vars <- c("bathy", "mixlay", "u", "v", "eke", "sic") # multiple possible
@@ -719,7 +734,11 @@ for (i in seq_len(nsettings)) {
                                   "/fesom/timmean/mixlay/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_mixlay_lsea_Mar_1948-2009.nc",
                                   "/fesom/timmean/hvel/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_hvel_0m_lsea_Jan-Dec_1948-2009.nc",
                                   "/fesom/timmean/hvel/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_hvel_0m_lsea_Jan-Dec_1948-2009.nc",
-                                  "/fesom/timmean/eke/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_eke_int0-4150m_lsea_Mar_1948-2009.nc",
+                                  #"/fesom/timmean/hvel/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_hvel_0m_lsea_Mar_1948-2009.nc",
+                                  #"/fesom/timmean/hvel/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_hvel_0m_lsea_Mar_1948-2009.nc",
+                                  "/fesom/timmean/eke/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_eke_0m_lsea_Jan-Dec_1948-2009.nc",
+                                  #"/fesom/timmean/eke/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_eke_0m_lsea_Mar_1948-2009.nc",
+                                  #"/fesom/timmean/eke/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_eke_int0-4150m_lsea_Mar_1948-2009.nc",
                                   "/fesom/timmean/sic/LSea5_sub_lsea_s5_regular_dx0.100_dy0.100_fesom_timmean_sic_lsea_Mar_1948-2009.nc"))
         } # which setting and variable
         if (length(ll_vars) != length(ll_fnames)) stop("`ll_vars` and `ll_fnames` must be of same length")
@@ -737,15 +756,25 @@ for (i in seq_len(nsettings)) {
                             "]` = \"", ll_fnames[li], "\".")
                 } else { # wanted var is in file
                     ll_dims_of_var <- sapply(ll_nc$var[[ll_vars[li]]]$dim, "[", "name")
-                    if (!any(unlist(lapply(ll_dims_of_var, function(x) any(x == "lon")))) &&
-                        !any(unlist(lapply(ll_dims_of_var, function(x) any(x == "lat"))))) {
-                        warning("variable `ll_vars[", li, "]` = \"", ll_vars[li], "\" from `ll_fnames[", li, 
-                                "]` = \"", ll_fnames[li], "\" does not have lon and lat dims.")
+                    lonname <- "lon"; latname <- "lat" # defaults
+                    if (any(sapply(ll_dims_of_var, "[") == "nxi")) { # old rfesom
+                        lonname <- "nxi"
+                        #ind <- which(sapply(ll_dims_of_var, "[") == "nxi")
+                    }
+                    if (any(sapply(ll_dims_of_var, "[") == "nyi")) { # old rfesom
+                        latname <- "nyi"
+                        #ind <- which(sapply(ll_dims_of_var, "[") == "nyi")
+                        #ll_dims_of_var[[ind]] <- "lat"
+                    }
+                    if (!any(unlist(lapply(ll_dims_of_var, function(x) any(x == lonname)))) &&
+                        !any(unlist(lapply(ll_dims_of_var, function(x) any(x == latname))))) {
+                        stop("variable `ll_vars[", li, "]` = \"", ll_vars[li], "\" from `ll_fnames[", li, 
+                                "]` = \"", ll_fnames[li], "\" does not have \"", lonname, "\" and \"", latname, "\" dims.")
                     } else { # wanted var has lon,lat dims
                         ll_cnt <- ll_cnt + 1
                         ll_ncs[[ll_cnt]] <- ll_nc
                         ll_data_per_setting[[ll_cnt]] <- list(file=ll_fnames[li],
-                                                              lon=ll_nc$dim$lon$vals, lat=ll_nc$dim$lat$vals)
+                                                              lon=ll_nc$dim[[lonname]]$vals, lat=ll_nc$dim[[latname]]$vals)
                         names(ll_data_per_setting)[ll_cnt] <- ll_vars[li]
                     } # if ll_vars has lon and lat dims
                 } # if ll_vars is variable in ll_nc
@@ -1278,9 +1307,19 @@ for (i in seq_len(nsettings)) {
         message("\ndata has lon and lat dims and  `ll_data` is defined --> load ll_data variables ...")
         for (li in seq_along(ll_data[[i]])) {
             message("   load `ll_vars[", li, "]` = \"", ll_vars[li], "\" ...")
-            ll_data[[i]][[li]][[length(ll_data[[i]][[li]])+1]] <- ncvar_get(ll_ncs[[li]], ll_vars[li], 
-                                                                            collapse_degen=squeeze)
+            ll_data[[i]][[li]][[length(ll_data[[i]][[li]])+1]] <- ncdf4::ncvar_get(ll_ncs[[li]], ll_vars[li], 
+                                                                                   collapse_degen=squeeze)
             names(ll_data[[i]][[li]])[length(ll_data[[i]][[li]])] <- ll_vars[li]
+
+            # do special stuff
+            if (ll_vars[li] == "eke") {
+                atts <- ncdf4::ncatt_get(ll_ncs[[li]], ll_vars[[li]])
+                message("eke units = ", atts$units)
+                if (atts$units == "m2 s-2") {
+                    message("ll_data ", li, " eke m2 s-2 --> cm2 -s2")
+                    ll_data[[i]][[li]][[length(ll_data[[i]][[li]])]] <- ll_data[[i]][[li]][[length(ll_data[[i]][[li]])]]*1e4
+                }
+            }
     
             # get dims of variable
             ll_dims_per_setting_in <- names(ll_ncs[[li]]$dim)
@@ -2013,7 +2052,10 @@ for (i in seq_len(nsettings)) {
                                    nchar(data_infos[[i]][[vi]]$units))
                 message("input unit is \"", data_infos[[i]][[vi]]$units, "\"\n",
                         "--> detected old rfesom multiplication factor applied to nc file \"", mult_fac, "\"")
+                warn <- options()$warn
+                options(warn=2) # stop on warnings
                 mult_fac <- as.numeric(mult_fac) # error if no success
+                options(warn=warn) # back to default/user setting
                 message("--> ", mult_fac)
                 data_infos[[i]][[vi]]$offset$operator <- "/"
                 data_infos[[i]][[vi]]$offset$value <- mult_fac
@@ -2437,7 +2479,7 @@ for (i in seq_len(nsettings)) {
             data_infos[[i]][[vi]]$units <- "kgC m-2 s-1"
             if (varname == "fgco2") {
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
-            } else if (any(varname(varname == c("nbp", "netAtmosLandCO2Flux")))) {
+            } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into land)"))))
             } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean/land)"))))
@@ -2449,7 +2491,7 @@ for (i in seq_len(nsettings)) {
                 data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
                 if (varname == "fgco2") {
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
-                } else if (any(varname(varname == c("nbp", "netAtmosLandCO2Flux")))) {
+                } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into land)"))))
                 } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean/land)"))))
@@ -2461,7 +2503,7 @@ for (i in seq_len(nsettings)) {
                     data_infos[[i]][[vi]]$units <- "PgC yr-1"
                     if (varname == "fgco2") {
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
-                    } else if (any(varname(varname == c("nbp", "netAtmosLandCO2Flux")))) {
+                    } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into land)"))))
                     } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean/land)"))))
@@ -2513,6 +2555,7 @@ for (i in seq_len(nsettings)) {
         
         # carbon recom
         } else if (varname == "aCO2") { # recom
+            data_infos[[i]][[vi]]$units <- "µatm"
             data_infos[[i]][[vi]]$label <- expression(paste("global mean atm CO"[2], " [µatm]"))
 
         } else if (any(varname == c("CO2f", "NPP"))) { 
@@ -2647,9 +2690,21 @@ for (i in seq_len(nsettings)) {
             data_infos[[i]][[vi]]$label <- "direction of water vapor transport [°]"
 
         } else if (varname == "Ftemp") {
-            #data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
-            #data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6)
             # Ftemp = Qnet/(rho*cp) in °C m s-1; rho0 = 1027 kg m3; cp = 4000 m2 s-2 K-1
+            data_infos[[i]][[vi]]$label <- substitute(paste(#F[T], " to ocean ",
+                                                            "(", rho, "c"[p], ")"^-1, 
+                                                            " ", Q[net], 
+                                                            " [°C ", var1, " ", var2^-1, "]",
+                                                            #" " %*% " ", 10^-6
+                                                            ),
+                                                      list(var1="m", var2="s"
+                                                           #, base=base, power_plot=power_plot
+                                                           ))
+            if (nsettings == 2 && i == 2) {
+                message("special Ftemp names_legend")
+                names_legend <- c(eval(substitute(expression(paste("(", rho, "c"[p], ")"^-1, " ", Q[net])))),
+                                  "")
+            }
             if (F) { # in W m-2
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
                 data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1027*4000)
@@ -2660,42 +2715,28 @@ for (i in seq_len(nsettings)) {
                                                           list(var1="m"#, var2="s"
                                                                #, base=base, power_plot=power_plot
                                                                ))
-                if (nsettings == 2) {
+                if (nsettings == 2 && i == 2) {
                     message("special Ftemp names_legend")
                     names_legend <- c(eval(substitute(expression(paste(Q[net])))), "")
                 }
-            } else { # in °C m s-1
-                data_infos[[i]][[vi]]$label <- substitute(paste(#F[T], " to ocean ",
-                                                                "(", rho, "c"[p], ")"^-1, 
-                                                                " ", Q[net], 
-                                                                " [°C ", var1, " ", var2^-1, "]",
-                                                                #" " %*% " ", 10^-6
-                                                                ),
-                                                          list(var1="m", var2="s"
-                                                               #, base=base, power_plot=power_plot
-                                                               ))
-                if (nsettings == 2) {
-                    message("special Ftemp names_legend")
-                    names_legend <- c(eval(substitute(expression(paste("(", rho, "c"[p], ")"^-1, " ", Q[net])))),
-                                      "")
+            }
+            if (modes[i] == "fldint") {
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6)
+                if (T) {
+                    message("special Ftemp names_legend_samedims")
+                    #names_legend_samedims[i] <- eval(substitute(expression(paste(F[T]))))
+                    names_legend_samedims[i] <- eval(substitute(expression(paste(F))))
                 }
             }
 
         } else if (any(varname == c("divuvt", "divuvt_meanint"))) {
+            minus_symbol <- ""
             if (T) {
                 message("convert divergence to convergence --> *-1")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
                 data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
                 minus_symbol <- minus_symbol_dash
-            } else {
-                minus_symbol <- ""
-            }
-            if (nsettings == 2) {
-                message("special divuvt names_legend")
-                names_legend <- c(eval(substitute(expression(paste(minus_symbol,  integral(),
-                                                                   bold(nabla)[h] %.% bar(bold(u))["h"], bar(T),
-                                                                   " dz")),
-                                                  list(minus_symbol=minus_symbol))), "")
             }
             if (modes[i] == "timmean") {
                 if (grepl("int", depths[i])) {
@@ -2733,6 +2774,13 @@ for (i in seq_len(nsettings)) {
                                                                   list(var1="m", var2="s", minus_symbol=minus_symbol))#,
                                                                        #base=base, power_plot=3))
                     }
+                    if (nsettings == 2 && i == 2) {
+                        message("special divuvt names_legend")
+                        names_legend <- c(eval(substitute(expression(paste(minus_symbol,  integral(),
+                                                                           bold(nabla)[h] %.% bar(bold(u))["h"], bar(T),
+                                                                           " dz")),
+                                                          list(minus_symbol=minus_symbol))), "")
+                    }
                 } else { # not depth integrated
                     data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
                     data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 10^6)
@@ -2757,20 +2805,12 @@ for (i in seq_len(nsettings)) {
             } # which mode
         
         } else if (any(varname == c("divuvteddy", "divuvteddy_meanint"))) {
+            minus_symbol <- ""
             if (T) {
                 message("convert divergence to convergence --> *-1")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
                 data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
                 minus_symbol <- minus_symbol_dash
-            } else {
-                minus_symbol <- ""
-            }
-            if (nsettings == 2) {
-                message("special divuvteddy names_legend")
-                names_legend <- c(eval(substitute(expression(paste(minus_symbol,  integral(),
-                                                                   bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")),
-                                                                   " dz")),
-                                                  list(minus_symbol=minus_symbol))), "")
             }
             if (modes[i] == "timmean") {
                 if (grepl("int", depths[i])) {
@@ -2819,19 +2859,53 @@ for (i in seq_len(nsettings)) {
                                                               list(var1="°C", var2="s", minus_symbol=minus_symbol))#,
                                                                    #base=base, power_plot=power_plot))
                 }
+                if (nsettings == 2 && i == 2) {
+                    message("special divuvteddy names_legend")
+                    names_legend <- c(eval(substitute(expression(paste(minus_symbol,  integral(),
+                                                                       bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")),
+                                                                       " dz")),
+                                                      list(minus_symbol=minus_symbol))), "")
+                }
+            } else if (modes[i] == "fldint") {
+                if (grepl("int", depths[i])) { # if depth integrated
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 10^6)
+                    if (T) {
+                        message("special divuvteddy names_legend_samedims")
+                        names_legend_samedims[i] <- eval(substitute(expression(paste(minus_symbol,
+                                                                                     bold(nabla)[h] %.% bar(paste(bold(u)[h], "'T'")))),
+                                                                    list(minus_symbol=minus_symbol)))
+                    }
+                }
             } # which mode
 
         } else if (any(varname == c("divuvttot", "divuvttot_meanint", 
                                     "divuvttot_plus_divuvsgsttot", "divuvttot_plus_divuvsgsttot_meanint"))) {
+            minus_symbol <- ""
             if (T) {
                 message("convert divergence to convergence --> *-1")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
                 data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
                 minus_symbol <- minus_symbol_dash
-            } else {
-                minus_symbol <- ""
             }
-            if (modes[i] == "fldint") {
+            if (modes[i] == "timmean") {
+                if (grepl("int", depths[i])) {
+                    data_infos[[i]][[vi]]$label <- substitute(paste(minus_symbol,
+                                                                    integral(),
+                                                                    bold(nabla)[h] %.% bar(paste(bold(u)[h], "T")),
+                                                                    " dz [°C ", var1, " ", var2^-1,
+                                                                    "]"),
+                                                              list(var1="m", var2="s", minus_symbol=minus_symbol))#,
+                                                                   #base=base, power_plot=power_plot))
+                    if (nsettings == 2 && i == 2) {
+                        message("special divuvttot names_legend")
+                        names_legend <- c(eval(substitute(expression(paste(minus_symbol,  integral(),
+                                                                           bold(nabla)[h] %.% bar(paste(bold(u)[h], "T")),
+                                                                           " dz")),
+                                                          list(minus_symbol=minus_symbol))), "")
+                    }
+                }
+            } else if (modes[i] == "fldint") {
                 if (grepl("int", depths[i])) {
                     data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
                     data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 10^6)
@@ -2850,13 +2924,12 @@ for (i in seq_len(nsettings)) {
             }
 
         } else if (any(varname == c("divuvteddy_plus_divuvsgsttot", "divuvteddy_plus_divuvsgsttot_meanint"))) {
+            minus_symbol <- ""
             if (T) {
                 message("convert divergence to convergence --> *-1")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
                 data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
                 minus_symbol <- minus_symbol_dash
-            } else {
-                minus_symbol <- ""
             }
             if (modes[i] == "fldint") {
                 if (grepl("int", depths[i])) {
@@ -2874,13 +2947,12 @@ for (i in seq_len(nsettings)) {
             }
 
         } else if (any(varname == c("divuvsgsttot", "divuvsgsttot_meanint"))) {
+            minus_symbol <- ""
             if (T) {
                 message("convert divergence to convergence --> *-1")
                 data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
                 data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
                 minus_symbol <- minus_symbol_dash
-            } else {
-                minus_symbol <- ""
             }
             if (modes[i] == "fldint") {
                 if (grepl("int", depths[i])) {
@@ -2891,6 +2963,56 @@ for (i in seq_len(nsettings)) {
                         names_legend_samedims[i] <- eval(substitute(expression(paste(minus_symbol, 
                                                                                      bold(nabla)[h] %.% bar(paste(bold(u)["SGS,h"], "T")))),
                                                                     list(minus_symbol=minus_symbol))) # sgs total
+                    }
+                }
+            }
+        
+        } else if (varname == "divuvttot_divuvsgsttot_Ftemp") {
+            if (modes[i] == "fldint") {
+                if (grepl("int", depths[i])) {
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 10^6)
+                    if (T) {
+                        message("special divuvttot_divuvsgsttot_Ftemp names_legend_samedims")
+                        names_legend_samedims[i] <- eval(substitute(expression(paste("RHS"))))
+                    }
+                }
+            }
+        
+        } else if (varname == "divuvtrest") {
+            if (modes[i] == "fldint") {
+                if (grepl("int", depths[i])) {
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 10^6)
+                    if (T) {
+                        message("special divuvtrest names_legend_samedims")
+                        names_legend_samedims[i] <- eval(substitute(expression(paste("Rest"))))
+                    }
+                }
+            }
+
+        } else if (varname == "dttemp") {
+            # apply /dt
+            #dt_day <- difftime(dims[[i]]$time[2:length(dims[[i]]$time)], dims[[i]]$time[1:(length(dims[[i]]$time)-1)], units="day")
+            #if (!any(is.na(match(dt_day, c(28, 29, 30, 31))))) {
+            #    dt_fac <- 30.5*86400
+            #    message("dttemp apply monthly /dt fac 30.5*86400 = ", dt_fac) 
+            #    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+            #    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, dt_fac)
+            #}
+            if (modes[i] == "fldint") {
+                if (grepl("int", depths[i])) {
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 10^6)
+                    if (T) {
+                        message("special dttemp names_legend_samedims")
+                        names_legend_samedims[i] <- eval(substitute(expression(paste("LHS"))))
+                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(integral(),
+                                                                                        " T-budget",
+                                                                                        " dV [°C  ", varunit1^3, " ", varunit2^-1,
+                                                                                        "] " %*% " ", base^power)),
+                                                                       list(varunit1="m", varunit2="s",
+                                                                            base=10, power=6)))
                     }
                 }
             }
@@ -2969,18 +3091,59 @@ for (i in seq_len(nsettings)) {
                 }
             }
 
-        } else if (varname == "wbeddy") {
+        } else if (varname == "KmKe") {
             if (modes[i] == "timmean") {
                 if (grepl("int", depths[i])) {
                     #data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
                     #data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6)
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(integral(), " ", bar(paste("w'b'")),
+                    #data_infos[[i]][[vi]]$label <- "HRS 1e6"
+                    if (nsettings == 2) {
+                        message("special KmKe names_legend")
+                        names_legend <- c(eval(substitute(expression(paste(integral(), " KmKe dz")))), "")
+                    }
+                }
+            } else if (modes[i] == "fldmean") {
+                if (grepl("int", depths[i])) {
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6)
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(integral(), " ", K[m], "", K[e],
                                                                                     " dz [", var1^3, " ", var2^-3,
-                                                                                    "]",
-                                                                                    #"] " %*% "", 10^6
+                                                                                    "] " %*% "", 10^-6)),
+                                                                   list(var1="m", var2="s")))
+                }
+            } else if (modes[i] == "fldint") {
+                if (grepl("int", depths[i])) {
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                    if (F) {
+                        data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6)
+                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(integral(), " HRS ",
+                                                                                        " dV [", var1^5, " ", var2^-3,
+                                                                                        "] " %*% "", 10^6)),
+                                                                       list(var1="m", var2="s")))
+                    } else if (T) {
+                        data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e4)
+                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(integral(), " HRS ",
+                                                                                        " dV [", var1^5, " ", var2^-3,
+                                                                                        "] " %*% "", 10^4)),
+                                                                       list(var1="m", var2="s")))
+                    }
+                }
+            }
+        
+        } else if (varname == "wbeddy") {
+            if (any(modes[i] == c("timmean", "fldmean"))) {
+                if (grepl("int", depths[i])) {
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6)
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(integral(), " ", 
+                                                                                    #bar(paste("w'b'")),
+                                                                                    P[e], "", K[e],
+                                                                                    " dz [", var1^3, " ", var2^-3,
+                                                                                    #"]",
+                                                                                    "] " %*% "", 10^-6
                                                                                     )),
                                                                    list(var1="m", var2="s")))
-                    if (nsettings == 2) {
+                    if (F && nsettings == 2) {
                         message("special wbeddy names_legend")
                         #names_legend <- c(eval(substitute(expression(paste(integral(), " ", bar(paste("w'b'")), " dz")))), "")
                         names_legend <- c(eval(substitute(expression(paste(integral(), " ", P[e], "", K[e], " dz")))), "")
@@ -3079,11 +3242,19 @@ for (i in seq_len(nsettings)) {
             }
 
         } else if (varname == "eke") {
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("EKE [m"^2, " s"^-2, "]"))))
             if (modes[i] == "fldint") {
                 if (grepl("int", depths[i])) {
                     data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
                     data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e11)
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste(integral(), " EKE dV [m"^5, " s"^-2, "] " %*% "", 10^11))))
+                }
+            } else {
+                if (T) {
+                    message("eke m2 s-2 --> cm-2 s-2")
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e4)
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("EKE [cm"^2, " s"^-2, "]"))))
                 }
             }
 
@@ -3249,10 +3420,10 @@ for (vi in seq_along(varnames_unique)) {
 
 # apply offset or mult_fac
 message("\napply variable specific things ...")
-for (i in 1:nsettings) {
-    for (vi in 1:length(datas[[i]])) {
+for (i in seq_len(nsettings)) {
+    for (vi in seq_along(datas[[i]])) {
         if (!is.null(data_infos[[i]][[vi]]$offset)) {
-            message("`data_infos[[", i, "]][[", vi, "]]$offset` is not null")
+            message("setting ", i, "/", nsettings, ": ", prefixes[i], " ", names_short[i], ":")
             for (oi in seq_along(data_infos[[i]][[vi]]$offset$operator)) {
                 if (is.null(data_infos[[i]][[vi]]$offset$operator[oi]) ||
                     is.na(data_infos[[i]][[vi]]$offset$operator[oi])) {
@@ -3402,8 +3573,10 @@ if (add_smoothed &&
                 dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                 timedimind <- which(dims_of_var == "time")
                 if (length(timedimind) == 1) {
-                    # use number of time points of middle year (avoid possible incomplete start/ending of time series)
-                    npy <- length(dims[[i]]$timelt$year[which(dims[[i]]$timelt$year == dims[[i]]$timelt$year[length(dims[[i]]$time)/2])])
+                    # how many data points per year?
+                    midind <- length(dims[[i]]$time)/2 # middle of time series to avoid incomplete start/end of ts
+                    yearinds <- which(dims[[i]]$timelt$year == dims[[i]]$timelt$year[midind]) # all time points equal middle year
+                    npy <- length(yearinds) # how many time points eqial middle year
                     n_mas_fname[i] <- paste0("_ma", round(n_mas[i]/npy), "yr") # years
                     apply_dims <- 1:length(dim(datas[[i]][[vi]]))
                     message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi], 
@@ -3411,6 +3584,7 @@ if (add_smoothed &&
                             n_mas[i], "/", npy, " = ", n_mas[i]/npy, " year running mean")
                     if (length(dims_of_var) == 1) { # variable has only 1 dim and its time
                         datasma[[i]][[vi]] <- stats::filter(datas[[i]][[vi]], filter=rep(1/n_mas[i], t=n_mas[i]))
+                        # `forecast::ma(x, order=n_mas[i], centre=ifelse(n_mas[i] %% 2 == 0, F, T))` yields the same
                     } else { # variable has more than 1 dims
                         apply_dims <- apply_dims[-timedimind]
                         cmd <- paste0("datasma[[", i, "]][[", vi, "]] <- ",
@@ -3426,7 +3600,11 @@ if (add_smoothed &&
                 } # if variable has time dim or not
                 
                 attributes(datasma[[i]][[vi]]) <- attributes(datas[[i]][[vi]])
-            
+                if (length(timedimind) == 1) {
+                    attributes(datasma[[i]][[vi]])$n_ma <- n_mas[i]
+                    attributes(datasma[[i]][[vi]])$npy <- npy
+                }
+
             } # for vi nvars
         } # if n_mas != 1    
     } # for i nsettings
@@ -3576,6 +3754,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                         attributes(datasan[[i]][[vi]])$dim <- datasan_dims
                         attributes(datasan[[i]][[vi]])$dims <- attributes(datas[[i]][[vi]])$dims
                         attributes(datasan[[i]][[vi]])$dims[timedimind] <- "year"
+                        attr(datasan[[i]][[vi]], "npy") <- 1
                     } # if time series has only 1 year or more
 
                 } else { # variable has no time dim
@@ -3690,11 +3869,11 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
 # finished calculating temoral mean
 
 
-## interpolate data if any dims is irregular
+# interpolate data if any dim is irregular
 if (exists("datasltm")) {
     # todo
 } # if exsits("datalam")
-# finished interpolate if any dims is irregular
+# finished interpolate if any dim is irregular
 
 
 # bilinear interpolation of data for smoother plot using fields::interp.surface.grid
@@ -4403,10 +4582,9 @@ if ("samevars" %in% plot_groups && "samedims" %in% plot_groups) {
             }
         } # if varnames_out_samedims is missing or not
 
-        # why did i do this?
-        #if (add_legend && !exists("names_legend_samedims")) {
-        #    names_legend_samedims <- seq_along(z_samedims[[1]])
-        #}
+        if (add_legend && !exists("names_legend_samedims")) {
+            stop("provide `names_legend_samedims` of lenght ", length(z_samedims))
+        }
 
     } # if z_samevars == z_samedims or not
 } # if z_samevars AND z_samedims are defined initially
@@ -4490,8 +4668,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             dinds <- dinds_samedims[[ploti]]
             vinds <- vinds_samedims[[ploti]]
             data_info <- data_infos[[dinds_samedims[[ploti]][[1]]]][[vinds_samedims[[ploti]][[1]]]]
-            #names_legend_p <- names_legend_samedims[sapply(dinds, "[")]
-            names_legend_p <- names_legend[sapply(dinds, "[")]
+            names_legend_p <- names_legend_samedims[sapply(dinds, "[")]
+            #names_legend_p <- names_legend[sapply(dinds, "[")]
             if (!exists("cols_samedims")) {
                 cols_p <- cols[sapply(dinds, "[")]
             } else {
@@ -4502,6 +4680,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else {
                 ltys_p <- ltys_samedims[sapply(dinds, "[")]
             }
+            if (!exists("lwds_samedims")) {
+                lwds_p <- lwds[sapply(dinds, "[")]
+            } else {
+                lwds_p <- lwds_samedims[sapply(dinds, "[")]
+            }
             if (exists("datasma")) zma <- zma_samedims[[ploti]]
             if (exists("datasmon")) {
                 zname_mon <- names(zmon_samedims)[ploti]
@@ -4509,8 +4692,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dmon <- dmon_samedims[[ploti]]
                 dmoninds <- dmoninds_samedims[[ploti]]
                 vmoninds <- vmoninds_samedims[[ploti]]
-                #names_legend_pmon <- names_legend_samedims[sapply(dmoninds , "[")]
-                names_legend_pmon <- names_legend[sapply(dmoninds, "[")]
+                names_legend_pmon <- names_legend_samedims[sapply(dmoninds , "[")]
+                #names_legend_pmon <- names_legend[sapply(dmoninds, "[")]
             }
             if (exists("datasan")) {
                 zname_an <- names(zan_samedims)[ploti]
@@ -4518,8 +4701,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dan <- dan_samedims[[ploti]]
                 daninds <- daninds_samedims[[ploti]]
                 vaninds <- vaninds_samedims[[ploti]]
-                #names_legend_pan <- names_legend_samedims[sapply(daninds , "[")]
-                names_legend_pan <- names_legend[sapply(daninds, "[")]
+                names_legend_pan <- names_legend_samedims[sapply(daninds , "[")]
+                #names_legend_pan <- names_legend[sapply(daninds, "[")]
             }
             if (exists("datasltm")) {
                 zname_ltm <- names(zltm_samedims)[ploti]
@@ -4527,8 +4710,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dltm <- dltm_samedims[[ploti]]
                 dltminds <- dltminds_samedims[[ploti]]
                 vltminds <- vltminds_samedims[[ploti]]
-                #names_legend_pltm <- names_legend_samedims[sapply(dltminds , "[")]
-                names_legend_pltm <- names_legend[sapply(dltminds, "[")]
+                names_legend_pltm <- names_legend_samedims[sapply(dltminds , "[")]
+                #names_legend_pltm <- names_legend[sapply(dltminds, "[")]
             }
 
         } # which plot_group "samevars" "samedims"
@@ -4852,6 +5035,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             if (length(inds) == length(tlablt)) {
                                 stop("removing pretty labels < tlimlt[1] would remove all labels")
                             } else {
+                                message("remove ", length(inds), " tlab dates ", paste(tlablt[inds], collapse=", "))
                                 tlablt <- tlablt[-inds]
                             }
                         }
@@ -4882,6 +5066,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             if (length(inds) == length(tlablt)) {
                                 stop("removing pretty labels < tlimlt[1] would remove all labels")
                             } else {
+                                message("remove ", length(inds), " tlab dates ", paste(tlablt[inds], collapse=", "))
                                 tlablt <- tlablt[-inds]
                             }
                         }
@@ -6411,21 +6596,22 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         message("add legend to scatter plot ...")
                         le <- list()
                         if (F && suppressPackageStartupMessages(require(Hmisc))) {
+                            message("get legend position automatically with Hmisc::largest.empty() ... ", appendLF=F) 
                             tmp <- Hmisc::largest.empty(x=unlist(xp), y=unlist(yp), method="area")
                             #rect(tmp$rect$x[1], tmp$rect$y[1], tmp$rect$x[2], tmp$rect$y[3])
                             le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner if x- and y-coords are both increasing (default)
-                            message("automatically derived Hmisc::largest.empty legend position: ", le$pos[1], ", ", le$pos[2])
                         } else if (F && suppressPackageStartupMessages(require(adagio))) {
+                            message("get legend position automatically with adagio::maxempty() ... ", appendLF=F) 
                             x <- unlist(xp); y <- unlist(yp)
                             tmp <- adagio::maxempty(x=x, y=y, ax=par("usr")[1:2], ay=par("usr")[3:4])
                             #rect(tmp$rect[1], tmp$rect[2], tmp$rect[3], tmp$rect[4])
                             le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
-                            message("automatically derived adagio::maxempty legend position: ", le$pos[1], ", ", le$pos[2])
                         } else {
                             le$pos <- "topleft" 
                             #le$pos <- "topright" 
                             #le$pos <- "bottomright" 
                         }
+                        message(paste(le$pos, collapse=", "))
                         le$ncol <- 1
                         #le$ncol <- 2 
                         le$cex <- lecex
@@ -6622,7 +6808,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 axis.labels <- axis.addzlims <- 
                 y_at <- palname <- anom_colorbar <- center_include <- NULL
             # placeholder defaults for image.plot.nxm.r:
-            znames_method <- znames_pos <- legend.line <- colorbar.cex <- NULL
+            znames_method <- znames_pos <- znames_cex <- legend.line <- colorbar.cex <- NULL
             contour_only <- F
             if (any(zname == c("tos", "thetao"))) {
                 #anom_colorbar <- F
@@ -6720,13 +6906,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 axis.addzlims <- F
                 znames_method <- "legend"
                 colorbar.cex <- 1
-            } else if (any(zname == c("Ftemp", "divuvt", "divuvteddy"))) {
+            } else if (any(zname == c("Ftemp", "divuvt", "divuvteddy", "divuvttot"))) {
                 #zlevels <- c(zlim[1], seq(-500, 500, b=100), zlim[2])
                 method <- "exp"
+                palname <- "colormaps_jaisnd"
+                center_include <- T
                 power_min <- -5
                 power_lims <- c(-1, -1)
                 znames_method <- "legend"
                 znames_pos <- "topright"
+                znames_cex <- 1
                 legend.line <- 6
                 if (exists("ll_data")) {
                     if (T && any(sapply(ll_data, names) == "bathy")) {
@@ -6744,23 +6933,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 names(contour_list[["bathy"]])[i] <- names(ll_data)[[i]]
                             }
                         }
-                    }
-                    if (T && any(sapply(ll_data, names) == "mixlay")) {
-                        contour_list <- c(contour_list, list(mixlay=vector("list", l=length(z))))
-                        for (i in seq_along(ll_data)) {
-                            contour_list[["mixlay"]][i] <- NA # default
-                            if (any(names(ll_data[[i]]) == "mixlay")) {
-                                contour_list[["mixlay"]][[i]] <- list(x=ll_data[[i]][["mixlay"]]$lon,
-                                                                      y=ll_data[[i]][["mixlay"]]$lat,
-                                                                      z=ll_data[[i]][["mixlay"]]$mixlay,
-                                                                      contour_posneg_soliddashed=F,
-                                                                      contour_posneg_redblue=F,
-                                                                      levels=c(1500, 2000),
-                                                                      col="white", lwd=2,
-                                                                      contour_drawlabels=F)
-                                names(contour_list[["mixlay"]])[i] <- names(ll_data)[[i]]
-                            }
-                        }
+                        plotname_suffix <- paste0(plotname_suffix, "_bathy")
                     }
                     if (T && any(sapply(ll_data, names) == "u") && any(sapply(ll_data, names) == "v")) {
                         quiver_list <- c(quiver_list, list(hvel=vector("list", l=length(z))))
@@ -6774,6 +6947,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                    , quiver_thr=0.05 # m s-1
                                                                    , quiver_nxfac=0.15, quiver_nyfac=0.15
                                                                    , quiver_scale=5
+                                                                   , quiver_col=col2rgba("black", 0.5)
                                                                   )
                                 if (i == 1) {
                                     quiver_list[["hvel"]][[i]]$quiver_legend <- list(#x="x_at[2]", y="y_at[1]",
@@ -6784,6 +6958,123 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 names(quiver_list[["hvel"]])[i] <- names(ll_data)[[i]]
                             }
                         }
+                        plotname_suffix <- paste0(plotname_suffix, "_hvel")
+                    }
+                    if (F && any(sapply(ll_data, names) == "mixlay")) {
+                        contour_list <- c(contour_list, list(mixlay=vector("list", l=length(z))))
+                        for (i in seq_along(ll_data)) {
+                            contour_list[["mixlay"]][i] <- NA # default
+                            if (any(names(ll_data[[i]]) == "mixlay")) {
+                                contour_list[["mixlay"]][[i]] <- list(x=ll_data[[i]][["mixlay"]]$lon,
+                                                                      y=ll_data[[i]][["mixlay"]]$lat,
+                                                                      z=ll_data[[i]][["mixlay"]]$mixlay,
+                                                                      contour_posneg_soliddashed=F,
+                                                                      contour_posneg_redblue=F,
+                                                                      #levels=1000,
+                                                                      #levels=c(1500, 2000), # m
+                                                                      levels=2000,
+                                                                      #levels=1500,
+                                                                      #col="white", 
+                                                                      col=mycols(2)[2], # myred
+                                                                      lwd=2,
+                                                                      contour_drawlabels=F)
+                                names(contour_list[["mixlay"]])[i] <- names(ll_data)[[i]]
+                            }
+                        }
+                        plotname_suffix <- paste0(plotname_suffix, "_mixlay")
+                    }
+                    if (F && exists("en4")) {
+                        contour_list <- c(contour_list, list(en4_mld=vector("list", l=length(z))))
+                        for (i in seq_along(ll_data)) {
+                            contour_list[["en4_mld"]][[i]] <- list(x=en4[[1]]$dims$lon,
+                                                                   y=en4[[1]]$dims$lat,
+                                                                   z=en4[[1]]$data$mld,
+                                                                   contour_posneg_soliddashed=F,
+                                                                   contour_posneg_redblue=F,
+                                                                   #levels=1000,
+                                                                   levels=2000, # m
+                                                                   #col=mycols(2)[2], # myred
+                                                                   col="magenta",
+                                                                   lwd=2,
+                                                                   lty=2,
+                                                                   contour_drawlabels=F)
+                            names(contour_list[["en4_mld"]])[i] <- "en4_mld"
+                        }
+                        plotname_suffix <- paste0(plotname_suffix, "_en4_mld")
+                    }
+                    if (F && exists("holte_etal_2017")) {
+                        contour_list <- c(contour_list, list(holte_etal_2017_mld=vector("list", l=length(z))))
+                        for (i in seq_along(ll_data)) {
+                            contour_list[["holte_etal_2017_mld"]][[i]] <- list(x=holte_etal_2017[[1]]$dims$lon,
+                                                                               y=holte_etal_2017[[1]]$dims$lat,
+                                                                               z=drop(holte_etal_2017[[1]]$data$mld_dt_mean[3,,]), # march
+                                                                               contour_posneg_soliddashed=F,
+                                                                               contour_posneg_redblue=F,
+                                                                               levels=1000,
+                                                                               #levels=2000, # m
+                                                                               col=mycols(2)[2], # myred
+                                                                               lwd=2,
+                                                                               lty=3,
+                                                                               contour_drawlabels=F)
+                            names(contour_list[["holte_etal_2017_mld"]])[i] <- "holte_etal_2017_mld"
+                        }
+                        plotname_suffix <- paste0(plotname_suffix, "_holte_etal_2017_mld")
+                    }
+                    if (F && any(sapply(ll_data, names) == "eke")) {
+                        contour_list <- c(contour_list, list(eke=vector("list", l=length(z))))
+                        for (i in seq_along(ll_data)) {
+                            contour_list[["eke"]][i] <- NA # default
+                            if (any(names(ll_data[[i]]) == "eke")) {
+                                contour_list[["eke"]][[i]] <- list(x=ll_data[[i]][["eke"]]$lon,
+                                                                   y=ll_data[[i]][["eke"]]$lat,
+                                                                   z=ll_data[[i]][["eke"]]$eke,
+                                                                   contour_posneg_soliddashed=F,
+                                                                   contour_posneg_redblue=F,
+                                                                   # 0m:
+                                                                   #levels=0.01, # m2 s-2
+                                                                   #levels=0.015, # m2 s-2
+                                                                   #levels=0.003, # m2 s-2
+                                                                   #levels=100, # cm2 s-2
+                                                                   #levels=150, # cm2 s-2
+                                                                   levels=mean(ll_data[[i]][["eke"]]$eke, na.rm=T) + 2*sd(ll_data[[i]][["eke"]]$eke, na.rm=T),
+                                                                   #levels=123.5029, # cm2 s-2; mean+2sd Low01 jan-dec lsea
+                                                                   #levels=256.5161, # cm2 s-2; mean+2sd LSea5 jan-dec lsea
+                                                                   # int:
+                                                                   #levels=c(5, 20), # m3 s-2
+                                                                   #levels=5,
+                                                                   #col="darkgray", 
+                                                                   #col="white",
+                                                                   col=mycols(3)[3], # myblue
+                                                                   lwd=2, 
+                                                                   #lty=c(1, 2),
+                                                                   lty=1,
+                                                                   contour_drawlabels=F)
+                                names(contour_list[["eke"]])[i] <- names(ll_data)[[i]]
+                            }
+                        }
+                        plotname_suffix <- paste0(plotname_suffix, "_eke")
+                    }
+                    if (F && exists("aviso")) {
+                        contour_list <- c(contour_list, list(aviso_eke=vector("list", l=length(z))))
+                        for (i in seq_along(ll_data)) {
+                            contour_list[["aviso_eke"]][[i]] <- list(x=aviso[[1]]$dims$lon,
+                                                                     y=aviso[[1]]$dims$lat,
+                                                                     z=aviso[[1]]$data$eke_ltm,
+                                                                     contour_posneg_soliddashed=F,
+                                                                     contour_posneg_redblue=F,
+                                                                     # 0m:
+                                                                     #levels=0.005, # m2 s-2
+                                                                     #levels=50, # cm2 s-2
+                                                                     levels=mean(aviso[[1]]$data$eke_ltm, na.rm=T) + 2*sd(aviso[[1]]$data$eke_ltm, na.rm=T),
+                                                                     #levels=38.8666, # cm2 s-2; mean+2sd aviso jan-dec lsea
+                                                                     #col=mycols(3)[3], # myblue
+                                                                     col="blue",
+                                                                     lwd=2, 
+                                                                     lty=2,
+                                                                     contour_drawlabels=F)
+                            names(contour_list[["aviso_eke"]])[i] <- "aviso_eke"
+                        }
+                        plotname_suffix <- paste0(plotname_suffix, "_aviso_eke")
                     }
                 } # if exists("ll_data")
                 if (T) {
@@ -6803,10 +7094,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
             } else if (any(zname == c("FeKe", "HRS", "wbeddy"))) {
                 method <- "exp"
+                palname <- "colormaps_jaisnd"
+                center_include <- T
                 power_min <- -6
                 power_lims <- c(-3, -3)
                 znames_method <- "legend"
                 znames_pos <- "topright"
+                znames_cex <- 1
+                legend.line <- 6
                 if (exists("ll_data")) {
                     if (T && any(sapply(ll_data, names) == "bathy")) {
                         contour_list <- c(contour_list, list(bathy=vector("list", l=length(z))))
@@ -6823,6 +7118,32 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 names(contour_list[["bathy"]])[i] <- names(ll_data)[[i]]
                             }
                         }
+                        plotname_suffix <- paste0(plotname_suffix, "_bathy")
+                    }
+                    if (T && any(sapply(ll_data, names) == "u") && any(sapply(ll_data, names) == "v")) {
+                        quiver_list <- c(quiver_list, list(hvel=vector("list", l=length(z))))
+                        for (i in seq_along(ll_data)) {
+                            quiver_list[["hvel"]][i] <- NA # default
+                            if (any(names(ll_data[[i]]) == "u") && any(names(ll_data[[i]]) == "v")) {
+                                quiver_list[["hvel"]][[i]] <- list(x=ll_data[[i]][["u"]]$lon,
+                                                                   y=ll_data[[i]][["u"]]$lat,
+                                                                   u=ll_data[[i]][["u"]]$u,
+                                                                   v=ll_data[[i]][["v"]]$v
+                                                                   , quiver_thr=0.05 # m s-1
+                                                                   , quiver_nxfac=0.15, quiver_nyfac=0.15
+                                                                   , quiver_scale=5
+                                                                   , quiver_col=col2rgba("black", 0.5)
+                                                                  )
+                                if (i == 1) {
+                                    quiver_list[["hvel"]][[i]]$quiver_legend <- list(#x="x_at[2]", y="y_at[1]",
+                                                                                     x=-46, y=61.5,
+                                                                                     xvalue=0.5,
+                                                                                     label=expression(paste("50 cm s"^"-1")))
+                                }
+                                names(quiver_list[["hvel"]])[i] <- names(ll_data)[[i]]
+                            }
+                        }
+                        plotname_suffix <- paste0(plotname_suffix, "_hvel")
                     }
                     if (F && any(sapply(ll_data, names) == "mixlay")) {
                         contour_list <- c(contour_list, list(mixlay=vector("list", l=length(z))))
@@ -6834,14 +7155,39 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                       z=ll_data[[i]][["mixlay"]]$mixlay,
                                                                       contour_posneg_soliddashed=F,
                                                                       contour_posneg_redblue=F,
-                                                                      levels=c(1500, 2000),
-                                                                      col="white", lwd=2,
+                                                                      #levels=1000,
+                                                                      #levels=c(1500, 2000), # m
+                                                                      levels=2000,
+                                                                      #levels=1500,
+                                                                      #col="white", 
+                                                                      col=mycols(2)[2], # myred
+                                                                      lwd=2,
                                                                       contour_drawlabels=F)
                                 names(contour_list[["mixlay"]])[i] <- names(ll_data)[[i]]
                             }
                         }
+                        plotname_suffix <- paste0(plotname_suffix, "_mixlay")
                     }
-                    if (T && any(sapply(ll_data, names) == "eke")) {
+                    if (F && exists("en4")) {
+                        contour_list <- c(contour_list, list(en4_mld=vector("list", l=length(z))))
+                        for (i in seq_along(ll_data)) {
+                            contour_list[["en4_mld"]][[i]] <- list(x=en4[[1]]$dims$lon,
+                                                                   y=en4[[1]]$dims$lat,
+                                                                   z=en4[[1]]$data$mld,
+                                                                   contour_posneg_soliddashed=F,
+                                                                   contour_posneg_redblue=F,
+                                                                   #levels=1000,
+                                                                   levels=2000, # m
+                                                                   #col=mycols(2)[2], # myred
+                                                                   col="magenta",
+                                                                   lwd=2,
+                                                                   lty=2,
+                                                                   contour_drawlabels=F)
+                            names(contour_list[["en4_mld"]])[i] <- "en4_mld"
+                        }
+                        plotname_suffix <- paste0(plotname_suffix, "_en4_mld")
+                    }
+                    if (F && any(sapply(ll_data, names) == "eke")) {
                         contour_list <- c(contour_list, list(eke=vector("list", l=length(z))))
                         for (i in seq_along(ll_data)) {
                             contour_list[["eke"]][i] <- NA # default
@@ -6851,14 +7197,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                    z=ll_data[[i]][["eke"]]$eke,
                                                                    contour_posneg_soliddashed=F,
                                                                    contour_posneg_redblue=F,
-                                                                   levels=c(5, 20),
+                                                                   #levels=20, # m3 s-2
+                                                                   levels=c(5, 20), # m3 s-2
                                                                    #col="darkgray", 
-                                                                   col="white",
-                                                                   lwd=2, lty=c(1, 2),
+                                                                   #col="white",
+                                                                   col=mycols(3)[3], # myblue
+                                                                   lwd=2, 
+                                                                   #lty=1,
+                                                                   lty=c(1, 2),
                                                                    contour_drawlabels=F)
                                 names(contour_list[["eke"]])[i] <- names(ll_data)[[i]]
                             }
                         }
+                        plotname_suffix <- paste0(plotname_suffix, "_eke")
                     }
                     if (F && any(sapply(ll_data, names) == "sic")) {
                         contour_list <- c(contour_list, list(sic=vector("list", l=length(z))))
@@ -7077,7 +7428,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             # add mpiom land sea mask contours
             mpiom_lsm_segments <- ls(pattern=glob2rx("mpiom_*_land_sea_mask_segments_lon*"))
-            if (T && length(mpiom_lsm_segments) > 0) {
+            if (F && length(mpiom_lsm_segments) > 0) {
                 segment_list <- vector("list", l=length(z))
                 inds <- seq_along(z) # change here which settings to include
                 message("add mpiom land sea mask segments to sub-plots ", 
@@ -7116,7 +7467,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 n <- length(z); m <- 1
                 y_at <- pretty(d$lat[[1]], n=5)
             }
-            if (F && length(z) == 2) {
+            if (T && length(z) == 2) {
                 message("special 2 cols instead of 2 rows (default)")
                 n <- 1; m <- 2
             }
@@ -7174,8 +7525,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
             asp <- sapply(lapply(d$lon, range), diff)/sapply(lapply(d$lat, range), diff) # dlon/dlat per setting
             asp <- max(asp) # one asp for potentially differnet dlon/dlat per setting
             asp <- min(asp, aspect_ratio_thr) # not too high aspect ratio for map plot
-            #pp <- plot_sizes(width_in=nm$ncol*p$map_width_in, asp=asp, verbose=T)
-            pp <- plot_sizes(width_in=nm$ncol*p$map_width_in, height_in=nm$nrow*p$map_width_in/asp, verbose=T)
+            pp <- plot_sizes(width_in=nm$ncol*p$map_width_in, asp=asp, verbose=T)
+            #pp <- plot_sizes(width_in=nm$ncol*p$map_width_in, height_in=nm$nrow*p$map_width_in/asp, verbose=T)
             if (p$plot_type == "png") {
                 png(plotname, width=pp$png_width_px, height=pp$png_height_px,
                     pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
@@ -7196,7 +7547,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            xlab="Longitude [°]", ylab="Latitude [°]", 
                            zlab=data_info$label, 
                            znames_method=znames_method, znames_pos=znames_pos,
-                           znames_labels=names_legend_p, 
+                           znames_cex=znames_cex, znames_labels=names_legend_p, 
                            #useRaster=F,
                            add_contour=F,
                            polygon_list=polygon_list,
@@ -8082,7 +8433,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     ylim_right <- range(ylim_right, nsidc_siareas_annual$siareas, na.rm=T)
                 } else if (T && varname == "divuvt_budget") {
                     message("special divuvt_budget MLD ylims")
-                    # March MLD low01_s52: c(1.68917355509734, 3.14356900893414)  km
+                    # March MLD low01_s52: c(1.68917355509734, 3.14356900893414) km
                     # March MLD lsea5_s5: c(0.131685243362329, 3.31555376653867) km
                     ylim_right <- c(0.131685243362329, 3.31555376653867)
                 }
@@ -8635,9 +8986,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } # special PLOT ylim
             if (T && varname == "divuvt_budget") { 
                 message("special divuvt_budget ylim ...")
+                # grl paper Fig. 2 b-c
                 # low01: c(-1.26363203719386, 0.371054098020657)
                 # lsea5: c(-1.28651984464644, 1.04161513583757)
-                ylim <- c(-1.28651984464644, 1.04161513583757)
+                #ylim <- c(-1.28651984464644, 1.04161513583757) 
+                # grl paper Fig. S3 a-b
+                # low01: c(-4.66742440959941, 3.586661964737)
+                # lsea5: c(-4.65197020531014, 3.9722749057429)
+                #ylim <- c(-4.66742440959941, 3.9722749057429)
+                ylim <- c(-4.66742440959941, 4.66742440959941)
             }
             if (F && varname == "FeKe") {
                 # low01: 1.36183324948389, 2.14823189882532 (ts); 0.637694378449628, 2.62736108678509 (mon)
@@ -8662,7 +9019,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 plotprefixp <- plotprefix
             } else { # default
                 plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
-                if (plot_groups[plot_groupi] == "samedims") {
+                if (F && plot_groups[plot_groupi] == "samedims") { # use only varnames_out_samedims below
                     plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
                 }
                 plotprefixp <- paste0(plotprefixp,
@@ -8674,12 +9031,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       collapse="_vs_")
             }
             plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
-                               varname, "_",
+                               varname, "_", # individual samevars or common samedims varname
                                plotprefixp, 
                                "_", plot_groups[plot_groupi], # samevars or samedims
                                data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
-                               plotname_suffix)
-            plotname <- paste0(plotname, "_ts.", p$plot_type)
+                               plotname_suffix,
+                               "_ts.", p$plot_type)
             if (nchar(plotname) > nchar_max_foutname) {
                 stop("plotname too long. define `plotprefix` in plot namelist")
             }
@@ -8798,9 +9155,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
             #mtext(side=1, tunit, line=2, cex=0.9)
 
             # add variable label on y-axis
-            #label_line <- 2.5
+            label_line <- 2.5
             #label_line <- 3
-            label_line <- 3.4
+            #label_line <- 3.4
             #label_line <- 3.5
             #label_line <- 4
             #label_line <- 4.5
@@ -8964,7 +9321,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         lm_nyear <- length(add_linear_trend_froms[i]:add_linear_trend_tos[i]) # not accurate
                         message("\nsetting ", i, " ", names_short_p[i], " from ", 
                                 add_linear_trend_froms[i], " to ", add_linear_trend_tos[i],
-                                " (", lm_nyear, " nyears)")
+                                " (", lm_nyear, " years)")
                         inds <- which(dims[[i]]$timelt$year+1900 >= add_linear_trend_froms[i] &
                                       dims[[i]]$timelt$year+1900 <= add_linear_trend_tos[i])
                         if (length(inds) == 0) {
@@ -8990,24 +9347,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 if (lm_nyear >= 100) { # show trend per century
                                     if (lm_nyear >= 1000) { # show trend per millenium
                                         lm_trend_pretty <- lm_trend_tot * 1000 / lm_dt_tot_a
-                                        lm_dt_pretty <- 1000
-                                        attributes(lm_dt_pretty)$units <- "a"
+                                        lm_dt_pretty <- 1000; attributes(lm_dt_pretty)$units <- "a" # --> /1000a
                                     } else { # < 1000 a
                                         lm_trend_pretty <- lm_trend_tot * 100 / lm_dt_tot_a
-                                        lm_dt_pretty <- 100
-                                        attributes(lm_dt_pretty)$units <- "a"
+                                        lm_dt_pretty <- 100; attributes(lm_dt_pretty)$units <- "a" # --> /100a
                                     }
                                 } else { # < 100 a
                                     lm_trend_pretty <- lm_trend_tot * 10 / lm_dt_tot_a
-                                    lm_dt_pretty <- 10
-                                    attributes(lm_dt_pretty)$units <- "a"
+                                    lm_dt_pretty <- 10; attributes(lm_dt_pretty)$units <- "a" # --> /10a
                                 }
                             } else { # < 10 a
-                                lm_trend_pretty <- lm_trend_tot * 10 / lm_dt_tot_a
-                                lm_dt_pretty <- 10
-                                attributes(lm_dt_pretty)$units <- "a"
+                                lm_trend_pretty <- lm_trend_tot * 1 / lm_dt_tot_a
+                                lm_dt_pretty <- ""; attributes(lm_dt_pretty)$units <- "a" # --> /a
                             }
-                        } else { # use trend per day
+                        } else if (lm_dt_tot_day > 31) { # show trend per month
+                            lm_from_to_pretty <- unique(dims[[i]]$timelt[range(inds)]$year+1900)
+                            lm_dt_tot_pretty <- diff(dims[[i]]$timelt[range(inds)]$mon) + 1
+                            attributes(lm_dt_tot_pretty)$units <- "mon"
+                            lm_trend_pretty <- lm_trend_tot * 30.5 / lm_dt_tot_day
+                            lm_dt_pretty <- ""; attributes(lm_dt_pretty)$units <- "mon" # --> /mon
+                        } else if (lm_dt_tot_day <= 31) { # show trend per day
                             stop("not yet")
                         }
                         # calc time when trend line reaches zero (if possible) 
@@ -9023,11 +9382,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
                         # add trend results to legend label
                         if (F) { # add trend only to label
-                            lm_labels[i] <- eval(substitute(expression(paste(lab, " (tr", ""[lm_from_to_pretty], "=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
+                            lm_labels[i] <- eval(substitute(expression(paste(lab, " (tr", ""[lm_from_to_pretty], "=", sign, trend, " ", unit, "/", lm_dt_unit, ")")),
                                                             list(lab=names_legend_p[i],
                                                                  lm_from_to_pretty=lm_from_to_pretty,
                                                                  sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
-                                                                 , trend=round(lm_trend_pretty, 4), 
+                                                                 , trend=round(lm_trend_pretty, 3), 
                                                                  #, trend=round(lm_trend_tot, 4), 
                                                                  unit=data_info$units
                                                                  , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units)
@@ -9035,16 +9394,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                  )
                                                             )
                                                 )
-                        } else if (T) { # add mean and trend to label
+                        } else if (F) { # add mean and trend to label
                             if (!is.na(lm_zero_time)) { # add time when trend crosses zero
                                 lm_labels[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
-                                                                                 "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, " " 
+                                                                                 "; tr=", sign, trend, " ", unit, "/", lm_dt_unit, " " 
                                                                                  %->% " 0 in ", lm_zero_dt, ")")),
                                                                 list(lab=names_legend_p[i],
                                                                      lm_from_to_pretty=lm_from_to_pretty,
                                                                      muval=round(mean(z[[i]][inds], na.rm=T), 2),
                                                                      sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
-                                                                     , trend=round(lm_trend_pretty, 4), 
+                                                                     , trend=round(lm_trend_pretty, 3), 
                                                                      #, trend=round(lm_trend_tot, 4),
                                                                      unit=data_info$units
                                                                      , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units),
@@ -9055,12 +9414,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                     )
                             } else {
                                 lm_labels[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
-                                                                                 "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
+                                                                                 "; tr=", sign, trend, " ", unit, "/", lm_dt_unit, ")")),
                                                                 list(lab=names_legend_p[i],
                                                                      lm_from_to_pretty=lm_from_to_pretty,
                                                                      muval=round(mean(z[[i]][inds], na.rm=T), 2),
                                                                      sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
-                                                                     , trend=round(lm_trend_pretty, 4), 
+                                                                     , trend=round(lm_trend_pretty, 3),
                                                                      #, trend=round(lm_trend_tot, 4),
                                                                      unit=data_info$units
                                                                      , lm_dt_unit=paste0(lm_dt_pretty, attributes(lm_dt_pretty)$units)
@@ -9077,19 +9436,25 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 "--> trend per day = ", lm_trend_day, " ", data_info$units, "\n", 
                                 "--> last trend value = ", lm$fitted.values[length(lm$fitted.values)], " ", data_info$units)
                         if (!is.na(lm_zero_time)) {        
-                            message("--> linear trendline crosses zero ", data_info$units, " at time ", lm_zero_time, ", i.e. in ", 
+                            message("--> linear trendline crosses zero ", data_info$units, " at ", lm_zero_time, ", i.e. in ", 
                                     round(lm_zero_dt_a, 3), " years ~ ", round(lm_zero_dt_day, 3), " days")
                         }
                         # plot regression line within data limits only
-                        if (F) {
+                        if (T) {
                             message("draw linear regression line within regression limits only ...")
                             lines(d$time[[i]][inds], lm$fitted.values, 
-                                  col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                  col=cols_p[i], lwd=lwds_p[i], 
+                                  #lty=ltys_p[i]
+                                  lty=ltys_p[i] + 1
+                                  )
                         # or plot line through whole plot with regression coefficients
-                        } else if (T) {
+                        } else if (F) {
                             message("draw linear regression line through whole plot ...")
                             abline(a=lm$coefficients[1], b=lm$coefficients[2],
-                                   col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                   col=cols_p[i], lwd=lwds_p[i], 
+                                   #lty=ltys_p[i]
+                                   lty=ltys_p[i] + 1
+                                   )
                         }
                     }
                 }
@@ -9132,27 +9497,28 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 le <- list()
                 if (!exists("lepos")) {
                     if (F && suppressPackageStartupMessages(require(Hmisc))) { # adagio::maxempty works better
+                        message("get legend position automatically with Hmisc::largest.empty() ... ", appendLF=F) 
                         Hmisc_z <- NULL
                         if (add_unsmoothed) Hmisc_z <- c(Hmisc_z, unlist(z))
                         if (add_smoothed) Hmisc_z <- c(Hmisc_z, unlist(zma))
                         tmp <- Hmisc::largest.empty(x=unlist(d$time), y=unlist(Hmisc_z), method="area")
                         le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner of Hmisc result
-                        message("automatically derived Hmisc::largest.empty legend position: ", appendLF=F) 
                     } else if (F && suppressPackageStartupMessages(require(adagio))) { # works better than Hmisc::largest.empty
+                        message("get legend position automatically with adagio::maxempty() ... ", appendLF=F) 
                         adagio_z <- NULL
                         if (add_unsmoothed) adagio_z <- c(adagio_z, unlist(z))
                         if (add_smoothed) adagio_z <- c(adagio_z, unlist(zma))
-                        tmp <- adagio::maxempty(x=unlist(d$time), y=adagio_z, 
+                        okinds <- which(!is.na(adagio_z))
+                        tmp <- adagio::maxempty(x=unlist(d$time)[okinds], y=adagio_z[okinds], 
                                                 ax=par("usr")[1:2], ay=par("usr")[3:4])
                         #rect(tmp$rect[1], tmp$rect[2], tmp$rect[3], tmp$rect[4])
                         le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
-                        message("automatically derived adagio::maxempty legend position: ", appendLF=F) 
                     } else {
                         message("manually set legend position: ", appendLF=F)
                         #le$pos <- "bottom" 
-                        le$pos <- "topleft" 
+                        #le$pos <- "topleft" 
                         #le$pos <- "left"
-                        #le$pos <- "bottomleft"
+                        le$pos <- "bottomleft"
                         #le$pos <- "topright"
                         #le$pos <- "bottomright" 
                         #le$pos <- c(tatn[1], yat[length(yat)-1])
@@ -9170,13 +9536,17 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 le$ncol <- 1
                 #le$ncol <- 2
                 #le$ncol <- length(z)
-                if (le$ncol > length(z)) stop("defined more legend columns than data") 
                 le$cex <- lecex
                 #le$cex <- 0.85
                 #le$cex <- 0.7
-                #le$cex <- 0.75
                 #le$cex <- 0.66
                 #le$cex <- 0.5
+                if (varname == "divuvt_budget") {
+                    message("divuvt_budget special ncol")
+                    le$ncol <- 4
+                    le$cex <- 0.75
+                }
+                if (le$ncol > length(z)) stop("defined more legend columns than data") 
                 names_legend_p_w_lm <- names_legend_p
                 if (typeof(lm_labels) == "expression") {
                     names_legend_p_w_lm <- lm_labels # use lm result
@@ -9694,13 +10064,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 le <- list()
                 if (!exists("lepos")) {
                     if (F && suppressPackageStartupMessages(require(Hmisc))) { # adagio::maxempty works better
+                        message("get legend position automatically with Hmisc::largest.empty() ... ", appendLF=F) 
                         Hmisc_z <- NULL
                         if (add_unsmoothed) Hmisc_z <- c(Hmisc_z, unlist(z))
                         if (add_smoothed) Hmisc_z <- c(Hmisc_z, unlist(zma))
                         tmp <- Hmisc::largest.empty(x=unlist(d$lat), y=unlist(Hmisc_z), method="area")
                         le$pos <- c(x=min(tmp$rect$x), y=max(tmp$rect$y)) # topleft corner of Hmisc result
-                        message("automatically derived Hmisc::largest.empty legend position: ", appendLF=F) 
                     } else if (F && suppressPackageStartupMessages(require(adagio))) { # works better than Hmisc::largest.empty
+                        message("get legend position automatically with adagio::maxempty() ... ", appendLF=F) 
                         adagio_z <- NULL
                         if (add_unsmoothed) adagio_z <- c(adagio_z, unlist(z))
                         if (add_smoothed) adagio_z <- c(adagio_z, unlist(zma))
@@ -9708,7 +10079,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                 ax=par("usr")[1:2], ay=par("usr")[3:4])
                         #rect(tmp$rect[1], tmp$rect[2], tmp$rect[3], tmp$rect[4])
                         le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
-                        message("automatically derived adagio::maxempty legend position: ", appendLF=F) 
                     } else {
                         message("manually set legend position: ", appendLF=F)
                         le$pos <- "bottom" 
@@ -10199,7 +10569,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     plotprefixp <- plotprefix
                 } else { # default
                     plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
-                    if (plot_groups[plot_groupi] == "samedims") {
+                    if (F && plot_groups[plot_groupi] == "samedims") {
                         plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
                     }
                     plotprefixp <- paste0(plotprefixp,
@@ -10214,8 +10584,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    plotprefixp, 
                                    "_", plot_groups[plot_groupi], # samevars or samedims
                                    data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
-                                   plotname_suffix)
-                plotname <- paste0(plotname, "_mon.", p$plot_type)
+                                   plotname_suffix,
+                                   "_mon.", p$plot_type)
                 if (nchar(plotname) > nchar_max_foutname) {
                     stop("plotname too long. define `plotprefix` in plot namelist")
                 }
@@ -10224,6 +10594,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # get plot sizes
                 message("open plot ", plotname, " ...")
                 pp <- plot_sizes(width_in=p$ts_mon_width_in, asp=p$ts_mon_asp, verbose=T)
+                if (T && pp$asp == 1) {
+                    message("todo: increase pointsize if asp = 1")
+                    pp$png_pointsize <- pp$pdf_pointsize <- 14
+                }
                 if (p$plot_type == "png") {
                     png(plotname, width=pp$png_width_px, height=pp$png_height_px,
                         pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
@@ -10246,7 +10620,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                      xaxt="n", yaxt="n",
                      xlab=NA, ylab=NA)
                 axis(1, at=monat, labels=NA) # line
-                axis(1, at=monat, labels=monlab, line=-0.5, lwd=0, cex.axis=0.64) # labels with reduced distance to ticks
+                axis(1, at=monat, labels=monlab, line=-0.5, lwd=0, cex.axis=1) # labels with reduced distance to ticks
                 axis(2, at=yat_mon, labels=ylab_mon, las=2)
             
                 # add time label on x-axis
@@ -10359,7 +10733,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 } # if add_legend
                 
-                if (T) {
+                if (F) {
                     message("\nadd special stuff to datas vs months")
                     legend("bottomleft", 
                            #"topright",
@@ -10614,7 +10988,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     plotprefixp <- plotprefix
                 } else { # default
                     plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
-                    if (plot_groups[plot_groupi] == "samedims") {
+                    if (F && plot_groups[plot_groupi] == "samedims") {
                         plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
                     }
                     plotprefixp <- paste0(plotprefixp,
@@ -10629,8 +11003,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    plotprefixp, 
                                    "_", plot_groups[plot_groupi], # samevars or samedims
                                    data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
-                                   plotname_suffix)
-                plotname <- paste0(plotname, "_annual.", p$plot_type)
+                                   plotname_suffix,
+                                   "_annual.", p$plot_type)
                 if (nchar(plotname) > nchar_max_foutname) {
                     stop("plotname too long. define `plotprefix` in plot namelist")
                 }
@@ -10737,25 +11111,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                     if (lm_nyear >= 100) { # show trend per century
                                         if (lm_nyear >= 1000) { # show trend per millenium
                                             lm_trend_pretty <- lm_trend_tot * 1000 / lm_dt_tot_a
-                                            lm_dt_pretty <- 1000
-                                            attributes(lm_dt_pretty)$units <- "a"
+                                            lm_dt_pretty <- 1000; attributes(lm_dt_pretty)$units <- "a" # --> /1000a
                                         } else { # < 1000 a
                                             lm_trend_pretty <- lm_trend_tot * 100 / lm_dt_tot_a
-                                            lm_dt_pretty <- 100
-                                            attributes(lm_dt_pretty)$units <- "a"
+                                            lm_dt_pretty <- 100; attributes(lm_dt_pretty)$units <- "a" # --> /100a
                                         }
                                     } else { # < 100 a
                                         lm_trend_pretty <- lm_trend_tot * 10 / lm_dt_tot_a
-                                        lm_dt_pretty <- 10
-                                        attributes(lm_dt_pretty)$units <- "a"
+                                        lm_dt_pretty <- 10; attributes(lm_dt_pretty)$units <- "a" # --> /10a
                                     }
                                 } else { # < 10 a
-                                    lm_trend_pretty <- lm_trend_tot * 10 / lm_dt_tot_a
-                                    lm_dt_pretty <- 10
-                                    attributes(lm_dt_pretty)$units <- "a"
+                                    lm_trend_pretty <- lm_trend_tot * 1 / lm_dt_tot_a
+                                    lm_dt_pretty <- ""; attributes(lm_dt_pretty)$units <- "a" # --> /a
                                 }
                             } else { # use trend per day
-                                stop("not yet")
+                                stop("this should not happen for annual data")
                             }
                             # calc time when trend line reaches zero (if possible) 
                             lm_zero_year <- NA
@@ -10769,7 +11139,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             }
                             # add trend results to legend label
                             if (F) { # add trend only to label
-                                lm_labels_an[i] <- eval(substitute(expression(paste(lab, " (tr", ""[lm_from_to_pretty], "=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
+                                lm_labels_an[i] <- eval(substitute(expression(paste(lab, " (tr", ""[lm_from_to_pretty], "=", sign, trend, " ", unit, "/", lm_dt_unit, ")")),
                                                                    list(lab=names_legend_pan[i],
                                                                         lm_from_to_pretty=lm_from_to_pretty,
                                                                         sign=ifelse(lm_summary$coefficients[2,"Estimate"] > 0, "+", "")
@@ -10784,7 +11154,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             } else if (T) { # add mean and trend to label
                                 if (!is.na(lm_zero_year)) { # add time when trend crosses zero
                                     lm_labels_an[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
-                                                                                        "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, " " 
+                                                                                        "; tr=", sign, trend, " ", unit, "/", lm_dt_unit, " " 
                                                                                         %->% " 0 in ", lm_zero_dt, ")")),
                                                                        list(lab=names_legend_pan[i],
                                                                             lm_from_to_pretty=lm_from_to_pretty,
@@ -10801,7 +11171,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                            )
                                 } else {
                                     lm_labels_an[i] <- eval(substitute(expression(paste(lab, " (", mu[lm_from_to_pretty], "=", muval, 
-                                                                                        "; tr=", sign, trend, " ", unit, " / ", lm_dt_unit, ")")),
+                                                                                        "; tr=", sign, trend, " ", unit, "/", lm_dt_unit, ")")),
                                                                        list(lab=names_legend_pan[i],
                                                                             lm_from_to_pretty=lm_from_to_pretty,
                                                                             muval=round(mean(zan[[i]][inds], na.rm=T), 2),
@@ -10830,12 +11200,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             if (F) {
                                 message("draw linear regression line within regression limits only ...")
                                 lines(d$time[[i]][inds], lm$fitted.values, 
-                                      col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                      col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i]+1)
                             # or plot line through whole plot with regression coefficients
                             } else if (T) {
                                 message("draw linear regression line through whole plot ...")
                                 abline(a=lm$coefficients[1], b=lm$coefficients[2],
-                                       col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i])
+                                       col=cols_p[i], lwd=lwds_p[i], lty=ltys_p[i]+1)
                             }
                         }
                     }
@@ -11058,6 +11428,239 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         message("todo: sometimes pdf font embedding blurrs colors why?")
                     }
                 }
+
+                # redfit of annual data
+                if (plot_redfit) {
+                    message("\n`plot_redfit`=T --> calc and plot `dplR::redfit()` of annual data ...")
+                    library(dplR)
+                    redf <- vector("list", l=length(zan))
+                    for (i in seq_along(zan)) {
+                        if (F) { # use moving average data
+                            warning("using ma data for dplR::redfit() yields strange very low ci")
+                            if (!exists("zma")) {
+                                stop("not yet")
+                            } # if !exists("zma")
+                            x <- zma[[i]]
+                        } else if (T) { # use annual data
+                            x <- zan[[i]]
+                        }
+                        if (F) { # test example from redfit
+                            data(cana157)
+                            dan$year[[i]] <- time(cana157) 
+                            x <- cana157[,1]$TTRSTD
+                            attr(x, "npy") <- 1 # annual data
+                        }
+                        message("setting ", i, "/", length(zan), " ", names(zan)[i], ": time series of len ", 
+                                length(x), " with npy = ", attr(x, "npy"), " ...")
+                        #tmp <- base::tryCatch(redfit(rnorm(100)), error=function(e) e, warning=function(w) w)
+                        tmp <- base::tryCatch(redfit(x), error=function(e) e, warning=function(w) w)
+                        if (length(tmp) == 2 && # no success
+                            !grepl("NA values removed", tmp$message) &&
+                            !grepl("redfitGetrho returned rho", tmp$message) &&
+                            !grepl("rho estimation: <= 0", tmp$message)) { # add further warnings which are ok here if necessary
+                            message("redfit error: ", tmp$message, " --> skip")
+                            redf[[i]] <- NA
+                        } else { # success
+                            # acf of time series
+                            rhopre <- NULL # default
+                            if (length(tmp) == 2 && grepl("rho estimation: <= 0", tmp$message)) {
+                                # calc autocorrelation of x
+                                message("redfit() yields warning ", tmp$message, " --> calc acf of x with stats::acf(x) ...")
+                                acf <- stats::acf(x, plot=F)
+                                if (T) {
+                                    rhopre <- acf$acf[2] # acf1
+                                } else if (F) {
+                                    rhopre <- mean(acf$acf)
+                                }
+                            }
+                            redf[[i]] <- redfit(x, rhopre=rhopre)
+                            redf[[i]]$period <- 1/redf[[i]]$freq/attr(x, "npy")
+                            message("ok (acf = ", round(redf[[i]]$rho, 3), "). calc period = 1/freq/npy = 1/", 
+                                    mean(redf[[i]]$freq), "/", attr(x, "npy"), " = ", 
+                                    mean(redf[[i]]$period[2:length(redf[[i]]$period)]), # exclude period[1] = 1/freq[1] = 1/0 = Inf
+                                    " years (mean) ...")
+                            attr(redf[[i]]$period, "units") <- "year"
+                            if (plot_redfit_pcnt) {
+                                fac <- 1/max(redf[[i]]$gxxc)*100
+                                redf[[i]]$gxxc <- fac*redf[[i]]$gxxc
+                                redf[[i]]$ci80 <- fac*redf[[i]]$ci80
+                                redf[[i]]$ci90 <- fac*redf[[i]]$ci90
+                                redf[[i]]$ci95 <- fac*redf[[i]]$ci95
+                                redf[[i]]$ci99 <- fac*redf[[i]]$ci99
+                            }
+                        }
+                    } # for i zma
+
+                    # plot red noise corrected spectrum of the data 
+                    if (any(is.list(redf))) { # any success
+
+                        xlim <- ylim <- inds <- vector("list", l=length(redf))
+                        for (i in seq_along(redf)) {
+                            # consider only from max(min(period),<x> years) to <fac>*nyears of time series
+                            if (is.list(redf[[i]])) {
+                                fromind <- which.min(abs(redf[[i]]$period - 0.5*length(dan$year[[i]])))[1]
+                                #fromind <- which.min(abs(redf[[i]]$period - 0.75*length(dan$year[[i]])))[1]
+                                #fromind <- which.min(abs(redf[[i]]$period - 1*length(dan$year[[i]])))[1]
+                                #toind <- which.min(abs(redf[[i]]$period - 0.5))[1]
+                                toind <- which.min(abs(redf[[i]]$period - 1))[1]
+                                inds[[i]] <- fromind:toind
+                                xlim[[i]] <- range(redf[[i]]$period[inds[[i]]])
+                                ylim[[i]] <- range(redf[[i]]$gxxc[inds[[i]]])
+                            } else {
+                                inds[[i]] <- xlim[[i]] <- ylim[[i]] <- NA
+                            }
+                        }
+                        if (T) { # take minimum xlim of all settings
+                            message("special: take minimum period length for redfit plot xaxis")
+                            xlim <- c(min(sapply(xlim, "[", 1), na.rm=T), min(sapply(xlim, "[", 2), na.rm=T))
+                        } else { # default
+                            xlim <- range(xlim, na.rmT=)
+                        }
+                        ylim <- range(ylim, na.rm=T)
+                        xat <- c(2, 5, seq(10, round(xlim[2]/10)*10, b=5))
+                        #xat <- c(2, 5, seq(10, round(xlim[2]/10)*10, b=10))
+                        xticks <- vector("list", l=length(xat)-1)
+                        for (i in seq_along(xticks)) {
+                            if (xat[i+1] - xat[i] > 1) {
+                                xticks[[i]] <- (xat[i]+1):(xat[i+1]-1)
+                            }
+                        }
+                        xticks <- unlist(xticks)
+
+                        # plotname
+                        if (exists("plotprefix")) {
+                            plotprefixp <- plotprefix
+                        } else { # default
+                            plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
+                            if (F && plot_groups[plot_groupi] == "samedims") { # use only varnames_out_samedims below
+                                plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
+                            }
+                            plotprefixp <- paste0(plotprefixp,
+                                                  "_", paste(unique(seasonsp_p), collapse="_vs_"), 
+                                                  "_", paste(unique(froms_plot_p), collapse="_vs_"), 
+                                                  "_to_", paste(unique(tos_plot_p), collapse="_vs_"), 
+                                                  "_", paste(unique(areas_p), collapse="_vs_"), 
+                                                  collapse="_vs_")
+                        }
+                        plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
+                                           varname, "_", # individual samevars or common samedims varname
+                                           plotprefixp, 
+                                           "_", plot_groups[plot_groupi], # samevars or samedims
+                                           data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
+                                           plotname_suffix,
+                                           "_annual_redfit.", p$plot_type)
+                        if (nchar(plotname) > nchar_max_foutname) {
+                            stop("plotname too long. define `plotprefix` in plot namelist")
+                        }
+                        dir.create(dirname(plotname), recursive=T, showWarnings=F)
+                        
+                        # get plot sizes
+                        message("open plot ", plotname, " ...")
+                        source("~/scripts/r/functions/myfunctions.r") 
+                        pp <- plot_sizes(width_in=p$map_width_in, asp=p$map_asp, verbose=T)
+                        if (p$plot_type == "png") {
+                            png(plotname, width=pp$png_width_px, height=pp$png_height_px,
+                                pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
+                        } else if (p$plot_type == "pdf") {
+                            pdf(plotname, width=pp$pdf_width_in, height=pp$pdf_height_in,
+                                family=p$pdf_family, encoding=encoding, pointsize=pp$pdf_pointsize)
+                        }
+
+                        # set plot margins
+                        mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
+                        mar[4] <- 1 # decrease right margin
+
+                        # open plot
+                        message("mar = ", paste(mar, collapse=", "))
+                        par(mar=mar)
+                        plot(0, t="n", log="x", 
+                             xlim=xlim, ylim=ylim, 
+                             xaxt="n", yaxt="n",
+                             xlab=NA, ylab=NA)
+                        axis(1, at=xat, labels=xat)
+                        axis(1, at=xticks, labels=F, tck=-0.025)
+                        axis(2, at=pretty(ylim, n=10), las=2)
+                        mtext("Period [years]", side=1, line=2.5)
+                        if (plot_redfit_pcnt) {
+                            mtext("Spectrum [% of max]", side=2, line=4)
+                        } else {
+                            mtext("Spectrum", side=2, line=4)
+                        }
+                        cnt <- 0
+                        for (i in seq_along(redf)) {
+                            if (is.list(redf[[i]])) {
+                                message("add refit of setting ", i, " with period from ", xlim[1], " to ", xlim[2], " years")
+                                ci_y <- ci_labels <- c()
+                                if (F) {
+                                    lines(redf[[i]]$period[inds[[i]]], redf[[i]]$ci80[inds[[i]]], col=cols_rgb[i], lty=3)
+                                    ci_y <- c(ci_y, redf[[i]]$ci80[max(inds[[i]])])
+                                    ci_labels <- c(ci_labels, "80")
+                                }
+                                if (T) {
+                                    lines(redf[[i]]$period[inds[[i]]], redf[[i]]$ci95[inds[[i]]], col=cols_rgb[i], lty=2)
+                                    ci_y <- c(ci_y, redf[[i]]$ci95[max(inds[[i]])])
+                                    ci_labels <- c(ci_labels, "95")
+                                }
+                                if (F) {
+                                    lines(redf[[i]]$period[inds[[i]]], redf[[i]]$ci99[inds[[i]]], col=cols_rgb[i], lty=1)
+                                    ci_y <- c(ci_y, redf[[i]]$ci99[max(inds[[i]])])
+                                    ci_labels <- c(ci_labels, "99")
+                                }
+                                lines(redf[[i]]$period[inds[[i]]], redf[[i]]$gxxc[inds[[i]]], col=cols[i])
+                                if (cnt == 0) { # indicate ci levels once
+                                    text(mean(c(10^par("usr")[1], 2)), ci_y,
+                                         labels=ci_labels, col=cols_rgb[i], cex=0.75)
+                                    cnt <- cnt + 1
+                                }
+                            }
+                        }
+                        box()
+
+                        # add legend to redfit
+                        if (add_legend) {
+                            message("\nadd default stuff to time vs redfit legend ...")
+                            le <- list()
+                            le$pos <- "topleft" 
+                            le$ncol <- 1
+                            le$cex <- lecex
+                            le$text <- names_legend_p
+                            le$col <- cols_p
+                            le$lty <- ltys_p
+                            le$lwd <- lwds_p
+                            le$pch <- pchs_p
+                            # reorder reading direction from R's default top->bottom to left->right
+                            if (T) le <- reorder_legend(le)
+                            if (length(le$pos) == 1) {
+                                legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
+                                       pch=le$pch, col=le$col, ncol=le$ncol,
+                                       x.intersp=0.2, cex=le$cex, bty="n")
+                            } else if (length(le$pos) == 2) {
+                                legend(x=le$pos[1], y=le$pos[2],
+                                       legend=le$text, lty=le$lty, lwd=le$lwd,
+                                       pch=le$pch, col=le$col, ncol=le$ncol,
+                                       x.intersp=0.2, cex=le$cex, bty="n")
+                            }
+                        } # if add_legend
+                        
+                        # save redfit plot
+                        message("\nsave plot ", plotname, " ...")
+                        dev.off()
+                        write(plotname, file=lastfiles_plot_fname, append=T)
+                        if (p$plot_type == "pdf") {
+                            if (T) {
+                                message("run `", p$pdf_embed_fun, "()` ...")
+                                if (p$pdf_embed_fun == "grDevices::embedFonts") {
+                                    grDevices::embedFonts(plotname, outfile=plotname)
+                                } else if (p$pdf_embed_fun == "extrafont::embed_fonts") {
+                                    extrafont::embed_fonts(plotname, outfile=plotname)
+                                }
+                            } else {
+                                message("todo: sometimes pdf font embedding blurrs colors why?")
+                            }
+                        }
+
+                    } # if any !is.na(redf)
+                } # if plot_redfit
             
             } # if (ndims_unique_an == 1 && vardims_unique_an == "year") {
             # finished plot `datasan` vs years
@@ -11095,8 +11698,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 xlim_ltm <- range(xat_ltm)
                 message("xlim_ltm = ", appendLF=F)
                 dput(xlim_ltm)
-                
+
                 ylim_ltm <- range(zltm, na.rm=T)
+                # extend data range by 4 pcnt for barplot(), similarly as default yaxs="r" of plot()
+                ylim_ltm <- ylim_ltm + c(-1, 1)*0.04*(max(ylim_ltm)-min(ylim_ltm))
                 message("ylim_ltm = ", appendLF=F)
                 dput(ylim_ltm)
                 yat_ltm <- pretty(ylim_ltm, n=8)
@@ -11106,7 +11711,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     plotprefixp <- plotprefix
                 } else { # default
                     plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
-                    if (plot_groups[plot_groupi] == "samedims") {
+                    if (F && plot_groups[plot_groupi] == "samedims") {
                         plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
                     }
                     plotprefixp <- paste0(plotprefixp,
@@ -11121,8 +11726,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                    plotprefixp, 
                                    "_", plot_groups[plot_groupi], # samevars or samedims
                                    data_right$suffix, data_upper$suffix, ts_highlight_seasons$suffix,
-                                   plotname_suffix)
-                plotname <- paste0(plotname, "_timmean.", p$plot_type)
+                                   plotname_suffix,
+                                   "_timmean.", p$plot_type)
                 if (nchar(plotname) > nchar_max_foutname) {
                     stop("plotname too long. define `plotprefix` in plot namelist")
                 }
@@ -11143,22 +11748,35 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 mar <- c(5.1, 6.1, 4.1, 4.1) + 0.1 # my default margins
                 mar[4] <- 1 # decrease right margin
                 if (!add_title) mar[3] <- 1 # decrease upper margin
-                mar[1] <- max(nchar(names_legend_pltm))*0.55 # increase lower margin for vertical setting names
+                # increase lower margin for vertical setting names
+                if (F) mar[1] <- max(nchar(names_legend_pltm))*0.55 
                 
                 # open plot
                 par(mar=mar)
-                plot(0, t="n",
-                     xlim=xlim_ltm, ylim=ylim_ltm,
-                     xaxt="n", yaxt="n",
-                     xlab="", ylab="")
+                if (F) {
+                    plot(0, t="n",
+                         xlim=xlim_ltm, ylim=ylim_ltm,
+                         xaxt="n", yaxt="n",
+                         xlab="", ylab="")
+                } else if (T) {
+                    barplot(sapply(zltm, "[[", 1),
+                            ylim=ylim_ltm, xpd=F, 
+                            col=cols_pltm, border=NA, 
+                            #xaxt="n", yaxt="n",
+                            axes=F,
+                            xlab="", ylab="", 
+                            names.arg=names_legend_pltm) # uses axis() to draw labels at column means; supressed if xaxt="n"
+                }
                 axis(1, at=xat_ltm, labels=F) # ticks only
-                text(x=xat_ltm, 
-                     #y=par("usr")[3], 
-                     # y-pos of labels: `bottom minus 0.05*dy scaled by plot asp`; is this rly a good solution?
-                     #y=par("usr")[3] - abs(diff(par("usr")[3:4])*0.05/p$map_asp),
-                     y=par("usr")[3] - 0.4*abs(diff(yat_ltm)[1]),
-                     labels=names_legend_pltm, 
-                     adj=1, srt=90, xpd=T) # vertical labels
+                if (F) {
+                    text(x=xat_ltm, 
+                         #y=par("usr")[3], 
+                         # y-pos of labels: `bottom minus 0.05*dy scaled by plot asp`; is this rly a good solution?
+                         #y=par("usr")[3] - abs(diff(par("usr")[3:4])*0.05/p$map_asp),
+                         y=par("usr")[3] - 0.4*abs(diff(yat_ltm)[1]),
+                         labels=names_legend_pltm, 
+                         adj=1, srt=90, xpd=T) # vertical labels
+                }
                 axis(2, at=yat_ltm, las=2)
 
                 # add variable label on y-axis
@@ -11198,17 +11816,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # add zero line
                 if (add_zeroline) {
                     message("`add_zeroline` = T --> add zeroline") 
-                    abline(h=0, col="gray", lwd=0.5)
+                    abline(h=0, col="black", lwd=0.5)
                 }
 
                 # add data as barplot
-                barplot(sapply(zltm, "[[", 1), 
-                        xlim=range(seq_along(zltm)),
-                        xaxt="n", yaxt="n", 
-                        xlab="", ylab="", 
-                        col=cols_pltm, border=NA, 
-                        add=T)
-               
+                if (F) {
+                    barplot(sapply(zltm, "[[", 1), 
+                            #xlim=range(seq_along(zltm)),
+                            xaxt="n", yaxt="n", 
+                            xlab="", ylab="", 
+                            col=cols_pltm, border=NA, 
+                            add=T)
+                }
+
                 # add value above/under bar
                 if (T) {
                     message("\nadd value above/below bars ...")

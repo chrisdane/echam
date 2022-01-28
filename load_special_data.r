@@ -35,7 +35,7 @@ if (F) {
 # mpiom land sea mask segments
 fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon180.txt")
 #fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon360.txt")
-if (T && any(file.exists(fs))) {
+if (F && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load mpiom land sea mask segments ...")
     for (f in fs) {
         if (file.exists(f)) {
@@ -352,7 +352,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/RAPID/moc_transports.nc"
     f_err <- "/work/ba0941/a270073/data/RAPID/moc_error.mat"
 }
-if (T && file.exists(f)) {
+if (F && file.exists(f)) {
     message("\ndisable here if you do not want to load rapid moc from ", f, " ...")
     rapid_ncin <- nc_open(f)
     time <- rapid_ncin$dim$time$vals # "days since 2004-4-1 00:00:00" 
@@ -364,7 +364,7 @@ if (T && file.exists(f)) {
     moc_rapid$moc_annual <- stats::filter(moc_rapid$moc, filter=rep(1/(12*30*2), t=12*30*2))
     moc_rapid$moc_monthly <- stats::filter(moc_rapid$moc, filter=rep(1/(30*2), 30*2))
     if (T) { # also read rapid uncertainty, which is distributed as .mat file. lol.
-        library(R.matlab)
+        suppressMessages(library(R.matlab))
         moc_rapid_error <- readMat(f_err)
         # errors and actual data are not on the same time axis. wtf?
         moc_error_time <- drop(moc_rapid_error$JG[,1])
@@ -1256,6 +1256,149 @@ if (F && any(file.exists(fs))) {
 } else {
     message("enable here to load ERA5 spatial datasets ...")
 } # if ERA5 spatial data
+
+
+# post processed aviso data
+#fs <- c("aviso_eke_Mar_1993-2009_ltm_global.nc")
+#fs <- c("aviso_eke_Mar_1993-2009_ltm_lsea.nc")
+fs <- c("aviso_eke_Jan-Dec_1993-2009_ltm_lsea.nc")
+if (host$machine_tag == "mistral") {
+    fs <- paste0("/work/ba0941/a270073/data/aviso/post/madt/uv/", fs)
+}
+if (T && any(file.exists(fs))) {
+    message("\ndisable here if you do not want to load post processed aviso data ...")
+    aviso <- vector("list", l=length(fs))
+    cnt <- 0
+    for (f in fs) {
+        if (file.exists(f)) {
+            cnt <- cnt + 1
+            message("load aviso data from \"", f, "\" ...")
+            aviso_ncin <- nc_open(f)
+            lon <- aviso_ncin$dim$lon$vals
+            lat <- aviso_ncin$dim$lat$vals
+            lat_orig <- NULL # default
+            if (any(diff(lat) < 0)) {
+                lat_orig <- lat
+                lat <- rev(lat)
+            }
+            varnames <- c("eke_ltm", "n_obs_ltm")
+            tmp <- vector("list", l=length(varnames))
+            names(tmp) <- varnames
+            for (vi in seq_along(tmp)) {
+                message("   load \"", varnames[vi], "\" ...")
+                dat <- ncvar_get(aviso_ncin, varnames[vi])
+                units <- ncatt_get(aviso_ncin, varnames[vi])$units
+                # do special stuff
+                if (T && varnames[vi] == "eke_ltm") {
+                    message("convert aviso eke_ltm m2 s-2 --> cm2 s-2") 
+                    dat <- dat*1e4
+                    units <- "cm2 s-2"
+                }
+                if (!is.null(lat_orig)) dat <- dat[,length(lat):1]
+                attributes(dat) <- list(dim=dim(dat), dims=c("lon", "lat"), units=units)
+                tmp[[vi]] <- dat
+            }
+            tmp <- list(file=f,
+                        dims=list(lon=lon, lat=lat),
+                        data=tmp)
+            aviso[[cnt]] <- tmp
+            names(aviso)[cnt] <- basename(f)
+        } # if f exists
+    } # for f in fs
+} else {
+    message("enable here to load post processed aviso data ...")
+} # if post processed aviso data
+
+
+# post processed en4 data
+fs <- c("EN4_4.2.1_area_time_mean_Mar_1948-2009_5-5350m_global_mld.ge.0.125kgm3_mldmethod_fesom_EOS80p_ref_0dbar.nc")
+#fs <- c("EN4_4.2.1_area_time_mean_Mar_1948-2009_5-5350m_global_mld.ge.0.001kgm3_mldmethod_fesom_EOS80p_ref_0dbar.nc")
+if (host$machine_tag == "mistral") {
+    fs <- paste0("/work/ba0941/a270073/data/en4/post/", fs)
+}
+if (T && any(file.exists(fs))) {
+    message("\ndisable here if you do not want to load post processed en4 data ...")
+    en4 <- vector("list", l=length(fs))
+    cnt <- 0
+    for (f in fs) {
+        if (file.exists(f)) {
+            cnt <- cnt + 1
+            message("load en4 data from \"", f, "\" ...")
+            en4_ncin <- nc_open(f)
+            lon <- en4_ncin$dim$lon$vals
+            lat <- en4_ncin$dim$lat$vals
+            lat_orig <- NULL # default
+            if (any(diff(lat) < 0)) {
+                lat_orig <- lat
+                lat <- rev(lat)
+            }
+            varnames <- c("bathy", "temp", "salt", "potdens", "mld")
+            tmp <- vector("list", l=length(varnames))
+            names(tmp) <- varnames
+            for (vi in seq_along(tmp)) {
+                message("   load \"", varnames[vi], "\" ...")
+                dat <- ncvar_get(en4_ncin, varnames[vi])
+                units <- ncatt_get(en4_ncin, varnames[vi])$units
+                if (!is.null(lat_orig)) dat <- dat[,length(lat):1]
+                attributes(dat) <- list(dim=dim(dat), dims=c("lon", "lat"), units=units)
+                tmp[[vi]] <- dat
+            }
+            tmp <- list(file=f,
+                        dims=list(lon=lon, lat=lat),
+                        data=tmp)
+            en4[[cnt]] <- tmp
+            names(en4)[cnt] <- basename(f)
+        } # if f exists
+    } # for f in fs
+} else {
+    message("enable here to load post processed en4 data ...")
+} # if post processed en4 data
+
+
+# post processed holte et al. 2017 data
+fs <- c("Argo_mixedlayers_monthlyclim_03172021_my_lsea.nc")
+if (host$machine_tag == "mistral") {
+    fs <- paste0("/work/ba0941/a270073/data/holte_etal_2017/", fs)
+}
+if (F && any(file.exists(fs))) {
+    message("\ndisable here if you do not want to load post processed holte et al. 2017 data ...")
+    holte_etal_2017 <- vector("list", l=length(fs))
+    cnt <- 0
+    for (f in fs) {
+        if (file.exists(f)) {
+            cnt <- cnt + 1
+            message("load holte et al. 2017 data from \"", f, "\" ...")
+            holte_etal_2017_ncin <- nc_open(f)
+            lon <- holte_etal_2017_ncin$dim$lon$vals
+            lat <- holte_etal_2017_ncin$dim$lat$vals
+            lat_orig <- NULL # default
+            if (any(diff(lat) < 0)) {
+                lat_orig <- lat
+                lat <- rev(lat)
+            }
+            varnames <- c("mld_da_mean", "mld_dt_mean", # density algorithm, density threshold
+                          "mld_da_median", "mld_dt_median", 
+                          "mld_da_max", "mld_dt_max")
+            tmp <- vector("list", l=length(varnames))
+            names(tmp) <- varnames
+            for (vi in seq_along(tmp)) {
+                message("   load \"", varnames[vi], "\" ...")
+                dat <- ncvar_get(holte_etal_2017_ncin, varnames[vi]) # nmonth x nlon x nlat
+                units <- ncatt_get(holte_etal_2017_ncin, varnames[vi])$units
+                if (!is.null(lat_orig)) dat <- dat[,length(lat):1]
+                attributes(dat) <- list(dim=dim(dat), dims=c("month", "lon", "lat"), units=units)
+                tmp[[vi]] <- dat
+            }
+            tmp <- list(file=f,
+                        dims=list(lon=lon, lat=lat),
+                        data=tmp)
+            holte_etal_2017[[cnt]] <- tmp
+            names(holte_etal_2017)[cnt] <- basename(f)
+        } # if f exists
+    } # for f in fs
+} else {
+    message("enable here to load post processed holte et al. 2017 data ...")
+} # if post processed holte et al. 2017 data
 
 
 # clean work space fom loading special data sets

@@ -1,7 +1,7 @@
 # r
 
 # input for plot_echam.r
-message("################################ namelist.general.plot.r ################################")
+message("###################### namelist.general.plot.r start ##########################")
 
 # clear work space
 if (T) {
@@ -37,7 +37,7 @@ ignore_vars <- c("bnds",
                  "plev", "height", 
                  "depth", "depthvec", 
                  "lm_*_as_time_std_error", "lm_*_as_time_t_val", "lm_*_as_time_p_val",
-                 "timevec", "xi", "yi", # old rfesom 
+                 "timevec", "timechar", "xi", "yi", # old rfesom 
                  "moc_reg_lat")
 message("these variables will be ignored:\n",
 		"\"", paste(ignore_vars, collapse="\", \""), "\"")
@@ -45,6 +45,9 @@ message("these variables will be ignored:\n",
 # general script options
 squeeze <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
 nchar_max_foutname <- 255 - 4 # -4 for extension ".png" or ".pdf"
+load_pangaea_data <- F
+load_special_data <- F
+plot_special_data <- F
 
 # calc options
 calc_monthly_and_annual_climatology <- T
@@ -59,7 +62,7 @@ png_family <- NULL
 if (host$machine_tag == "mistral") {
     png_family <- "Nimbus Sans L" # mistral R36 default png font Helvetica broken
 }
-p <- myDefaultPlotOptions(plot_type="png"
+p <- myDefaultPlotOptions(#plot_type="png"
                           #plot_type="active"
                           ,png_family=png_family
                           #,png_family="Droid Sans Mono" 
@@ -68,11 +71,6 @@ p <- myDefaultPlotOptions(plot_type="png"
                           #,ts_asp=0.75
                           #,verbose=T
                           )
-if (p$plot_type == "pdf") {
-    minus_symbol_dash <- "-"
-} else {
-    minus_symbol_dash <- "\u2013"
-}
 bilinear_interp_factor <- 1 # only effect if > 1
 plot_samedims <- T
 add_title <- F
@@ -148,7 +146,7 @@ ts_highlight_seasons <- list(#bool=T,
 show_first_data_point <- F
 ts_plot_each_setting_in_subplot <- F
 add_data_left_yaxis_before_ts <- T
-add_data_right_yaxis_ts <- T
+add_data_right_yaxis_ts <- F
 add_cor_data_left_and_right_ts <- F
 add_data_upper_xaxis_ts <- F
 add_data_right_yaxis_ts_mon <- F
@@ -191,8 +189,10 @@ aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for map plot
 proj <- "" # default: no projection
 echam6_global_setNA <- NA # one of 3 options: NA, "ocean", "land"
 
-# special
-plot_redfit <- F
+# plot red-noise spectra
+plot_redfit <- T
+plot_redfit_pcnt <- F
+plot_redfit_pcnt <- T 
 
 # constants
 Aearth <- 5.100656e14 # m2
@@ -209,4 +209,6 @@ objs <- c("postpaths", "plotpath",
           "reg_dxs", "reg_dys", 
           "types", "ltys", "cols", "lwds", "pchs", "text_cols", "cols_samedims")
 suppressWarnings(rm(list=objs))
+
+message("###################### namelist.general.plot.r finish ##########################")
 

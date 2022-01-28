@@ -10,7 +10,8 @@ if (T && host$machine_tag == "mistral") {
     hostname <- Sys.info()["nodename"] # = system("hostname", intern=T)
     if (any(grepl("mlogin", hostname))) {
         stop("machine is \"mistral\" but node \"", hostname, 
-             "\" is not mistralpp.\n--> change to mistralpp and rerun script.")
+             "\" is a login node\n--> change to `ssh -Y mistralpp.dkrz.de` ",
+             "or `ssh -Y mistralpp[1-5]` and rerun the script.")
     }
 }
 
@@ -692,7 +693,7 @@ for (i in seq_len(nsettings)) {
                     if (length(years_filenames_unique) == length(files)) { # case 2.1: same number of unique years as files
                         df$YYYY <- years_filenames_unique
                     } else {
-                        stop("not defined; maybe fesom1 output with wrong nc dates?")
+                        stop("not defined; maybe old fesom1 output with wrong nc dates?")
                     }
                 }
             } # if length(files) == 1 or not
@@ -1359,37 +1360,33 @@ for (i in seq_len(nsettings)) {
                 ## shifttime 
                 cdoshifttime <- "" # default: not shifttime
                 if (cdoshifttimes[i] != "") {
-                    # derive dt if shifttime is wanted
+                    # derive dt of data based on `cdo showtimestamp`
+                    # --> this is not always correct if there are strange data gaps
                     message("\nprovided `cdoshifttimes[", i, "]` = \"", cdoshifttimes[i], "\"")
                     if (grepl("dt", cdoshifttimes[i])) {
                         message("--> detected \"dt\" --> get frequency of input files ...")
-                        cmd <- paste0(cdo, " showtimestamp ", datapath, "/", files[1])
-                        dates <- system(cmd, intern=T)
-                        dates <- trimws(dates)
-                        dates <- gsub("\\s+", " ", dates)
-                        dates <- strsplit(dates, " ")[[1]]
-                        dt_sec <- difftime(dates[2:length(dates)], dates[1:(length(dates)-1)], units="secs")
-                        dt_sec <- unique(dt_sec)
-                        if (!any(is.na(match(dt_sec, 86400)))) {
-                            frequency <- "daily"
-                            attributes(frequency)$units <- "day"
-                        } else if (!any(is.na(match(dt_sec, 
-                                                     c(2419200, 2505600, 2548800, 2592000, 
-                                                       2635200, 2674800, 2678400, 2682000))))) {
-                            frequency <- "monthly"
-                            attributes(frequency)$units <- "month"
-                        } else {
-                            stop("at least some of dt = ", paste(dt_sec, collapse=", "), " secs are unknown")
-                        }
-                        # overwrite "dt" placeholder with actual frequency
-                        message("--> dt = ", paste(dt_sec, collapse=", "), " secs")
-                        message("--> frequency is ", frequency)
-                        message("--> replace \"dt\" in cdoshifttimes[", i, "]` = \"", 
-                                cdoshifttimes[i], "\" with \"", attributes(frequency)$units, "\" ...")
-                        cdoshifttimes[i] <- sub("dt", attributes(frequency)$units, cdoshifttimes[i])
+                        cmd <- paste0(cdo, " tinfo ", datapath, "/", files[1])
+                        message("run `", cmd, "` ...")
+                        dt <- system(cmd, intern=T)
+                        dt <- dt[which(grepl(" Increment           :", dt))] # e.g. " Increment           :  10 years"
+                        message("--> \"", dt, "\"")
+                        dt <- strsplit(dt, ":")[[1]][2] # e.g. "  10 years"
+                        dt <- trimws(dt) # e.g. "10 years" 
+                        dt <- gsub("\\s+", "", dt) # e.g. "10years" --> usable by `cdo shifftime`
+                        message("--> dt = ", dt)
+                        if (dt == "0seconds") { # `cdo tinfo` only 1 timestep or no success
+                            message("--> data has only 1 timestep or no proper \"time\" dim found\n",
+                                    "--> do not apply shifftime\n",
+                                    "--> set `cdoshifttimes[", i, "] = \"[-]<tunit>\" in the post namelist and rerun the script")
+                            cdoshifttimes[i] <- "" # do not apply shifttime
+                        } else { # `cdo tinfo` success
+                            message("--> replace \"dt\" in cdoshifttimes[", i, "]` = \"", 
+                                    cdoshifttimes[i], "\" with \"", dt, "\" ...")
+                            cdoshifttimes[i] <- sub("dt", dt, cdoshifttimes[i])
+                        } # if `cdo showtimestamp` returned something
                     } # if "dt" is in provided `cdoshifttimes[i]`
                     cdoshifttime <- paste0("-shifttime,", cdoshifttimes[i])
-                    message("--> `cdoshifttime` = ", cdoshifttime)
+                    message("--> `cdoshifttime` = \"", cdoshifttime, "\"")
                 } else {
                     message("\n`cdoshifttimes[", i, "]` not provided. set to e.g. \"-1mo\" or \"-1dt\", if wanted")
                 } # if cdoshifttime is provided
@@ -1793,7 +1790,6 @@ for (i in seq_len(nsettings)) {
                         message("\n`cdo showtimestamp` yields ", length(cdo_timestamps), " dates:")
                         ht(cdo_timestamps, n=25)
                         
-
                         if (cdo_ntime != length(cdo_timestamps)) {
                             message("\nwarning: length(`cdo ntime`) = ", cdo_ntime, 
                                     " and length(`cdo showtimestamp`) = ", length(cdo_timestamps), " differ")
@@ -2596,6 +2592,7 @@ for (i in seq_len(nsettings)) {
         }
 
         # set time_bnds if needed (if there is time dim) and not already there
+        # --> time_bnds are necessary for `cdo cat`
         message("\ncheck if time_bnds are needed and not there yet ...") 
         # todo: how to check if file has time_dims?
         cmd <- paste0(cdo, " sinfo ", fout) # short info 
@@ -2619,6 +2616,7 @@ for (i in seq_len(nsettings)) {
                 }
                 if (nco_ncap2 != "") {
                     # -4 for ncdf4 support and large files
+                    # problem: exceeded memory limit (3006140416 > 2684354560), being killed
                     cmd <- paste0(nco_ncap2, " -O -4 -s 'defdim(\"bnds\",2); time_bnds=make_bounds(time,$bnds,\"time_bnds\");' ", 
                                   fout, " ", fout)
                     message("run `", cmd, "` ...")

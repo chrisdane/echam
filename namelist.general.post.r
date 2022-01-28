@@ -146,10 +146,13 @@ cdo_known_cmds <- list(
                                 "-vertsum <boxYC_humus_1> -vertsum <boxYC_humus_2>"), # 1: leaf, 2: wood
                                 # `cdo -add -vertsum <file> -vertsum <file>` is faster than
                                 # `cdo -vertsum -add <file> <file>` (tested with 740MB files)
-                         "<nco_ncatted> -O -a code,cSoilSlow,d,,",
-                         "<nco_ncatted> -O -a table,cSoilSlow,d,,",
-                         "<nco_ncatted> -O -a units,cSoilSlow,o,c,\"kgC m-2\"",
-                         "<nco_ncatted> -O -a long_name,cSoilSlow,o,c,\"Carbon Mass in Slow Soil Pool\""))
+                          "<nco_ncatted> -O -a code,cSoilSlow,d,,",
+                          "<nco_ncatted> -O -a table,cSoilSlow,d,,",
+                          "<nco_ncatted> -O -a units,cSoilSlow,o,c,\"kgC m-2\"",
+                          "<nco_ncatted> -O -a long_name,cSoilSlow,o,c,\"Carbon Mass in Slow Soil Pool\"")),
+   "divuvttot"=list(cmd=c(paste0("<cdo> -setname,divuvttot -setname,divuvttot -add ",
+                                 "-selvar,divuvt <divuvt> -selvar,divuvteddy <divuvtedd>"),
+                          "<nco_ncatted> -O -a long_name,divuvttot,o,c,\"mean + eddy div_h(u_h t)\""))
                       ) # cdo_known_cmds
 
 message("###################### namelist.general.post.r finish ##########################")
