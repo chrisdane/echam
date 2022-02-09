@@ -8,7 +8,18 @@ repopath <- normalizePath(repopath, mustWork=T) # error if not found
 source(paste0(repopath, "/namelist.general.plot.r"))
 
 # 1 setting
-if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1,2 (og), 3 (my)
+if (F) { # reccap AmC minus DmB
+    workpath <- "/work/ollie/cdanek"
+    models <- "fesom"
+    names_legend <- "(A-C) - (D-B)"
+    prefixes <- "reccap_AmC_minus_DmB"
+    names_short <- prefixes
+    varnames_in <- "CO2f"
+    modes <- "fldint"
+    fromsf <- 1958
+    tosf <- 2019
+
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1,2 (og), 3 (my)
     models <- "echam6"
     #models <- "jsbach"
     #models <- "fesom"
@@ -366,6 +377,17 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1,2 (og), 3 (my)
 
 # =====================================
 # 2 settings
+} else if (F) { # reccap A_minus_C vs D_minus_B
+    workpath <- "/work/ollie/cdanek"
+    models <- rep("fesom", t=2)
+    names_legend <- c("A-C", "D-B")
+    prefixes <- c("reccap_A_minus_C", "reccap_D_minus_B")
+    names_short <- prefixes
+    varnames_in <- rep("CO2f", t=2)
+    modes <- rep("fldint", t=2)
+    fromsf <- rep(1958, t=2)
+    tosf <- rep(2019, t=2)
+
 } else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl me vs og
     models <- rep("echam6", t=2)
     prefixes <- c("awi-esm-1-1-lr_kh800_esm-piControl", "awi-esm-1-1-lr_kh800_esm-piControl_og")
@@ -1230,6 +1252,18 @@ if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1,2 (og), 3 (my)
 
 # =====================================
 # 4 settings
+} else if (T) { # reccap A B C D
+    workpath <- "/work/ollie/cdanek"
+    models <- rep("fesom", t=4)
+    names_legend <- c("A", "B", "C", "D")
+    prefixes <- paste0("reccap_", names_legend)
+    names_short <- prefixes
+    varnames_in <- rep("CO2f", t=4)
+    center_ts <- T
+    modes <- rep("fldint", t=4)
+    fromsf <- rep(1958, t=4)
+    tosf <- rep(2019, t=4)
+
 } else if (F) { # mpi-esm* vs awi* mlds semmler et al.
     workpath <- "/work/ab0246/a270073"
     if (F) {

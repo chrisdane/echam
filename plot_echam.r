@@ -10858,6 +10858,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 message("\n", varname, " ", mode_p, " plot vs years ...")
                 
+                if (center_ts || scale_ts) {
+                    if (center_ts) {
+                        message("\n`center_ts` = T --> center ts before plot ...")
+                    } else if (scale_ts) {
+                        message("\n`scale_ts` = T --> scale ts before plot ...")
+                    }
+                    for (i in seq_along(zan)) {
+                        if (center_ts) {
+                            zan[[i]] <- base::scale(zan[[i]], scale=F)
+                        } else if (scale_ts) {
+                            zan[[i]] <- base::scale(zan[[i]])
+                        }
+                    }
+                } # if center_ts or scale_ts
+                
                 # ylims for fldmean versus years plot
                 message("\n", mode_p, " versus years min / mean / max ", varname, " zan:")
                 for (i in seq_along(zan)) {
