@@ -46,7 +46,7 @@ message("these variables will be ignored:\n",
 squeeze <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
 nchar_max_foutname <- 255 - 4 # -4 for extension ".png" or ".pdf"
 load_pangaea_data <- F
-load_special_data <- F
+load_special_data <- T
 plot_special_data <- F
 
 # calc options
@@ -75,6 +75,8 @@ bilinear_interp_factor <- 1 # only effect if > 1
 plot_samedims <- T
 add_title <- F
 add_legend <- T
+legend_pos <- legend_pos_ts <- legend_pos_mon <- legend_pos_an <- legend_pos_ltm <- NULL
+
 # my wanted pch order: 1: circle, 2: triangle up, 3: square, 4: diamond
 # --> bring hollow, filled wout borders and filled with borders symbols in same order
 pchs_hollow <- c(1, 2, 0, 5) # circle, triangle up, square, diamond
@@ -150,7 +152,7 @@ add_data_right_yaxis_ts <- F
 add_cor_data_left_and_right_ts <- F
 add_data_upper_xaxis_ts <- F
 add_data_right_yaxis_ts_mon <- F
-add_data_right_yaxis_ts_an <- F
+add_data_right_yaxis_ts_an <- T
 add_cor_data_left_and_right_ts_an <- F
 add_legend_right_yaxis <- T
 add_legend_upper_xaxis <- F
@@ -185,12 +187,12 @@ plot_lon_lat_anomaly <- T
 reorder_lon_from_0360_to_180180 <- T
 addland <- T
 add_grid <- F
-aspect_ratio_thr <- 2 # maximum dlon/dlat ratio for map plot
+aspect_ratio_thr <- 4/3 # 2 # maximum dlon/dlat ratio for map plot
 proj <- "" # default: no projection
 echam6_global_setNA <- NA # one of 3 options: NA, "ocean", "land"
 
 # plot red-noise spectra
-plot_redfit <- T
+plot_redfit <- F
 plot_redfit_pcnt <- F
 plot_redfit_pcnt <- T 
 

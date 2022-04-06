@@ -64,7 +64,8 @@ if (any(tmp)) {
 } else {
     stop("the case of 0 as.numeric() of `cdo --version?` is not implemented here")
 }
-message("cdo_version = ", paste(cdo_version, collapse="."))
+cdo_version <- base::numeric_version(paste(cdo_version, collapse="."))
+message("cdo_version = ", cdo_version)
 message("cdo_silent = \"", cdo_silent, "\"")
 message("cdo_select_no_history = \"", cdo_select_no_history, "\"")
 message("cdo_OpenMP_threads = \"", cdo_OpenMP_threads, "\"") # OMP supported operators: https://code.mpimet.mpg.de/projects/cdo/wiki/OpenMP_support
@@ -101,9 +102,9 @@ if (!is.list(modes)) {
     }
     modes <- modesp
 }
-if (any(names(modes) == "")) {
+if (is.null(names(modes)) || any(names(modes) == "")) {
     inds <- which(names(modes) == "")
-    stop("provide a proper mode name for `modes` entries ", paste(inds, collapse=", "))
+    stop("provide a proper mode name for `modes` list entries ", paste(inds, collapse=", "))
 }
 if (any(grepl(" ", names(modes)))) { # replace space " " by "_" in mode names
     inds <- which(grepl(" ", names(modes)))
@@ -127,24 +128,30 @@ if (!exists("codes_files")) {
     }
 }
 if (!exists("codes")) codes <- rep(NA, t=nsettings)
+if (!exists("areas_out_list")) areas_out_list <- NULL
+if (!exists("mask_list")) mask_list <- NULL
 if (!exists("areas_out")) {
-    if (exists("areas_out_list")) {
-        if (is.list(areas_out_list)) {
-            areas_out <- rep(NA, t=length(areas_out_list))
-            for (i in seq_along(areas_out_list)) {
+    if (is.null(areas_out_list) && is.null(mask_list)) {
+        areas_out <- rep("global", t=nsettings) # default
+    } else {
+        areas_out <- rep(NA, t=nsettings)
+        for (i in seq_along(areas_out)) {
+            if ((!is.null(areas_out_list) && !is.null(areas_out_list[[i]]$name)) &&
+                (!is.null(mask_list) && !is.null(mask_list[[i]]$name))) {
+                stop("both `areas_out_list[[", i, "]]$name` and `mask_list[[", i, "]]$name` are given. dont know which to use.")
+            } else {
                 if (!is.null(areas_out_list[[i]]$name)) {
                     areas_out[i] <- areas_out_list[[i]]$name
+                } else if (!is.null(mask_list[[i]]$name)) {
+                    areas_out[i] <- mask_list[[i]]$name
                 } else {
-                    stop("`areas_out_list[[", i, "]]´ is empty")
+                    stop("either `areas_out_list[[", i, "]]$name` or `mask_list[[", i, "]]$name` must be given")
                 }
             }
-        } else {
-            stop("`areas_out_list` is given but not a list. dont know how to interpret")
         }
-    } else {
-        areas_out <- rep("global", t=nsettings)
     }
 }
+if (any(is.na(areas_out))) stop("this should not happen")
 if (!exists("cdoshifttimes")) cdoshifttimes <- rep("", t=nsettings)
 
 # check postpaths
@@ -590,8 +597,8 @@ for (i in seq_len(nsettings)) {
         # todo: search for files and links and compare
         #cmd <- paste0("ls ", datapaths[i], "/", fpattern) 
         # --> this may result in `-bash: /bin/ls: Argument list too long`
-        #cmd <- paste0("find ", datapath, " -type ", ftypes[i], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
-        cmd <- paste0("find ", datapath, " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
+        #cmd <- paste0("find ", datapath, " -maxdepth 1 -type ", ftypes[i], " -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
+        cmd <- paste0("find ", datapath, " -maxdepth 1 -name \"", fpattern, "\" -printf \"%f\\n\" | sort")
         # --> `find` does not have this limit 
         message("\nrun `", cmd, "` ...")
         ticcmd <- Sys.time()
@@ -1265,8 +1272,7 @@ for (i in seq_len(nsettings)) {
                 message("was found in first file")
             
                 # construct necessary cdo commands
-                message("\nconstruct cdo command chain (cdo version = ", 
-                        paste(cdo_version, collapse="."), ") ...")
+                message("\nconstruct cdo command chain (cdo version = ", cdo_version, ") ...")
 
                 ## cat/mergetime/etc.
                 if (all(modes[[i]] == "timmean")) {
@@ -1304,7 +1310,7 @@ for (i in seq_len(nsettings)) {
                         "\" --> `cdocalc` = \"", cdocalc, "\" ...")
                 
                 if (all(cdo_before_calcs[[i]] == "")) {
-                    message("\n`cdo_before_calcs[[", i, "]]` not given --> do not run some command before cdo `", 
+                    message("\n`cdo_before_calcs[[", i, "]]` not given --> do not run some command before `cdo ", 
                             cdocalc, "` ...")
                 } else {
                     message("\n`cdo_before_calcs[[", i, "]]` = ", 
@@ -1315,7 +1321,7 @@ for (i in seq_len(nsettings)) {
                 }
                 
                 if (all(cdo_after_calcs[[i]] == "")) {
-                    message("\n`cdo_after_calcs[", i, "]` not given --> do not run some command after cdo `", 
+                    message("\n`cdo_after_calcs[", i, "]` not given --> do not run some command after `cdo ", 
                             cdocalc, "` ...")
                 } else {
                     message("\n`cdo_after_calcs[[", i, "]]` = ", 
@@ -1336,7 +1342,7 @@ for (i in seq_len(nsettings)) {
                 ## sellonlatbox
                 cdoselarea <- "" # default: none
                 if (areas_out[i] != "global") {
-                    if (exists("areas_out_list")) {
+                    if (!is.null(areas_out_list)) {
                         if (!is.null(areas_out_list[[i]]$sellonlatbox)) {
                             cdoselarea <- paste0("-sellonlatbox,", 
                                                  areas_out_list[[i]]$sellonlatbox["lon1"], ",",
@@ -1364,7 +1370,7 @@ for (i in seq_len(nsettings)) {
                     # --> this is not always correct if there are strange data gaps
                     message("\nprovided `cdoshifttimes[", i, "]` = \"", cdoshifttimes[i], "\"")
                     if (grepl("dt", cdoshifttimes[i])) {
-                        message("--> detected \"dt\" --> get frequency of input files ...")
+                        message("--> detected \"dt\" --> get time intervall of input files ...")
                         cmd <- paste0(cdo, " tinfo ", datapath, "/", files[1])
                         message("run `", cmd, "` ...")
                         dt <- system(cmd, intern=T)
@@ -1401,25 +1407,21 @@ for (i in seq_len(nsettings)) {
                 #   `-f <type> copy`, `-fldmean`, etc.
 
                 # separate cdo selection and calculation commands if 
-                if (!is.null(new_date_list[[i]]) || # set new time values to result of selection (before calculation)
-                    (is.null(new_date_list[[i]]) && # or if no new time values are needed but cdo version < 1.9.4
-                     (cdo_version[1] < 1 ||
-                      cdo_version[1] == 1 && cdo_version[2] < 9 || 
-                      cdo_version[1] == 1 && cdo_version[2] > 8 && cdo_version[3] < 4))) { 
+                if (cdo_version < base::numeric_version("1.9.4") ||
+                    !is.null(new_date_list[[i]]) || # set new time values to result of selection (before calculation)
+                    !is.null(mask_list[[i]])) { # apply mask before calculation
                     
                     cdo_chain <- "separate"
-                    message(ifelse(!is.null(new_date_list[[i]]), 
-                                   paste0("`new_date_list[[", i, "]]` is not NULL"),
-                                   paste0("cdo version ", paste(cdo_version, collapse="."), " < 1.9.4")),
-                            " --> have to run separate cdo selection\n",
-                            ifelse(!is.null(new_date_list[[i]]),
-                                   "   `[[-t <model>] -f <type> [copy]] -sellevel,<lev> -select,name=<varname>`, etc.\n",
-                                   "   `[[-t <model>] -f <type> [copy]] -selmon,<mon> -sellevel,<lev> -select,name=<varname>`, etc.\n"),
-                            "and calculation\n",
-                            ifelse(!is.null(new_date_list[[i]]),
-                                   "   `-fldmean`, `-selmon`, etc.\n",
-                                   "   `-fldmean`, etc.\n"),
-                            "commands ...")
+                    message("\nhave to run separate cdo selection and calculation commands because")
+                    if (cdo_version < base::numeric_version("1.9.4")) {
+                        message("- cdo version ", cdo_version ," < 1.9.4")
+                    }
+                    if (!is.null(new_date_list[[i]])) {
+                        message("- `new_date_list[[", i, "]]` is not NULL")
+                    }
+                    if (!is.null(mask_list[[i]])) {
+                        message("- `mask_list[[", i, "]]` is not NULL")
+                    }
 
                     ## 1st cmd: selection
                     cmd_select <- cdoselect # always needed: `-select,name=<varname>`
@@ -1494,11 +1496,20 @@ for (i in seq_len(nsettings)) {
                     }
                     if (F) cmd_calc <- paste0(cmd_calc, " || echo error")
 
-                    message("\nrun\n",
-                            "   1: `", cmd_select, "`\n",
-                            ifelse(!is.null(new_date_list[[i]]), 
-                                   paste0("   2: `new_date_list[[", i, "]]` is not NULL --> set new time values with ncap2\n"), ""),
-                            "   ", ifelse(!is.null(new_date_list[[i]]), "3", "2"), ": `", cmd_calc, "`")
+                    cnt <- 1
+                    msg <- paste0("\nrun\n   ", cnt, ": `", cmd_select, "`\n")
+                    if (!is.null(new_date_list[[i]])) {
+                        cnt <- cnt + 1
+                        msg <- paste0(msg, "   ", cnt, ": `new_date_list[[", i, "]]` is not NULL --> set new time values to selection result with ncap2\n")
+                    }
+                    if (!is.null(mask_list[[i]])) {
+                        cnt <- cnt + 1
+                        msg <- paste0(msg, "   ", cnt, ": `mask_list[[", i, "]]` is not NULL --> apply mask to selection result with cdo\n")
+                    }
+                    cnt <- cnt + 1
+                    msg <- paste0(msg, "   ", cnt, ": `", cmd_calc, "`")
+                    message(msg)
+                    rm(cnt)
 
                     # replace multiple spaces by single spaces
                     nchar_with_mulitiple_spaces <- nchar(cmd_select)
@@ -1588,19 +1599,11 @@ for (i in seq_len(nsettings)) {
                                 nchunks, " chunk", ifelse(nchunks > 1, "s", ""), " ...")
                     }
 
-                # or combined cdo selection and calculation commands if
-                } else if (is.null(new_date_list[[i]]) && # no new times values are wanted 
-                           (cdo_version[1] >= 2 || # and cdo version >= 1.9.4
-                            cdo_version[1] == 1 && cdo_version[2] >= 10 || 
-                            cdo_version[1] == 1 && cdo_version[2] >= 9 && cdo_version[3] >= 4)) { 
+                # or combined cdo selection and calculation commands if possible
+                } else {
                     
                     cdo_chain <- "alltogether"
-                    message("\ncdo version ", paste(cdo_version, collapse="."), " >= 1.9.4",
-                            " AND `new_date_list[[", i, "]]` is NULL\n",
-                            "--> can run a single cdo selection and calculation command as e.g.\n",
-                            "   `cdo [[-t <model>] -f <type> [copy]] -fldmean -sellevel,<lev> -select,name=<varname>`\n",
-                            "   `cdo [[-t <model>] -f <type> [copy]] -fldmean -selmon,<mon> -sellevel,<lev> -select,name=<varname>`\n",
-                            "...")
+                    message("\ncan run a single cdo selection and calculation command ...")
 
                     cmd <- paste0(cdoprefix, " ", cdoconvert, 
                                   #" ", cmdcat, 
@@ -1617,10 +1620,10 @@ for (i in seq_len(nsettings)) {
                     cmd <- gsub("(?<=[\\s])\\s*|^\\s+|\\s+$", "", cmd, perl=T)
                     message("run `", cmd, "`")
                     
-                    # check if cmd command is longer than cdo_nchar_max_arglist = 2612710
-                    cmd_tmp <- gsub("<files>", paste(paste0(datapath, "/", files), collapse=" "), cmd)
+                    # check if cmd command is longer than `cdo_nchar_max_arglist`
+                    cmd_tmp <- sub("<files>", paste(paste0(datapath, "/", files), collapse=" "), cmd)
                     nchar_cmd <- nchar(substr(cmd_tmp, start=nchar(cdo) + 1, stop=nchar(cmd_tmp))) 
-                    message("\n", "cdo argument list is ", nchar_cmd, " characters long")
+                    message("\n", "cdo command `cmd_tmp` is ", nchar_cmd, " characters long")
                     
                     if (nchar_cmd > cdo_nchar_max_arglist) { # too long
                         message("--> this is longer than `cdo_nchar_max_arglist` = ", 
@@ -1628,19 +1631,15 @@ for (i in seq_len(nsettings)) {
                                 "\"Argument list too long\"")
                         stop("implement for argument list too long")
                     } else {
+                        message("--> this is not longer than `cdo_nchar_max_arglist` = ", 
+                                cdo_nchar_max_arglist, " and does not yield the error ",
+                                "\"Argument list too long\"")
                         cmd_list <- list(list(cmd=cmd_tmp, n=length(files)))
                         nchunks <- 1
                         fout_vec <- fout
                     }
 
-                } else { # if impossible combination of `new_date_list` and `cdo_version`
-                   
-                    message("`new_date_list[[", i, "]]`:")
-                    cat(capture.output(str(new_date_list[[i]])), sep="\n")
-                    message("cdo version = ", paste(cdo_version, collapse="."))
-                    stop("this case should not occur")
-
-                } # construct cdo commands depending on `new_date_list` and `cdo_version`
+                } # construct cdo commands depending on cdo version, `new_date_list` and `mask_list`
                
                 # run cdo selection (and possible calculation) command(s) 
                 # either from file (`$ . <scriptfile>` or via base::system(cmd)
@@ -1655,7 +1654,8 @@ for (i in seq_len(nsettings)) {
                             writeLines(cmd_list[[chunki]]$cmd, con=scriptname)
                             nfiles_per_chunk <- cmd_list[[chunki]]$n
                         } else if (cdo_chain == "separate") {
-                            if (!is.null(new_date_list[[i]])) { # new time values are wanted: have to run selection before calculation
+                            if (!is.null(new_date_list[[i]]) || !is.null(mask_list[[i]])) { 
+                                # new time values are wanted: have to run selection before calculation
                                 scriptname <- paste0(postpaths[i], "/tmp_select_cmd_", 
                                                      Sys.getpid(), 
                                                      #34949,
@@ -1677,7 +1677,8 @@ for (i in seq_len(nsettings)) {
 
                         # run command if cdo selection (and possible calculation) result does not exist already
                         ticcmd <- toccmd <- NULL # default
-                        if (cdo_chain == "separate" && !is.null(new_date_list[[i]])) {
+                        if (cdo_chain == "separate" && 
+                            (!is.null(new_date_list[[i]]) || !is.null(mask_list[[i]]))) {
                             if (file.exists(selfile_vec[chunki]) && !post_force) {
                                 message("`selfile_vec[", chunki, "]` =\n",
                                         "   \"", selfile_vec[chunki], "\n",
@@ -1701,7 +1702,8 @@ for (i in seq_len(nsettings)) {
                         }
                         
                         # after cdo selection (and possible calculation) command(s)
-                        if (cdo_chain == "separate" && !is.null(new_date_list[[i]])) {
+                        if (cdo_chain == "separate" && 
+                            (!is.null(new_date_list[[i]]) || !is.null(mask_list[[i]]))) {
                             if (!file.exists(selfile_vec[chunki])) {
                                 stop("selfile_vec[", chunki, "] = ", selfile_vec[chunki], " does not exist but it should")
                             }
@@ -1716,7 +1718,8 @@ for (i in seq_len(nsettings)) {
                         # clean
                         if (clean) {
                             system(paste0("rm -v ", scriptname))
-                            if (cdo_chain == "separate" && is.null(new_date_list[[i]])) { 
+                            if (cdo_chain == "separate" && 
+                                is.null(new_date_list[[i]]) && is.null(mask_list[[i]])) { 
                                 # in this case, cdo sepration and calculation results are in different files
                                 # --> remove the selection results which are not needed anymore
                                 if (file.exists(selfile_vec[chunki])) {
@@ -1743,8 +1746,7 @@ for (i in seq_len(nsettings)) {
 
                 } # for chunki: possible chunks if argument is too long
          
-                # apply new time values to result of the cdo selection if wanted and then 
-                # apply the cdo calculation
+                # apply new time values to result of cdo selection if wanted before cdo calculation
                 if (!is.null(new_date_list[[i]])) {
 
                     message("\n`new_date_list[[", i, "]]` is not NULL:")
@@ -2254,13 +2256,15 @@ for (i in seq_len(nsettings)) {
                                                      paste0("_origin_", new_date_list[[i]]$nc_time_origin, ".nc"),
                                                      selfile_vec[chunki])
                        
-                        #if (!file.exists(nco_fout_vec[chunki])) { # why did i do this?
-                        if (T) {
-
+                        if (file.exists(nco_fout_vec[chunki])) {
+                            message("\nnco_fout_vec[chunki] = \"", nco_fout_vec[chunki], "\" alread exists. skip ncap2 command")
+                        
+                        } else {
                             # if input has absolute time units but `new_date_list[[i]]$nc_time_units` shall be relative,
                             # the input needs to be converted from absolute to relative time units
                             # before setting new time values with nco ncap2
                             # todo: need to update this with a check
+                            
                             #cmd_cp_and_mv <- paste0("cp ", fout_vec[chunki], " ", nco_fout_vec[chunki])
                             cmd_cp_and_mv <- paste0(cdoprefix, " --no_history -r copy ", selfile_vec[chunki], " ", nco_fout_vec[chunki])
                             cmd_ncap2 <- paste0(nco_ncap2, " -O -h -s 'time(:)={<dates_out_ncap>}; time@units=\"",
@@ -2309,10 +2313,10 @@ for (i in seq_len(nsettings)) {
                                     if (nco_ncap2_chunki == nchunks_nco_ncap2) {
                                         inds_chunki <- cmd_nco_ncap2_chunk_inds[nco_ncap2_chunki]:cmd_nco_ncap2_chunk_inds[nco_ncap2_chunki+1]
                                     }
-                                    ncofile_vec[nco_ncap2_chunki] <- gsub(".nc", 
-                                                                          paste0("_nco_ncap2_chunk_", nco_ncap2_chunki, 
-                                                                                 "_of_", nchunks_nco_ncap2, ".nc"), 
-                                                                          nco_fout_vec[chunki])
+                                    ncofile_vec[nco_ncap2_chunki] <- sub(".nc", # all files are .nc if new times shall be applied
+                                                                         paste0("_nco_ncap2_chunk_", nco_ncap2_chunki, 
+                                                                                "_of_", nchunks_nco_ncap2, ".nc"), 
+                                                                         nco_fout_vec[chunki])
                                     cmd_seltimestep_list[[nco_ncap2_chunki]] <- paste0(cdoprefix, " seltimestep,", inds_chunki[1], "/",
                                                                                        inds_chunki[length(inds_chunki)], " ",
                                                                                        selfile_vec[chunki], " ", 
@@ -2401,81 +2405,141 @@ for (i in seq_len(nsettings)) {
 
                             } # if nco ncap2 argument is too long
 
-                        } else { # if file.exists(nco_fout_vec[chunki])
-
-                            message("\nnco_fout_vec[chunki] = \"", nco_fout_vec[chunki], "\" alread exists. skip ncap2 command")
-
                         } # if file.exists(nco_fout_vec[chunki])
 
                     } # for cdo chunki: possible chunks if argument is too long
            
-                    # new origin was applied to result of cdo selection 
+                    # new time was applied to result of cdo selection 
                     # --> continue with these files
                     selfile_vec_old <- selfile_vec
                     selfile_vec <- nco_fout_vec
-               
-                    # run cdo calculation after applying new dates to cdo selection result
-                    for (chunki in seq_len(nchunks)) { # for possible chunks if argument is too long
-                  
-                        message("\nrun calculation of chunk ", chunki, "/", nchunks, " ...")
-                        
-                        # update selfile in calc command
-                        cmd_calc_chunki <- cmd_calc_list[[chunki]]$cmd
-                        cmd_calc_chunki <- gsub(selfile_vec_old[chunki], selfile_vec[chunki], cmd_calc_chunki)
-                        message("\nrun `", cmd_calc_chunki, "` ...")
-
-                        if (cdo_run_from_script) {
-                            
-                            scriptname <- paste0(postpaths[i], "/tmp_calc_cmd_", Sys.getpid(), "_chunk_", 
-                                                 chunki, "_of_", nchunks, ".txt")
-                            writeLines(cmd_calc_chunki, con=scriptname)
-                            nfiles_per_chunk <- cmd_select_list[[chunki]]$n
-                            cmd_source <- paste0(". ", scriptname)
-                            if (file.exists(fout_vec[chunki]) && !post_force) {
-                                message("fout_vec[", chunki, "] =\n",
-                                        "   \"", fout_vec[chunki], "\"\n",
-                                        "already exists and `post_force`=F. skip ...")
-                                ticcmd <- toccmd <- NULL
-                            } else {
-                                message("via `", cmd_source, "`")
-                                message("this may take some time for ", nfiles_per_chunk, " file",
-                                        ifelse(nfiles_per_chunk > 1, "s", ""), " ...")
-                                ticcmd <- Sys.time()
-                                system(cmd_source)
-                                toccmd <- Sys.time()
-                            }
-
-                            # output file exists?
-                            if (!file.exists(fout_vec[chunki])) {
-                                stop("fout_vec[", chunki, "] = ", fout_vec[chunki], " does not exist but it should")
-                            }
-                        
-                        } else if (!cdo_run_from_script) {
-                            stop("update for cdo_chain separate/alltogether")
-                            ticcmd <- Sys.time()
-                            system(cmd)
-                            toccmd <- Sys.time()
-                        } # if cdo_run_from_script
-                        
-                        # elapsed
-                        if (!is.null(ticcmd) && !is.null(toccmd)) {
-                            elapsedcmd <- toccmd - ticcmd
-                            message("chunk ", chunki, "/", nchunks, " calculation took ", 
-                                    elapsedcmd , " ", attributes(elapsedcmd)$units, " for ", 
-                                    nfiles_per_chunk, " file", ifelse(nfiles_per_chunk > 1, "s", ""))
-                        }
-                            
-                        # clean
-                        if (clean) {
-                            if (cdo_run_from_script) system(paste0("rm -v ", scriptname))
-                            system(paste0("rm -v ", selfile_vec_old[chunki]))
-                            system(paste0("rm -v ", selfile_vec[chunki]))
-                        } # if clean
-
-                    } # for chunki: possible chunks if argument is too long
                 
                 } # if !is.null(new_date_list[[i]])
-                # finished applying new dates to cdo selection result and subsequent cdo calculation
+                
+                # apply new mask to result of cdo selection if wanted before cdo calculation
+                if (!is.null(mask_list[[i]])) {
+
+                    message("\n`mask_list[[", i, "]]` is not NULL:")
+                    cat(capture.output(str(mask_list[[i]])), sep="\n")
+                    message("\n--> apply mask to ", nchunks, " selection result chunk", 
+                            ifelse(nchunks > 1, "s", ""), " ...")
+
+                    # construct and apply mask command
+                    maskfile_vec <- selfile_vec 
+                    for (chunki in seq_len(nchunks)) {
+                    
+                        message("\nchunk ", chunki, "/", nchunks, " ...")
+                        
+                        maskfile_vec[chunki] <- paste0(dirname(selfile_vec[chunki]), "/", 
+                                                       tools::file_path_sans_ext(basename(selfile_vec[chunki])),
+                                                       "_mask.", tools::file_ext(selfile_vec[chunki]))
+                        
+                        if (file.exists(maskfile_vec[chunki])) {
+                            message("\nmaskfile_vec[chunki] = \"", maskfile_vec[chunki], "\" alread exists. skip mask command")
+                        } else {
+                        
+                            if (!is.null(mask_list[[i]]$cdo_mask)) {
+                                #cdo -setctomiss,0 -mul [ -select,name=var7 data.nc ] -eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/T63/RECCAP2_region_masks_all_lonlat_T63_remapnn.nc test
+                                #cdo -setctomiss,0 -mul data.nc -eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/T63/RECCAP2_region_masks_all_lonlat_T63_remapnn.nc test
+                                message("cdo_mask: `", mask_list[[i]]$cdo_mask, "`")
+                                cmd <- paste0(cdoprefix, " -setctomiss,0 -mul ", selfile_vec[chunki], " ", mask_list[[i]]$cdo_mask, " ", maskfile_vec[chunki])
+                            } else {
+                                stop("only cdo case implemented for mask yet")
+                            }
+                            mask_list[[chunki]]$mask_cmd <- cmd
+                            message("\nrun mask_cmd: `", cmd, "`")
+                            system(mask_list[[chunki]]$mask_cmd)
+                        } # if (file.exists(maskfile_vec[chunki]))
+
+                    } # for chunki 
+                    
+                    # --> continue with masked files
+                    selfile_vec_old <- selfile_vec
+                    selfile_vec <- maskfile_vec
+                    if (clean) {
+                        message("`\nclean`=T --> remove cdo selection results before mask ...")
+                        for (chunki in seq_len(nchunks)) {
+                            message("rm -v ", selfile_vec_old[chunki])
+                            system(paste0("rm -v ", selfile_vec_old[chunki]))
+                        }
+                    }
+                } # if !is.null(mask_list[[i]])
+
+                # run cdo calculation after applying new dates and/or mask to cdo selection result
+                if (cdo_chain == "separate") {
+                    if (grepl("fldint", modes[[i]])) {
+                        # non-default command `fldint` is calculated at the end
+                        # add further commands here if necessary
+                        message("\nmodes[[", i, "]] = \"", paste(modes[[i]], collapse="\", \""), "\" includes \"fldint\" --> ",
+                                "skip calculation here but rename tmp files:")
+                        for (chunki in seq_len(nchunks)) { # for possible chunks if argument is too long
+                            message("chunk ", chunki, "/", nchunks, ": mv ", selfile_vec[chunki], " ", fout_vec[chunki])
+                            invisible(file.rename(selfile_vec[chunki], fout_vec[chunki]))
+                        }
+
+                    } else { # run separate cdo calc after applying new dates and/or mask to cdo selection result
+                        for (chunki in seq_len(nchunks)) { # for possible chunks if argument is too long
+                      
+                            message("\nrun calculation of chunk ", chunki, "/", nchunks, " ...")
+                            
+                            # update selfile in calc command
+                            cmd_calc_chunki <- cmd_calc_list[[chunki]]$cmd
+                            cmd_calc_chunki <- gsub(selfile_vec_old[chunki], selfile_vec[chunki], cmd_calc_chunki)
+                            message("\nrun `", cmd_calc_chunki, "` ...")
+
+                            if (cdo_run_from_script) {
+                                
+                                scriptname <- paste0(postpaths[i], "/tmp_calc_cmd_", Sys.getpid(), "_chunk_", 
+                                                     chunki, "_of_", nchunks, ".txt")
+                                writeLines(cmd_calc_chunki, con=scriptname)
+                                nfiles_per_chunk <- cmd_select_list[[chunki]]$n
+                                cmd_source <- paste0(". ", scriptname)
+                                if (file.exists(fout_vec[chunki]) && !post_force) {
+                                    message("fout_vec[", chunki, "] =\n",
+                                            "   \"", fout_vec[chunki], "\"\n",
+                                            "already exists and `post_force`=F. skip ...")
+                                    ticcmd <- toccmd <- NULL
+                                } else {
+                                    message("via `", cmd_source, "`")
+                                    message("this may take some time for ", nfiles_per_chunk, " file",
+                                            ifelse(nfiles_per_chunk > 1, "s", ""), " ...")
+                                    ticcmd <- Sys.time()
+                                    system(cmd_source)
+                                    toccmd <- Sys.time()
+                                }
+
+                                # output file exists?
+                                if (!file.exists(fout_vec[chunki])) {
+                                    stop("fout_vec[", chunki, "] = ", fout_vec[chunki], " does not exist but it should")
+                                }
+                            
+                            } else if (!cdo_run_from_script) {
+                                stop("update for cdo_chain separate/alltogether")
+                                ticcmd <- Sys.time()
+                                system(cmd)
+                                toccmd <- Sys.time()
+                            } # if cdo_run_from_script
+                            
+                            # elapsed
+                            if (!is.null(ticcmd) && !is.null(toccmd)) {
+                                elapsedcmd <- toccmd - ticcmd
+                                message("chunk ", chunki, "/", nchunks, " calculation took ", 
+                                        elapsedcmd , " ", attributes(elapsedcmd)$units, " for ", 
+                                        nfiles_per_chunk, " file", ifelse(nfiles_per_chunk > 1, "s", ""))
+                            }
+                                
+                            # clean
+                            if (clean) {
+                                if (cdo_run_from_script) system(paste0("rm -v ", scriptname))
+                                system(paste0("rm -v ", selfile_vec_old[chunki]))
+                                system(paste0("rm -v ", selfile_vec[chunki]))
+                            } # if clean
+
+                        } # for chunki: possible chunks if argument is too long
+                    
+                    } # if modes[i] != fldint
+                } # if cdo_chain == "separate"
+                # finished applying new dates and/or mask to cdo selection result and subsequent cdo calculation
 
             } # finished check if requested variable is in first found file
 
@@ -2501,7 +2565,7 @@ for (i in seq_len(nsettings)) {
             message("run `", cmd_cat, "` ...")
             system(cmd_cat)
         
-        # or rename of necessary 
+        # or just rename if necessary 
         } else {
             if (fout_vec != fout) {
                 message("\nrename temporary file to fout ...")
@@ -2534,8 +2598,8 @@ for (i in seq_len(nsettings)) {
             system(cmd)
         } # if !is.null(new_date_list[[i]]$years)
 
-        if (any(modes[[i]] == "fldint")) {
-            message("\nmodes[[", i, "]] = \"", paste(modes[[i]], collapse="\", \""), "\" include \"fldint\" --> ",
+        if (grepl("fldint", modes[[i]])) {
+            message("\nmodes[[", i, "]] = \"", paste(modes[[i]], collapse="\", \""), "\" includes \"fldint\" --> ",
                     "calc spatial integral via result of `cdo gridarea` ...")
             check <- T # default
             # check if model is already supported
@@ -2553,11 +2617,11 @@ for (i in seq_len(nsettings)) {
             #message("--> gridtype = \"", gridtype, "\"")
             xsize <- which(base::startsWith(griddes, "xsize"))
             xsize <- gsub(" ", "", griddes[xsize]) # e.g. "xsize=192"
-            xsize <- as.integer(strsplit(xsize, "=")[[1]][2])
+            xsize <- as.integer(strsplit(xsize, "=")[[1]][2]) # e.g. 192
             message("--> xsize= \"", xsize, "\"")
             ysize <- which(base::startsWith(griddes, "ysize"))
             ysize <- gsub(" ", "", griddes[ysize]) # e.g. "ysize=96"
-            ysize <- as.integer(strsplit(ysize, "=")[[1]][2])
+            ysize <- as.integer(strsplit(ysize, "=")[[1]][2]) # e.g. 96
             message("--> ysize= \"", ysize, "\"")
             if (xsize == 1 && ysize == 1) {
                 message("xsize and ysize = 1 --> skip fldint calculation")
@@ -2574,7 +2638,7 @@ for (i in seq_len(nsettings)) {
                 cmd <- paste0(cmd, " || echo error")
                 message("run `", cmd, "`")
                 system(cmd)
-                invisible(file.remove(area_file))
+                if (clean) invisible(file.remove(area_file))
             } # if check
         } # if fldint
 
@@ -2593,7 +2657,7 @@ for (i in seq_len(nsettings)) {
 
         # set time_bnds if needed (if there is time dim) and not already there
         # --> time_bnds are necessary for `cdo cat`
-        message("\ncheck if time_bnds are needed and not there yet ...") 
+        message("\ncheck if time_bnds are needed (if there is a time dim) and not there yet ...") 
         # todo: how to check if file has time_dims?
         cmd <- paste0(cdo, " sinfo ", fout) # short info 
         message("run `", cmd, "` ...")

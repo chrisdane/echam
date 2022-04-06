@@ -8,7 +8,23 @@ repopath <- normalizePath(repopath, mustWork=T) # error if not found
 source(paste0(repopath, "/namelist.general.plot.r"))
 
 # 1 setting
-if (F) { # reccap AmC minus DmB
+if (T) { # mhw composite data/seas*100
+    workpaths <- "/work/ba1103/a270073"
+    models <- "fesom"
+    prefixes <- "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_anom_pcnt_regular_dx0.250_dy0.250"
+    names_short <- "awicm1-recom_mhw_composite_anom_pcnt"
+    names_legend <- "Events/Climatology*100"
+    #varnames_in <- "mlotst"
+    #varnames_in <- "omldamax"
+    #varnames_in <- "tau"
+    #varnames_in <- "curltau"
+    varnames_in <- "ekmanP_ms"
+    modes <- "timmean"
+    fromsf <- 2842
+    tosf <- ""
+    seasonsf <- "Jul"
+
+} else if (F) { # reccap AmC minus DmB
     workpath <- "/work/ollie/cdanek"
     models <- "fesom"
     names_legend <- "(A-C) - (D-B)"
@@ -377,6 +393,25 @@ if (F) { # reccap AmC minus DmB
 
 # =====================================
 # 2 settings
+} else if (F) { # mhw composite data vs seas
+    workpaths <- "/work/ba1103/a270073"
+    models <- rep("fesom", t=2)
+    prefixes <- c("awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_seas_regular_dx0.250_dy0.250",
+                  "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_data_regular_dx0.250_dy0.250")
+    names_short <- paste0("awicm1-recom_mhw_composite_", c("seas", "data"))
+    names_legend <- c("Climatology", "Events")
+    #varnames_in <- rep("mlotst", t=2)
+    varnames_in <- rep("omldamax", t=2)
+    #varnames_in <- rep("tau", t=2)
+    #varnames_out_samedims <- "tau"
+    #names_legend_samedims <- c("taux", "tauy", "tau")
+    #varnames_in <- rep("curltau", t=2)
+    #varnames_in <- rep("ekmanP_ms", t=2)
+    modes <- rep("timmean", t=2)
+    fromsf <- rep(2842, t=2)
+    tosf <- rep("", t=2)
+    seasonsf <- rep("Jul", t=2)
+
 } else if (F) { # reccap A_minus_C vs D_minus_B
     workpath <- "/work/ollie/cdanek"
     models <- rep("fesom", t=2)
@@ -506,6 +541,23 @@ if (F) { # reccap AmC minus DmB
     new_origins <- c(1, 1)
     tosp <- c(17, 17)
     modes <- rep("select", t=2)
+
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl2 vs esm-piControl_wout_talk_rest
+    #models <- rep("echam6", t=2)
+    models <- rep("fesom", t=2)
+    prefixes <- c("awi-esm-1-1-lr_kh800_esm-piControl2", "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest")
+    names_short <- c("esm-piControl2", "esm-piControl_wout_talk_rest")
+    names_legend <- c("esm-piControl with Talk rest", "esm-piControl wout Talk rest wrong commit")
+    varnames_in <- rep("bgc02", t=2)
+    depths <- rep("0", t=2)
+    fromsf <- c(3151, 3151)
+    tosf <- c(3168, 3156)
+    tunit <- "model year"
+    new_origins <- c(1, 1)
+    #tosp <- c(17, 17)
+    #modes <- rep("select", t=2)
+    modes <- rep("fldmean", t=2)
+    legend_pos_ts <- "topright"
 
 } else if (F) { # awi-esm-1-1-lr vs awi-esm-1-1_kh800 piControl
     models <- rep("fesom", t=2)
@@ -1252,7 +1304,37 @@ if (F) { # reccap AmC minus DmB
 
 # =====================================
 # 4 settings
-} else if (T) { # reccap A B C D
+} else if (F) { # awi-esm-1-1-lr_kh800 pi hist chau_etal_2020 gregor_and_fay_2021
+    models <- c(rep("echam6", t=2), "chau_etal_2020", "gregor_and_fay_2021")
+    prefixes <- c(paste0("awi-esm-1-1-lr_kh800_", c("piControl", "historical")),
+                  "chau_etal_2020", "gregor_and_fay_2021")
+    names_short <- c("pi", "hist", "C20", "GF21")
+    names_legend <- c("piControl", "historical", "C20", "GF21")
+    #names_legend <- c("piControl", "historical (85-14)", "C20 (85-20)", "GF21 (90-19)")
+    varnames_in <- c(rep("co2_flx_ocean", t=2), "fgco2", "fgco2_ens_mean")
+    varnames_out_samedims <- "co2_flx_ocean"
+    names_legend_samedims <- names_legend
+    #plotprefix <- "awicm-1.0-recom_conc_pi_hist_C20_GF21"
+    echam6_global_setNA <- "land"
+    addland <- F
+    bilinear_interp_factor <- 4
+    fromsf <- c(2686, 1850, 1985, 1990)
+    tosf <- c(2936, 2014, 2020, 2019)
+    #fromsf <- c(2851-29, 2014-29, rep(2100-29, t=4))
+    #tosf <- c(2851, 2014, rep(2100, t=4))
+    new_origins <- c(1850, rep(NA, t=3)) # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
+    #new_origins <- c(2014-29, rep(NA, t=5))
+    fromsp <- c(1980, 1980, NA, NA)
+    #fromsp <- c(NA, 1985, NA, NA)
+    tosp <- c(2025, NA, NA, NA)
+    modes <- rep("fldint", t=4)
+    #areas <- rep("reccap2_atlantic", t=4)
+    areas <- rep("reccap2_pacific", t=4)
+    #areas <- rep("reccap2_indian", t=4)
+    #areas <- rep("reccap2_arctic", t=4)
+    #areas <- rep("reccap2_southern", t=4)
+
+} else if (F) { # reccap A B C D
     workpath <- "/work/ollie/cdanek"
     models <- rep("fesom", t=4)
     names_legend <- c("A", "B", "C", "D")
@@ -1769,20 +1851,36 @@ if (F) { # reccap AmC minus DmB
 
 # ==================================================
 # 6 settings
-} else if (T) { # awi-esm-1-1-lr_kh800 pi (2686 to 2851 (2014) and 2936 (2100)) hist ssp126 ssp245 ssp534-over ssp585
-    models <- rep("echam6", t=6)
+} else if (F) { # awi-esm-1-1-lr_kh800 ensemble: pi (2686 to 2851 (2014) and 2936 (2100)) hist ssp126 ssp245 ssp534-over ssp585
+    #models <- rep("echam6", t=6)
+    models <- rep("fesom", t=6)
     prefixes <- paste0("awi-esm-1-1-lr_kh800_", 
                        c("piControl", "historical", "ssp126", "ssp245", "ssp534-over", "ssp585"))
     names_short <- c("pi", "hist", "126", "245", "534-over", "585")
     names_legend <- c("piControl", "historical", "ssp126", "ssp245", "ssp534-over", "ssp585")
     cols <- c(1, 3, 4, 5, 6, 2) # special col order
-    varnames_in <- rep("temp2", t=6)
+    #varnames_in <- rep("temp2", t=6)
     #varnames_in <- rep("co2_flx_ocean", t=6)
+    echam6_global_setNA <- "land"
+    addland <- F
+    varnames_in <- rep("siextentn", t=6)
+    bilinear_interp_factor <- 4
     fromsf <- c(2686, 1850, rep(2015, t=4))
-    tosf <- c(2936, 2014, 2100, 2100, 2097, 2100)
+    #tosf <- c(2936, 2014, 2100, 2100, 2100, 2100)
+    tosf <- c(3000, 2014, 2100, 2100, 2100, 2100)
+    #fromsf <- c(2851-29, 2014-29, rep(2100-29, t=4))
     new_origins <- c(1850, rep(NA, t=5)) # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
-    modes <- rep("fldmean", t=6)
+    #new_origins <- c(2014-29, rep(NA, t=5))
+    tosp <- c(2100, rep(NA, t=5))
+    modes <- rep("select", t=6)
+    #modes <- rep("fldmean", t=6)
     #modes <- rep("fldint", t=6)
+    #modes <- rep("timmean", t=6)
+    #areas <- rep("reccap2_atlantic", t=6)
+    #areas <- rep("reccap2_pacific", t=6)
+    #areas <- rep("reccap2_indian", t=6)
+    #areas <- rep("reccap2_arctic", t=6)
+    #areas <- rep("reccap2_southern", t=6)
 
 } else if (F) { # compare PLOT lakes
     #prefixes <- rep("cosmos-aso-wiso_Hol-Tx10_wiso_mm", t=6)
@@ -1883,6 +1981,39 @@ if (F) { # reccap AmC minus DmB
 
 # ==================================================
 # 8 settings
+} else if (F) { # awi-esm-1-1-lr_kh800 ensemble: pi (2686 to 2851 (2014) and 2936 (2100)) hist ssp126 ssp245 ssp534-over ssp585 chau_etal_2020 gregor_and_fay_2021
+    models <- c(rep("echam6", t=6), "chau_etal_2020", "gregor_and_fay_2021")
+    prefixes <- c(paste0("awi-esm-1-1-lr_kh800_", 
+                         c("piControl", "historical", "ssp126", "ssp245", "ssp534-over", "ssp585")),
+                  "chau_etal_2020", "gregor_and_fay_2021")
+    names_short <- c("pi", "hist", "126", "245", "534-over", "585", "chau_etal_2020", "gregor_and_fay_2021")
+    names_legend <- c("piControl", "historical", "ssp126", "ssp245", "ssp534-over", "ssp585", "C20", "GF21")
+    cols <- c(1, 3, 4, 5, 6, 2, 1, 1) # special col order
+    ltys <- c(rep(1, t=6), 2, 3)
+    #varnames_in <- rep("temp2", t=6)
+    #varnames_in <- rep("co2_flx_ocean", t=6)
+    varnames_in <- c(rep("co2_flx_ocean", t=6), "fgco2", "fgco2_ens_mean")
+    varnames_out_samedims <- "co2_flx_ocean"
+    names_legend_samedims <- names_legend
+    plotprefix <- "awicm-1.0-recom_conc_ensemble_C20_GF21"
+    echam6_global_setNA <- "land"
+    addland <- F
+    bilinear_interp_factor <- 4
+    fromsf <- c(2686, 1850, rep(2015, t=4), 1985, 1990)
+    tosf <- c(2936, 2014, 2100, 2100, 2100, 2100, 2020, 2019)
+    #fromsf <- c(2851-29, 2014-29, rep(2100-29, t=4))
+    #tosf <- c(2851, 2014, rep(2100, t=4))
+    new_origins <- c(1850, rep(NA, t=7)) # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
+    #new_origins <- c(2014-29, rep(NA, t=5))
+    #modes <- rep("fldmean", t=6)
+    modes <- rep("fldint", t=8)
+    #modes <- rep("timmean", t=6)
+    #areas <- rep("reccap2_atlantic", t=6)
+    #areas <- rep("reccap2_pacific", t=6)
+    #areas <- rep("reccap2_indian", t=6)
+    #areas <- rep("reccap2_arctic", t=6)
+    areas <- rep("reccap2_southern", t=8)
+
 } else if (F) { # hol-tx10 vs hol-t
     prefixes <- c(rep("cosmos-aso-wiso_Hol-Tx10_timeser_ext", t=4), 
                   rep("cosmos-aso-wiso_Hol-T_timeser_ext", t=4))

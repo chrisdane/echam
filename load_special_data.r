@@ -52,6 +52,19 @@ if (F && any(file.exists(fs))) {
 }
 
 
+# reccap2 lsm
+f <- ""
+if (host$machine_tag == "mistral") {
+    f <- "/work/ba1103/a270073/data/reccap2-ocean/R2-shared-resources/data/regions/RECCAP2_region_masks_all.nc"
+}
+if (T && file.exists(f)) {
+    message("\ndisable here if you do not want to load reccap2 lsm from ", f, " ...")
+    reccap2_lsm_ncin <- nc_open(f)
+} else {
+    message("enable here to load reccap2 lsm ...")
+}
+
+
 # cmip6 co2 hist
 f <- ""
 if (host$machine_tag == "mistral") {
@@ -390,17 +403,17 @@ if (F && file.exists(f)) {
 # monthly nsidc sea ice index northern hemisphere
 f <- ""
 if (host$machine_tag == "mistral") {
-    f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_monthly_v3.0.nc"
+    f <- "/work/ab0246/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_monthly_v3.0.csv_1978-10-26_to_2022-03-30.nc"
 }
 if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load northern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
-    nsidc_siarean_monthly <- list(siarean=ncvar_get(nsidc_ncin, "siarean"),
-                                  time=timelt, timen=time,
-                                  text="NSIDC north", col="black",
-                                  lty=1, lwd=1.5, pch=NA)
+    nsidc_siextentn_monthly <- list(siextentn=ncvar_get(nsidc_ncin, "siextentn"),
+                                    time=timelt, timen=time,
+                                    text="NSIDC north", col="black",
+                                    lty=1, lwd=1.5, pch=NA)
     add_nsidc_arctic_monthly <- F
     message("set add_nsidc_arctic_monthly=T if you want to add to plot")
 } else {
@@ -411,17 +424,17 @@ if (T && file.exists(f)) {
 # monthly nsidc sea ice index southern hemisphere
 f <- ""
 if (host$machine_tag == "mistral") {
-    f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_monthly_v3.0.nc"
+    f <- "/work/ab0246/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_monthly_v3.0.csv_1978-10-26_to_2022-03-30.nc"
 }
 if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load monthly southern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
-    nsidc_siareas_monthly <- list(siareas=ncvar_get(nsidc_ncin, "siareas"),
-                                  time=timelt, timen=time,
-                                  text="NSIDC south", col="black",
-                                  lty=3, lwd=1.5, pch=NA)
+    nsidc_siextents_monthly <- list(siextents=ncvar_get(nsidc_ncin, "siextents"),
+                                    time=timelt, timen=time,
+                                    text="NSIDC south", col="black",
+                                    lty=3, lwd=1.5, pch=NA)
     add_nsidc_antarctic_monthly <- F
     message("set add_nsidc_antarctic_monthly=T if you want to add to plot")
 } else {
@@ -432,23 +445,23 @@ if (T && file.exists(f)) {
 # annual nsidc sea ice index northern hemisphere
 f <- ""
 if (host$machine_tag == "mistral") {
-    f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_annual_v3.0.nc"
+    f <- "/work/ab0246/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_annual_v3.0.csv_1978-10-26_to_2022-03-30.nc"
 }
 if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load annual northern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
-    nsidc_siarean_annual <- list(siarean=ncvar_get(nsidc_ncin, "siarean"),
-                                 time=timelt, timen=time,
-                                 text="NSIDC north", col="black",
-                                 lty=1, lwd=1.5, pch=NA)
+    nsidc_siextentn_annual <- list(siextentn=ncvar_get(nsidc_ncin, "siextentn"),
+                                   time=timelt, timen=time,
+                                   text="NSIDC north", col="black",
+                                   lty=1, lwd=1.5, pch=NA)
     # remove first year 1978 due to data only from 3 months OND
     message("remove first year 1978")
-    nsidc_siarean_annual$siarean <- nsidc_siarean_annual$siarean[-1]
-    nsidc_siarean_annual$time <- nsidc_siarean_annual$time[-1]
-    nsidc_siarean_annual$timen <- nsidc_siarean_annual$timen[-1]
-    add_nsidc_arctic_annual <- F
+    nsidc_siextentn_annual$siextentn <- nsidc_siextentn_annual$siextentn[-1]
+    nsidc_siextentn_annual$time <- nsidc_siextentn_annual$time[-1]
+    nsidc_siextentn_annual$timen <- nsidc_siextentn_annual$timen[-1]
+    add_nsidc_arctic_annual <- T
     message("set add_nsidc_arctic_annual=T if you want to add to plot")
 } else {
     message("enable here to load annual northern nsidc sea ice index from ...")
@@ -458,23 +471,23 @@ if (T && file.exists(f)) {
 # annual nsidc sea ice index southern hemisphere
 f <- ""
 if (host$machine_tag == "mistral") {
-    f <- "/work/ba0941/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_annual_v3.0.nc"
+    f <- "/work/ab0246/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_annual_v3.0.csv_1978-10-26_to_2022-03-30.nc"
 }
 if (T && file.exists(f)) {
     message("\ndisable here if you do not want to load annual southern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
-    nsidc_siareas_annual <- list(siareas=ncvar_get(nsidc_ncin, "siareas"),
-                                 time=timelt, timen=time,
-                                 text="NSIDC south", col="black",
-                                 lty=3, lwd=1.5, pch=NA)
+    nsidc_siextents_annual <- list(siextents=ncvar_get(nsidc_ncin, "siextents"),
+                                   time=timelt, timen=time,
+                                   text="NSIDC south", col="black",
+                                   lty=3, lwd=1.5, pch=NA)
     # remove first year 1978 due to data only from 3 months OND
     message("remove first year 1978")
-    nsidc_siareas_annual$siareas <- nsidc_siareas_annual$siareas[-1]
-    nsidc_siareas_annual$time <- nsidc_siareas_annual$time[-1]
-    nsidc_siareas_annual$timen <- nsidc_siareas_annual$timen[-1]
-    add_nsidc_antarctic_annual <- F
+    nsidc_siextents_annual$siextents <- nsidc_siextents_annual$siextents[-1]
+    nsidc_siextents_annual$time <- nsidc_siextents_annual$time[-1]
+    nsidc_siextents_annual$timen <- nsidc_siextents_annual$timen[-1]
+    add_nsidc_antarctic_annual <- T
     message("set add_nsidc_antarctic_annual=T if you want to add to plot")
 } else {
     message("enable here to load annual southern nsidc sea ice index ...")
