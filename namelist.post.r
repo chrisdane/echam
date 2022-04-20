@@ -972,7 +972,7 @@ if (F) { # old hist
                            #cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc"
      #                                      )))
 
-} else if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 to 3
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1 to 3
     workpath <- "/work/ba1103/a270073"
     #models <- "echam6"
     #models <- "jsbach"
@@ -2152,6 +2152,65 @@ if (F) { # old hist
     modes <- rep("timmean", t=12)
     froms <- rep(2686, t=12)
     tos <- rep(2704, t=12)
+
+# ======================================================
+# 15 settings
+} else if (F) { # 15 reccap2 settings (wout CNRM-ESM2-1)
+    models <- c("CCSM-WHOI", "CESM-ETHZ", "EC-Earth3", "ECCO-Darwin", 
+                "FESOM_REcoM_HR", "FESOM_REcoM_LR", "MOM6-COBALT2-Princeton", 
+                "MPIOM-HAMOCC", "MRI-ESM2-0", "NorESM-OC1.2", "OCIM-v2014", "OCIM-v2021", 
+                "ORCA025-GEOMAR", "ORCA1-LIM3-PISCES", "ROMS-SouthernOcean-ETHZ")
+    datapaths <- sapply(models, function(x) dir("/work/ollie/ncara/RECCAPv2/reccap_submissions/download_20220124/Models/2D_CO2/", pattern=x, full.name=T))
+    fpatterns <- rep("fgco2_glob_*_A_*", t=length(models))
+    prefixes <- paste0("reccap2_", models, "_A")
+    fvarnames <- rep("fgco2_glob", t=length(models))
+    modes <- rep("select", t=length(models))
+    froms <- c(1958, 1980, 1995, rep(1980, t=12))
+    tos <- c(2017, rep(2018, t=6), 2019, 2018, 2018, 2017, rep(2018, t=4))
+
+# ======================================================
+# 16 settings
+} else if (T) { # 16 reccap2 settings
+    post_force <- T
+    models <- c("CCSM-WHOI", "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
+                "FESOM_REcoM_HR", "FESOM_REcoM_LR", "MOM6-COBALT2-Princeton", 
+                "MPIOM-HAMOCC", "MRI-ESM2-0", "NorESM-OC1.2", "OCIM-v2014", "OCIM-v2021", 
+                "ORCA025-GEOMAR", "ORCA1-LIM3-PISCES", "ROMS-SouthernOcean-ETHZ")
+    datapaths <- sapply(models, function(x) dir("/work/ollie/ncara/RECCAPv2/reccap_submissions/download_20220124/Models/2D_CO2", pattern=x, full.name=T))
+    # set grid:
+    datapaths[which(models == "FESOM_REcoM_HR")] <- "/work/ollie/cdanek/data/reccap2-ocean/FESOM_REcoM_HR"
+    datapaths[which(models == "FESOM_REcoM_LR")] <- "/work/ollie/cdanek/data/reccap2-ocean/FESOM_REcoM_LR"
+    # set grid and NA value (`cdo fldsum` yields NA) and rechunked for faster reading: 
+    datapaths[which(models == "OCIM-v2014")] <- "/work/ollie/cdanek/data/reccap2-ocean/OCIM-v2014"
+    datapaths[which(models == "OCIM-v2021")] <- "/work/ollie/cdanek/data/reccap2-ocean/OCIM-v2021"
+    # set NA value (`cdo fldsum` yields NA):
+    datapaths[which(models == "CESM-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/CESM-ETHZ"
+    # set NA value (`cdo fldsum` yields NA) and rechunked for faster reading:
+    datapaths[which(models == "ECCO-Darwin")] <- "/work/ollie/cdanek/data/reccap2-ocean/ECCO-Darwin"
+    # set dates:
+    new_date_list <- vector("list", l=length(models))
+    new_date_list[[1]] <- list(dates=paste0(rep(1958:2017, e=12), "-", rep(1:12, t=length(1958:2017)), "-", rep(15, t=length(1958:2017)*12))) # CCSM-WHOI 1st date: 1958-02-01
+    new_date_list[[5]] <- list(dates=paste0(rep(1995:2018, e=12), "-", rep(1:12, t=length(1995:2018)), "-", rep(15, t=length(1995:2018)*12))) # ECCO-Darwin 1st date: 0016-01-16 
+    new_date_list[[6]] <- list(dates=paste0(rep(1980:2018, e=12), "-", rep(1:12, t=length(1980:2018)), "-", rep(15, t=length(1980:2018)*12))) # FESOM_REcoM_HR 1st date: 0000-00-00
+    new_date_list[[7]] <- new_date_list[[6]] # FESOM_REcoM_LR
+    # rechunked for faster reading:
+    datapaths[which(models == "CCSM-WHOI")] <- "/work/ollie/cdanek/data/reccap2-ocean/CCSM-WHOI"
+    datapaths[which(models == "NorESM-OC1.2")] <- "/work/ollie/cdanek/data/reccap2-ocean/NorESM-OC1.2"
+    datapaths[which(models == "ROMS-SouthernOcean-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-SouthernOcean-ETHZ"
+    if (T) { # nlon x nlat x ntime
+        froms <- c(1980, rep(1980, t=3), 1995, rep(1980, t=3), 1980, rep(1980, t=2), 1980, rep(1980, t=4))
+        tos <- c(2017, rep(2018, t=3), 2018, rep(2018, t=3), 2019, rep(2018, t=2), 2017, rep(2018, t=4))
+        fpatterns <- paste0("fgco2_", models, "*A_*_gr_", froms, "-*.nc")
+        modes <- rep("fldint", t=length(models))
+        fvarnames <- rep("fgco2", t=length(models))
+    } else if (F) { # ntime 
+        fpatterns <- rep("fgco2_glob_*_A_*", t=length(models))
+        froms <- c(1958, 1980, 1980, 1995, rep(1980, t=12))
+        tos <- c(2017, rep(2018, t=7), 2019, 2018, 2018, 2017, rep(2018, t=4))
+        modes <- rep("select", t=length(models))
+        fvarnames <- rep("fgco2_glob", t=length(models))
+    }
+    prefixes <- rep("reccap2_A", t=length(models))
 
 # ======================================================
 # 27 settings

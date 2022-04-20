@@ -30,7 +30,7 @@ host$repopath <- repopath
 message("\nload functions from submodule dir ", host$repopath, "/functions\" ...")
 # needed myfunctions.r functions: 
 # ht(), is.leap(), identical_list(), make_posixlt_origin(), ncdump_get_filetype()  
-for (i in c("myfunctions.r")) source(paste0(host$repopath, "/functions/", i))
+for (i in c("myfunctions.r")) source(paste0(host$homepath, "/functions/", i))
 
 # general options
 verbose <- 1 # 0,1

@@ -289,35 +289,45 @@ if (!exists("new_date_list")) {
     message("load sticky package for functions:make_posixlt_origin() ...")
     library(sticky)
     for (i in seq_len(nsettings)) {
-        if (is.null(new_date_list[[i]]$years)) {
-            # user did not provide final years to use 
-            if (!is.null(new_date_list[[i]]$year_origin) && 
-                is.null(new_date_list[[i]]$use)) {
-                new_date_list[[i]]$use <- "filename" # default
-                message("`new_date_list[[", i, "]]$year_origin` = ", new_date_list[[i]]$year_origin, 
-                        " but its not mentioned which numbers to use for the new years. set `new_date_list[[", i, "]]$use = \"",
-                        new_date_list[[i]]$use, "\" (default) and continue ...")
+        if (!is.null(new_date_list[[i]]$dates)) { # user provided new dates
+            message("`new_date_list[[", i, "]]$dates` (", length(new_date_list[[i]]$dates), " entries) = ")
+            ht(new_date_list[[i]]$dates)
+            if (!any(class(new_date_list[[i]]$dates) == "POSIXt")) {
+                message("convert to POSIX ...")
+                new_date_list[[i]]$dates <- as.POSIXct(new_date_list[[i]]$dates, tz="UTC")
+                ht(new_date_list[[i]]$dates)
             }
-            if (!is.null(new_date_list[[i]]$use) && 
-                is.null(new_date_list[[i]]$year_origin)) {
-                new_date_list[[i]]$year_origin <- 0 # default
-                message("`new_date_list[[", i, "]]$use` = ", new_date_list[[i]]$use,
-                        " but the origin of the new years is not mentioned. set `new_date_list[[", i, "]]$year_origin = ",
-                        new_date_list[[i]]$year_origin, " (default) and continue ...")
-            }
-        } else if (!is.null(new_date_list[[i]]$years)) {
-            # user did provide final years to use 
-            message("`new_date_list[[", i, "]]$years` (", length(new_date_list[[i]]$years), " entries) = ")
-            ht(new_date_list[[i]]$years)
-            if (!is.null(new_date_list[[i]]$use)) {
-                message(" but also `new_date_list[[", i, "]]$use` = ", new_date_list[[i]]$use, 
-                        " is given. the latter will be ignored.")
-            }
-            if (!is.null(new_date_list[[i]]$year_origin)) {
-                message(" but also `new_date_list[[", i, "]]$year_origin` = ", new_date_list[[i]]$year_origin, 
-                        " is given. the latter will be ignored.")
-            }
-        } # final years are given or not
+
+        } else if (is.null(new_date_list[[i]]$dates)) { # user did not provide new dates
+
+            if (!is.null(new_date_list[[i]]$years)) { # user provided new years
+                message("`new_date_list[[", i, "]]$years` (", length(new_date_list[[i]]$years), " entries) = ")
+                ht(new_date_list[[i]]$years)
+                if (!is.null(new_date_list[[i]]$use)) {
+                    message(" but also `new_date_list[[", i, "]]$use` = ", new_date_list[[i]]$use, 
+                            " is given. the latter will be ignored.")
+                }
+                if (!is.null(new_date_list[[i]]$year_origin)) {
+                    message(" but also `new_date_list[[", i, "]]$year_origin` = ", new_date_list[[i]]$year_origin, 
+                            " is given. the latter will be ignored.")
+                }
+            } else if (is.null(new_date_list[[i]]$years)) { # user did not provide new years
+                if (!is.null(new_date_list[[i]]$year_origin) && 
+                    is.null(new_date_list[[i]]$use)) {
+                    new_date_list[[i]]$use <- "filename" # default
+                    message("`new_date_list[[", i, "]]$year_origin` = ", new_date_list[[i]]$year_origin, 
+                            " but its not mentioned which numbers to use for the new years. set `new_date_list[[", i, "]]$use = \"",
+                            new_date_list[[i]]$use, "\" (default) and continue ...")
+                }
+                if (!is.null(new_date_list[[i]]$use) && 
+                    is.null(new_date_list[[i]]$year_origin)) {
+                    new_date_list[[i]]$year_origin <- 0 # default
+                    message("`new_date_list[[", i, "]]$use` = ", new_date_list[[i]]$use,
+                            " but the origin of the new years is not mentioned. set `new_date_list[[", i, "]]$year_origin = ",
+                            new_date_list[[i]]$year_origin, " (default) and continue ...")
+                }
+            } # new years?
+        } # new dates?
     } # for i nsettings
 
     # check if ncap2 is available
@@ -400,12 +410,17 @@ for (i in seq_len(nsettings)) {
     if (!is.na(sellevels[i])) message("sellevel = ", sellevels[i])
     if (!is.na(sellevsidx[i])) message("sellevidx = ", sellevsidx[i])
     if (!is.null(new_date_list[[i]])) {
-        if (!is.null(new_date_list[[i]]$years)) {
-            message("new_date_list[[", i, "]]$years = ")
-            ht(new_date_list[[i]]$years)
+        if (!is.null(new_date_list[[i]]$dates)) {
+            message("new_date_list[[", i, "]]$dates = ")
+            ht(new_date_list[[i]]$dates)
         } else {
-            message("new_date_list[[", i, "]]$use = ", new_date_list[[i]]$use, "\n",
-                    "new_date_list[[", i, "]]$year_origin = ", new_date_list[[i]]$year_origin)
+            if (!is.null(new_date_list[[i]]$years)) {
+                message("new_date_list[[", i, "]]$years = ")
+                ht(new_date_list[[i]]$years)
+            } else {
+                message("new_date_list[[", i, "]]$use = ", new_date_list[[i]]$use, "\n",
+                        "new_date_list[[", i, "]]$year_origin = ", new_date_list[[i]]$year_origin)
+            }
         }
     }
 
@@ -1081,45 +1096,22 @@ for (i in seq_len(nsettings)) {
             }
             message("is present in first found file ...")
             
-            # 1st (faster) try: `cdo partab`
-            if (T) {
-                cmd <- paste0(cdoprefix, " ", cdo_select_no_history, " partab ", datapath, "/", files[1])
-                message("run `", cmd, "`")
-                var_exist <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
-                if (!is.null(var_exist$warning)) { # `cdo partab` yields warn/error
-                    # use `ncks -m` instead; only works if input is nc file
-                    ncks <- Sys.which("ncks")
-                    cmd <- paste0(ncks, " -m ", datapath, "/", files[1])
-                    message("run `", cmd, "`")
-                    var_exist <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))
-                    if (!is.na(codes[i])) {
-                        stop("implement")
-                    } else {
-                        teststring <- paste0(" ", fvarnames[i], "\\(")
-                    }
-                } else { # `cdo partab` success
-                    if (!is.na(codes[i])) { # code provided
-                        teststring <- paste0("name = var", codes[i])
-                    } else {
-                        teststring <- paste0("name = ", fvarnames[i])
-                    }
-                }
-                var_exist <- var_exist$value 
-                var_exist <- gsub("\\s+", " ", var_exist)
-                if (any(grepl(teststring, var_exist))) {
-                    var_exist <- T # wanted variable is in file
-                } else {
-                    var_exist <- F
-                }
-
-            # 2nd (slower) try: `cdo select`
-            } else if (F) {
-                stop("update for var_exist")
-                varcheck_file <- paste0(postpaths[i], "/tmp_variable_check_", Sys.getpid(), ".", files[1])
-                cmd <- paste0(cdoprefix, " ", cdoconvert, " ", cdoselect, " ", datapath, "/", files[1], " ", varcheck_file)
-                message("run `", cmd, "`")
-                check <- system(cmd, intern=T)
-                if (clean) system(paste0("rm -v ", varcheck_file))
+            #cmd <- paste0(cdoprefix, " ", cdo_select_no_history, " partab ", datapath, "/", files[1]) # old
+            cmd <- paste0(cdoprefix, " ", cdo_select_no_history, " showname ", datapath, "/", files[1], " 2>&1")
+            message("run `", cmd, "`")
+            var_exist <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))$value
+            message("-->\n",
+                    paste(var_exist, collapse="\n"))
+            var_exist <- trimws(var_exist)
+            if (!is.na(codes[i])) { # code provided
+                teststring <- paste0("var", codes[i])
+            } else {
+                teststring <- fvarnames[i]
+            }
+            if (any(grepl(teststring, var_exist))) {
+                var_exist <- T # wanted variable is in file
+            } else {
+                var_exist <- F
             }
             # finished if requested variable was not found in first found file
             
@@ -1301,6 +1293,9 @@ for (i in seq_len(nsettings)) {
                         cdocalc[cdocalci] <- "" # variable selection only
                     } else if (modes[[i]][cdocalci] == "fldint") {
                         cdocalc[cdocalci] <- "" # combination `-mul -select` does not work; need to apply -mul at the end
+                        if (cdo_version < base::numeric_version("1.9.6")) {
+                            stop("need cdo version >= 1.9.8 for fldint")
+                        }
                     } else { # default
                         cdocalc[cdocalci] <- paste0("-", modes[[i]][cdocalci]) # e.g. "-fldmean"
                     } # which cdo calculation depending on mode
@@ -1587,7 +1582,7 @@ for (i in seq_len(nsettings)) {
                     
                     } else { # cdo selection (and possible calculation) command(s) not too long
                         message("--> this is not longer than `cdo_nchar_max_arglist` = ", cdo_nchar_max_arglist, 
-                                " and hence does not yield the error \"Argument list too long\"")
+                                " --> does not yield the error \"Argument list too long\"")
                         cmd_select_list <- cmd_calc_list <- chunk_inds_list <- vector("list", l=1)
                         cmd_select_list[[1]] <- list(cmd=cmd_select_tmp, n=length(files))
                         cmd_calc_list[[1]] <- list(cmd=cmd_calc)
@@ -1751,9 +1746,14 @@ for (i in seq_len(nsettings)) {
 
                     message("\n`new_date_list[[", i, "]]` is not NULL:")
                     cat(capture.output(str(new_date_list[[i]])), sep="\n")
-                    if (!is.null(new_date_list[[i]]$years)) {
-                        message("new_date_list[[i]]$years:")
-                        ht(new_date_list[[i]]$years, n=20)
+                    if (!is.null(new_date_list[[i]]$dates)) {
+                        message("new_date_list[[i]]$dates:")
+                        ht(new_date_list[[i]]$dates, n=20)
+                    } else {
+                        if (!is.null(new_date_list[[i]]$years)) {
+                            message("new_date_list[[i]]$years:")
+                            ht(new_date_list[[i]]$years, n=20)
+                        }
                     }
                     message("\n--> check time dimension values of ", nchunks, " chunk", 
                             ifelse(nchunks > 1, "s", ""), " and apply the new origin if necessary ...")
@@ -1767,11 +1767,15 @@ for (i in seq_len(nsettings)) {
                         message("\nchunk ", chunki, "/", nchunks, " ...")
                         
                         # get ntime of fout
-                        cmd <- paste0(cdoprefix, " ntime ")
-                        cmd <- paste0(cmd, selfile_vec[chunki])
+                        cmd <- paste0(cdoprefix, " -s ntime ", selfile_vec[chunki])
                         message("\nrun `", cmd, "`")
-                        cdo_ntime <- as.integer(system(cmd, intern=T))
-                        message("--> cdo_ntime = ", cdo_ntime)
+                        cdo_ntime <- system(cmd, intern=T)
+                        message("ntime --> \"", cdo_ntime, "\"", appendLF=F)
+                        if (cdo_ntime == "") {
+                            stop("something is wrong with this file")
+                        }
+                        cdo_ntime <- as.integer(cdo_ntime)
+                        message(" --> ", cdo_ntime)
 
                         # get time dimension values with `cdo showtimstamp` on the result 
                         # of `cdo -fldmean -select,name=var` 
@@ -1781,9 +1785,8 @@ for (i in seq_len(nsettings)) {
                         #       --> use `cdo showtimestamp` here instead of `cdo showdate`
                         cdo_showtimestamp_file <- paste0(dirname(fout_vec[chunki]), "/tmp_cdo_showtimestamp_",
                                                          Sys.getpid(), "_chunk_", chunki, "_of_", nchunks, ".txt")
-                        cmd <- paste0(cdoprefix, " showtimestamp ")
-                        cmd <- paste0(cmd, selfile_vec[chunki])
-                        cmd <- paste0(cmd, " > ", cdo_showtimestamp_file)
+                        cmd <- paste0(cdoprefix, " -s showtimestamp ", selfile_vec[chunki],
+                                      " > ", cdo_showtimestamp_file)
                         message("\nrun `", cmd, "` # caution: `cdo showtimestamp` does not print erroneous or duplicate dates")
                         system(cmd)
                         cdo_timestamps <- scan(cdo_showtimestamp_file, what="char", quiet=T)
@@ -1888,14 +1891,25 @@ for (i in seq_len(nsettings)) {
                     message("`cdo ntime` of all chunks of cdo selection result is ", cdo_ntime_fout)
                         
                     # check if user provided years is of same length as actual data
-                    if (!is.null(new_date_list[[i]]$years)) {
-                        if (length(new_date_list[[i]]$years) != cdo_ntime_fout) {
-                            stop("provided `new_date_list[[", i, "]]$years` is of length ", 
-                                 length(new_date_list[[i]]$years), 
-                                 " but `cdo ntime` of cdo selection (and calculation) result is ", 
-                                 cdo_ntime_fout)
+                    msg <- NULL
+                    if (!is.null(new_date_list[[i]]$dates)) {
+                        if (length(new_date_list[[i]]$dates) != cdo_ntime_fout) {
+                            msg <- paste0("provided `new_date_list[[", i, "]]$dates` is of length ", 
+                                          length(new_date_list[[i]]$dates), 
+                                          " but `cdo ntime` of cdo selection (and calculation) result is ", 
+                                          cdo_ntime_fout)
+                        }
+                    } else {
+                        if (!is.null(new_date_list[[i]]$years)) {
+                            if (length(new_date_list[[i]]$years) != cdo_ntime_fout) {
+                            msg <- paste0("provided `new_date_list[[", i, "]]$years` is of length ", 
+                                          length(new_date_list[[i]]$years), 
+                                          " but `cdo ntime` of cdo selection (and calculation) result is ", 
+                                          cdo_ntime_fout)
+                            }
                         }
                     }
+                    if (!is.null(msg)) stop(msg)
 
                     # construct new dates
                     message("\nconstruct new time dimension values of ", nchunks, " chunk", 
@@ -1905,8 +1919,9 @@ for (i in seq_len(nsettings)) {
 
                         message("\nchunk ", chunki, "/", nchunks, " ...")
                         
-                        # new years
-                        if (is.null(new_date_list[[i]]$years)) { # user did not provide new years
+                        # user did not provide new dates or years
+                        # --> construct new years
+                        if (is.null(new_date_list[[i]]$dates) && is.null(new_date_list[[i]]$years)) { 
                             
                             # use the years from input filenames to construct new cdo years
                             if (new_date_list[[i]]$use == "filename") {
@@ -2056,152 +2071,165 @@ for (i in seq_len(nsettings)) {
                                 stop("cdo not yetttt")
                             } # use filename or cdo years
 
-                        } else { # if new years are given by user
-                            years_out <- new_date_list[[i]]$years[dates_in_list[[chunki]]$time_inds]
-                        }
-                        message("new ", length(years_out), " years_out:")
-                        ht(years_out)
-                        
-                        # new months
-                        months_out <- dates_in_list[[chunki]]$months
-                        
-                        # new days
-                        # todo: get days from file names like `years_filenames_chunki` and `months_filenames` if present
-                        days_out <- dates_in_list[[chunki]]$days
-                        #if (length(days_out) != length(months_out)) {
-                        #    # e.g. if input were monthly files and `cdo -yearsum` yields annual files
-                        #    if (length(days_out) == length(years_wanted)) {
-                        #        days_out_tmp <- rep(NA, t=length(months_out))
-                        #        for (yi in 1:length(years_wanted)) {
-                        #            yinds <- which(years_out == years_wanted[yi])
-                        #            days_out_tmp[yinds] <- days_out[yi]
-                        #        }
-                        #        days_out <- days_out_tmp
-                        #    } else {
-                        #        stop("not definedddd")
-                        #    }
-                        #}
-                        
-                        # new dates as YYYY-MM-DD before checks
-                        dates_out <- paste0(years_out, "-", months_out, "-", days_out)
+                        } else { # if new dates or years are given by user
 
-                        # check new dates for February 30
-                        # `cdo showdate` of the result of `cdo yearsum` yields "YYYY-06-30"
-                        # for all years, i.e. all days are "30". In combination with the months
-                        # of the input file names (if present), wrong combinations like 
-                        # "YYYY-02-30" are possible.
-                        feb30_inds <- which(months_out == 2 & days_out == 30)
-                        if (length(feb30_inds) > 0) {
-                            message("new time would yield february 30:")
-                            ht(dates_out[feb30_inds])
-                            message(" --> set day of these time points to 28")
-                            days_out[feb30_inds] <- 28
-                        }
-
-                        # check new dates for February 29 of new non-leap years
-                        feb29_inds <- months_out == 2 & days_out == 29
-                        leap_inds <- is.leap(years_out)
-                        feb29_nonleap_inds <- which(feb29_inds & !leap_inds)
-                        if (length(feb29_nonleap_inds) > 0) {
-
-                            message("\nnew time would yield these ", length(feb29_nonleap_inds), 
-                                    " february 29 dates in non-leap years:")
-                            ht(dates_out[feb29_nonleap_inds])
+                            if (!is.null(new_date_list[[i]]$dates)) { # user provided dates
+                                dates_out <- new_date_list[[i]]$dates[dates_in_list[[chunki]]$time_inds]
+                                message("new ", length(dates_out), " dates_out:")
+                                ht(dates_out)
+                                dates_out_lt <- as.POSIXlt(dates_out)
+                                years_out <- dates_out_lt$year+1900
+                                months_out <- dates_out_lt$mon+1
+                                days_out <- dates_out_lt$mday
+                                dates_out_ncap <- dates_out_lt
                             
-                            # case 1/2: temporal output interval is daily: have to remove the wrong february 29 dates (`cdo del29feb`)
-                            # case 2/2: temporal output interval is not daily: simply set the day to something else then 29
-                            feb29_years <- years_out[feb29_nonleap_inds]
-                            npy <- rep(NA, t=length(feb29_years))
-                            message("--> decide how to proceed ...")
-                            for (yi in seq_along(feb29_years)) {
-                                year_inds <- which(years_out == feb29_years[yi])
-                                npy[yi] <- length(year_inds)
-                            }
-                            npy_unique <- unique(npy)
-                            message("\nunique occurences:")
-                            for (npy_uniquei in seq_along(npy_unique)) {
-                                message("years with wrong february 29 that occur ", npy_unique[npy_uniquei], " times:")
-                                cat(capture.output(str(feb29_years[which(npy == npy_unique[npy_uniquei])])), sep="\n")
-                            }
-                            if (length(npy_unique) == 1 && npy_unique == 366) { # case 1
-                                message("\n--> found ", npy_unique, " timesteps per year\n",
-                                        "--> assume that data is daily\n",
-                                        "--> remove wrong february 29 timesteps ...")
-
-                                cdo_del29feb_cmd <- paste0(cdoprefix, " -delete,timestep=<wrong_feb29_timesteps> ",
-                                                           selfile_vec[chunki], " ", dirname(selfile_vec[chunki]), 
-                                                           "/tmp_delete_feb29_chunk_", i, "_of_", nchunks, ".nc && mv ",
-                                                           dirname(selfile_vec[chunki]),
-                                                           "/tmp_delete_feb29_chunk_", i, "_of_", nchunks, ".nc ", 
-                                                           selfile_vec[chunki])
-                                message("run `", cdo_del29feb_cmd, "` ...")
-                                cdo_del29feb_cmd <- gsub("<wrong_feb29_timesteps>", 
-                                                         paste(feb29_nonleap_inds, collapse=","),
-                                                         cdo_del29feb_cmd)
-                                system(cdo_del29feb_cmd)
-                                years_out <- years_out[-feb29_nonleap_inds]
-                                months_out <- months_out[-feb29_nonleap_inds]
-                                days_out <- days_out[-feb29_nonleap_inds]
+                            } else if (!is.null(new_date_list[[i]]$years)) { # user provided years
+                                # --> construct months and days from cdo file information 
+                                years_out <- new_date_list[[i]]$years[dates_in_list[[chunki]]$time_inds]
+                                message("new ", length(years_out), " years_out:")
+                                ht(years_out)
+                       
+                                # new months
+                                months_out <- dates_in_list[[chunki]]$months
                                 
-                            } else { # case 2
-                                message("\n--> found timesteps per year are not of length 366\n",
-                                        "--> assume that data is not daily\n",
-                                        "--> simply set day of wrong february 29 timesteps to 28\n",
-                                        "--> define another case here if this is not correct")
-                                days_out[feb29_nonleap_inds] <- 28
-                            } # case 1 or 2
+                                # new days
+                                # todo: get days from file names like `years_filenames_chunki` and `months_filenames` if present
+                                days_out <- dates_in_list[[chunki]]$days
+                                #if (length(days_out) != length(months_out)) {
+                                #    # e.g. if input were monthly files and `cdo -yearsum` yields annual files
+                                #    if (length(days_out) == length(years_wanted)) {
+                                #        days_out_tmp <- rep(NA, t=length(months_out))
+                                #        for (yi in 1:length(years_wanted)) {
+                                #            yinds <- which(years_out == years_wanted[yi])
+                                #            days_out_tmp[yinds] <- days_out[yi]
+                                #        }
+                                #        days_out <- days_out_tmp
+                                #    } else {
+                                #        stop("not definedddd")
+                                #    }
+                                #}
+                                
+                                # new dates as YYYY-MM-DD before checks
+                                dates_out <- paste0(years_out, "-", months_out, "-", days_out)
 
-                        } # if wrong february 29 dates exist in new dates
-
-                        # new dates as YYYY-MM-DD after checks
-                        #dates_out <- paste0(sprintf("%04i", years_out), "-", 
-                        #                    sprintf("%02i", months_out), "-",
-                        #                    sprintf("%02i", days_out))
-                        dates_out <- paste0(years_out, "-", months_out, "-", days_out)
-                        message("\nnew dates_out:")
-                        ht(dates_out, n=25)
-
-                        # construct new dates used by nco ncap2
-                        if (i == 1 && chunki == 1) {
-                            if (is.null(new_date_list[[i]]$nc_time_units)) { # user did not provide units of netcdf time dimension
-                                if (cdo_set_rel_time) { # relative time
-                                    if (is.null(new_date_list[[i]]$nc_time_origin)) {
-                                        stop("`cdo_set_rel_time`=T but new_date_list[[", i, "]]$nc_time_origin is not set.")
-                                    }
-                                    nc_time_units <- paste0("days since ", new_date_list[[i]]$nc_time_origin, "-01-01")
-                                    nc_time_units <- rep(nc_time_units, t=nsettings)
-                                } else { # absolute time
-                                    nc_time_units <- rep("day as %Y%m%d.%f", t=nsettings) # only allowed absolute time for cdo
+                                # check new dates for February 30
+                                # `cdo showdate` of the result of `cdo yearsum` yields "YYYY-06-30"
+                                # for all years, i.e. all days are "30". In combination with the months
+                                # of the input file names (if present), wrong combinations like 
+                                # "YYYY-02-30" are possible.
+                                feb30_inds <- which(months_out == 2 & days_out == 30)
+                                if (length(feb30_inds) > 0) {
+                                    message("new time would yield february 30:")
+                                    ht(dates_out[feb30_inds])
+                                    message(" --> set day of these time points to 28")
+                                    days_out[feb30_inds] <- 28
                                 }
-                                message("\n`new_date_list[[", i, "]]$nc_time_units` is not set and `cdo_set_rel_time`=", 
-                                        cdo_set_rel_time, " --> use default \"", nc_time_units, "\"")
-                                new_date_list[[i]]$nc_time_units <- nc_time_units
-                            } # if `nc_time_units` was not set by user
-                        } # only once at beginning
 
-                        message("\nconstruct new times values with `new_date_list[[", 
-                                i, "]]$nc_time_units` = \"", new_date_list[[i]]$nc_time_units, "\":")
-                        if (cdo_set_rel_time) {
-                            message("run `make_posixlt_origin(years_out=c(",
-                                    paste(c(head(years_out), "...", tail(years_out)), collapse=","), "))` ...")
-                            dates_out_ncap <- make_posixlt_origin(years_out)
-                            dates_out_ncap$mon <- months_out - 1 # posix months start counting from zero
-                            dates_out_ncap$mday <- days_out
-                            tmp <- difftime(dates_out_ncap[1], 
-                                            as.POSIXlt(paste0(new_date_list[[i]]$nc_time_origin, "-01-01"), tz="UTC"), 
-                                            units="days")
-                            tmp <- as.numeric(tmp) # days since first date
+                                # check new dates for February 29 of new non-leap years
+                                feb29_inds <- months_out == 2 & days_out == 29
+                                leap_inds <- is.leap(years_out)
+                                feb29_nonleap_inds <- which(feb29_inds & !leap_inds)
+                                if (length(feb29_nonleap_inds) > 0) {
+
+                                    message("\nnew time would yield these ", length(feb29_nonleap_inds), 
+                                            " february 29 dates in non-leap years:")
+                                    ht(dates_out[feb29_nonleap_inds])
+                                    
+                                    # case 1/2: temporal output interval is daily: have to remove the wrong february 29 dates (`cdo del29feb`)
+                                    # case 2/2: temporal output interval is not daily: simply set the day to something else then 29
+                                    feb29_years <- years_out[feb29_nonleap_inds]
+                                    npy <- rep(NA, t=length(feb29_years))
+                                    message("--> decide how to proceed ...")
+                                    for (yi in seq_along(feb29_years)) {
+                                        year_inds <- which(years_out == feb29_years[yi])
+                                        npy[yi] <- length(year_inds)
+                                    }
+                                    npy_unique <- unique(npy)
+                                    message("\nunique occurences:")
+                                    for (npy_uniquei in seq_along(npy_unique)) {
+                                        message("years with wrong february 29 that occur ", npy_unique[npy_uniquei], " times:")
+                                        cat(capture.output(str(feb29_years[which(npy == npy_unique[npy_uniquei])])), sep="\n")
+                                    }
+                                    if (length(npy_unique) == 1 && npy_unique == 366) { # case 1
+                                        message("\n--> found ", npy_unique, " timesteps per year\n",
+                                                "--> assume that data is daily\n",
+                                                "--> remove wrong february 29 timesteps ...")
+
+                                        cdo_del29feb_cmd <- paste0(cdoprefix, " -delete,timestep=<wrong_feb29_timesteps> ",
+                                                                   selfile_vec[chunki], " ", dirname(selfile_vec[chunki]), 
+                                                                   "/tmp_delete_feb29_chunk_", i, "_of_", nchunks, ".nc && mv ",
+                                                                   dirname(selfile_vec[chunki]),
+                                                                   "/tmp_delete_feb29_chunk_", i, "_of_", nchunks, ".nc ", 
+                                                                   selfile_vec[chunki])
+                                        message("run `", cdo_del29feb_cmd, "` ...")
+                                        cdo_del29feb_cmd <- gsub("<wrong_feb29_timesteps>", 
+                                                                 paste(feb29_nonleap_inds, collapse=","),
+                                                                 cdo_del29feb_cmd)
+                                        system(cdo_del29feb_cmd)
+                                        years_out <- years_out[-feb29_nonleap_inds]
+                                        months_out <- months_out[-feb29_nonleap_inds]
+                                        days_out <- days_out[-feb29_nonleap_inds]
+                                        
+                                    } else { # case 2
+                                        message("\n--> found timesteps per year are not of length 366\n",
+                                                "--> assume that data is not daily\n",
+                                                "--> simply set day of wrong february 29 timesteps to 28\n",
+                                                "--> define another case here if this is not correct")
+                                        days_out[feb29_nonleap_inds] <- 28
+                                    } # case 1 or 2
+
+                                } # if wrong february 29 dates exist in new dates
+
+                                # new dates as YYYY-MM-DD after checks
+                                #dates_out <- paste0(sprintf("%04i", years_out), "-", 
+                                #                    sprintf("%02i", months_out), "-",
+                                #                    sprintf("%02i", days_out))
+                                dates_out <- paste0(years_out, "-", months_out, "-", days_out)
+                                message("\nnew dates_out:")
+                                ht(dates_out, n=25)
+
+                                if (cdo_set_rel_time) {
+                                    message("\n`cdo_set_rel_time`=T --> run `make_posixlt_origin(years_out=c(",
+                                            paste(c(head(years_out), "...", tail(years_out)), collapse=","), "))` ...")
+                                    dates_out_ncap <- make_posixlt_origin(years_out)
+                                    dates_out_ncap$mon <- months_out - 1 # posix months start counting from zero
+                                    dates_out_ncap$mday <- days_out
+                                }
+
+                            } # if user provided new years
+                        } # if user provided new dates or years
+
+                        # construct new ncap2 dates and time unit and origin
+                        if (cdo_set_rel_time) { # relative time
+                            if (is.null(new_date_list[[i]]$nc_time_origin)) {
+                                message("`\ncdo_set_rel_time`=T but new_date_list[[", i, "]]$nc_time_origin is not set\n",
+                                        "--> use first date ", dates_out[1], " as origin")
+                                new_date_list[[i]]$nc_time_origin <- dates_out[1]
+                            }
+                            new_date_list[[i]]$nc_time_units <- paste0("days since ", new_date_list[[i]]$nc_time_origin)
+                            dates_out_ncap_dt_rel <- difftime(time1=dates_out_ncap[1], 
+                                                              time2=new_date_list[[i]]$nc_time_origin, 
+                                                              units="days") # days since origin
                             if (cdo_ntime_fout > 1) {
                                 dates_out_ncap <- difftime(dates_out_ncap[2:length(dates_out_ncap)], 
                                                            dates_out_ncap[1:(length(dates_out_ncap) - 1)], 
                                                            units="days")
-                                dates_out_ncap <- c(tmp, tmp + cumsum(as.numeric(dates_out_ncap)))
+                                dates_out_ncap <- c(dates_out_ncap_dt_rel, dates_out_ncap_dt_rel + cumsum(as.numeric(dates_out_ncap)))
                             } else {
-                                dates_out_ncap <- tmp
+                                dates_out_ncap <- dates_out_ncap_dt_rel
                             }
-
                         } else { # absolute time
-                            if (new_date_list[[i]]$nc_time_units == "years as %Y.%f") {
+                            if (is.null(new_date_list[[i]]$nc_time_units)) { # use default absolute time format
+                                # default absolute time unit "day as %Y%m%d.%f" --> only allowed absolute time unit for cdo
+                                new_date_list[[i]]$nc_time_units <- "day as %Y%m%d.%f" # only allowed absolute time for cdo
+                                message("`\ncdo_set_rel_time`=F but new_date_list[[", i, "]]$nc_time_units is not set\n",
+                                        "--> use default absolute time unit \"", new_date_list[[i]]$nc_time_units, "\"")
+                            }
+                            if (new_date_list[[i]]$nc_time_units == "day as %Y%m%d.%f") { # default
+                                dates_out_ncap <- paste0(sprintf("%04i", years_out), 
+                                                         sprintf("%02i", months_out),
+                                                         sprintf("%02i", days_out), ".0")
+                            } else if (new_date_list[[i]]$nc_time_units == "years as %Y.%f") {
                                 if (i == 1 && chunki == 1) {
                                     dt_mon <- 1/12
                                     ndays_per_month <- c(Jan=31, Feb=28, Mar=31, Apr=30, May=31, Jun=30,
@@ -2225,18 +2253,17 @@ for (i in seq_len(nsettings)) {
                                 }
                                 dates_out_ncap <- sprintf("%f", dates_out_ncap) 
                             
-                            } else { 
-                                # default absolute time unit "day as %Y%m%d.%f" --> only allowed absolute time unit for cdo
-                                stop("update")
-                                dates_out_ncap <- paste0(sprintf("%04i", years_out), 
-                                                         sprintf("%02i", months_out),
-                                                         sprintf("%02i", days_out), ".0")
+                            } else {
+                                stop("absolute time unit `new_date_list[[", i, "]]$nc_time_units` = \"", 
+                                     new_date_list[[i]]$nc_time_units, "\" not defined")
                             }
-                        } # if cdo_set_rel_time or not
-                        message("\ndates_out_ncap:")
-                        ht(dates_out_ncap, n=25)
-                        if (length(dates_out_ncap) != length(dates_out)) stop("thissss should not happen")
+                            
+                            message("\ndates_out_ncap:")
+                            ht(dates_out_ncap, n=25)
+                            if (length(dates_out_ncap) != length(dates_out)) stop("this should not happen")
 
+                        } # if cdo_set_rel_time or not
+                        
                         # save for every chunk
                         dates_out_list[[chunki]]$dates <- dates_out
                         dates_out_list[[chunki]]$years <- years_out
@@ -2264,10 +2291,20 @@ for (i in seq_len(nsettings)) {
                             # the input needs to be converted from absolute to relative time units
                             # before setting new time values with nco ncap2
                             # todo: need to update this with a check
-                            
                             #cmd_cp_and_mv <- paste0("cp ", fout_vec[chunki], " ", nco_fout_vec[chunki])
                             cmd_cp_and_mv <- paste0(cdoprefix, " --no_history -r copy ", selfile_vec[chunki], " ", nco_fout_vec[chunki])
-                            cmd_ncap2 <- paste0(nco_ncap2, " -O -h -s 'time(:)={<dates_out_ncap>}; time@units=\"",
+                            
+                            # get time dimname
+                            cmd <- paste0(cdo, " sinfo ", selfile_vec[chunki]) # short info 
+                            message("\nrun `", cmd, "` ...")
+                            sinfo <- system(cmd, intern=T)
+                            tdimname <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # e.g. "TIME : 468 steps"
+                            tdimname <- strsplit(tdimname, ":")[[1]]
+                            tdimname <- trimws(tdimname[1])
+                            message("--> input time dim name = \"", tdimname, "\"")
+                           
+                            # ncap2 command with new time vals
+                            cmd_ncap2 <- paste0(nco_ncap2, " -O -h -s '", tdimname, "(:)={<dates_out_ncap>}; ", tdimname, "@units=\"",
                                                 new_date_list[[i]]$nc_time_units, "\"' ", nco_fout_vec[chunki], " ", 
                                                 nco_fout_vec[chunki], " || echo error")
                             message("run 1: `", cmd_cp_and_mv, "`\n", 
@@ -2395,7 +2432,7 @@ for (i in seq_len(nsettings)) {
                             } else if (nchar_cmd_ncap2 <= nco_nchar_max_arglist) {
                               
                                 message("--> this is not longer than `nco_nchar_max_arglist` = ", nco_nchar_max_arglist, 
-                                        " and hence does not yield the error \"Argument list too long\"")
+                                        " --> does not yield the error \"Argument list too long\"")
                                 # do not select time steps in nco ncap2 chunks but just make a copy and rename
                                 system(cmd_cp_and_mv)
                                 #system(paste0("cdo -r copy ", nco_fout_vec[chunki], " ~/tmp && mv ~/tmp ", nco_fout_vec[chunki])) 
@@ -2546,7 +2583,6 @@ for (i in seq_len(nsettings)) {
         } # if run special function or default way
        
         ## from here, cdo selection and calculation or commands from `cdo_known_cmds` or special functions are finished for all chunks
-        # -> time dimension values are still the original, `new_date_list` was not applied yet
         # -> time dimension values are probably shifted from monthly to annual by e.g. `cdo yearsum`
         # -> chunks, if any, are not catted yet
 
@@ -2585,7 +2621,7 @@ for (i in seq_len(nsettings)) {
         }
 
         # change from/to in final fout if new dates were applied
-        if (!own_cmd && !is.null(new_date_list[[i]]$years)) {
+        if (!own_cmd && !is.null(new_date_list[[i]])) {
             message("\nrename initial fout according to new dates ...")
             cmd <- paste0("mv -v ", fout, " ")
             from_new <- range(sapply(dates_out_list, "[", "years"))[1]
@@ -2596,7 +2632,35 @@ for (i in seq_len(nsettings)) {
                          fout)
             cmd <- paste0(cmd, fout)
             system(cmd)
-        } # if !is.null(new_date_list[[i]]$years)
+
+            # todo: remove original calendar time attribute if new dates were set
+            if (!is.null(new_date_list[[i]]$dates)) {
+                message("\ncheck if original time has `calendar` attribute ...")
+                tinfo <- paste0(cdo, " -s tinfo ", fout)
+                message("run `", tinfo, "` ...")
+                tinfo <- system(tinfo, intern=T)
+                if (any(grepl("Calendar = ", tinfo))) {
+                    message("--> detected `calendar` attribute:\n",
+                            tinfo[grepl("Calendar = ", tinfo)])
+                    sinfo <- paste0(cdo, " -s sinfo ", fout) # get time dim name
+                    message("--> get time dim name: run `", sinfo, "` ...")
+                    sinfo <- system(sinfo, intern=T)
+                    tdimname <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # e.g. "TIME : 468 steps"
+                    tdimname <- strsplit(tdimname, ":")[[1]]
+                    tdimname <- trimws(tdimname[1])
+                    message("--> \"", tdimname, "\"")
+                    nco_ncatted <- Sys.which("ncatted")
+                    if (nco_ncatted == "") {
+                        warning("ncatted not found. skip removing `calendar` attribute of time dim \"", tdimname, "\"")
+                    } else {
+                        # `Calendar` does not work, must be `calendar`
+                        cmd <- paste0(nco_ncatted, " -O -a calendar,", tdimname, ",d,, ", fout) # delete `calendar` attribute
+                        message("--> remove `calendar` attribute of time dim \"", tdimname, "\": run `", cmd, "` ...")
+                        system(cmd)
+                    }
+                } # if time dim has Calendar attribute
+            } # if new dates were provided
+        } # if !is.null(new_date_list[[i]])
 
         if (grepl("fldint", modes[[i]])) {
             message("\nmodes[[", i, "]] = \"", paste(modes[[i]], collapse="\", \""), "\" includes \"fldint\" --> ",
@@ -2608,38 +2672,61 @@ for (i in seq_len(nsettings)) {
                 check <- F
             }
             # check if fout still has lon,lat dims
-            cmd <- paste0(cdo, " griddes ", fout)
+            cmd <- paste0(cdo, " -s griddes ", fout)
             message("run `", cmd, "` ...")
             griddes <- system(cmd, intern=T)
-            #gridtype <- which(base::startsWith(griddes, "gridtype"))
-            #gridtype <- gsub(" ", "", griddes[gridtype]) # e.g. "gridtype  = curvilinear"
-            #gridtype <- strsplit(gridtype, "=")[[1]][2]
-            #message("--> gridtype = \"", gridtype, "\"")
-            xsize <- which(base::startsWith(griddes, "xsize"))
-            xsize <- gsub(" ", "", griddes[xsize]) # e.g. "xsize=192"
-            xsize <- as.integer(strsplit(xsize, "=")[[1]][2]) # e.g. 192
-            message("--> xsize= \"", xsize, "\"")
-            ysize <- which(base::startsWith(griddes, "ysize"))
-            ysize <- gsub(" ", "", griddes[ysize]) # e.g. "ysize=96"
-            ysize <- as.integer(strsplit(ysize, "=")[[1]][2]) # e.g. 96
-            message("--> ysize= \"", ysize, "\"")
-            if (xsize == 1 && ysize == 1) {
-                message("xsize and ysize = 1 --> skip fldint calculation")
-                check <- F
-            }
-            if (check) {
-                area_file <- paste0(postpaths[i], "/tmp_area_m2_", Sys.getpid())
-                cmd <- paste0(cdo, " gridarea ", fout, " ", area_file)
-                message("run `", cmd, "`")
-                system(cmd)
-                mul_file <- paste0(postpaths[i], "/tmp_mul_", Sys.getpid())
-                cmd <- paste0(cdo, " -fldsum -mul ", fout, " ", area_file, " ", mul_file, 
-                              " && mv ", mul_file, " ", fout)
-                cmd <- paste0(cmd, " || echo error")
-                message("run `", cmd, "`")
-                system(cmd)
-                if (clean) invisible(file.remove(area_file))
-            } # if check
+            gridtype <- which(base::startsWith(griddes, "gridtype"))
+            gridtype <- gsub(" ", "", griddes[gridtype]) # e.g. "gridtype  = curvilinear"
+            gridtype <- strsplit(gridtype, "=")[[1]][2]
+            message("--> gridtype = \"", gridtype, "\"")
+            if (gridtype == "generic") {
+                stop("generic gridtype not supported for fldint")
+            } else { # gridtype not generic
+                xsize <- which(base::startsWith(griddes, "xsize"))
+                xsize <- gsub(" ", "", griddes[xsize]) # e.g. "xsize=192"
+                xsize <- as.integer(strsplit(xsize, "=")[[1]][2]) # e.g. 192
+                message("--> xsize= \"", xsize, "\"")
+                ysize <- which(base::startsWith(griddes, "ysize"))
+                ysize <- gsub(" ", "", griddes[ysize]) # e.g. "ysize=96"
+                ysize <- as.integer(strsplit(ysize, "=")[[1]][2]) # e.g. 96
+                message("--> ysize= \"", ysize, "\"")
+                if (xsize == 1 && ysize == 1) {
+                    message("xsize and ysize = 1 --> skip fldint calculation")
+                    check <- F
+                }
+                if (check) {
+                    area_file <- paste0(postpaths[i], "/tmp_area_m2_", Sys.getpid())
+                    cmd <- paste0(cdo, " gridarea ", fout, " ", area_file)
+                    message("run `", cmd, "`")
+                    system(cmd)
+                    mul_file <- paste0(postpaths[i], "/tmp_mul_", Sys.getpid())
+                    cmd <- paste0(cdo, " -fldsum -mul ", fout, " ", area_file, " ", mul_file, 
+                                  " && mv ", mul_file, " ", fout)
+                    cmd <- paste0(cmd, " || echo error")
+                    message("run `", cmd, "`")
+                    system(cmd)
+                    if (!file.exists(fout)) {
+                        stop("multiplication result data*area file ", fout, " does not exist")
+                    }
+                    # check if success --> result has nx = ny = 1
+                    message("check if fldint result has nx = ny = 1 ...")
+                    cmd <- paste0(cdo, " -s griddes ", fout)
+                    message("run `", cmd, "` ...")
+                    griddes <- system(cmd, intern=T)
+                    xsize <- which(base::startsWith(griddes, "xsize"))
+                    xsize <- gsub(" ", "", griddes[xsize]) # e.g. "xsize=192"
+                    xsize <- as.integer(strsplit(xsize, "=")[[1]][2]) # e.g. 192
+                    message("--> xsize= \"", xsize, "\"")
+                    ysize <- which(base::startsWith(griddes, "ysize"))
+                    ysize <- gsub(" ", "", griddes[ysize]) # e.g. "ysize=96"
+                    ysize <- as.integer(strsplit(ysize, "=")[[1]][2]) # e.g. 96
+                    message("--> ysize= \"", ysize, "\"")
+                    if (xsize != 1 || ysize != 1) {
+                        stop("xsize and/or ysize != 1 --> fldint error")
+                    }
+                    if (clean) invisible(file.remove(area_file))
+                } # if check
+            } # if input gridtype is generic
         } # if fldint
 
         # set relative time axis
@@ -2658,34 +2745,57 @@ for (i in seq_len(nsettings)) {
         # set time_bnds if needed (if there is time dim) and not already there
         # --> time_bnds are necessary for `cdo cat`
         message("\ncheck if time_bnds are needed (if there is a time dim) and not there yet ...") 
-        # todo: how to check if file has time_dims?
+        # needs ncap2 >= 4.6.7
+        # todo: how to check if file has time dims?
         cmd <- paste0(cdo, " sinfo ", fout) # short info 
         message("run `", cmd, "` ...")
         sinfo <- system(cmd, intern=T)
         if (any(grepl("   Time coordinate :", sinfo))) { # there is time dim
-            sinfo <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # "RefTime =  2686-01-31 00:00:00  Units = days  Calendar = proleptic_gregorian"
-            message("--> \"", trimws(sinfo), "\"")
-            if (grepl("Bounds = true", sinfo)) { 
-                message("--> time_bnds already set")
+            if (any(grepl("Bounds = true", sinfo))) { 
+                message("--> \"Bounds = true\" found --> time_bnds already set")
             } else { # time_bnds not set
-                message("--> time_bnds not set (\"Bounds = true\" missing)")
+                message("--> \"Bounds = true\" missing --> time_bnds not set")
+                make_bounds <- F # default: ncap2:make_bounds not available
                 if (!exists("nco_ncap2")) {
                     message("`nco_ncap2` not set by user -> check if ncap2 binary can be found to set time_bnds of nc file: run `which(ncap2)`")
                     nco_ncap2 <- Sys.which("ncap2")
-                    if (nco_ncap2 == "") {
-                        warning("ncap2 not found, cannot set time_bnds, skip")
+                }
+                if (nco_ncap2 == "") {
+                    warning("ncap2 not found. skip make_bounds")
+                } else {
+                    message("--> ncap2 = ", nco_ncap2)
+                    nco_ncap2_version <- paste0(nco_ncap2, " --version 2>&1")
+                    nco_ncap2_version <- system(nco_ncap2_version, intern=T)
+                    nco_ncap2_version <- nco_ncap2_version[2] # e.g. "ncap2 version 4.4.4"
+                    nco_ncap2_version <- strsplit(nco_ncap2_version, " ")[[1]]
+                    nco_ncap2_version <- nco_ncap2_version[3]
+                    nco_ncap2_version <- base::numeric_version(paste(nco_ncap2_version, collapse="."))
+                    message("--> ncap2 version = ", nco_ncap2_version, appendLF=F)
+                    if (nco_ncap2_version < base::numeric_version("4.6.7")) {
+                        message(" < 4.6.7 --> need ncap2 version >= 4.6.7. skip make_bounds")
                     } else {
-                        message("--> ncap2 = ", nco_ncap2)
+                        message(" >= 4.6.7 --> ok")
+                        make_bounds <- T # success
                     }
                 }
-                if (nco_ncap2 != "") {
+                if (make_bounds) {
+                    # get time dimension name
+                    tdimname <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # e.g. "TIME : 468 steps"
+                    tdimname <- strsplit(tdimname, ":")[[1]]
+                    tdimname <- trimws(tdimname[1])
+                    message("--> input time dim name = \"", tdimname, "\"")
+                    fout_ncap2 <- paste0(fout, "_ncap2_make_bounds")
+                    cmd <- paste0(nco_ncap2, " -4 -s 'defdim(\"bnds\",2); time_bnds=make_bounds(", tdimname, ",$bnds,\"time_bnds\");' ", 
+                                  fout, " ", fout_ncap2)
                     # -4 for ncdf4 support and large files
                     # problem: exceeded memory limit (3006140416 > 2684354560), being killed
-                    cmd <- paste0(nco_ncap2, " -O -4 -s 'defdim(\"bnds\",2); time_bnds=make_bounds(time,$bnds,\"time_bnds\");' ", 
-                                  fout, " ", fout)
                     message("run `", cmd, "` ...")
                     system(cmd)
-                } # if ncap2 found
+                    if (!file.exists(fout_ncap2)) {
+                        stop("ncap2 make_bounds file ", fout_ncap2, " does not exist but should")
+                    }
+                    invisible(file.rename(fout_ncap2, fout))
+                } # if ncap2:make_bounds available
             } # if time_bnds not yet set
         } # if fout has time dim
 

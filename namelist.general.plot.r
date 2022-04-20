@@ -30,17 +30,28 @@ if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
     stop("could not load ", host$homepath, "/functions/myfunctions.r")
 }
 
-# ignore these netcdf variables
+# known dimnames
+known_dimnames <- list(time=c("time", "Time",  "TIME", "time_mon"),
+                       lon=c("lon", "lons", "longitude", "Longitude", "LONGITUDE", "nxi"),
+                       lat=c("lat", "lats", "latitude", "Latitude", "LATITUDE", "nyi"),
+                       depth=c("depth_2"))
+
+# ignore dimnames
+ignore_dimnames <- c("bnds")
+
+# known varnames; use cmor names
+known_vars <- list(fgco2=c("fgco2", "co2_flx_ocean"))
+
+# ignore variables
 ignore_vars <- c("bnds",
-                 "time_bnds", "timestamp", 
+                 "time_bnds", "time_mon",
                  "hyai", "hybi", "hyam", "hybm",
                  "plev", "height", 
                  "depth", "depthvec", 
                  "lm_*_as_time_std_error", "lm_*_as_time_t_val", "lm_*_as_time_p_val",
-                 "timevec", "timechar", "xi", "yi", # old rfesom 
+                 "timestamp", "timevec", "timechar", "xi", "yi", # old rfesom 
                  "moc_reg_lat")
-message("these variables will be ignored:\n",
-		"\"", paste(ignore_vars, collapse="\", \""), "\"")
+
 
 # general script options
 squeeze <- T # drop dims with length=1 (e.g. lon and lat after fldmean)

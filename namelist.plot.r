@@ -8,7 +8,7 @@ repopath <- normalizePath(repopath, mustWork=T) # error if not found
 source(paste0(repopath, "/namelist.general.plot.r"))
 
 # 1 setting
-if (T) { # mhw composite data/seas*100
+if (F) { # mhw composite data/seas*100
     workpaths <- "/work/ba1103/a270073"
     models <- "fesom"
     prefixes <- "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_anom_pcnt_regular_dx0.250_dy0.250"
@@ -2235,6 +2235,27 @@ if (T) { # mhw composite data/seas*100
     #tunit <- "model year"
     #new_origins <- fromsf - 1950 + 1 # awi-esm-1-1-lr_kh800 piControl: 1950 = 1 --> new_origin = `fromsf` - 1950 + 1 
     #new_origins <- rep(400, t=12) 
+
+# ======================================================
+# 16 settings
+} else if (T) { # 16 reccap2 settings
+    models <- c("CCSM-WHOI", # <0: uptake 
+                "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
+                "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 
+                "FESOM_REcoM_LR", "MOM6-COBALT2-Princeton", 
+                "MPIOM-HAMOCC", "MRI-ESM2-0", "NorESM-OC1.2", "OCIM-v2014", "OCIM-v2021", 
+                "ORCA025-GEOMAR", # says unit "Pg C yr-1" but its "molC m-2 s-1" 
+                "ORCA1-LIM3-PISCES", "ROMS-SouthernOcean-ETHZ")
+    names_legend <- models
+    names_short <- names_legend
+    prefixes <- rep("reccap2_A", t=length(models))
+    varnames_in <- rep("fgco2", t=length(models))
+    plotprefix <- "reccap2_A_global"
+    modes <- rep("fldint", t=length(models))
+    fromsf <- c(1958, 1980, 1980, 1980, 1995, 1980, 1980, 1980, 1980, 1980, 
+                1980, 1980, 1980, 1980, 1980, 1980)
+    tosf <- c(2017, 2018, 2018, 2018, 2018, 2018, 2018, 2018, 2019, 2018, 
+              2018, 2017, 2018, 2018, 2018, 2018)
 
 # ======================================================
 # 18 settings

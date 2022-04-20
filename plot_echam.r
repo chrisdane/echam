@@ -293,7 +293,7 @@ invisible(file.create(lastfiles_plot_fname)) # error if no success
 # allocate
 datas <- vector("list", l=nsettings)
 names(datas) <- names_short
-data_infos <- dims <- dims_per_setting_in <- ll_data <- poly_data <- datas
+data_infos <- dims <- dims_of_settings <- ll_data <- poly_data <- datas
 
 
 # load pangaea data if defined 
@@ -347,25 +347,52 @@ for (i in seq_len(nsettings)) {
 
     # get dims of file
     message("\nget dims ...")
-    dims_per_setting_in[[i]] <- names(ncin$dim)
-    # for old rfesom backward compatilibity 
-    if (any(dims_per_setting_in[[i]] == "nxi")) {
-        inds <- which(dims_per_setting_in[[i]] == "nxi")
-        message("special: rename ", length(inds), " dimension", ifelse(length(inds) > 1, "s", ""), 
-                " \"nxi\" to \"lon\" ...")
-        dims_per_setting_in[[i]][inds] <- "lon"
+    dims_of_settings[[i]] <- names(ncin$dim)
+    
+    # ignore dimnames of file
+    if (any(!is.na(match(dims_of_settings[[i]], ignore_dimnames)))) {
+        inds <- which(!is.na(match(dims_of_settings[[i]], ignore_dimnames)))
+        message("ignore ", length(inds), " dimnames \"", paste(dims_of_settings[[i]][inds], collapse="\", \""), "\"")
+        dims_of_settings[[i]][inds] <- NA
     }
-    if (any(dims_per_setting_in[[i]] == "nyi")) {
-        inds <- which(dims_per_setting_in[[i]] == "nyi")
-        message("special: rename ", length(inds), " dimension", ifelse(length(inds) > 1, "s", ""), 
-                " \"nyi\" to \"lat\" ...")
-        dims_per_setting_in[[i]][inds] <- "lat"
+    if (any(is.na(dims_of_settings[[i]]))) {
+        dims_of_settings[[i]] <- dims_of_settings[[i]][-which(is.na(dims_of_settings[[i]]))]
     }
-    dimtmp <- vector("list", l=ncin$ndims)
-    names(dimtmp) <- dims_per_setting_in[[i]]
-    for (di in seq_along(dimtmp)) {
-        message(di, ": \"", dims_per_setting_in[[i]][di], "\", n=", length(ncin$dim[[di]]$vals))
-        dimtmp[[di]] <- ncin$dim[[di]]$vals
+
+    # check for unknown dimnames of file
+    if (any(is.na(match(dims_of_settings[[i]], unlist(known_dimnames))))) {
+        inds <- which(is.na(match(dims_of_settings[[i]], unlist(known_dimnames))))
+        stop(length(inds), " dims of file are unknown: \"", 
+             paste(dims_of_settings[[i]][inds], collapse="\", \""), "\"\n",
+             "add these dimnames to `known_dimnames` in namelist.general.plot.r")
+    }
+
+    # map input dimnames to known dimnames to make everything modular 
+    for (di in seq_along(known_dimnames)) {
+        if (any(!is.na(match(dims_of_settings[[i]], known_dimnames[[di]])))) {
+            ind <- which(!is.na(match(dims_of_settings[[i]], known_dimnames[[di]])))
+            if (length(ind) != 1) stop("this should not happen")
+            message("map input dimname \"", dims_of_settings[[i]][ind], "\" --> \"", names(known_dimnames)[di], "\"")
+            # val(obj) --> original dimnames
+            # name(obj) --> my dimnames
+            names(dims_of_settings[[i]])[ind] <- names(known_dimnames)[di] 
+        }
+    }
+    
+    # get dimvals
+    dimtmp <- vector("list", l=length(dims_of_settings[[i]]))
+    cnt <- 0
+    for (di in seq_len(ncin$ndims)) {
+        message("input dim ", di, "/", ncin$ndims, ": \"", names(ncin$dim)[di], "\", n=", length(ncin$dim[[di]]$vals))
+        if (!any(names(ncin$dim)[di] == dims_of_settings[[i]])) {
+            # dim was excluded before due to e.g. `ignore_dimnames`
+        } else {
+            cnt <- cnt + 1
+            dimtmp[[cnt]] <- ncin$dim[[di]]$vals
+            ind <- which(dims_of_settings[[i]] == names(ncin$dim)[di])
+            if (length(ind) != 1) stop("this should not happen")
+            names(dimtmp)[cnt] <- names(dims_of_settings[[i]])[ind]
+        }
     }
     dims[[i]] <- dimtmp
     rm(dimtmp)
@@ -403,6 +430,7 @@ for (i in seq_len(nsettings)) {
     if (any(names(dims[[i]]) == "time")) {
 
         message("\ndetected time dim of length ", length(dims[[i]]$time), "; dims[[", i, "]]$time:")
+        cat(capture.output(str(ncin$dim[[dims_of_settings[[i]]["time"]]])), sep="\n")
         ht(dims[[i]]$time)
         
         if (prefixes[i] == "Hol-T_stschuett_echam5_wiso") {
@@ -412,10 +440,21 @@ for (i in seq_len(nsettings)) {
         }
         
         # convert any unit to seconds for POSIX
-        timein_units <- ncin$dim$time$units
+        timein_calendar <- timein_leap <- NULL
+        if (!is.null(ncin$dim[[dims_of_settings[[i]]["time"]]]$calendar)) {
+            timein_calendar <- ncin$dim[[dims_of_settings[[i]]["time"]]]$calendar
+            if (any(timein_calendar == c("365_day", "proleptic_gregorian", "gregorian"))) {
+                timein_leap <- F
+            } else if (any(timein_calendar == c("366_day", "standard"))) {
+                timein_leap <- T
+            } else {
+                stop("time dim `calendar` attribute \"", timein_calendar, "\" unknown")
+            }
+        }
+        timein_units <- ncin$dim[[dims_of_settings[[i]]["time"]]]$units
         if (timein_units == "") { # my phd stuff
-            if (is.null(ncin$var$time$units)) stop("not defined")
-            timein_units <- ncin$var$time$units
+            if (is.null(ncin$var[[dims_of_settings[[i]]["time"]]]$units)) stop("not defined")
+            timein_units <- ncin$var[[dims_of_settings[[i]]["time"]]]$units
         }
         if (all(dims[[i]]$time == 0)) { # my phd stuff
             message("make my phd special monthly time from `fromsf[i]` = ", fromsf[i], " to `tosf[i]` = ", tosf[i])
@@ -441,17 +480,37 @@ for (i in seq_len(nsettings)) {
         if (regexpr(" since ", timein_units) != -1) {
             timein_unit <- substr(timein_units, 1, regexpr(" since ", timein_units) - 1)
             timein_origin <- substr(timein_units, regexpr(" since ", timein_units) + 7, nchar(timein_units))
+            timein_fac <- NULL
             if (any(timein_unit == c("second", "seconds"))) {
                 timein_fac <- 1
             } else if (grepl("day", timein_unit)) {
                 timein_fac <- 86400
             } else if (grepl("hour", timein_unit)) {
                 timein_fac <- 60*60
+            } else if (grepl("month", timein_unit)) {
+                if (all(diff(dims[[i]]$time) == 1)) {
+                    timein_lt <- as.POSIXlt(seq(as.POSIXct(timein_origin, tz="UTC"), 
+                                                by=paste0(diff(dims[[i]]$time)[1], " months"),
+                                                l=length(dims[[i]]$time)))
+                } else {
+                    stop("time dim is given in months with uneven dt. who is doing such thing o_O")
+                }
             } else {
-                stop("unknown timein_unit = \"", timein_unit, "\" from time units \"", timein_units, "\"")
+                stop("timein_unit \"", timein_unit, "\" obtained from time units \"", 
+                     timein_units, "\" is unknown")
             }
-            #timein_ct <- as.POSIXct(timein*timein_fac, origin=timein_origin, tz="UTC")
-            timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac, origin=timein_origin, tz="UTC")
+            if (!is.null(timein_fac)) {
+                if (!is.null(timein_leap) && !timein_leap) {
+                    origin_year <- as.integer(substr(timein_origin, 1, 4))
+                    message("detected relative time unit AND non-leap calendar --> add number of feb29 from ",
+                            "`origin year` = ", origin_year, " to `fromsf[", i, "] = ", fromsf[i])
+                    nfeb29 <- length(which(is.leap(origin_year:fromsf[i])))
+                    message("--> add ", nfeb29, " feb29 in time unit \"", timein_unit, "\" to time vals ...")
+                    timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac+nfeb29*timein_fac, origin=timein_origin, tz="UTC")
+                } else {
+                    timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac, origin=timein_origin, tz="UTC")
+                }
+            }
 
         # case 2: e.g. "day as %Y%m%d.%f"
         } else if (regexpr(" as ", timein_units) != -1) { 
@@ -480,6 +539,7 @@ for (i in seq_len(nsettings)) {
 
         # case 3: # my phd stuff
         } else if (any(timein_units == c("days", "months"))) {
+            message("\nspecial: my old phd stuff")
             timein_lt <- make_posixlt_origin(dims[[i]]$time)
         
         } else {
@@ -1259,36 +1319,36 @@ for (i in seq_len(nsettings)) {
         var_infos[[vi]] <- ncatt_get(ncin, vars_per_file[vi])
 
         # get dims of variable
-        dimids <- ncin$var[[vars_per_file[vi]]]$dimids # get dims of data
-        dimids <- dimids + 1 # nc dim ids start counting from zero
-        if (squeeze) { # drop dims with len=1
-            dim_lengths <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[", "len")
-            names(dim_lengths) <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[", "name")
-            if (any(dim_lengths == 1)) {
-                len1_dim_inds <- which(dim_lengths == 1)
-                message("\n`squeeze=T` --> drop dims of length 1: \"", 
-                        paste(names(len1_dim_inds), collapse="\", \""), "\" ...")
-                if (length(len1_dim_inds) == length(dim_lengths)) { # 
-                    message("dropping ", length(len1_dim_inds), 
-                            " dims of length 1 would mean to drop all dims of the data")
-                    if (any(names(dim_lengths) == "time")) {
-                        message("--> keep time dim")
-                        ind <- which(names(dim_lengths) == "time")
+        dimnames <- sapply(ncin$var[[vars_per_file[vi]]]$dim, "[[", "name")
+        dimlengths <- ncin$var[[vars_per_file[vi]]]$size
+        if (squeeze && any(dimlengths == 1)) { # drop dims with len=1
+            len1_dim_inds <- which(dimlengths == 1)
+            message("\n`squeeze=T` --> drop ", length(len1_dim_inds), " dims of length 1: \"", 
+                    paste(dimnames[len1_dim_inds], collapse="\", \""), "\" ...")
+            if (length(len1_dim_inds) == length(dimlengths)) {
+                message("dropping ", length(len1_dim_inds), 
+                        " dims of length 1 would remove all dims of the data")
+                if (any(names(dims_of_settings[[i]]) == "time") && # current setting has a time dim and
+                    any(dimnames == dims_of_settings[[i]]["time"])) { # current variable has time dim
+                        message("--> keep time dim \"", dims_of_settings[[i]]["time"], "\"")
+                        ind <- which(dimnames == dims_of_settings[[i]]["time"])
                         len1_dim_inds <- len1_dim_inds[-ind]
-                    } else {
-                        stop("not defined")
-                    }
+                } else {
+                    stop("not defined")
                 }
-                dimids <- dimids[-len1_dim_inds]
-                for (di in seq_along(len1_dim_inds)) { # this is actually not needed anymore?:
-                    dims[[i]][names(len1_dim_inds)[di]] <- NULL
-                }
-            } # if var has dims of length 1 
-        } else {
-            stop("not implemented")
+            } # if removing len-1 dims would drop all dims
+            dimlengths <- dimlengths[-len1_dim_inds]
+            dimnames <- dimnames[-len1_dim_inds]
         } # if squeeze
-        attributes(vars[[vi]]) <- list(dim=dim(vars[[vi]]), dims=dims_per_setting_in[[i]][dimids])
-        #cmd <- paste0("tmp <- list(", paste0(dims_per_setting_in[[i]][dimids], "=ncin$dim[[", dimids, "]]$vals", collapse=", "), ")")
+
+        # use my dimnames, not original dimnames
+        dimnames <- match(dimnames, dims_of_settings[[i]])
+        if (any(is.na(dimnames))) stop("this should not happen")
+        dimnames <- names(dims_of_settings[[i]][dimnames]) # e.g. "TIME" --> "time"
+        
+        # set proper attributes to data object
+        attributes(vars[[vi]]) <- list(dim=dimlengths, dims=dimnames)
+    
     } # for vi nvars per setting
     
     # remove empty entries which were ignored during ncvar_get() above
@@ -1327,7 +1387,7 @@ for (i in seq_len(nsettings)) {
             }
     
             # get dims of variable
-            ll_dims_per_setting_in <- names(ll_ncs[[li]]$dim)
+            ll_dims_of_settings <- names(ll_ncs[[li]]$dim)
             dimids <- ll_ncs[[li]]$var[[ll_vars[li]]]$dimids # get dims of data
             dimids <- dimids + 1 # nc dim ids start counting from zero
             if (squeeze) { # drop dims with len=1
@@ -1346,7 +1406,7 @@ for (i in seq_len(nsettings)) {
                 stop("not implemented")
             } # if squeeze
             attributes(ll_data[[i]][[li]][[ll_vars[li]]]) <- list(dim=dim(ll_data[[i]][[li]][[ll_vars[li]]]),
-                                                                  dims=ll_dims_per_setting_in[dimids])
+                                                                  dims=ll_dims_of_settings[dimids])
         } # for li in seq_along(ll_data[[i]])
     } # if !is.null(ll_data[[i]][[1]]$lon) && !is.null(ll_data[[i]][[1]]$lat)
 
@@ -1974,7 +2034,7 @@ for (i in seq_len(nsettings)) {
                         # time is already x-dim; nothing to do
                     }
                 } else {
-                    message("ndim(datas[[", i, "]][[", vi, "]]) = ", length(attributes(datas[[i]][[vi]])$dims), " != 2. skip.")
+                    #message("ndim(datas[[", i, "]][[", vi, "]]) = ", length(attributes(datas[[i]][[vi]])$dims), " != 2. skip.")
                 }
             }
             # update dims per setting
@@ -2027,7 +2087,11 @@ for (i in seq_len(nsettings)) {
     for (vi in seq_along(datas[[i]])) {
 
         varname <- names(datas[[i]])[vi]
-        data_infos[[i]][[vi]]$offset$operator <- NULL # default: dont apply any factor
+        message("variable ", vi, "/", length(datas[[i]]), ": ", varname, ":")
+        cat(capture.output(str(data_infos[[i]])), sep="\n")
+        
+        # default: dont apply any factor
+        data_infos[[i]][[vi]]$offset$operator <- NULL 
         data_infos[[i]][[vi]]$offset$value <- NULL
 
         # default variable axis label
@@ -2076,8 +2140,18 @@ for (i in seq_len(nsettings)) {
         # add my special variable-specific things
         data_infos[[i]][[vi]]$units_old <- data_infos[[i]][[vi]]$units
         
-        ## atmosphere
-
+        ## conversion tables
+        # carbon variables
+        # 1 mole C = 1 mole CO2; 1 mole = 6.02214076 * 1e23 particles
+        # 1 mole C = 12.0107 g C
+        # --> convert mole C to g C: *12.0107 
+        # 1 mole CO2 = 44.0095 g CO2
+        # --> 12.0107 g C = 44.0095         g CO2
+        # <=>       1 g C = 44.0095/12.0107 g CO2
+        # <=>       1 g C = 3.664191        g CO2
+        # --> convert g C   to g CO2: *3.664191 (or /0.272912)
+        # --> convert g CO2 to g C  : /3.664191 (or *0.272912)
+        
         # echam
         if (any(varname == c("temp2", "tas", "t"))) {
             if (grepl("C", data_infos[[i]][[vi]]$units)) {
@@ -2301,17 +2375,6 @@ for (i in seq_len(nsettings)) {
         } else if (varname == "quv_direction") {
             data_infos[[i]][[vi]]$label <- "direction of water vapor transport [°]"
        
-        ## carbon variables
-        # 1 mole C = 1 mole CO2; 1 mole = 6.02214076 * 1e23 particles
-        # 1 mole C = 12.0107 g C
-        # --> convert mole C to g C: *12.0107 
-        # 1 mole CO2 = 44.0095 g CO2
-        # --> 12.0107 g C = 44.0095         g CO2
-        # <=>       1 g C = 44.0095/12.0107 g CO2
-        # <=>       1 g C = 3.664191        g CO2
-        # --> convert g C   to g CO2: *3.664191 (or /0.272912)
-        # --> convert g CO2 to g C  : /3.664191 (or *0.272912)
-        
         # carbon echam tracer stream
         } else if (varname == "CO2") { 
             if (data_infos[[i]][[vi]]$units_old == "ppm") {
@@ -2495,43 +2558,75 @@ for (i in seq_len(nsettings)) {
 
         # cmip6 carbon fluxes away from atm
         } else if (any(varname == c("fgco2", "nbp", "netAtmosLandCO2Flux", "co2_flx_total"))) {
-            # original units kgC m-2 s-1
-            data_infos[[i]][[vi]]$units <- "kgC m-2 s-1"
-            if (varname == "fgco2") {
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
-            } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into land)"))))
-            } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean/land)"))))
-            }
-            if (T) { # convert carbon units
-                message("s-1 -> yr-1")
-                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
-                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 365.25*86400) # s-1->yr-1
-                data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
+            if (grepl("reccap2", prefixes[i])) {
+                data_infos[[i]][[vi]]$units <- "molC m-2 s-1"
+                if (models[i] == "CCSM-WHOI") {
+                    message("<0: into ocean --> >0: into ocean")
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1)
+                }
                 if (varname == "fgco2") {
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
-                } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into land)"))))
-                } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean/land)"))))
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [molC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
                 }
-                if (grepl("fldint", modes[i])) {
-                    message("kg -> Pg")
-                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
-                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e12) # kg->Pg
-                    data_infos[[i]][[vi]]$units <- "PgC yr-1"
+                if (T) { # convert carbon units
+                    message("s-1 -> yr-1")
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 365.25*86400) # s-1->yr-1
+                    data_infos[[i]][[vi]]$units <- "molC m-2 yr-1"
                     if (varname == "fgco2") {
-                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
-                    } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
-                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into land)"))))
-                    } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
-                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean/land)"))))
+                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [molC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
                     }
-                } else {
-                    stop("not yet")
+                    if (grepl("fldint", modes[i])) {
+                        message("molC -> Pg")
+                        data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*", "/", "/")
+                        data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 12.0107, 1e3, 1e12) # molC-->gC, gC-->kg, kg->Pg
+                        data_infos[[i]][[vi]]$units <- "PgC yr-1"
+                        if (varname == "fgco2") {
+                            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
+                        }
+                    } else {
+                        stop("not yet")
+                    }
+                } # convert carbon units
+
+            } else { # default: original units kgC m-2 s-1
+                data_infos[[i]][[vi]]$units <- "kgC m-2 s-1"
+                if (varname == "fgco2") {
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
+                } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into land)"))))
+                } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean/land)"))))
                 }
-            }
+                if (T) { # convert carbon units
+                    message("s-1 -> yr-1")
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 365.25*86400) # s-1->yr-1
+                    data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
+                    if (varname == "fgco2") {
+                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+                    } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
+                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into land)"))))
+                    } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
+                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean/land)"))))
+                    }
+                    if (grepl("fldint", modes[i])) {
+                        message("kg -> Pg")
+                        data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
+                        data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e12) # kg->Pg
+                        data_infos[[i]][[vi]]$units <- "PgC yr-1"
+                        if (varname == "fgco2") {
+                            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
+                        } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
+                            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into land)"))))
+                        } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
+                            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean/land)"))))
+                        }
+                    } else {
+                        stop("not yet")
+                    }
+                } # convert carbon units
+            } # which model
 
         # cmip6 carbon fluxes to atm
         } else if (any(varname == c("fHarvest"))) {
@@ -3759,7 +3854,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                         datasmon[[i]][[vi]] <- NA
                     } else {
                         message("mon ", appendLF=F)
-                        for (mi in 1:length(months_unique)) {
+                        for (mi in seq_along(months_unique)) {
                             time_inds <- which(months == months_unique[mi])
                             message(months_unique[mi], " (n=", length(time_inds), ") ", appendLF=F)
                             if (mi == length(months_unique)) message()
@@ -5273,6 +5368,73 @@ for (plot_groupi in seq_len(nplot_groups)) {
         cat(capture.output(str(z)), sep="\n")
         message("d:")
         cat(capture.output(str(d)), sep="\n")
+
+        if (plot_groups[plot_groupi] == "samedims" && all(grepl("reccap2", prefixes)) && 
+            length(unique(modes)) == 1 && length(unique(areas)) == 1) {
+            fout <- paste0(host$workpath, "/data/reccap2-ocean/reccap2-ocean_", length(models), "_models_", 
+                           modes[1], "_", zname, "_", areas[1], "_Jan-Dec_", paste(format(tlimct, "%Y"), collapse="-"), ".nc")
+            if (!file.exists(fout)) {
+                message("\nspecial: save reccap2 post")
+                modeldim <- ncdf4::ncdim_def(name="model", units="", vals=seq_along(z))
+                fromto <- min(fromsf):max(tosf)
+                tvals <- paste0(rep(fromto, e=12), "-", rep(1:12, t=length(fromto)), "-", rep(15, t=length(fromto)*12)) # all monthly data at same time points
+                tvals <- as.POSIXct(tvals, tz="UTC")
+                tdim <- ncdf4::ncdim_def(name="time", units="seconds since 1970-1-1", vals=as.numeric(tvals))
+                arr <- array(NA, dim=c(nsettings, length(tvals)))
+                for (i in seq_along(z)) {
+                    for (ti in seq_along(z[[i]])) {
+                        ind <- which(format(tvals, "%Y-%m") == format(d$time[[i]][ti], "%Y-%m"))
+                        if (length(ind) != 1) stop("this should not happen")
+                        arr[i,ind] <- z[[i]][ti]
+                    }
+                }
+                arr_min <- apply(arr, 2, min, na.rm=T)
+                arr_max <- apply(arr, 2, max, na.rm=T)
+                arr_mean <- apply(arr, 2, mean, na.rm=T)
+                arr_median <- apply(arr, 2, median, na.rm=T)
+                ncvar <- ncdf4::ncvar_def(name="fgco2_mon", units="PgC yr-1", dim=list(modeldim, tdim), missval=NA)
+                ncvar_min <- ncdf4::ncvar_def(name="fgco2_mon_min", units="PgC yr-1", dim=tdim, missval=NA)
+                ncvar_max <- ncdf4::ncvar_def(name="fgco2_mon_max", units="PgC yr-1", dim=tdim, missval=NA)
+                ncvar_mean <- ncdf4::ncvar_def(name="fgco2_mon_mean", units="PgC yr-1", dim=tdim, missval=NA)
+                ncvar_median <- ncdf4::ncvar_def(name="fgco2_mon_median", units="PgC yr-1", dim=tdim, missval=NA)
+                anvals <- as.POSIXct(paste0(fromto, "-1-1"), tz="UTC")
+                andim <- ncdf4::ncdim_def(name="years", units="seconds since 1970-1-1", vals=as.numeric(anvals))
+                arr_an <- array(NA, dim=c(nsettings, length(anvals)))
+                for (i in seq_along(zan)) {
+                    for (ti in seq_along(zan[[i]])) {
+                        ind <- which(format(anvals, "%Y") == dan$year[[i]][ti])
+                        if (length(ind) != 1) stop("this should not happen")
+                        arr_an[i,ind] <- zan[[i]][ti]
+                    }
+                }
+                arr_an_min <- apply(arr_an, 2, min, na.rm=T)
+                arr_an_max <- apply(arr_an, 2, max, na.rm=T)
+                arr_an_mean <- apply(arr_an, 2, mean, na.rm=T)
+                arr_an_median <- apply(arr_an, 2, median, na.rm=T)
+                ncvar_an <- ncdf4::ncvar_def(name="fgco2_an", units="PgC yr-1", dim=list(modeldim, andim), missval=NA)
+                ncvar_an_min <- ncdf4::ncvar_def(name="fgco2_an_min", units="PgC yr-1", dim=andim, missval=NA)
+                ncvar_an_max <- ncdf4::ncvar_def(name="fgco2_an_max", units="PgC yr-1", dim=andim, missval=NA)
+                ncvar_an_mean <- ncdf4::ncvar_def(name="fgco2_an_mean", units="PgC yr-1", dim=andim, missval=NA)
+                ncvar_an_median <- ncdf4::ncvar_def(name="fgco2_an_median", units="PgC yr-1", dim=andim, missval=NA)
+                outnc <- ncdf4::nc_create(fout, vars=list(ncvar, ncvar_min, ncvar_max, ncvar_mean, ncvar_median,
+                                                          ncvar_an, ncvar_an_min, ncvar_an_max, ncvar_an_mean, ncvar_an_median), force_v4=T)
+                ncdf4::ncvar_put(outnc, ncvar, arr)
+                ncdf4::ncvar_put(outnc, ncvar_min, arr_min)
+                ncdf4::ncvar_put(outnc, ncvar_max, arr_max)
+                ncdf4::ncvar_put(outnc, ncvar_mean, arr_mean)
+                ncdf4::ncvar_put(outnc, ncvar_median, arr_median)
+                ncdf4::ncvar_put(outnc, ncvar_an, arr_an)
+                ncdf4::ncvar_put(outnc, ncvar_an_min, arr_an_min)
+                ncdf4::ncvar_put(outnc, ncvar_an_max, arr_an_max)
+                ncdf4::ncvar_put(outnc, ncvar_an_mean, arr_an_mean)
+                ncdf4::ncvar_put(outnc, ncvar_an_median, arr_an_median)
+                for (i in seq_along(z)) {
+                    ncdf4::ncatt_put(outnc, "model", i, models[i])
+                }
+                ncdf4::nc_close(outnc)
+            } # if fout does not exist
+        } # special reccap2
+
 
         ## plot `datas` (`datas` always exists; no exists() check necessary)
         message("\n****************** plot datas z_* ***************************")
