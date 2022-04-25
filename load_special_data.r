@@ -1461,7 +1461,7 @@ if (T) { # post processed gregor_and_fay_2021 data
             names(gregor_and_fay_2021_ts_an)[ai] <- gregor_and_fay_2021_areas[ai]
         }
     } # for ai
-    if (all(is.null(gregor_and_fay_2021_ts_an))) {
+    if (all(sapply(gregor_and_fay_2021_ts_an, is.null))) {
         message("found zero data --> remove `gregor_and_fay_2021_ts_an`")
         rm(gregor_and_fay_2021_ts_an)
     }
@@ -1503,7 +1503,7 @@ if (T) { # post processed chau_etal_2020 data
             names(chau_etal_2020_ts_an)[ai] <- chau_etal_2020_areas[ai]
         }
     } # for ai
-    if (all(is.null(chau_etal_2020_ts_an))) {
+    if (all(sapply(chau_etal_2020_ts_an, is.null))) {
         message("found zero data --> remove `chau_etal_2020_ts_an`")
         rm(chau_etal_2020_ts_an)
     }

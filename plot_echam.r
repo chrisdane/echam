@@ -5341,7 +5341,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         cat(capture.output(str(d)), sep="\n")
 
         # special: reccp2 time series output in one nc file
-        if (plot_groups[plot_groupi] == "samedims" && all(grepl("reccap2", prefixes)) && 
+        if (plot_groups[plot_groupi] == "samevars" && all(grepl("reccap2", prefixes)) && 
             length(unique(modes)) == 1 && length(unique(areas)) == 1) {
             fout <- paste0(host$workpath, "/data/reccap2-ocean/reccap2-ocean_", length(models), "_models_", 
                            modes[1], "_", zname, "_", areas[1], "_Jan-Dec_", paste(format(tlimct, "%Y"), collapse="-"), ".nc")
@@ -11158,7 +11158,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add to data_left_an
                 if (any(varname == c("co2_flx_ocean", "fgco2"))) {
-                    if (exists("reccap2") && length(unique(areas) == 1)) {
+                    if (exists("reccap2") && length(unique(areas) == 1) && names(reccap2)[1] == areas[1]) {
                         message("add reccap2 fgco2 data to ylim_an ...")
                         data_left_an[[length(data_left_an)+1]] <- list(x=reccap2[[areas[1]]]$dims$years, 
                                                                        y=reccap2[[areas[1]]]$data$fgco2_an_mean$vals,
@@ -11168,7 +11168,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                        col_rgb=reccap2[[areas[1]]]$data$fgco2_an_min$col,
                                                                        text=reccap2[[areas[1]]]$data$fgco2_an_mean$label)
                     }
-                    if (exists("gregor_and_fay_2021_ts_an") && length(unique(areas) == 1)) {
+                    if (exists("gregor_and_fay_2021_ts_an") && length(unique(areas) == 1) && names(gregor_and_fay_2021_ts_an)[1] == areas[1]) {
                         message("add gregor_and_fay_2021_ts_an data to ylim_an ...")
                         data_left_an[[length(data_left_an)+1]] <- list(x=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$dims$years, 
                                                                        y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals,
@@ -11180,7 +11180,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                        col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.3),
                                                                        text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$label)
                     }
-                    if (exists("chau_etal_2020_ts_an") && length(unique(areas) == 1)) {
+                    if (exists("chau_etal_2020_ts_an") && length(unique(areas) == 1) && names(chau_etal_2020_ts_an)[1] == areas[1]) {
                         message("add chau_etal_2020_ts_an data to ylim_an ...")
                         data_left_an[[length(data_left_an)+1]] <- list(x=chau_etal_2020_ts_an[[areas[1]]]$fgco2$dims$years, 
                                                                        y=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals,
@@ -11662,6 +11662,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     inds <- which(!is.na(names_legend_pan)) # throw out user provided NA
                     le$text <- names_legend_pan_w_lm[inds]
                     le$cex <- lecex
+                    #le$cex <- 0.66
                     #le$cex <- 0.85
                     le$col <- cols_pan[inds]
                     le$lty <- ltys_pan[inds]

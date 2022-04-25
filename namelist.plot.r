@@ -495,7 +495,7 @@ if (F) { # mhw composite data/seas*100
     #fromsp <- c(1002, 1002) # same temporal means
     #tosp <- c(1048, 1048) # same temporal means
     
-} else if (T) { # awi-esm-1-1-lr_kh800 piControl vs historical 
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl vs historical 
     models <- rep("echam6", t=2)
     #models <- rep("fesom", t=2)
     #prefixes <- c("awi-esm-1-1-lr_kh800_piControl_og", "awi-esm-1-1-lr_kh800_historical")
@@ -2225,24 +2225,45 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # 16 settings
-} else if (F) { # 16 reccap2 settings
+} else if (T) { # 15/16 reccap2 settings
     models <- c("CCSM-WHOI", # <0: uptake 
                 "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 
                 "FESOM_REcoM_LR", "MOM6-COBALT2-Princeton", 
                 "MPIOM-HAMOCC", "MRI-ESM2-0", "NorESM-OC1.2", "OCIM-v2014", "OCIM-v2021", 
                 "ORCA025-GEOMAR", # says unit "Pg C yr-1" but its "molC m-2 s-1" 
-                "ORCA1-LIM3-PISCES", "ROMS-SouthernOcean-ETHZ")
+                "ORCA1-LIM3-PISCES")
+    fromsf <- c(1958, 1980, 1980, 1980, 1995, 1980, 1980, 1980, 1980, 1980, 
+                1980, 1980, 1980, 1980, 1980)
+    tosf <- c(2017, 2018, 2018, 2018, 2018, 2018, 2018, 2018, 2019, 2018, 
+              2018, 2017, 2018, 2018, 2018)
+    if (T) { # add regional ROMS
+        fromsf <- c(fromsf, 1980)
+        if (F) { # atlantic
+            models <- c(models, "ROMS-Atlantic-ETHZ")
+            tosf <- c(tosf, 2019)
+        } else if (F) { # pacific
+            models <- c(models, "ROMS-Pacific-ETHZ")
+            tosf <- c(tosf, 2019)
+        } else if (F) { # indian
+            models <- c(models, "ROMS-NYUAD")
+            tosf <- c(tosf, 2018)
+        } else if (T) { # southern
+            models <- c(models, "ROMS-SouthernOcean-ETHZ")
+            tosf <- c(tosf, 2018)
+        }
+    }
     names_legend <- models
     names_short <- names_legend
     prefixes <- rep("reccap2_A", t=length(models))
     varnames_in <- rep("fgco2", t=length(models))
     plotprefix <- "reccap2_A_global"
     modes <- rep("fldint", t=length(models))
-    fromsf <- c(1958, 1980, 1980, 1980, 1995, 1980, 1980, 1980, 1980, 1980, 
-                1980, 1980, 1980, 1980, 1980, 1980)
-    tosf <- c(2017, 2018, 2018, 2018, 2018, 2018, 2018, 2018, 2019, 2018, 
-              2018, 2017, 2018, 2018, 2018, 2018)
+    #areas <- rep("reccap2_atlantic", t=length(models))
+    #areas <- rep("reccap2_pacific", t=length(models))
+    #areas <- rep("reccap2_indian", t=length(models))
+    #areas <- rep("reccap2_arctic", t=length(models))
+    areas <- rep("reccap2_southern", t=length(models))
 
 # ======================================================
 # 18 settings

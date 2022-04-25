@@ -2298,7 +2298,7 @@ for (i in seq_len(nsettings)) {
                             # --> after many tries with cdo/nco, the combination of ncdump and `known_dimnames` is the best way
                             ncdump <- Sys.which("ncdump")
                             if (ncdump == "") stop("did not find program ncdump")
-                            tdimname <- paste0(ncdump , " -h ", fout)
+                            tdimname <- paste0(ncdump , " -h ", selfile_vec[chunki])
                             message("run `", tdimname, "` ...")
                             tdimname <- system(tdimname, intern=T)
                             tdimname <- tdimname[(which(tdimname == "dimensions:")+1):(which(tdimname == "variables:")-1)] # e.g. "\ttime = UNLIMITED ; // (432 currently)"
@@ -2306,7 +2306,7 @@ for (i in seq_len(nsettings)) {
                             tdimname <- strsplit(tdimname, "=") # e.g. "time ", " UNLIMITED ; // (432 currently)"
                             tdimname <- sapply(tdimname, "[[", 1) # e.g. "time "
                             tdimname <- trimws(tdimname) # e.g. "time"
-                            ind <- which(tdimname == known_dimnames$time)
+                            ind <- which(!is.na(match(tdimname, known_dimnames$time)))
                             if (length(ind) != 1) {
                                 stop("could not find the time dimension in ", length(tdimnames), " file dimensions ", 
                                      paste(tdimname, collapse=", "), " based on `known_dimnames$time = ", 
@@ -2451,6 +2451,14 @@ for (i in seq_len(nsettings)) {
                                 system(cmd_ncap2_tmp)
                                 # --> this call does not capture "-bash: /usr/bin/ncap2: Argument list too long"
                                 # however, for cdo it does! dont know why
+                                
+                                if (clean) {
+                                    if (file.exists(selfile_vec[chunki])) {
+                                        cmd <- paste0("rm -v ", selfile_vec)
+                                        message("run `", cmd, "` ...")
+                                        system(cmd)
+                                    }
+                                }
 
                             } # if nco ncap2 argument is too long
 
@@ -2665,7 +2673,7 @@ for (i in seq_len(nsettings)) {
                     tdimname <- strsplit(tdimname, "=") # e.g. "time ", " UNLIMITED ; // (432 currently)"
                     tdimname <- sapply(tdimname, "[[", 1) # e.g. "time "
                     tdimname <- trimws(tdimname) # e.g. "time"
-                    ind <- which(tdimname == known_dimnames$time)
+                    ind <- which(!is.na(match(tdimname, known_dimnames$time)))
                     if (length(ind) != 1) {
                         stop("could not find the time dimension in ", length(tdimnames), " file dimensions ", 
                              paste(tdimname, collapse=", "), " based on `known_dimnames$time = ", 
@@ -2819,7 +2827,7 @@ for (i in seq_len(nsettings)) {
                     tdimname <- sapply(tdimname, "[[", 1) # e.g. "time "
                     tdimname <- trimws(tdimname) # e.g. "time"
                     message("--> ", paste(tdimname, collapse=", "))
-                    ind <- which(tdimname == known_dimnames$time)
+                    ind <- which(!is.na(match(tdimname, known_dimnames$time)))
                     if (length(ind) != 1) {
                         stop("could not find the time dimension in ", length(tdimnames), " file dimensions ", 
                              paste(tdimname, collapse=", "), " based on `known_dimnames$time = ", 

@@ -2158,28 +2158,14 @@ if (F) { # old hist
     tos <- rep(2704, t=12)
 
 # ======================================================
-# 15 settings
-} else if (F) { # 15 reccap2 settings (wout CNRM-ESM2-1)
-    models <- c("CCSM-WHOI", "CESM-ETHZ", "EC-Earth3", "ECCO-Darwin", 
-                "FESOM_REcoM_HR", "FESOM_REcoM_LR", "MOM6-COBALT2-Princeton", 
-                "MPIOM-HAMOCC", "MRI-ESM2-0", "NorESM-OC1.2", "OCIM-v2014", "OCIM-v2021", 
-                "ORCA025-GEOMAR", "ORCA1-LIM3-PISCES", "ROMS-SouthernOcean-ETHZ")
-    datapaths <- sapply(models, function(x) dir("/work/ollie/ncara/RECCAPv2/reccap_submissions/download_20220124/Models/2D_CO2/", pattern=x, full.name=T))
-    fpatterns <- rep("fgco2_glob_*_A_*", t=length(models))
-    prefixes <- paste0("reccap2_", models, "_A")
-    fvarnames <- rep("fgco2_glob", t=length(models))
-    modes <- rep("select", t=length(models))
-    froms <- c(1958, 1980, 1995, rep(1980, t=12))
-    tos <- c(2017, rep(2018, t=6), 2019, 2018, 2018, 2017, rep(2018, t=4))
-
-# ======================================================
 # 16 settings
-} else if (T) { # 16 reccap2 settings
+} else if (T) { # 15/16 reccap2 settings (global: wout ROMS; regional: with ROMS)
+    workpath <- "/work/ollie/cdanek"
     post_force <- T
     models <- c("CCSM-WHOI", "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", "FESOM_REcoM_LR", "MOM6-COBALT2-Princeton", 
                 "MPIOM-HAMOCC", "MRI-ESM2-0", "NorESM-OC1.2", "OCIM-v2014", "OCIM-v2021", 
-                "ORCA025-GEOMAR", "ORCA1-LIM3-PISCES", "ROMS-SouthernOcean-ETHZ")
+                "ORCA025-GEOMAR", "ORCA1-LIM3-PISCES")
     datapaths <- sapply(models, function(x) dir("/work/ollie/ncara/RECCAPv2/reccap_submissions/download_20220124/Models/2D_CO2", pattern=x, full.name=T))
     # set grid:
     datapaths[which(models == "FESOM_REcoM_HR")] <- "/work/ollie/cdanek/data/reccap2-ocean/FESOM_REcoM_HR"
@@ -2191,42 +2177,51 @@ if (F) { # old hist
     datapaths[which(models == "CESM-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/CESM-ETHZ"
     # set NA value (`cdo fldsum` yields NA) and rechunked for faster reading:
     datapaths[which(models == "ECCO-Darwin")] <- "/work/ollie/cdanek/data/reccap2-ocean/ECCO-Darwin"
-    # set dates:
-    new_date_list <- vector("list", l=length(models))
-    new_date_list[[1]] <- list(dates=paste0(rep(1958:2017, e=12), "-", rep(1:12, t=length(1958:2017)), "-", rep(15, t=length(1958:2017)*12))) # CCSM-WHOI 1st date: 1958-02-01
-    new_date_list[[5]] <- list(dates=paste0(rep(1995:2018, e=12), "-", rep(1:12, t=length(1995:2018)), "-", rep(15, t=length(1995:2018)*12))) # ECCO-Darwin 1st date: 0016-01-16 
-    new_date_list[[6]] <- list(dates=paste0(rep(1980:2018, e=12), "-", rep(1:12, t=length(1980:2018)), "-", rep(15, t=length(1980:2018)*12))) # FESOM_REcoM_HR 1st date: 0000-00-00
-    new_date_list[[7]] <- new_date_list[[6]] # FESOM_REcoM_LR
     # rechunked for faster reading:
     datapaths[which(models == "CCSM-WHOI")] <- "/work/ollie/cdanek/data/reccap2-ocean/CCSM-WHOI"
     datapaths[which(models == "NorESM-OC1.2")] <- "/work/ollie/cdanek/data/reccap2-ocean/NorESM-OC1.2"
-    datapaths[which(models == "ROMS-SouthernOcean-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-SouthernOcean-ETHZ"
-    if (T) { # nlon x nlat x ntime
-        froms <- c(1980, rep(1980, t=3), 1995, rep(1980, t=3), 1980, rep(1980, t=2), 1980, rep(1980, t=4))
-        tos <- c(2017, rep(2018, t=3), 2018, rep(2018, t=3), 2019, rep(2018, t=2), 2017, rep(2018, t=4))
-        fpatterns <- paste0("fgco2_", models, "*A_*_gr_", froms, "-*.nc")
-        modes <- rep("fldint", t=length(models))
-        fvarnames <- rep("fgco2", t=length(models))
-    } else if (F) { # ntime 
-        fpatterns <- rep("fgco2_glob_*_A_*", t=length(models))
-        froms <- c(1958, 1980, 1980, 1995, rep(1980, t=12))
-        tos <- c(2017, rep(2018, t=7), 2019, 2018, 2018, 2017, rep(2018, t=4))
-        modes <- rep("select", t=length(models))
-        fvarnames <- rep("fgco2_glob", t=length(models))
+    froms <- c(1980, rep(1980, t=3), 1995, rep(1980, t=3), 1980, rep(1980, t=2), 1980, rep(1980, t=3))
+    tos <- c(2017, rep(2018, t=3), 2018, rep(2018, t=3), 2019, rep(2018, t=2), 2017, rep(2018, t=3))
+    if (T) { # add regional ROMS if area is not global
+        froms <- c(froms, 1980)
+        if (F) { # atlantic
+            models <- c(models, "ROMS-Atlantic-ETHZ")
+            datapaths[which(models == "ROMS-Atlantic-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-Atlantic-ETHZ" # set griddes (xfirst = 0.5 --> -179.5) and rechunked for faster reading
+            tos <- c(tos, 2019)
+        } else if (F) { # pacific
+            models <- c(models, "ROMS-Pacific-ETHZ")
+            datapaths[which(models == "ROMS-Pacific-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-Pacific-ETHZ" # rechunked for faster reading
+            tos <- c(tos, 2019)
+        } else if (F) { # indian
+            models <- c(models, "ROMS-NYUAD")
+            datapaths[which(models == "ROMS-NYUAD")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-NYUAD"
+            tos <- c(tos, 2018)
+        } else if (T) { # southern
+            models <- c(models, "ROMS-SouthernOcean-ETHZ")
+            datapaths[which(models == "ROMS-SouthernOcean-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-SouthernOcean-ETHZ" # rechunked for faster reading
+            tos <- c(tos, 2018)
+        }
     }
+    # set dates:
+    new_date_list <- vector("list", l=length(models))
+    new_date_list[[which(models == "CCSM-WHOI")]] <- list(dates=paste0(rep(1958:2017, e=12), "-", rep(1:12, t=length(1958:2017)), "-", rep(15, t=length(1958:2017)*12))) # 1st date: 1958-02-01
+    new_date_list[[which(models == "ECCO-Darwin")]] <- list(dates=paste0(rep(1995:2018, e=12), "-", rep(1:12, t=length(1995:2018)), "-", rep(15, t=length(1995:2018)*12))) # 1st date: 0016-01-16 
+    new_date_list[[which(models == "FESOM_REcoM_HR")]] <- list(dates=paste0(rep(1980:2018, e=12), "-", rep(1:12, t=length(1980:2018)), "-", rep(15, t=length(1980:2018)*12))) # 1st date: 0000-00-00
+    new_date_list[[which(models == "FESOM_REcoM_LR")]] <- new_date_list[[which(models == "FESOM_REcoM_HR")]] # 1st date: 0000-00-00
+    fpatterns <- paste0("fgco2_", models, "*A_*_gr_", froms, "-*.nc")
     prefixes <- rep("reccap2_A", t=length(models))
-    mask_list <- list(list(
-                           name="reccap2_atlantic",
-                           cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
-                           #name="reccap2_pacific",
-                           #cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
-                           #name="reccap2_indian",
-                           #cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
-                           #name="reccap2_arctic",
-                           #cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
-                           #name="reccap2_southern",
-                           #cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
-                          ))
+    fvarnames <- rep("fgco2", t=length(models))
+    modes <- rep("fldint", t=length(models))
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_atlantic"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_pacific"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_indian"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_arctic"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_southern"))
+    for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
 
 # ======================================================
 # 27 settings
