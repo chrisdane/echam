@@ -57,6 +57,10 @@ nco_nchar_max_arglist <- 131071
 # model specific general options
 mpiom1_remap <- T
 
+# known dimnames; add further
+# so far only time needed
+known_dimnames <- list(time=c("time", "Time", "TIME", "time_mon", "T", "t"))
+
 # cdo commands for some variables
 cdo_known_cmds <- list(
    "psl"=list(cmd=c("<cdo> merge <aps> <geosp> <t>",

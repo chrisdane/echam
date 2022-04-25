@@ -68,7 +68,7 @@ calc_ttest_lon_lat_time <- T
 ttest_alternative <- "two.sided" # differences in means
 ttest_significance <- 0.05 # p-value (*100 for %)
 
-# general plot options
+# plot device options
 png_family <- NULL
 if (host$machine_tag == "mistral") {
     png_family <- "Nimbus Sans L" # mistral R36 default png font Helvetica broken
@@ -82,6 +82,9 @@ p <- myDefaultPlotOptions(#plot_type="png"
                           #,ts_asp=0.75
                           #,verbose=T
                           )
+plus_minus_symbol <- "\u00b1"
+
+# general plot options
 bilinear_interp_factor <- 1 # only effect if > 1
 plot_samedims <- T
 add_title <- F

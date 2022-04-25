@@ -2294,13 +2294,25 @@ for (i in seq_len(nsettings)) {
                             #cmd_cp_and_mv <- paste0("cp ", fout_vec[chunki], " ", nco_fout_vec[chunki])
                             cmd_cp_and_mv <- paste0(cdoprefix, " --no_history -r copy ", selfile_vec[chunki], " ", nco_fout_vec[chunki])
                             
-                            # get time dimname
-                            cmd <- paste0(cdo, " sinfo ", selfile_vec[chunki]) # short info 
-                            message("\nrun `", cmd, "` ...")
-                            sinfo <- system(cmd, intern=T)
-                            tdimname <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # e.g. "TIME : 468 steps"
-                            tdimname <- strsplit(tdimname, ":")[[1]]
-                            tdimname <- trimws(tdimname[1])
+                            # get time dimension name
+                            # --> after many tries with cdo/nco, the combination of ncdump and `known_dimnames` is the best way
+                            ncdump <- Sys.which("ncdump")
+                            if (ncdump == "") stop("did not find program ncdump")
+                            tdimname <- paste0(ncdump , " -h ", fout)
+                            message("run `", tdimname, "` ...")
+                            tdimname <- system(tdimname, intern=T)
+                            tdimname <- tdimname[(which(tdimname == "dimensions:")+1):(which(tdimname == "variables:")-1)] # e.g. "\ttime = UNLIMITED ; // (432 currently)"
+                            tdimname <- gsub("^\t", "", tdimname) # e.g. "time = UNLIMITED ; // (432 currently)"
+                            tdimname <- strsplit(tdimname, "=") # e.g. "time ", " UNLIMITED ; // (432 currently)"
+                            tdimname <- sapply(tdimname, "[[", 1) # e.g. "time "
+                            tdimname <- trimws(tdimname) # e.g. "time"
+                            ind <- which(tdimname == known_dimnames$time)
+                            if (length(ind) != 1) {
+                                stop("could not find the time dimension in ", length(tdimnames), " file dimensions ", 
+                                     paste(tdimname, collapse=", "), " based on `known_dimnames$time = ", 
+                                     paste(knonw_dimnames$time, collapse=", "))
+                            }
+                            tdimname <- tdimname[ind]
                             message("--> input time dim name = \"", tdimname, "\"")
                            
                             # ncap2 command with new time vals
@@ -2640,21 +2652,33 @@ for (i in seq_len(nsettings)) {
                 message("run `", tinfo, "` ...")
                 tinfo <- system(tinfo, intern=T)
                 if (any(grepl("Calendar = ", tinfo))) {
-                    message("--> detected `calendar` attribute:\n",
-                            tinfo[grepl("Calendar = ", tinfo)])
-                    sinfo <- paste0(cdo, " -s sinfo ", fout) # get time dim name
-                    message("--> get time dim name: run `", sinfo, "` ...")
-                    sinfo <- system(sinfo, intern=T)
-                    tdimname <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # e.g. "TIME : 468 steps"
-                    tdimname <- strsplit(tdimname, ":")[[1]]
-                    tdimname <- trimws(tdimname[1])
-                    message("--> \"", tdimname, "\"")
+                    message("--> detected `calendar` attribute:\n", tinfo[grepl("Calendar = ", tinfo)])
+                    # get time dimension name
+                    # --> after many tries with cdo/nco, the combination of ncdump and `known_dimnames` is the best way
+                    ncdump <- Sys.which("ncdump")
+                    if (ncdump == "") stop("did not find program ncdump")
+                    tdimname <- paste0(ncdump , " -h ", fout)
+                    message("run `", tdimname, "` ...")
+                    tdimname <- system(tdimname, intern=T)
+                    tdimname <- tdimname[(which(tdimname == "dimensions:")+1):(which(tdimname == "variables:")-1)] # e.g. "\ttime = UNLIMITED ; // (432 currently)"
+                    tdimname <- gsub("^\t", "", tdimname) # e.g. "time = UNLIMITED ; // (432 currently)"
+                    tdimname <- strsplit(tdimname, "=") # e.g. "time ", " UNLIMITED ; // (432 currently)"
+                    tdimname <- sapply(tdimname, "[[", 1) # e.g. "time "
+                    tdimname <- trimws(tdimname) # e.g. "time"
+                    ind <- which(tdimname == known_dimnames$time)
+                    if (length(ind) != 1) {
+                        stop("could not find the time dimension in ", length(tdimnames), " file dimensions ", 
+                             paste(tdimname, collapse=", "), " based on `known_dimnames$time = ", 
+                             paste(knonw_dimnames$time, collapse=", "))
+                    }
+                    tdimname <- tdimname[ind]
+                    message("--> input time dim name = \"", tdimname, "\"")
+                    
                     nco_ncatted <- Sys.which("ncatted")
                     if (nco_ncatted == "") {
                         warning("ncatted not found. skip removing `calendar` attribute of time dim \"", tdimname, "\"")
-                    } else {
-                        # `Calendar` does not work, must be `calendar`
-                        cmd <- paste0(nco_ncatted, " -O -a calendar,", tdimname, ",d,, ", fout) # delete `calendar` attribute
+                    } else { # remove calendar attribute
+                        cmd <- paste0(nco_ncatted, " -O -a calendar,", tdimname, ",d,, ", fout) # capital `Calendar` does not work, must be `calendar`
                         message("--> remove `calendar` attribute of time dim \"", tdimname, "\": run `", cmd, "` ...")
                         system(cmd)
                     }
@@ -2744,10 +2768,10 @@ for (i in seq_len(nsettings)) {
 
         # set time_bnds if needed (if there is time dim) and not already there
         # --> time_bnds are necessary for `cdo cat`
-        message("\ncheck if time_bnds are needed (if there is a time dim) and not there yet ...") 
+        message("\ncheck if time_bnds are needed (= if there is a time dim) and not there yet ...") 
         # needs ncap2 >= 4.6.7
         # todo: how to check if file has time dims?
-        cmd <- paste0(cdo, " sinfo ", fout) # short info 
+        cmd <- paste0(cdo, " -s sinfo ", fout) # short info 
         message("run `", cmd, "` ...")
         sinfo <- system(cmd, intern=T)
         if (any(grepl("   Time coordinate :", sinfo))) { # there is time dim
@@ -2780,9 +2804,28 @@ for (i in seq_len(nsettings)) {
                 }
                 if (make_bounds) {
                     # get time dimension name
-                    tdimname <- sinfo[which(grepl("   Time coordinate :", sinfo))+1] # e.g. "TIME : 468 steps"
-                    tdimname <- strsplit(tdimname, ":")[[1]]
-                    tdimname <- trimws(tdimname[1])
+                    # --> after many tries with cdo/nco, the combination of ncdump and `known_dimnames` is the best way
+                    if (!exists("ncudmp")) {
+                        message("`ncdump` not set by user -> check if ncdump binary can be found: run `which(ncdump)`")
+                        ncdump <- Sys.which("ncdump")
+                    }
+                    if (ncdump == "") stop("did not find program ncdump")
+                    tdimname <- paste0(ncdump , " -h ", fout)
+                    message("run `", tdimname, "` ...")
+                    tdimname <- system(tdimname, intern=T)
+                    tdimname <- tdimname[(which(tdimname == "dimensions:")[1]+1):(which(tdimname == "variables:")[1]-1)] # e.g. "\ttime = UNLIMITED ; // (432 currently)"
+                    tdimname <- gsub("^\t", "", tdimname) # e.g. "time = UNLIMITED ; // (432 currently)"
+                    tdimname <- strsplit(tdimname, "=") # e.g. "time ", " UNLIMITED ; // (432 currently)"
+                    tdimname <- sapply(tdimname, "[[", 1) # e.g. "time "
+                    tdimname <- trimws(tdimname) # e.g. "time"
+                    message("--> ", paste(tdimname, collapse=", "))
+                    ind <- which(tdimname == known_dimnames$time)
+                    if (length(ind) != 1) {
+                        stop("could not find the time dimension in ", length(tdimnames), " file dimensions ", 
+                             paste(tdimname, collapse=", "), " based on `known_dimnames$time = ", 
+                             paste(knonw_dimnames$time, collapse=", "))
+                    }
+                    tdimname <- tdimname[ind]
                     message("--> input time dim name = \"", tdimname, "\"")
                     fout_ncap2 <- paste0(fout, "_ncap2_make_bounds")
                     cmd <- paste0(nco_ncap2, " -4 -s 'defdim(\"bnds\",2); time_bnds=make_bounds(", tdimname, ",$bnds,\"time_bnds\");' ", 

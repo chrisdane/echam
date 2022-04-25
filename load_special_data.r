@@ -1414,6 +1414,151 @@ if (F && any(file.exists(fs))) {
 } # if post processed holte et al. 2017 data
 
 
+if (T) { # post processed gregor_and_fay_2021 data
+    message("\ndisable here if you do not want to load post processed gregor_and_fay_2021 data ...")
+    gregor_and_fay_2021_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", "reccap2_arctic", "reccap2_southern")
+    if (F) {
+        gregor_and_fay_2021_varnames <- paste0("fgco2_ens_", c("mean", "sd", "max", "min")) # !!! max-->min due to *-1
+        gregor_and_fay_2021_labels <- c(paste0("GF21 mmm", plus_minus_symbol, "mmsd"), "GF21 mmsd", "GF21 mmmin", "G21 mmmax")
+    } else if (T) {
+        gregor_and_fay_2021_varnames <- paste0("fgco2_ens_", c("mean", "sd"))
+        gregor_and_fay_2021_labels <- c(paste0("GF21 mmm", plus_minus_symbol, "mmsd"), "GF21 mmsd")
+    }
+    gregor_and_fay_2021_col <- mycols(4)[4]
+    gregor_and_fay_2021_ts_an <- vector("list", l=length(gregor_and_fay_2021_areas))
+    for (ai in seq_along(gregor_and_fay_2021_areas)) {
+        tmpa <- list()
+        for (vi in seq_along(gregor_and_fay_2021_varnames)) {
+            f <- paste0(host$workpath, "/post/gregor_and_fay_2021/fldint/", gregor_and_fay_2021_varnames[vi], "/",
+                        "gregor_and_fay_2021_gregor_and_fay_2021_fldint_", gregor_and_fay_2021_varnames[vi], "_", gregor_and_fay_2021_areas[ai],
+                        "_annual_1990-2019.nc")
+            if (file.exists(f)) {
+                message("load gregor_and_fay_2021 data from \"", f, "\" ...")
+                nc <- nc_open(f)
+                time <- as.POSIXct(nc$dim$time$vals*86400, o="1981-12-15", tz="UTC")
+                years <- as.numeric(format(time, "%Y"))
+                dat <- ncvar_get(nc, gregor_and_fay_2021_varnames[vi])*12.0107/1e3/1e12 # molC->gC, gC->kgC, kgC->PgC
+                if (gregor_and_fay_2021_varnames[vi] != "fgco2_ens_sd") {
+                    dat <- dat*-1 # uptake<0->uptake>0
+                }
+                tmpv <- list(vals=dat, size=dim(dat), 
+                             dimnames="years",
+                             unit=ncatt_get(nc, gregor_and_fay_2021_varnames[vi])$units,
+                             col=gregor_and_fay_2021_col, label=gregor_and_fay_2021_labels[vi])
+                tmpv <- list(file=f, dims=list(time=time, years=years), data=tmpv)
+                tmpa[[length(tmpa)+1]] <- tmpv
+                names(tmpa)[length(tmpa)] <- gregor_and_fay_2021_varnames[vi]
+                if (gregor_and_fay_2021_varnames[vi] == "fgco2_ens_min") { # min-->max due to *-1 
+                    names(tmpa)[length(tmpa)] <- "fgco2_ens_max"
+                }
+                if (gregor_and_fay_2021_varnames[vi] == "fgco2_ens_max") {
+                    names(tmpa)[length(tmpa)] <- "fgco2_ens_min"
+                }
+            } # if f exists
+        } # for vi
+        if (length(tmpa) > 0) {
+            gregor_and_fay_2021_ts_an[[ai]] <- tmpa
+            names(gregor_and_fay_2021_ts_an)[ai] <- gregor_and_fay_2021_areas[ai]
+        }
+    } # for ai
+    if (all(is.null(gregor_and_fay_2021_ts_an))) {
+        message("found zero data --> remove `gregor_and_fay_2021_ts_an`")
+        rm(gregor_and_fay_2021_ts_an)
+    }
+} else {
+    message("enable here to load post processed gregor_and_fay_2021 data ...")
+} # if post processed gregor_and_fay_2021 data
+
+
+if (T) { # post processed chau_etal_2020 data
+    message("\ndisable here if you do not want to load post processed chau_etal_2020 data ...")
+    chau_etal_2020_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", "reccap2_arctic", "reccap2_southern")
+    chau_etal_2020_varnames <- c("fgco2", "fgco2_uncertainty")
+    chau_etal_2020_labels <- c(paste0("C20", plus_minus_symbol, "sd"), "C20 uncert")
+    chau_etal_2020_col <- mycols(3)[3]
+    chau_etal_2020_ts_an <- vector("list", l=length(chau_etal_2020_areas))
+    for (ai in seq_along(chau_etal_2020_areas)) {
+        tmpa <- list()
+        for (vi in seq_along(chau_etal_2020_varnames)) {
+            f <- paste0(host$workpath, "/post/chau_etal_2020/fldint/", chau_etal_2020_varnames[vi], "/",
+                        "chau_etal_2020_chau_etal_2020_fldint_", chau_etal_2020_varnames[vi], "_", chau_etal_2020_areas[ai],
+                        "_annual_1985-2020.nc")
+            if (file.exists(f)) {
+                message("load chau_etal_2020 data from \"", f, "\" ...")
+                nc <- nc_open(f)
+                time <- as.POSIXct(nc$dim$time$vals*3600, o="1950-01-01", tz="UTC")
+                years <- as.numeric(format(time, "%Y"))
+                dat <- ncvar_get(nc, chau_etal_2020_varnames[vi])/1e12*365.25*86400 # kgC->PgC, s-1->yr-1
+                tmpv <- list(vals=dat, size=dim(dat), 
+                             dimnames="years",
+                             unit=ncatt_get(nc, chau_etal_2020_varnames[vi])$units,
+                             col=chau_etal_2020_col, label=chau_etal_2020_labels[vi])
+                tmpv <- list(file=f, dims=list(time=time, years=years), data=tmpv)
+                tmpa[[length(tmpa)+1]] <- tmpv
+                names(tmpa)[length(tmpa)] <- chau_etal_2020_varnames[vi]
+            } # if f exists
+        } # for vi
+        if (length(tmpa) > 0) {
+            chau_etal_2020_ts_an[[ai]] <- tmpa
+            names(chau_etal_2020_ts_an)[ai] <- chau_etal_2020_areas[ai]
+        }
+    } # for ai
+    if (all(is.null(chau_etal_2020_ts_an))) {
+        message("found zero data --> remove `chau_etal_2020_ts_an`")
+        rm(chau_etal_2020_ts_an)
+    }
+} else {
+    message("enable here to load post processed chau_etal_2020 data ...")
+} # if post processed chau_etal_2020 data
+
+
+# reccap2 data
+fs <- c("reccap2-ocean_16_models_fldint_fgco2_global_Jan-Dec_1958-2019.nc")
+fs <- paste0(host$workpath, "/data/reccap2-ocean/", fs)
+names(fs) <- "global"
+if (T && any(file.exists(fs))) {
+    message("\ndisable here if you do not want to load reccap2 data ...")
+    reccap2_varnames <- c("fgco2_an_mean", "fgco2_an_min", "fgco2_an_max")
+    reccap2_cols <- c("black", col2rgba("gray", 0.3), col2rgba("gray", 0.3))
+    reccap2_labels <- c(paste0("GOBM mmm", plus_minus_symbol, "mmr"), "GOBM mmmin", "GOBM mmmax")
+    reccap2 <- vector("list", l=length(fs))
+    names(reccap2) <- names(fs)
+    cnt <- 0
+    for (fi in seq_along(fs)) {
+        f <- fs[fi]
+        if (file.exists(f)) {
+            cnt <- cnt + 1
+            message("load reccap2 data from \"", f, "\" ...")
+            reccap2_ncin <- nc_open(f)
+            time <- as.POSIXct(reccap2_ncin$dim$time$vals, o="1970-1-1", tz="UTC")
+            years <- as.POSIXct(reccap2_ncin$dim$years$vals, o="1970-1-1", tz="UTC")
+            years <- as.numeric(format(years, "%Y"))
+            tmp <- vector("list", l=length(reccap2_varnames))
+            names(tmp) <- reccap2_varnames
+            for (vi in seq_along(tmp)) {
+                message("   load \"", reccap2_varnames[vi], "\" ...")
+                dat <- ncvar_get(reccap2_ncin, reccap2_varnames[vi])
+                tmp[[vi]] <- list(vals=dat, size=dim(dat), 
+                                  unit=ncatt_get(reccap2_ncin, reccap2_varnames[vi])$units,
+                                  col=reccap2_cols[vi], label=reccap2_labels[vi])
+                if (length(dat) == length(time)) {
+                    tmp[[vi]]$dimnames <- "time"
+                } else if (length(dat) == length(years)) {
+                    tmp[[vi]]$dimnames <- "years"
+                }
+            }
+            tmp <- list(file=f,
+                        dims=list(time=time, years=years),
+                        data=tmp)
+            reccap2[[cnt]] <- tmp
+            names(reccap2)[cnt] <- names(f)
+        } # if f exists
+    } # for fi
+} else {
+    message("enable here to load reccap2 data ...")
+} # if reccap2 data
+
+
 # clean work space fom loading special data sets
 rmobjs <- c("f", "time", "years", "timelt", "nyears_to_originorigin",
             "pdoi", "tmp", "tmp2", "d", "ghcdn_csv", 

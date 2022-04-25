@@ -2,6 +2,17 @@
 
 # plotting post processing results of echam, jsbach, mpiom output
 
+# source order:
+# 1. namelist.plot.r
+# 2. namelist.general.plot.r
+# 3. helper_functions.r
+# 4. ~/scripts/r/functions/myfunctions.r
+# 5. plot_echam.r (this file)
+# 6. namelist.area.r
+# 7. load_pangaea_data.r
+# 8. load_special_data.r
+# 9. plot_special_data.r
+
 graphics.off()
 options(show.error.locations=T)
 #options(warn=2) # stop on warnings
@@ -2607,7 +2618,7 @@ for (i in seq_len(nsettings)) {
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
                     } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into land)"))))
-                    } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
+                    } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean/land)"))))
                     }
                     if (grepl("fldint", modes[i])) {
@@ -2619,7 +2630,7 @@ for (i in seq_len(nsettings)) {
                             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
                         } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
                             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into land)"))))
-                        } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
+                        } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp
                             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean/land)"))))
                         }
                     } else {
@@ -2706,46 +2717,6 @@ for (i in seq_len(nsettings)) {
                 }
             }
         
-        # gregor_and_fay_2021 
-        } else if (any(varname == c("fgco2_ens_mean", "fgco2_ens_median", "fgco2_ens_sd"))) {
-            # original unit molC/m2/yr; <0: uptake
-            data_infos[[i]][[vi]]$units <- "molC m-2 yr-1"
-            if (varname == "fgco2_ens_mean") {
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("ens mean air-sea CO"[2], " flux [molC m"^paste(-2), " yr"^paste(-1), "] (>0 into atm)"))))
-            } else if (varname == "fgco2_ens_median") {
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("ens median air-sea CO"[2], " flux [molC m"^paste(-2), " yr"^paste(-1), "] (>0 into atm)"))))
-            } else if (varname == "fgco2_ens_sd") {
-                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("ens sd air-sea CO"[2], " flux [molC m"^paste(-2), " yr"^paste(-1), "] (>0 into atm)"))))
-            }
-            if (T) { # convert carbon units
-                message("molC -> gC; gc -> kgC")
-                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*", "/", "*")
-                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 12.0107, 1e3, -1) # molC -> gC; gC -> kgC; <0: uptake -> >0: uptake 
-                data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
-                if (varname == "fgco2_ens_mean") {
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("ens mean air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
-                } else if (varname == "fgco2_ens_median") {
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("ens median air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
-                } else if (varname == "fgco2_ens_sd") {
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("ens sd air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
-                }
-                if (grepl("fldint", modes[i])) {
-                    message("kg -> Pg")
-                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
-                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e12) # kg->Pg
-                    data_infos[[i]][[vi]]$units <- "PgC yr-1"
-                    if (varname == "fgco2_ens_mean") {
-                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("ens mean air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
-                    } else if (varname == "fgco2_ens_median") {
-                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("ens median air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
-                    } else if (varname == "fgco2_ens_sd") {
-                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("ens sd air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
-                    }
-                } else {
-                    stop("not yet")
-                }
-            }
-
         ## land
 
         # jsbach
@@ -5369,6 +5340,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         message("d:")
         cat(capture.output(str(d)), sep="\n")
 
+        # special: reccp2 time series output in one nc file
         if (plot_groups[plot_groupi] == "samedims" && all(grepl("reccap2", prefixes)) && 
             length(unique(modes)) == 1 && length(unique(areas)) == 1) {
             fout <- paste0(host$workpath, "/data/reccap2-ocean/reccap2-ocean_", length(models), "_models_", 
@@ -8950,7 +8922,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 for (i in seq_along(data_left_before)) {
                     if (is.null(data_left_before[[i]]$type)) data_left_before[[i]]$type <- "p" # default: point
                     if (is.null(data_left_before[[i]]$col)) data_left_before[[i]]$col <- i
-                    if (is.null(data_left_before[[i]]$col_rgb)) col2rgba(data_left_before[[i]]$col)
+                    if (is.null(data_left_before[[i]]$col_rgb)) col2rgba(data_left_before[[i]]$col, alpha_rgb)
                     if (is.null(data_left_before[[i]]$pch)) data_left_before[[i]]$pch <- 1
                     if (is.null(data_left_before[[i]]$lty)) data_left_before[[i]]$lty <- 1
                     if (is.null(data_left_before[[i]]$lwd)) data_left_before[[i]]$lwd <- 1
@@ -9180,7 +9152,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 for (i in seq_along(data_left)) {
                     if (is.null(data_left[[i]]$type)) data_left[[i]]$type <- "p" # default: point
                     if (is.null(data_left[[i]]$col)) data_left[[i]]$col <- i
-                    if (is.null(data_left[[i]]$col_rgb)) col2rgba(data_left[[i]]$col)
+                    if (is.null(data_left[[i]]$col_rgb)) col2rgba(data_left[[i]]$col, alpha_rgb)
                     if (is.null(data_left[[i]]$pch)) data_left[[i]]$pch <- 1
                     if (is.null(data_left[[i]]$lty)) data_left[[i]]$lty <- 1
                     if (is.null(data_left[[i]]$lwd)) data_left[[i]]$lwd <- 1
@@ -9758,7 +9730,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             # add obs, etc.
             if (length(data_left) > 0) {
-                message("\nadd data_left to plot ...")
+                message("\nadd data_left to datas vs time ...")
 
                 # add uncertainties if given
                 for (i in seq_along(data_left)) {
@@ -9881,7 +9853,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     le$lwd <- c(le$lwd, sapply(data_left, "[[", "lwd"))
                     le$pch <- c(le$pch, sapply(data_left, "[[", "pch"))
 
-                    if (T) { # special: replace model legend with data_left legend
+                    if (F) { # special: replace model legend with data_left legend
                         message("special: replace model legend by ", length(data_left), " data_left entries ...")
                         le$text <- sapply(data_left, "[[", "text")
                         le$col <- sapply(data_left, "[[", "col")
@@ -9905,7 +9877,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # reorder reading direction from R's default top->bottom to left->right
                 if (T) le <- reorder_legend(le)
-                cat(capture.output(str(le)), sep="\n")
+                cat(capture.output(str(le, vec.len=length(le$text))), sep="\n")
                 if (length(le$pos) == 1) {
                     legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                            pch=le$pch, col=le$col, ncol=le$ncol,
@@ -10421,7 +10393,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # reorder reading direction from R's default top->bottom to left->right
                 if (T) le <- reorder_legend(le)
-                if (T) cat(capture.output(str(le)), sep="\n")
+                if (T) cat(capture.output(str(le, vec.len=length(le$text))), sep="\n")
                 if (length(le$pos) == 1) {
                     legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
                            pch=le$pch, col=le$col, ncol=le$ncol,
@@ -11169,7 +11141,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 } # if center_ts or scale_ts
                 
-                # ylims for fldmean versus years plot
+                # ylims for plot vs years
                 message("\n", mode_p, " versus years min / mean / max ", varname, " zan:")
                 for (i in seq_along(zan)) {
                     message(names_short_pan[i], ": ", min(zan[[i]], na.rm=T), " / ",
@@ -11179,10 +11151,126 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("\nylim_an=", appendLF=F)
                 dput(ylim_an)
                 ylim_an[is.infinite(ylim_an)] <- 0
+
+                ## add annual data to left yaxis_an (e.g. obs)
+                message("\nprepare additional left yaxis data (e.g. obs)")
+                data_left_an <- list() # default: dont add additional data to left yaxis
+                
+                # add to data_left_an
+                if (any(varname == c("co2_flx_ocean", "fgco2"))) {
+                    if (exists("reccap2") && length(unique(areas) == 1)) {
+                        message("add reccap2 fgco2 data to ylim_an ...")
+                        data_left_an[[length(data_left_an)+1]] <- list(x=reccap2[[areas[1]]]$dims$years, 
+                                                                       y=reccap2[[areas[1]]]$data$fgco2_an_mean$vals,
+                                                                       y_lower=reccap2[[areas[1]]]$data$fgco2_an_min$vals,
+                                                                       y_upper=reccap2[[areas[1]]]$data$fgco2_an_max$vals,
+                                                                       col=reccap2[[areas[1]]]$data$fgco2_an_mean$col,
+                                                                       col_rgb=reccap2[[areas[1]]]$data$fgco2_an_min$col,
+                                                                       text=reccap2[[areas[1]]]$data$fgco2_an_mean$label)
+                    }
+                    if (exists("gregor_and_fay_2021_ts_an") && length(unique(areas) == 1)) {
+                        message("add gregor_and_fay_2021_ts_an data to ylim_an ...")
+                        data_left_an[[length(data_left_an)+1]] <- list(x=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$dims$years, 
+                                                                       y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals,
+                                                                       #y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_min$data$vals,
+                                                                       #y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_max$data$vals,
+                                                                       y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       col=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col,
+                                                                       col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.3),
+                                                                       text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$label)
+                    }
+                    if (exists("chau_etal_2020_ts_an") && length(unique(areas) == 1)) {
+                        message("add chau_etal_2020_ts_an data to ylim_an ...")
+                        data_left_an[[length(data_left_an)+1]] <- list(x=chau_etal_2020_ts_an[[areas[1]]]$fgco2$dims$years, 
+                                                                       y=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals,
+                                                                       y_lower=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals-chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                                       y_upper=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals+chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                                       col=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col,
+                                                                       col_rgb=col2rgba(chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col, 0.3),
+                                                                       text=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$label)
+                    }
+                } # if add data to data_left_an
+
+                # check data_left_an
+                if (length(data_left_an) > 0) {
+                    for (i in seq_along(data_left_an)) {
+                        if (is.null(data_left_an[[i]]$type)) data_left_an[[i]]$type <- "l" # default: line
+                        if (is.null(data_left_an[[i]]$col)) data_left_an[[i]]$col <- i
+                        if (is.null(data_left_an[[i]]$col_rgb)) col2rgba(data_left_an[[i]]$col, alpha_rgb)
+                        if (is.null(data_left_an[[i]]$lty)) data_left_an[[i]]$lty <- 1
+                        if (is.null(data_left_an[[i]]$lwd)) data_left_an[[i]]$lwd <- 1
+                        if (is.null(data_left_an[[i]]$pch)) data_left_an[[i]]$pch <- NA
+                        if (is.null(data_left_an[[i]]$pt.lwd)) data_left_an[[i]]$pt.lwd <- 1
+                        if (is.null(data_left_an[[i]]$pt.bg)) data_left_an[[i]]$pt.bg <- NA
+                        if (is.null(data_left_an[[i]]$pt.cex)) data_left_an[[i]]$pt.cex <- lecex
+                        if (!is.null(data_left_an[[i]]$y_lower) || !is.null(data_left_an[[i]]$y_upper)) { # uncertainty
+                            data_left_an[[i]]$pch <- 22 
+                            data_left_an[[i]]$pt.lwd <- 0
+                            data_left_an[[i]]$pt.bg <- data_left_an[[i]]$col_rgb
+                            data_left_an[[i]]$pt.cex <- 2
+                        }
+                        if (is.null(data_left_an[[i]]$text)) data_left_an[[i]]$text <- "set text"
+                        if (is.null(data_left_an[[i]]$legend.pos)) data_left_an[[i]]$legend.pos <- NA
+                    } # for i in data_left_an
+                } # if length(data_left_an) > 0
+
+                # scale data_left_an
+                if (length(data_left_an) > 0) {
+                    if (center_ts || scale_ts) {
+                        if (center_ts) {
+                            message("\n`center_ts` = T --> center data_left_an before plot ...")
+                        } else if (scale_ts) {
+                            message("\n`scale_ts` = T --> scale data_left_an before plot ...")
+                        }
+                        for (i in seq_along(data_left_an)) {
+                            if (center_ts) {
+                                data_left_an[[i]]$y <- base::scale(data_left_an[[i]]$y, scale=F)
+                                if (!is.null(data_left_an[[i]]$y_lower)) {
+                                    data_left_an[[i]]$y_lower <- base::scale(data_left_an[[i]]$y_lower, scale=F)
+                                }
+                                if (!is.null(data_left_an[[i]]$y_upper)) {
+                                    data_left_an[[i]]$y_upper <- base::scale(data_left_an[[i]]$y_upper, scale=F)
+                                }
+                            } else if (scale_ts) {
+                                data_left_an[[i]]$y <- base::scale(data_left_an[[i]]$y)
+                                if (!is.null(data_left_an[[i]]$y_lower)) {
+                                    data_left_an[[i]]$y_lower <- base::scale(data_left_an[[i]]$y_lower)
+                                }
+                                if (!is.null(data_left_an[[i]]$y_upper)) {
+                                    data_left_an[[i]]$y_upper <- base::scale(data_left_an[[i]]$y_upper)
+                                }
+                            }
+                        }
+                    }
+                } # if length(data_left_an) > 0
+
+                # update ylim according to additional data_left_an (e.g. obs)
+                if (length(data_left_an) > 0) {
+                    ylim_left_an <- range(lapply(data_left_an, "[[", "y"), na.rm=T)
+                    message("\nupdate left yaxis ylim_an = ", paste(ylim_an, collapse=", "), 
+                            " with ylim_left_an = ", paste(ylim_left_an, collapse=", "), " ...") 
+                    ylim_an <- range(ylim_an, ylim_left_an)
+                    ylim_left_an_lower <- lapply(data_left_an, "[[", "y_lower")
+                    if (!all(sapply(ylim_left_an_lower, is.null))) {
+                        ylim_left_an_lower <- range(ylim_left_an_lower, na.rm=T)
+                        message("update left yaxis ylim_an = ", paste(ylim_an, collapse=", "), 
+                                " with ylim_left_an_lower = ", paste(ylim_left_an_lower, collapse=", "), " ...") 
+                        ylim_an <- range(ylim_an, ylim_left_an_lower)
+                    }
+                    ylim_left_an_upper <- lapply(data_left_an, "[[", "y_upper")
+                    if (!all(sapply(ylim_left_an_lower, is.null))) {
+                        ylim_left_an_upper <- range(ylim_left_an_upper, na.rm=T)
+                        message("update left yaxis ylim_an = ", paste(ylim_an, collapse=", "), 
+                                " with ylim_left_an_upper = ", paste(ylim_left_an_lower, collapse=", "), " ...") 
+                        ylim_an <- range(ylim_an, ylim_left_an_upper)
+                    }
+                } # if (length(data_left_an) > 0)
             
                 # add obs to ylim
                 if (T && exists("noaa_ghcdn")) {
                     if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                        stop("update for data_left_an")
                         message("\nadd noaa ghcdn annual data\n", 
                                 "check https://github.com/chrisdane/PLOT/blob/master/lakes/lake_coords_closest_GHCDN_stations.txt ...")
                         message("ylim_an before: ", ylim_an[1], ", ", ylim_an[2])
@@ -11322,7 +11410,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 dir.create(dirname(plotname), recursive=T, showWarnings=F)
                 
                 # get plot sizes
-                message("open plot ", plotname, " ...")
+                message("\nopen plot ", plotname, " ...")
                 pp <- plot_sizes(width_in=p$ts_width_in, asp=p$ts_asp, verbose=T)
                 if (p$plot_type == "png") {
                     png(plotname, width=pp$png_width_px, height=pp$png_height_px,
@@ -11523,33 +11611,40 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } # add_linear_trend
 
                 # add obs 
-                if (T && any(varname == c("wisoaprt_d", "wisoaprt_d", "wisoevap_d", "wisope_d")) &&
-                    exists("kostrova_etal_2019") &&
-                    all(grepl("ladoga", areas))) {
-                    message("\nadd kostroval et al. 2019 to annual plot ...")
-                    points(kostrova_etal_2019$time, kostrova_etal_2019$d18o,
-                           t=kostrova_etal_2019$type, col=kostrova_etal_2019$col, 
-                           lty=kostrova_etal_2019$lty, lwd=kostrova_etal_2019$lwd, 
-                           pch=kostrova_etal_2019$pch, cex=kostrova_etal_2019$cex)
-                }
-                
-                if (T && exists("noaa_ghcdn")) {
-                    if (any(varname == c("temp2", "tsurf", "aprt"))) {
-                        message("\nadd noadd ghcdn monthly data to annual plot ...")
-                        points(noaax, noaay,
-                               t=noaa_ghcdn_tmp$type, 
-                               col=noaa_ghcdn_tmp$col,
-                               lty=noaa_ghcdn$lty, 
-                               lwd=noaa_ghcdn$lwd,
-                               pch=noaa_ghcdn$pch, 
-                               cex=noaa_ghcdn$cex)
-                    } # if temp2, tsurf, aprt
-                } # if exists("noaa_ghcdn")
+                if (length(data_left_an) > 0) {
+                    message("\nadd data_left to datasan vs years ...")
+
+                    # add uncertainties if given
+                    for (i in seq_along(data_left_an)) {
+                        if (!is.null(data_left_an[[i]]$y_lower) || !is.null(data_left_an[[i]]$y_upper)) {
+                            message("add data_left_an[[", i, "]]$text = ", data_left_an[[i]]$text, " uncertainties to plot ...")
+                            if (!is.null(data_left_an[[i]]$y_lower) && !is.null(data_left_an[[i]]$y_upper)) {
+                                polygon(c(data_left_an[[i]]$x, rev(data_left_an[[i]]$x)),
+                                        c(data_left_an[[i]]$y_lower, rev(data_left_an[[i]]$y_upper)),
+                                        col=data_left_an[[i]]$col_rgb, border=NA)
+                            } else if (!is.null(data_left_an[[i]]$y_lower) && is.null(data_left_an[[i]]$y_upper)) {
+                                stop("implement")
+                            } else if (is.null(data_left_an[[i]]$y_lower) && !is.null(data_left_an[[i]]$y_upper)) {
+                                stop("implement")
+                            }
+                        }
+                    } # for i in data_left_an
+
+                    # add data points/lines
+                    for (i in seq_along(data_left_an)) {
+                        message("add data_left_an[[", i, "]]$text = ", data_left_an[[i]]$text, " data to plot ...")
+                        points(data_left_an[[i]]$x, data_left_an[[i]]$y, 
+                               type=data_left_an[[i]]$type, col=data_left_an[[i]]$col, 
+                               pch=data_left_an[[i]]$pch, cex=data_left_an[[i]]$cex, 
+                               lty=data_left_an[[i]]$lty, lwd=data_left_an[[i]]$lwd)
+                    } # for i in data_left_an
+
+                } # if length(data_left_an) > 0
                 # finished adding obs
                 
                 # add legend if wanted
                 if (T && add_legend) {
-                    message("\nadd default stuff to ", mode_p, " datasan legend ...")
+                    message("\nadd default stuff to datasan vs years legend ...")
                     le <- list()
                     le$pos <- "topleft" 
                     #le$pos <- "top"
@@ -11579,33 +11674,55 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             le$pch[inds[i]] <- NA
                         }
                     }
-                    # add stufd to datasn legend here
-                    if (F) {
-                        message("add non default stuff to ", mode_p, " an legend ...")
+                    le$pt.lwd <- le$pt.bg <- le$pt.cex <- rep(NA, t=length(zan)) # uncertainty default
+                    
+                    # add stuff to datasn legend here
+                    if (length(data_left_an) > 0) {
+                        # add data_left_an to model legend
+                        message("add ", length(data_left_an), " data_left_an entries to legend ...")
+                        le$text <- c(le$text, sapply(data_left_an, "[[", "text"))
+                        le$col <- c(le$col, sapply(data_left_an, "[[", "col"))
+                        le$lty <- c(le$lty, sapply(data_left_an, "[[", "lty"))
+                        le$lwd <- c(le$lwd, sapply(data_left_an, "[[", "lwd"))
+                        le$pch <- c(le$pch, sapply(data_left_an, "[[", "pch"))
+                        le$pt.lwd <- c(le$pt.lwd, sapply(data_left_an, "[[", "pt.lwd"))
+                        le$pt.bg <- c(le$pt.bg, sapply(data_left_an, "[[", "pt.bg"))
+                        le$pt.cex <- c(le$pt.cex, sapply(data_left_an, "[[", "pt.cex"))
 
-                    }
-                    if (T && exists("noaa_ghcdn")) {
-                        if (any(varname == c("temp2", "tsurf", "aprt"))) {
-                            message("add noadd ghcdn monthly data to annual legend ...")
-                            le$text <- c(le$text, noaa_ghcdn_tmp$text)
-                            le$col <- c(le$col, noaa_ghcdn_tmp$col)
-                            le$lty <- c(le$lty, noaa_ghcdn_tmp$lty)
-                            le$lwd <- c(le$lwd, noaa_ghcdn_tmp$lwd)
-                            le$pch <- c(le$pch, noaa_ghcdn_tmp$pch)
+                        if (F) { # special: replace model legend with data_left_an legend
+                            message("special: replace model legend by ", length(data_left_an), " data_left_an entries ...")
+                            le$text <- sapply(data_left_an, "[[", "text")
+                            le$col <- sapply(data_left_an, "[[", "col")
+                            le$lty <- sapply(data_left_an, "[[", "lty")
+                            le$lwd <- sapply(data_left_an, "[[", "lwd")
+                            le$pch <- sapply(data_left_an, "[[", "pch")
                         }
-                    }
+                        
+                        if (T && any(!is.na(sapply(data_left_an, "[[", "legend.pos")))) {
+                            message("special legend placement")
+                            legend.pos <- sapply(data_left_an, "[[", "legend.pos")
+                            legend.pos <- legend.pos[which(!is.na(legend.pos))]
+                            if (length(legend.pos) == 1) {
+                                le$pos <- legend.pos
+                            } else {
+                                stop("found ", length(legend.pos), " legend.pos in data_left_an. dont know how to continue")
+                            }
+                        }
+                    } # if (length(data_left_an) > 0) {
+                    
                     # reorder reading direction from R's default top->bottom to left->right
                     if (T) le <- reorder_legend(le)
-                    cat(capture.output(str(le)), sep="\n")
+                    cat(capture.output(str(le, vec.len=length(le$text))), sep="\n")
                     if (length(le$pos) == 1) {
-                        legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
-                               pch=le$pch, col=le$col, ncol=le$ncol,
-                               x.intersp=0.2, cex=le$cex, bty="n")
+                        legend(le$pos, legend=le$text, 
+                               lty=le$lty, lwd=le$lwd, pch=le$pch, col=le$col, 
+                               pt.lwd=le$pt.lwd, pt.bg=le$pt.bg, pt.cex=le$pt.cex,
+                               cex=le$cex, ncol=le$ncol, x.intersp=0.2, bty="n")
                     } else if (length(le$pos) == 2) {
-                        legend(x=le$pos[1], y=le$pos[2],
-                               legend=le$text, lty=le$lty, lwd=le$lwd,
-                               pch=le$pch, col=le$col, ncol=le$ncol,
-                               x.intersp=0.2, cex=le$cex, bty="n")
+                        legend(x=le$pos[1], y=le$pos[2], legend=le$text, 
+                               lty=le$lty, lwd=le$lwd, pch=le$pch, col=le$col, 
+                               pt.lwd=le$pt.lwd, pt.bg=le$pt.bg, pt.cex=le$pt.cex,
+                               cex=le$cex, ncol=le$ncol, x.intersp=0.2, bty="n")
                     }
                 } # if add_legend
 

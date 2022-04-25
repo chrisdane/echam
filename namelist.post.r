@@ -932,22 +932,23 @@ if (F) { # old hist
     datapaths <- "/work/ba1103/a270073/data/chau_etal_2020/data"
     fpatterns <- "dataset-carbon-rep-<YYYY_from>-<YYYY_to>_T0000Z_P20210930T1545Z.nc"
     prefixes <- "chau_etal_2020"
-    fvarnames <- "fgco2"
+    #fvarnames <- "fgco2"
+    fvarnames <- "fgco2_uncertainty"
     modes <- "fldint"
     froms <- 1985
     tos <- 2020
-    #mask_list <- list(list(
+    mask_list <- list(list(
                            #name="reccap2_atlantic",
-                           #cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc"
+                           #cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
                            #name="reccap2_pacific",
-                           #cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc"
+                           #cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
                            #name="reccap2_indian",
-                           #cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc"
+                           #cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
                            #name="reccap2_arctic",
-                           #cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc"
-                           #name="reccap2_southern",
-                           #cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc"
-    #                                       )))
+                           #cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
+                           name="reccap2_southern",
+                           cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
+                          ))
 
 } else if (F) { # gregor and fay 2021
     workpath <- "/work/ba1103/a270073"
@@ -955,22 +956,25 @@ if (F) { # old hist
     datapaths <- "/work/ba1103/a270073/data/gregor_and_fay_2021/data"
     fpatterns <- "SeaFlux_v2021.04_fgco2_all_winds_products_ensemble_stats.nc"
     prefixes <- "gregor_and_fay_2021"
-    fvarnames <- "fgco2_ens_mean"
+    #fvarnames <- "fgco2_ens_mean"
+    fvarnames <- "fgco2_ens_sd"
+    #fvarnames <- "fgco2_ens_min"
+    #fvarnames <- "fgco2_ens_max"
     modes <- "fldint"
     froms <- 1990
     tos <- 2019
     #mask_list <- list(list(
                            #name="reccap2_atlantic",
-                           #cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc"
+                           #cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
                            #name="reccap2_pacific",
-                           #cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc"
+                           #cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
                            #name="reccap2_indian",
-                           #cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc"
+                           #cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
                            #name="reccap2_arctic",
-                           #cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc"
+                           #cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
                            #name="reccap2_southern",
-                           #cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc"
-     #                                      )))
+                           #cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
+                          #))
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1 to 3
     workpath <- "/work/ba1103/a270073"
@@ -2211,6 +2215,18 @@ if (F) { # old hist
         fvarnames <- rep("fgco2_glob", t=length(models))
     }
     prefixes <- rep("reccap2_A", t=length(models))
+    mask_list <- list(list(
+                           name="reccap2_atlantic",
+                           cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
+                           #name="reccap2_pacific",
+                           #cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
+                           #name="reccap2_indian",
+                           #cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
+                           #name="reccap2_arctic",
+                           #cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
+                           #name="reccap2_southern",
+                           #cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
+                          ))
 
 # ======================================================
 # 27 settings

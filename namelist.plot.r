@@ -495,24 +495,41 @@ if (F) { # mhw composite data/seas*100
     #fromsp <- c(1002, 1002) # same temporal means
     #tosp <- c(1048, 1048) # same temporal means
     
-} else if (F) { # awi-esm-1-1-lr_kh800 piControl og last years vs historical first years 
-    #models <- rep("echam6", t=2)
-    models <- rep("fesom", t=2)
-    prefixes <- c("awi-esm-1-1-lr_kh800_piControl_og", "awi-esm-1-1-lr_kh800_historical")
+} else if (T) { # awi-esm-1-1-lr_kh800 piControl vs historical 
+    models <- rep("echam6", t=2)
+    #models <- rep("fesom", t=2)
+    #prefixes <- c("awi-esm-1-1-lr_kh800_piControl_og", "awi-esm-1-1-lr_kh800_historical")
     #prefixes <- c("awi-esm-1-1-lr_kh800_piControl_og", "awi-esm-1-1-lr_kh800_historical_day")
+    prefixes <- c("awi-esm-1-1-lr_kh800_piControl", "awi-esm-1-1-lr_kh800_historical")
     names_short <- c("piControl", "historical")
     #names_short <- c("piControl", "historical_day")
-    names_legend <- c("piControl", "historical")
     #names_legend <- c("piControl (monthly)", "historical (daily)")
+    #names_legend <- c("piControl", "historical")
+    #names_legend <- c("piControl", "historical (85-14)")
     #varnames_in <- rep("temp2", t=2)
-    varnames_in <- rep("tos", t=2)
+    varnames_in <- rep("co2_flx_ocean", t=2)
+    #varnames_in <- rep("tos", t=2)
     #varnames_in <- rep("thetaoga", t=2)
-    fromsf <- c(1950, 1850)
-    tosf <- c(2685, 1863)
-    new_origins <- c(1114, NA)
-    fromsp <- c(1835, NA)
-    tospf <- c(1849, NA)
-    modes <- rep("fldmean", t=2)
+    #fromsf <- c(1950, 1850)
+    fromsf <- c(2686, 1850)
+    #tosf <- c(2685, 1863)
+    #tosf <- c(2936, 2014)
+    tosf <- c(3000, 2014)
+    #new_origins <- c(1114, NA) # piControl og
+    new_origins <- c(1850, NA) # 2686=1850
+    #new_origins <- c(2014-29, NA)
+    #fromsp <- c(NA, 1985)
+    #fromsp <- c(1835, NA)
+    fromsp <- c(1980, 1980)
+    #tospf <- c(1849, NA)
+    tosp <- c(2025, NA)
+    #modes <- rep("fldmean", t=2)
+    modes <- rep("fldint", t=2)
+    areas <- rep("reccap2_atlantic", t=6)
+    #areas <- rep("reccap2_pacific", t=6)
+    #areas <- rep("reccap2_indian", t=6)
+    #areas <- rep("reccap2_arctic", t=6)
+    #areas <- rep("reccap2_southern", t=6)
 
 } else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl co2 flux echam vs recom
     models <- c("echam6", "fesom")
@@ -1304,36 +1321,6 @@ if (F) { # mhw composite data/seas*100
 
 # =====================================
 # 4 settings
-} else if (F) { # awi-esm-1-1-lr_kh800 pi hist chau_etal_2020 gregor_and_fay_2021
-    models <- c(rep("echam6", t=2), "chau_etal_2020", "gregor_and_fay_2021")
-    prefixes <- c(paste0("awi-esm-1-1-lr_kh800_", c("piControl", "historical")),
-                  "chau_etal_2020", "gregor_and_fay_2021")
-    names_short <- c("pi", "hist", "C20", "GF21")
-    names_legend <- c("piControl", "historical", "C20", "GF21")
-    #names_legend <- c("piControl", "historical (85-14)", "C20 (85-20)", "GF21 (90-19)")
-    varnames_in <- c(rep("co2_flx_ocean", t=2), "fgco2", "fgco2_ens_mean")
-    varnames_out_samedims <- "co2_flx_ocean"
-    names_legend_samedims <- names_legend
-    #plotprefix <- "awicm-1.0-recom_conc_pi_hist_C20_GF21"
-    echam6_global_setNA <- "land"
-    addland <- F
-    bilinear_interp_factor <- 4
-    fromsf <- c(2686, 1850, 1985, 1990)
-    tosf <- c(2936, 2014, 2020, 2019)
-    #fromsf <- c(2851-29, 2014-29, rep(2100-29, t=4))
-    #tosf <- c(2851, 2014, rep(2100, t=4))
-    new_origins <- c(1850, rep(NA, t=3)) # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
-    #new_origins <- c(2014-29, rep(NA, t=5))
-    fromsp <- c(1980, 1980, NA, NA)
-    #fromsp <- c(NA, 1985, NA, NA)
-    tosp <- c(2025, NA, NA, NA)
-    modes <- rep("fldint", t=4)
-    #areas <- rep("reccap2_atlantic", t=4)
-    areas <- rep("reccap2_pacific", t=4)
-    #areas <- rep("reccap2_indian", t=4)
-    #areas <- rep("reccap2_arctic", t=4)
-    #areas <- rep("reccap2_southern", t=4)
-
 } else if (F) { # reccap A B C D
     workpath <- "/work/ollie/cdanek"
     models <- rep("fesom", t=4)
@@ -2238,7 +2225,7 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # 16 settings
-} else if (T) { # 16 reccap2 settings
+} else if (F) { # 16 reccap2 settings
     models <- c("CCSM-WHOI", # <0: uptake 
                 "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 
