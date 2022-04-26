@@ -1535,7 +1535,7 @@ if (T && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load reccap2 data ...")
     reccap2_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_min", "fgco2_an_max")
     reccap2_labels <- c(paste0("GOBM mmm", plus_minus_symbol, "mmr"), paste0("GOBM mmmed", plus_minus_symbol, "mmr"), "GOBM mmmin", "GOBM mmmax")
-    reccap2_cols <- c("black", "black", col2rgba("gray", 0.3), col2rgba("gray", 0.3))
+    reccap2_cols <- c("black", "black", col2rgba("black", 0.15), col2rgba("black", 0.15))
     reccap2 <- vector("list", l=length(fs))
     names(reccap2) <- names(fs)
     cnt <- 0

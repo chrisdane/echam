@@ -4102,10 +4102,10 @@ for (vi in 1:length(varnames_unique)) {
         eval(parse(text=cmd))
     }
     cnt <- 0
-    for (i in 1:nsettings) {
+    for (i in seq_len(nsettings)) {
         # save dims for later
         cmd <- paste0(varnames_unique[vi], "_dims[[", i, "]] <- dims[[", i, "]]")
-        message("   run `", cmd, "` ...")
+        if (i == 1) message("   run `", cmd, "` ...")
         eval(parse(text=cmd))
         cmd <- paste0("names(", varnames_unique[vi], "_dims)[", i, "] <- names_short[", i, "]")
         eval(parse(text=cmd))
@@ -4114,14 +4114,14 @@ for (vi in 1:length(varnames_unique)) {
             cnt <- cnt + 1
             varind <- which(names(datas[[i]]) == varnames_unique[vi])
             cmd <- paste0(varnames_unique[vi], "_datas[[", cnt, "]] <- datas[[", i, "]][[", varind, "]]")
-            message("   run `", cmd, "` ...")
+            if (i == 1) message("   run `", cmd, "` ...")
             eval(parse(text=cmd))
             cmd <- paste0("names(", varnames_unique[vi], "_datas)[", cnt, "] <- names_short[", i, "]")
             #message("   run `", cmd, "` ...")
             eval(parse(text=cmd))
             if (exists("datasmon")) {
                 cmd <- paste0(varnames_unique[vi], "_datasmon[[", cnt, "]] <- datasmon[[", i, "]][[", varind, "]]")
-                message("   run `", cmd, "` ...")
+                if (i == 1) message("   run `", cmd, "` ...")
                 eval(parse(text=cmd))
                 cmd <- paste0("names(", varnames_unique[vi], "_datasmon)[", cnt, "] <- names_short[", i, "]")
                 #message("   run `", cmd, "` ...")
@@ -4129,7 +4129,7 @@ for (vi in 1:length(varnames_unique)) {
             }
             if (exists("datasan")) {
                 cmd <- paste0(varnames_unique[vi], "_datasan[[", cnt, "]] <- datasan[[", i, "]][[", varind, "]]")
-                message("   run `", cmd, "` ...")
+                if (i == 1) message("   run `", cmd, "` ...")
                 eval(parse(text=cmd))
                 cmd <- paste0("names(", varnames_unique[vi], "_datasan)[", cnt, "] <- names_short[", i, "]")
                 #message("   run `", cmd, "` ...")
@@ -5370,7 +5370,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ncvar_mean <- ncdf4::ncvar_def(name="fgco2_mon_mean", units="PgC yr-1", dim=tdim, missval=NA)
                 ncvar_median <- ncdf4::ncvar_def(name="fgco2_mon_median", units="PgC yr-1", dim=tdim, missval=NA)
                 # annual means
-                anvals <- as.POSIXct(paste0(fromto, "-1-1"), tz="UTC")
+                anvals <- as.POSIXct(paste0(fromto, "-1-1"), tz="UTC") # placeholder
+                for (i in seq_along(anvals)) {
+                    anvals[i] <- mean(as.POSIXct(paste0(fromto[i], "-", c(1, 12), "-", c(1, 31)), tz="UTC")) # average of year
+                }
                 andim <- ncdf4::ncdim_def(name="years", units="seconds since 1970-1-1", vals=as.numeric(anvals))
                 arr_an <- array(NA, dim=c(nsettings, length(anvals)))
                 for (i in seq_along(zan)) {
@@ -5389,8 +5392,35 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ncvar_an_max <- ncdf4::ncvar_def(name="fgco2_an_max", units="PgC yr-1", dim=andim, missval=NA)
                 ncvar_an_mean <- ncdf4::ncvar_def(name="fgco2_an_mean", units="PgC yr-1", dim=andim, missval=NA)
                 ncvar_an_median <- ncdf4::ncvar_def(name="fgco2_an_median", units="PgC yr-1", dim=andim, missval=NA)
+                # monthly clim
+                monvals <- as.POSIXct(paste0(max(fromto), "-", 1:12, "-15"), tz="UTC") # average of month in placeholder year
+                mondim <- ncdf4::ncdim_def(name="months", units="seconds since 1970-1-1", vals=as.numeric(monvals))
+                arr_mon <- array(NA, dim=c(nsettings, length(monvals)))
+                for (i in seq_along(zmon)) {
+                    for (ti in seq_along(zmon[[i]])) {
+                        ind <- which(gsub("^0", "", format(monvals, "%m")) == dmon$month[[i]][ti])
+                        if (length(ind) != 1) stop("this should not happen")
+                        arr_mon[i,ind] <- zmon[[i]][ti]
+                    }
+                    if (length(unique(as.vector(arr_mon[i,]))) == 1) { # OCIM-v2014 has constant monthly values
+                        message("exclude ", models[i], " from reccap2 mon ens stats ...")
+                        arr_mon[i,] <- NA
+                    }
+                }
+                arr_mon_min <- apply(arr_mon, 2, min, na.rm=T)
+                arr_mon_max <- apply(arr_mon, 2, max, na.rm=T)
+                arr_mon_mean <- apply(arr_mon, 2, mean, na.rm=T)
+                arr_mon_median <- apply(arr_mon, 2, median, na.rm=T)
+                ncvar_mon <- ncdf4::ncvar_def(name="fgco2_ymonmean", units="PgC yr-1", dim=list(modeldim, mondim), missval=NA)
+                ncvar_mon_min <- ncdf4::ncvar_def(name="fgco2_ymonmean_min", units="PgC yr-1", dim=mondim, missval=NA)
+                ncvar_mon_max <- ncdf4::ncvar_def(name="fgco2_ymonmean_max", units="PgC yr-1", dim=mondim, missval=NA)
+                ncvar_mon_mean <- ncdf4::ncvar_def(name="fgco2_ymonmean_mean", units="PgC yr-1", dim=mondim, missval=NA)
+                ncvar_mon_median <- ncdf4::ncvar_def(name="fgco2_ymonmean_median", units="PgC yr-1", dim=mondim, missval=NA)
+                # output
                 outnc <- ncdf4::nc_create(fout, vars=list(ncvar, ncvar_min, ncvar_max, ncvar_mean, ncvar_median,
-                                                          ncvar_an, ncvar_an_min, ncvar_an_max, ncvar_an_mean, ncvar_an_median), force_v4=T)
+                                                          ncvar_an, ncvar_an_min, ncvar_an_max, ncvar_an_mean, ncvar_an_median,
+                                                          ncvar_mon, ncvar_mon_min, ncvar_mon_max, ncvar_mon_mean, ncvar_mon_median), 
+                                          force_v4=T)
                 ncdf4::ncvar_put(outnc, ncvar, arr)
                 ncdf4::ncvar_put(outnc, ncvar_min, arr_min)
                 ncdf4::ncvar_put(outnc, ncvar_max, arr_max)
@@ -5401,6 +5431,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ncdf4::ncvar_put(outnc, ncvar_an_max, arr_an_max)
                 ncdf4::ncvar_put(outnc, ncvar_an_mean, arr_an_mean)
                 ncdf4::ncvar_put(outnc, ncvar_an_median, arr_an_median)
+                ncdf4::ncvar_put(outnc, ncvar_mon, arr_mon)
+                ncdf4::ncvar_put(outnc, ncvar_mon_min, arr_mon_min)
+                ncdf4::ncvar_put(outnc, ncvar_mon_max, arr_mon_max)
+                ncdf4::ncvar_put(outnc, ncvar_mon_mean, arr_mon_mean)
+                ncdf4::ncvar_put(outnc, ncvar_mon_median, arr_mon_median)
                 for (i in seq_along(z)) {
                     ncdf4::ncatt_put(outnc, "model", i, models[i])
                 }
@@ -10771,7 +10806,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                          y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
                                                                          y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
                                                                          col=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col,
-                                                                         col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.3),
+                                                                         col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.15),
                                                                          #text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$label
                                                                          text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$label
                                                                         )
@@ -10783,7 +10818,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                          y_lower=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals-chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
                                                                          y_upper=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals+chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
                                                                          col=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col,
-                                                                         col_rgb=col2rgba(chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col, 0.3),
+                                                                         col_rgb=col2rgba(chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col, 0.15),
                                                                          text=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$label)
                     }
                 } # if add data to data_left_mon
@@ -11349,7 +11384,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                        y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
                                                                        y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
                                                                        col=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col,
-                                                                       col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.3),
+                                                                       col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.15),
                                                                        #text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$label
                                                                        text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$label
                                                                        )
@@ -11361,7 +11396,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                        y_lower=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals-chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
                                                                        y_upper=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals+chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
                                                                        col=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col,
-                                                                       col_rgb=col2rgba(chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col, 0.3),
+                                                                       col_rgb=col2rgba(chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col, 0.15),
                                                                        text=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$label)
                     }
                 } # if add data to data_left_an
