@@ -495,7 +495,7 @@ if (F) { # mhw composite data/seas*100
     #fromsp <- c(1002, 1002) # same temporal means
     #tosp <- c(1048, 1048) # same temporal means
     
-} else if (F) { # awi-esm-1-1-lr_kh800 piControl vs historical 
+} else if (T) { # awi-esm-1-1-lr_kh800 piControl vs historical 
     models <- rep("echam6", t=2)
     #models <- rep("fesom", t=2)
     #prefixes <- c("awi-esm-1-1-lr_kh800_piControl_og", "awi-esm-1-1-lr_kh800_historical")
@@ -525,7 +525,7 @@ if (F) { # mhw composite data/seas*100
     tosp <- c(2025, NA)
     #modes <- rep("fldmean", t=2)
     modes <- rep("fldint", t=2)
-    areas <- rep("reccap2_atlantic", t=6)
+    #areas <- rep("reccap2_atlantic", t=6)
     #areas <- rep("reccap2_pacific", t=6)
     #areas <- rep("reccap2_indian", t=6)
     #areas <- rep("reccap2_arctic", t=6)
@@ -2225,7 +2225,7 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # 16 settings
-} else if (T) { # 15/16 reccap2 settings
+} else if (F) { # 15/16 reccap2 settings
     models <- c("CCSM-WHOI", # <0: uptake 
                 "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 

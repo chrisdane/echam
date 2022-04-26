@@ -5369,6 +5369,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ncvar_max <- ncdf4::ncvar_def(name="fgco2_mon_max", units="PgC yr-1", dim=tdim, missval=NA)
                 ncvar_mean <- ncdf4::ncvar_def(name="fgco2_mon_mean", units="PgC yr-1", dim=tdim, missval=NA)
                 ncvar_median <- ncdf4::ncvar_def(name="fgco2_mon_median", units="PgC yr-1", dim=tdim, missval=NA)
+                # annual means
                 anvals <- as.POSIXct(paste0(fromto, "-1-1"), tz="UTC")
                 andim <- ncdf4::ncdim_def(name="years", units="seconds since 1970-1-1", vals=as.numeric(anvals))
                 arr_an <- array(NA, dim=c(nsettings, length(anvals)))
@@ -8891,7 +8892,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
 
             ## add data to left yaxis before any model/obs data
-            message("\nprepare additional left yaxis before any model/obs data:")
+            message("\nprepare additional left yaxis before datas:")
             data_left_before <- list() # default: dont add additional data to left yaxis before any model/obs data
             
             # add to data_left_before
@@ -8996,7 +8997,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
 
             ## add data to left yaxis (e.g. obs)
-            message("\nprepare additional left yaxis data (e.g. obs)")
+            message("\nprepare additional left yaxis datas (e.g. obs)")
             data_left <- list() # default: dont add additional data to left yaxis
             
             # add to data_left
@@ -10738,10 +10739,134 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("\nylim_mon=", appendLF=F)
                 dput(ylim_mon)
                 ylim_mon[is.infinite(ylim_mon)] <- 0
+               
+                ## add annual data to left yaxis_an (e.g. obs)
+                message("\nprepare additional left yaxis datamon (e.g. obs)")
+                data_left_mon <- list() # default: dont add additional data to left yaxis
                 
+                # add to data_left_mon
+                if (any(varname == c("co2_flx_ocean", "fgco2"))) {
+                    if (exists("reccap2") && length(unique(areas) == 1) && names(reccap2)[1] == areas[1]) {
+                        message("add reccap2 fgco2 data to ylim_mon ...")
+                        data_left_mon[[length(data_left_mon)+1]] <- list(x=reccap2[[areas[1]]]$dims$years, 
+                                                                         #y=reccap2[[areas[1]]]$data$fgco2_an_mean$vals,
+                                                                         y=reccap2[[areas[1]]]$data$fgco2_an_median$vals,
+                                                                         y_lower=reccap2[[areas[1]]]$data$fgco2_an_min$vals,
+                                                                         y_upper=reccap2[[areas[1]]]$data$fgco2_an_max$vals,
+                                                                         col=reccap2[[areas[1]]]$data$fgco2_an_mean$col,
+                                                                         col_rgb=reccap2[[areas[1]]]$data$fgco2_an_min$col,
+                                                                         #text=reccap2[[areas[1]]]$data$fgco2_an_mean$label
+                                                                         text=reccap2[[areas[1]]]$data$fgco2_an_median$label
+                                                                        )
+                    }
+                    if (exists("gregor_and_fay_2021_ts_an") && length(unique(areas) == 1) && names(gregor_and_fay_2021_ts_an)[1] == areas[1]) {
+                        message("add gregor_and_fay_2021_ts_an data to ylim_mon ...")
+                        data_left_mon[[length(data_left_mon)+1]] <- list(x=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$dims$years, 
+                                                                         #y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals,
+                                                                         y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals,
+                                                                         #y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_min$data$vals,
+                                                                         #y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_max$data$vals,
+                                                                         #y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                         #y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                         y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                         y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                         col=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col,
+                                                                         col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.3),
+                                                                         #text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$label
+                                                                         text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$label
+                                                                        )
+                    }
+                    if (exists("chau_etal_2020_ts_an") && length(unique(areas) == 1) && names(chau_etal_2020_ts_an)[1] == areas[1]) {
+                        message("add chau_etal_2020_ts_an data to ylim_mon ...")
+                        data_left_mon[[length(data_left_mon)+1]] <- list(x=chau_etal_2020_ts_an[[areas[1]]]$fgco2$dims$years, 
+                                                                         y=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals,
+                                                                         y_lower=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals-chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                                         y_upper=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals+chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                                         col=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col,
+                                                                         col_rgb=col2rgba(chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col, 0.3),
+                                                                         text=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$label)
+                    }
+                } # if add data to data_left_mon
+
+                # check data_left_mon
+                if (length(data_left_mon) > 0) {
+                    for (i in seq_along(data_left_mon)) {
+                        if (is.null(data_left_mon[[i]]$type)) data_left_mon[[i]]$type <- "l" # default: line
+                        if (is.null(data_left_mon[[i]]$col)) data_left_mon[[i]]$col <- i
+                        if (is.null(data_left_mon[[i]]$col_rgb)) col2rgba(data_left_mon[[i]]$col, alpha_rgb)
+                        if (is.null(data_left_mon[[i]]$lty)) data_left_mon[[i]]$lty <- 1
+                        if (is.null(data_left_mon[[i]]$lwd)) data_left_mon[[i]]$lwd <- 1
+                        if (is.null(data_left_mon[[i]]$pch)) data_left_mon[[i]]$pch <- NA
+                        if (is.null(data_left_mon[[i]]$pt.lwd)) data_left_mon[[i]]$pt.lwd <- 1
+                        if (is.null(data_left_mon[[i]]$pt.bg)) data_left_mon[[i]]$pt.bg <- NA
+                        if (is.null(data_left_mon[[i]]$pt.cex)) data_left_mon[[i]]$pt.cex <- lecex
+                        if (!is.null(data_left_mon[[i]]$y_lower) || !is.null(data_left_mon[[i]]$y_upper)) { # uncertainty
+                            data_left_mon[[i]]$pch <- 22 
+                            data_left_mon[[i]]$pt.lwd <- 0
+                            data_left_mon[[i]]$pt.bg <- data_left_mon[[i]]$col_rgb
+                            data_left_mon[[i]]$pt.cex <- 2
+                        }
+                        if (is.null(data_left_mon[[i]]$text)) data_left_mon[[i]]$text <- "set text"
+                        if (is.null(data_left_mon[[i]]$legend.pos)) data_left_mon[[i]]$legend.pos <- NA
+                    } # for i in data_left_mon
+                } # if length(data_left_mon) > 0
+
+                # scale data_left_mon
+                if (length(data_left_mon) > 0) {
+                    if (center_ts || scale_ts) {
+                        if (center_ts) {
+                            message("\n`center_ts` = T --> center data_left_mon before plot ...")
+                        } else if (scale_ts) {
+                            message("\n`scale_ts` = T --> scale data_left_mon before plot ...")
+                        }
+                        for (i in seq_along(data_left_mon)) {
+                            if (center_ts) {
+                                data_left_mon[[i]]$y <- base::scale(data_left_mon[[i]]$y, scale=F)
+                                if (!is.null(data_left_mon[[i]]$y_lower)) {
+                                    data_left_mon[[i]]$y_lower <- base::scale(data_left_mon[[i]]$y_lower, scale=F)
+                                }
+                                if (!is.null(data_left_mon[[i]]$y_upper)) {
+                                    data_left_mon[[i]]$y_upper <- base::scale(data_left_mon[[i]]$y_upper, scale=F)
+                                }
+                            } else if (scale_ts) {
+                                data_left_mon[[i]]$y <- base::scale(data_left_mon[[i]]$y)
+                                if (!is.null(data_left_mon[[i]]$y_lower)) {
+                                    data_left_mon[[i]]$y_lower <- base::scale(data_left_mon[[i]]$y_lower)
+                                }
+                                if (!is.null(data_left_mon[[i]]$y_upper)) {
+                                    data_left_mon[[i]]$y_upper <- base::scale(data_left_mon[[i]]$y_upper)
+                                }
+                            }
+                        }
+                    }
+                } # if length(data_left_mon) > 0
+
+                # update ylim according to additional data_left_mon (e.g. obs)
+                if (length(data_left_mon) > 0) {
+                    ylim_left_an <- range(lapply(data_left_mon, "[[", "y"), na.rm=T)
+                    message("\nupdate left yaxis ylim_mon = ", paste(ylim_mon, collapse=", "), 
+                            " with ylim_left_an = ", paste(ylim_left_an, collapse=", "), " ...") 
+                    ylim_mon <- range(ylim_mon, ylim_left_an)
+                    ylim_left_an_lower <- lapply(data_left_mon, "[[", "y_lower")
+                    if (!all(sapply(ylim_left_an_lower, is.null))) {
+                        ylim_left_an_lower <- range(ylim_left_an_lower, na.rm=T)
+                        message("update left yaxis ylim_mon = ", paste(ylim_mon, collapse=", "), 
+                                " with ylim_left_an_lower = ", paste(ylim_left_an_lower, collapse=", "), " ...") 
+                        ylim_mon <- range(ylim_mon, ylim_left_an_lower)
+                    }
+                    ylim_left_an_upper <- lapply(data_left_mon, "[[", "y_upper")
+                    if (!all(sapply(ylim_left_an_lower, is.null))) {
+                        ylim_left_an_upper <- range(ylim_left_an_upper, na.rm=T)
+                        message("update left yaxis ylim_mon = ", paste(ylim_mon, collapse=", "), 
+                                " with ylim_left_an_upper = ", paste(ylim_left_an_lower, collapse=", "), " ...") 
+                        ylim_mon <- range(ylim_mon, ylim_left_an_upper)
+                    }
+                } # if (length(data_left_mon) > 0)
+
                 # add obs
                 if (T && exists("noaa_ghcdn")) {
                     if (any(varname == c("temp2", "tsurf", "aprt"))) {
+                        stop("update for data_left_mon")
                         message("\nadd noaa ghcdn monthly climatology data\n", 
                                 "check https://github.com/chrisdane/PLOT/blob/master/lakes/lake_coords_closest_GHCDN_stations.txt ...")
                         message("ylim_mon before: ", ylim_mon[1], ", ", ylim_mon[2])
@@ -10932,18 +11057,35 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
 
                 # add obs
-                if (T && exists("noaa_ghcdn")) {
-                    if (any(varname == c("temp2", "tsurf", "aprt"))) {
-                        message("\nadd noadd ghcdn monthly data to monthly plot ...")
-                        points(noaax, noaay,
-                               t=noaa_ghcdn_tmp$type, 
-                               col=noaa_ghcdn_tmp$col,
-                               lty=noaa_ghcdn$lty, 
-                               lwd=noaa_ghcdn$lwd,
-                               pch=noaa_ghcdn$pch, 
-                               cex=noaa_ghcdn$cex)
-                    } # if temp2, tsurf, aprt
-                } # if exists("noaa_ghcdn")
+                if (length(data_left_mon) > 0) {
+                    message("\nadd data_left to datasan vs years ...")
+
+                    # add uncertainties if given
+                    for (i in seq_along(data_left_mon)) {
+                        if (!is.null(data_left_mon[[i]]$y_lower) || !is.null(data_left_mon[[i]]$y_upper)) {
+                            message("add data_left_mon[[", i, "]]$text = ", data_left_mon[[i]]$text, " uncertainties to plot ...")
+                            if (!is.null(data_left_mon[[i]]$y_lower) && !is.null(data_left_mon[[i]]$y_upper)) {
+                                polygon(c(data_left_mon[[i]]$x, rev(data_left_mon[[i]]$x)),
+                                        c(data_left_mon[[i]]$y_lower, rev(data_left_mon[[i]]$y_upper)),
+                                        col=data_left_mon[[i]]$col_rgb, border=NA)
+                            } else if (!is.null(data_left_mon[[i]]$y_lower) && is.null(data_left_mon[[i]]$y_upper)) {
+                                stop("implement")
+                            } else if (is.null(data_left_mon[[i]]$y_lower) && !is.null(data_left_mon[[i]]$y_upper)) {
+                                stop("implement")
+                            }
+                        }
+                    } # for i in data_left_mon
+
+                    # add data points/lines
+                    for (i in seq_along(data_left_mon)) {
+                        message("add data_left_mon[[", i, "]]$text = ", data_left_mon[[i]]$text, " data to plot ...")
+                        points(data_left_mon[[i]]$x, data_left_mon[[i]]$y, 
+                               type=data_left_mon[[i]]$type, col=data_left_mon[[i]]$col, 
+                               pch=data_left_mon[[i]]$pch, cex=data_left_mon[[i]]$cex, 
+                               lty=data_left_mon[[i]]$lty, lwd=data_left_mon[[i]]$lwd)
+                    } # for i in data_left_mon
+
+                } # if length(data_left_mon) > 0
                 # finished adding obs
                 
                 # add legend if wanted
@@ -10972,21 +11114,45 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             le$pch[i] <- NA
                         }
                     }
-                    # add stuf to legend here
+                    # add stuff to legend here
                     if (F) {
                         message("\nadd non default stuff to ", mode_p, " mon legend ...")
 
                     }
-                    if (T && exists("noaa_ghcdn")) {
-                        if (any(varname == c("temp2", "tsurf", "aprt"))) {
-                            message("\nadd noadd ghcdn monthly data to monthly legend ...")
-                            le$text <- c(le$text, noaa_ghcdn_tmp$text)
-                            le$col <- c(le$col, noaa_ghcdn_tmp$col)
-                            le$lty <- c(le$lty, noaa_ghcdn_tmp$lty)
-                            le$lwd <- c(le$lwd, noaa_ghcdn_tmp$lwd)
-                            le$pch <- c(le$pch, noaa_ghcdn_tmp$pch)
+                    # add stuff to datasmon legend here
+                    if (length(data_left_mon) > 0) {
+                        # add data_left_mon to model legend
+                        message("add ", length(data_left_mon), " data_left_mon entries to legend ...")
+                        le$text <- c(le$text, sapply(data_left_mon, "[[", "text"))
+                        le$col <- c(le$col, sapply(data_left_mon, "[[", "col"))
+                        le$lty <- c(le$lty, sapply(data_left_mon, "[[", "lty"))
+                        le$lwd <- c(le$lwd, sapply(data_left_mon, "[[", "lwd"))
+                        le$pch <- c(le$pch, sapply(data_left_mon, "[[", "pch"))
+                        le$pt.lwd <- c(le$pt.lwd, sapply(data_left_mon, "[[", "pt.lwd"))
+                        le$pt.bg <- c(le$pt.bg, sapply(data_left_mon, "[[", "pt.bg"))
+                        le$pt.cex <- c(le$pt.cex, sapply(data_left_mon, "[[", "pt.cex"))
+
+                        if (F) { # special: replace model legend with data_left_mon legend
+                            message("special: replace model legend by ", length(data_left_mon), " data_left_mon entries ...")
+                            le$text <- sapply(data_left_mon, "[[", "text")
+                            le$col <- sapply(data_left_mon, "[[", "col")
+                            le$lty <- sapply(data_left_mon, "[[", "lty")
+                            le$lwd <- sapply(data_left_mon, "[[", "lwd")
+                            le$pch <- sapply(data_left_mon, "[[", "pch")
                         }
-                    }
+                        
+                        if (T && any(!is.na(sapply(data_left_mon, "[[", "legend.pos")))) {
+                            message("special legend placement")
+                            legend.pos <- sapply(data_left_mon, "[[", "legend.pos")
+                            legend.pos <- legend.pos[which(!is.na(legend.pos))]
+                            if (length(legend.pos) == 1) {
+                                le$pos <- legend.pos
+                            } else {
+                                stop("found ", length(legend.pos), " legend.pos in data_left_mon. dont know how to continue")
+                            }
+                        }
+                    } # if (length(data_left_mon) > 0) {
+                    
                     # reorder reading direction from R's default top->bottom to left->right
                     if (T) le <- reorder_legend(le)
                     if (length(le$pos) == 1) {
@@ -11153,7 +11319,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ylim_an[is.infinite(ylim_an)] <- 0
 
                 ## add annual data to left yaxis_an (e.g. obs)
-                message("\nprepare additional left yaxis data (e.g. obs)")
+                message("\nprepare additional left yaxis datasan (e.g. obs)")
                 data_left_an <- list() # default: dont add additional data to left yaxis
                 
                 # add to data_left_an
@@ -11161,24 +11327,32 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     if (exists("reccap2") && length(unique(areas) == 1) && names(reccap2)[1] == areas[1]) {
                         message("add reccap2 fgco2 data to ylim_an ...")
                         data_left_an[[length(data_left_an)+1]] <- list(x=reccap2[[areas[1]]]$dims$years, 
-                                                                       y=reccap2[[areas[1]]]$data$fgco2_an_mean$vals,
+                                                                       #y=reccap2[[areas[1]]]$data$fgco2_an_mean$vals,
+                                                                       y=reccap2[[areas[1]]]$data$fgco2_an_median$vals,
                                                                        y_lower=reccap2[[areas[1]]]$data$fgco2_an_min$vals,
                                                                        y_upper=reccap2[[areas[1]]]$data$fgco2_an_max$vals,
                                                                        col=reccap2[[areas[1]]]$data$fgco2_an_mean$col,
                                                                        col_rgb=reccap2[[areas[1]]]$data$fgco2_an_min$col,
-                                                                       text=reccap2[[areas[1]]]$data$fgco2_an_mean$label)
+                                                                       #text=reccap2[[areas[1]]]$data$fgco2_an_mean$label
+                                                                       text=reccap2[[areas[1]]]$data$fgco2_an_median$label
+                                                                       )
                     }
                     if (exists("gregor_and_fay_2021_ts_an") && length(unique(areas) == 1) && names(gregor_and_fay_2021_ts_an)[1] == areas[1]) {
                         message("add gregor_and_fay_2021_ts_an data to ylim_an ...")
                         data_left_an[[length(data_left_an)+1]] <- list(x=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$dims$years, 
-                                                                       y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals,
+                                                                       #y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals,
+                                                                       y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals,
                                                                        #y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_min$data$vals,
                                                                        #y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_max$data$vals,
-                                                                       y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                       y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       #y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       #y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
                                                                        col=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col,
                                                                        col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.3),
-                                                                       text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$label)
+                                                                       #text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$label
+                                                                       text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$label
+                                                                       )
                     }
                     if (exists("chau_etal_2020_ts_an") && length(unique(areas) == 1) && names(chau_etal_2020_ts_an)[1] == areas[1]) {
                         message("add chau_etal_2020_ts_an data to ylim_an ...")

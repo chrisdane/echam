@@ -950,20 +950,21 @@ if (F) { # old hist
                            cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
                           ))
 
-} else if (F) { # gregor and fay 2021
+} else if (T) { # gregor and fay 2021
     workpath <- "/work/ba1103/a270073"
     models <- "gregor_and_fay_2021"
     datapaths <- "/work/ba1103/a270073/data/gregor_and_fay_2021/data"
     fpatterns <- "SeaFlux_v2021.04_fgco2_all_winds_products_ensemble_stats.nc"
     prefixes <- "gregor_and_fay_2021"
     #fvarnames <- "fgco2_ens_mean"
-    fvarnames <- "fgco2_ens_sd"
+    fvarnames <- "fgco2_ens_median"
+    #fvarnames <- "fgco2_ens_sd"
     #fvarnames <- "fgco2_ens_min"
     #fvarnames <- "fgco2_ens_max"
     modes <- "fldint"
     froms <- 1990
     tos <- 2019
-    #mask_list <- list(list(
+    mask_list <- list(list(
                            #name="reccap2_atlantic",
                            #cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
                            #name="reccap2_pacific",
@@ -972,9 +973,9 @@ if (F) { # old hist
                            #cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
                            #name="reccap2_arctic",
                            #cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
-                           #name="reccap2_southern",
-                           #cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
-                          #))
+                           name="reccap2_southern",
+                           cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
+                          ))
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1 to 3
     workpath <- "/work/ba1103/a270073"
@@ -2159,7 +2160,7 @@ if (F) { # old hist
 
 # ======================================================
 # 16 settings
-} else if (T) { # 15/16 reccap2 settings (global: wout ROMS; regional: with ROMS)
+} else if (F) { # 15/16 reccap2 settings (global: wout ROMS; regional: with ROMS)
     workpath <- "/work/ollie/cdanek"
     post_force <- T
     models <- c("CCSM-WHOI", "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
