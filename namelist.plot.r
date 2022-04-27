@@ -495,7 +495,7 @@ if (F) { # mhw composite data/seas*100
     #fromsp <- c(1002, 1002) # same temporal means
     #tosp <- c(1048, 1048) # same temporal means
     
-} else if (F) { # awi-esm-1-1-lr_kh800 piControl vs historical 
+} else if (T) { # awi-esm-1-1-lr_kh800 piControl vs historical 
     models <- rep("echam6", t=2)
     #models <- rep("fesom", t=2)
     #prefixes <- c("awi-esm-1-1-lr_kh800_piControl_og", "awi-esm-1-1-lr_kh800_historical")
@@ -506,6 +506,7 @@ if (F) { # mhw composite data/seas*100
     #names_legend <- c("piControl (monthly)", "historical (daily)")
     #names_legend <- c("piControl", "historical")
     #names_legend <- c("piControl", "historical (85-14)")
+    ltys <- c(3, 1)
     #varnames_in <- rep("temp2", t=2)
     varnames_in <- rep("co2_flx_ocean", t=2)
     #varnames_in <- rep("tos", t=2)
@@ -529,7 +530,7 @@ if (F) { # mhw composite data/seas*100
     #areas <- rep("reccap2_pacific", t=6)
     #areas <- rep("reccap2_indian", t=6)
     #areas <- rep("reccap2_arctic", t=6)
-    #areas <- rep("reccap2_southern", t=6)
+    areas <- rep("reccap2_southern", t=6)
 
 } else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl co2 flux echam vs recom
     models <- c("echam6", "fesom")
@@ -2225,7 +2226,7 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # 16 settings
-} else if (T) { # 15/16 reccap2 settings
+} else if (F) { # 15/16 reccap2 settings
     models <- c("CCSM-WHOI", # <0: uptake 
                 "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 

@@ -950,7 +950,7 @@ if (F) { # old hist
                            cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")
                           ))
 
-} else if (T) { # gregor and fay 2021
+} else if (F) { # gregor and fay 2021
     workpath <- "/work/ba1103/a270073"
     models <- "gregor_and_fay_2021"
     datapaths <- "/work/ba1103/a270073/data/gregor_and_fay_2021/data"
@@ -977,11 +977,11 @@ if (F) { # old hist
                            cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")
                           ))
 
-} else if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1 to 3
+} else if (T) { # awi-esm-1-1-lr_kh800 piControl chunks 1 to 3
     workpath <- "/work/ba1103/a270073"
-    #models <- "echam6"
+    models <- "echam6"
     #models <- "jsbach"
-    models <- "fesom"
+    #models <- "fesom"
     # chunk 1: 1950:2029
     #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/echam" # chunk 1
     #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/jsbach" # chunk 1
@@ -1009,15 +1009,15 @@ if (F) { # old hist
     #codes_files <- paste0(datapaths, "/test_203001.01_yasso.codes")
     #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc" # chunk 1 and 2 
     # chunk 3 from 2686
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/echam" # chunk3
+    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/echam" # chunk3
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/jsbach" # chunk3
-    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom" # chunk3
+    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom" # chunk3
     #fpatterns <- "piControl_<YYYY><MM>.01_echam"
-    #fpatterns <- "piControl_<YYYY><MM>.01_co2"
+    fpatterns <- "piControl_<YYYY><MM>.01_co2"
     #fpatterns <- "piControl_<YYYY><MM>.01_jsbach"
     #fpatterns <- "piControl_<YYYY><MM>.01_veg"
     #fpatterns <- "piControl_<YYYY><MM>.01_yasso"
-    fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
+    #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
     #
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_3hr"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_day"
@@ -1027,8 +1027,8 @@ if (F) { # old hist
     #fvarnames <- "temp2"
     # echam co2stream 
     #fvarnames <- "co2_flux"
-    #codes <- 7
-    #fvarnames <- "co2_flx_ocean"
+    codes <- 7
+    fvarnames <- "co2_flx_ocean"
     #fvarnames <- "fgco2"
     #codes <- 6
     #fvarnames <- "co2_flx_land" # = npp + resp + herb + fire
@@ -1126,17 +1126,16 @@ if (F) { # old hist
     #fvarnames <- "mlotst"
     #fvarnames <- "omldamax"
     #fvarnames <- "siextentn"
-    fvarnames <- "sic"
+    #fvarnames <- "sic"
     # recom
     #fvarnames <- "aCO2"
-    cdoshifttimes <- "-dt" # for fesom
+    #cdoshifttimes <- "-dt" # for fesom
     #cdo_before_calcs <- "monmean"
     #modes <- "select"
     #modes <- "timmean"
-    modes <- "ydaymean"
+    #modes <- "ydaymean"
     #modes <- "fldmean"
-    #modes <- "fldint"
-    #modes <- "fldint"
+    modes <- "fldint"
     #froms <- 1950 # start chunk1: 1950
     #froms <- 2030 # start chunk2: 2030
     #froms <- 2586 # chunk 2 last 100 years
@@ -1161,6 +1160,14 @@ if (F) { # old hist
     tos <- 3000 # end chunk 3: 3000
     #areas_out_list <- list(list(name="SO45S",
     #                            sellonlatbox=c(lon1=0,lon2=360,lat1=-45,lat2=-90)))
+    #mask_list <- list(list(name="reccap2_atlantic",
+    #                       cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+    #mask_list <- list(list(name="reccap2_pacific",
+    #                       cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+    #mask_list <- list(list(name="reccap2_indian",
+    #                       cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+    mask_list <- list(list(name="reccap2_arctic",
+                           cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
     #mask_list <- list(list(name="reccap2_southern",
     #                       cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
 

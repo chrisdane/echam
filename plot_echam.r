@@ -10781,45 +10781,43 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add to data_left_mon
                 if (any(varname == c("co2_flx_ocean", "fgco2"))) {
-                    if (exists("reccap2") && length(unique(areas) == 1) && names(reccap2)[1] == areas[1]) {
+                    if (exists("reccap2") && length(unique(areas) == 1) && any(names(reccap2) == areas[1])) {
                         message("add reccap2 fgco2 data to ylim_mon ...")
-                        data_left_mon[[length(data_left_mon)+1]] <- list(x=reccap2[[areas[1]]]$dims$years, 
-                                                                         #y=reccap2[[areas[1]]]$data$fgco2_an_mean$vals,
-                                                                         y=reccap2[[areas[1]]]$data$fgco2_an_median$vals,
-                                                                         y_lower=reccap2[[areas[1]]]$data$fgco2_an_min$vals,
-                                                                         y_upper=reccap2[[areas[1]]]$data$fgco2_an_max$vals,
-                                                                         col=reccap2[[areas[1]]]$data$fgco2_an_mean$col,
-                                                                         col_rgb=reccap2[[areas[1]]]$data$fgco2_an_min$col,
-                                                                         #text=reccap2[[areas[1]]]$data$fgco2_an_mean$label
-                                                                         text=reccap2[[areas[1]]]$data$fgco2_an_median$label
+                        data_left_mon[[length(data_left_mon)+1]] <- list(x=reccap2[[areas[1]]]$dims$month, 
+                                                                         y=reccap2[[areas[1]]]$data$fgco2_ymonmean_median$vals,
+                                                                         y_lower=reccap2[[areas[1]]]$data$fgco2_ymonmean_min$vals,
+                                                                         y_upper=reccap2[[areas[1]]]$data$fgco2_ymonmean_max$vals,
+                                                                         col=reccap2[[areas[1]]]$data$fgco2_ymonmean_mean$col,
+                                                                         col_rgb=reccap2[[areas[1]]]$data$fgco2_ymonmean_min$col,
+                                                                         #text=reccap2[[areas[1]]]$data$fgco2_ymonmean_mean$label
+                                                                         text=reccap2[[areas[1]]]$data$fgco2_ymonmean_median$label
                                                                         )
                     }
-                    if (exists("gregor_and_fay_2021_ts_an") && length(unique(areas) == 1) && names(gregor_and_fay_2021_ts_an)[1] == areas[1]) {
-                        message("add gregor_and_fay_2021_ts_an data to ylim_mon ...")
-                        data_left_mon[[length(data_left_mon)+1]] <- list(x=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$dims$years, 
-                                                                         #y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals,
-                                                                         y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals,
-                                                                         #y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_min$data$vals,
-                                                                         #y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_max$data$vals,
-                                                                         #y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                         #y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                         y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                         y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                         col=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col,
-                                                                         col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.15),
-                                                                         #text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$label
-                                                                         text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$label
+                    if (exists("gregor_and_fay_2021") && length(unique(areas) == 1) && any(names(gregor_and_fay_2021$ymonmean) == areas[1])) {
+                        message("add gregor_and_fay_2021 data to ylim_mon ...")
+                        data_left_mon[[length(data_left_mon)+1]] <- list(x=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$dims$month, 
+                                                                         #y=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_mean$data$vals,
+                                                                         y=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$vals,
+                                                                         #y_lower=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_min$data$vals,
+                                                                         #y_upper=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_max$data$vals,
+                                                                         #y_lower=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                         #y_upper=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                         y_lower=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                         y_upper=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                         col=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$col,
+                                                                         col_rgb=col2rgba(gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$col, 0.15),
+                                                                         text=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$label
                                                                         )
                     }
-                    if (exists("chau_etal_2020_ts_an") && length(unique(areas) == 1) && names(chau_etal_2020_ts_an)[1] == areas[1]) {
-                        message("add chau_etal_2020_ts_an data to ylim_mon ...")
-                        data_left_mon[[length(data_left_mon)+1]] <- list(x=chau_etal_2020_ts_an[[areas[1]]]$fgco2$dims$years, 
-                                                                         y=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals,
-                                                                         y_lower=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals-chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
-                                                                         y_upper=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals+chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
-                                                                         col=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col,
-                                                                         col_rgb=col2rgba(chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col, 0.15),
-                                                                         text=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$label)
+                    if (exists("chau_etal_2020") && length(unique(areas) == 1) && any(names(chau_etal_2020$ymonmean) == areas[1])) {
+                        message("add chau_etal_2020 data to ylim_mon ...")
+                        data_left_mon[[length(data_left_mon)+1]] <- list(x=chau_etal_2020$ymonmean[[areas[1]]]$fgco2$dims$month, 
+                                                                         y=chau_etal_2020$ymonmean[[areas[1]]]$fgco2$data$vals,
+                                                                         y_lower=chau_etal_2020$ymonmean[[areas[1]]]$fgco2$data$vals-chau_etal_2020$ymonmean[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                                         y_upper=chau_etal_2020$ymonmean[[areas[1]]]$fgco2$data$vals+chau_etal_2020$ymonmean[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                                         col=chau_etal_2020$ymonmean[[areas[1]]]$fgco2$data$col,
+                                                                         col_rgb=col2rgba(chau_etal_2020$ymonmean[[areas[1]]]$fgco2$data$col, 0.15),
+                                                                         text=chau_etal_2020$ymonmean[[areas[1]]]$fgco2$data$label)
                     }
                 } # if add data to data_left_mon
 
@@ -11191,14 +11189,15 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     # reorder reading direction from R's default top->bottom to left->right
                     if (T) le <- reorder_legend(le)
                     if (length(le$pos) == 1) {
-                        legend(le$pos, legend=le$text, lty=le$lty, lwd=le$lwd,
-                               pch=le$pch, col=le$col, ncol=le$ncol,
-                               x.intersp=0.2, cex=le$cex, bty="n")
+                        legend(le$pos, legend=le$text, 
+                               lty=le$lty, lwd=le$lwd, pch=le$pch, col=le$col, 
+                               pt.lwd=le$pt.lwd, pt.bg=le$pt.bg, pt.cex=le$pt.cex,
+                               cex=le$cex, ncol=le$ncol, x.intersp=0.2, bty="n")
                     } else if (length(le$pos) == 2) {
-                        legend(x=le$pos[1], y=le$pos[2],
-                               legend=le$text, lty=le$lty, lwd=le$lwd,
-                               pch=le$pch, col=le$col, ncol=le$ncol,
-                               x.intersp=0.2, cex=le$cex, bty="n")
+                        legend(x=le$pos[1], y=le$pos[2], legend=le$text, 
+                               lty=le$lty, lwd=le$lwd, pch=le$pch, col=le$col, 
+                               pt.lwd=le$pt.lwd, pt.bg=le$pt.bg, pt.cex=le$pt.cex,
+                               cex=le$cex, ncol=le$ncol, x.intersp=0.2, bty="n")
                     }
                 } # if add_legend
                 
@@ -11359,9 +11358,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add to data_left_an
                 if (any(varname == c("co2_flx_ocean", "fgco2"))) {
-                    if (exists("reccap2") && length(unique(areas) == 1) && names(reccap2)[1] == areas[1]) {
+                    if (exists("reccap2") && length(unique(areas) == 1) && any(names(reccap2) == areas[1])) {
                         message("add reccap2 fgco2 data to ylim_an ...")
-                        data_left_an[[length(data_left_an)+1]] <- list(x=reccap2[[areas[1]]]$dims$years, 
+                        data_left_an[[length(data_left_an)+1]] <- list(x=reccap2[[areas[1]]]$dims$year, 
                                                                        #y=reccap2[[areas[1]]]$data$fgco2_an_mean$vals,
                                                                        y=reccap2[[areas[1]]]$data$fgco2_an_median$vals,
                                                                        y_lower=reccap2[[areas[1]]]$data$fgco2_an_min$vals,
@@ -11372,32 +11371,32 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                        text=reccap2[[areas[1]]]$data$fgco2_an_median$label
                                                                        )
                     }
-                    if (exists("gregor_and_fay_2021_ts_an") && length(unique(areas) == 1) && names(gregor_and_fay_2021_ts_an)[1] == areas[1]) {
-                        message("add gregor_and_fay_2021_ts_an data to ylim_an ...")
-                        data_left_an[[length(data_left_an)+1]] <- list(x=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$dims$years, 
-                                                                       #y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals,
-                                                                       y=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals,
-                                                                       #y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_min$data$vals,
-                                                                       #y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_max$data$vals,
-                                                                       #y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                       #y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                       y_lower=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                       y_upper=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                       col=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col,
-                                                                       col_rgb=col2rgba(gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$col, 0.15),
-                                                                       #text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_mean$data$label
-                                                                       text=gregor_and_fay_2021_ts_an[[areas[1]]]$fgco2_ens_median$data$label
+                    if (exists("gregor_and_fay_2021") && length(unique(areas) == 1) && any(names(gregor_and_fay_2021$annual) == areas[1])) {
+                        message("add gregor_and_fay_2021 data to ylim_an ...")
+                        data_left_an[[length(data_left_an)+1]] <- list(x=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_mean$dims$year, 
+                                                                       #y=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_mean$data$vals,
+                                                                       y=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$vals,
+                                                                       #y_lower=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_min$data$vals,
+                                                                       #y_upper=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_max$data$vals,
+                                                                       #y_lower=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       #y_upper=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       y_lower=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       y_upper=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_sd$data$vals,
+                                                                       col=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$col,
+                                                                       col_rgb=col2rgba(gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$col, 0.15),
+                                                                       #text=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_mean$data$label
+                                                                       text=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$label
                                                                        )
                     }
-                    if (exists("chau_etal_2020_ts_an") && length(unique(areas) == 1) && names(chau_etal_2020_ts_an)[1] == areas[1]) {
-                        message("add chau_etal_2020_ts_an data to ylim_an ...")
-                        data_left_an[[length(data_left_an)+1]] <- list(x=chau_etal_2020_ts_an[[areas[1]]]$fgco2$dims$years, 
-                                                                       y=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals,
-                                                                       y_lower=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals-chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
-                                                                       y_upper=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$vals+chau_etal_2020_ts_an[[areas[1]]]$fgco2_uncertainty$data$vals,
-                                                                       col=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col,
-                                                                       col_rgb=col2rgba(chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$col, 0.15),
-                                                                       text=chau_etal_2020_ts_an[[areas[1]]]$fgco2$data$label)
+                    if (exists("chau_etal_2020") && length(unique(areas) == 1) && any(names(chau_etal_2020$annual) == areas[1])) {
+                        message("add chau_etal_2020 data to ylim_an ...")
+                        data_left_an[[length(data_left_an)+1]] <- list(x=chau_etal_2020$annual[[areas[1]]]$fgco2$dims$year, 
+                                                                       y=chau_etal_2020$annual[[areas[1]]]$fgco2$data$vals,
+                                                                       y_lower=chau_etal_2020$annual[[areas[1]]]$fgco2$data$vals-chau_etal_2020$annual[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                                       y_upper=chau_etal_2020$annual[[areas[1]]]$fgco2$data$vals+chau_etal_2020$annual[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                                       col=chau_etal_2020$annual[[areas[1]]]$fgco2$data$col,
+                                                                       col_rgb=col2rgba(chau_etal_2020$annual[[areas[1]]]$fgco2$data$col, 0.15),
+                                                                       text=chau_etal_2020$annual[[areas[1]]]$fgco2$data$label)
                     }
                 } # if add data to data_left_an
 

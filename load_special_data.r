@@ -1527,15 +1527,16 @@ if (T) { # post processed chau_etal_2020 data
 
 # reccap2 data
 reccap2_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", "reccap2_arctic", "reccap2_southern")
-fs <- paste0("reccap2-ocean_", c(15, 16, 16, 16, 15, 16), 
+fs <- paste0("reccap2-ocean_", c(15, 15, 15, 16, 15, 16), 
              "_models_fldint_fgco2_", reccap2_areas, "_Jan-Dec_1958-2019.nc")
 fs <- paste0(host$workpath, "/data/reccap2-ocean/", fs)
 names(fs) <- reccap2_areas
 if (T && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load reccap2 data ...")
-    reccap2_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_min", "fgco2_an_max")
-    reccap2_labels <- c(paste0("GOBM mmm", plus_minus_symbol, "mmr"), paste0("GOBM mmmed", plus_minus_symbol, "mmr"), "GOBM mmmin", "GOBM mmmax")
-    reccap2_cols <- c("black", "black", col2rgba("black", 0.15), col2rgba("black", 0.15))
+    reccap2_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_min", "fgco2_an_max",
+                          "fgco2_ymonmean_mean", "fgco2_ymonmean_median", "fgco2_ymonmean_min", "fgco2_ymonmean_max")
+    reccap2_labels <- rep(c(paste0("GOBM mmm", plus_minus_symbol, "mmr"), paste0("GOBM mmmed", plus_minus_symbol, "mmr"), "GOBM mmmin", "GOBM mmmax"), t=2)
+    reccap2_cols <- rep(c("black", "black", col2rgba("black", 0.15), col2rgba("black", 0.15)), t=2)
     reccap2 <- vector("list", l=length(fs))
     names(reccap2) <- names(fs)
     cnt <- 0
@@ -1548,22 +1549,27 @@ if (T && any(file.exists(fs))) {
             time <- as.POSIXct(reccap2_ncin$dim$time$vals, o="1970-1-1", tz="UTC")
             years <- as.POSIXct(reccap2_ncin$dim$years$vals, o="1970-1-1", tz="UTC")
             years <- as.numeric(format(years, "%Y"))
+            months <- as.POSIXct(reccap2_ncin$dim$months$vals, o="1970-1-1", tz="UTC")
+            months <- as.numeric(format(months, "%m"))
             tmp <- vector("list", l=length(reccap2_varnames))
             names(tmp) <- reccap2_varnames
             for (vi in seq_along(tmp)) {
-                message("   load \"", reccap2_varnames[vi], "\" ...")
+                dimnames <- sapply(reccap2_ncin$var[[reccap2_varnames[vi]]]$dim, "[[", "name")
+                #message("   load \"", reccap2_varnames[vi], "\" (dims = ", paste(dimnames, collapse=", "), ") ...")
                 dat <- ncvar_get(reccap2_ncin, reccap2_varnames[vi])
                 tmp[[vi]] <- list(vals=dat, size=dim(dat), 
                                   unit=ncatt_get(reccap2_ncin, reccap2_varnames[vi])$units,
                                   col=reccap2_cols[vi], label=reccap2_labels[vi])
-                if (length(dat) == length(time)) {
+                if (dimnames == "time") {
                     tmp[[vi]]$dimnames <- "time"
-                } else if (length(dat) == length(years)) {
-                    tmp[[vi]]$dimnames <- "years"
+                } else if (dimnames == "years") {
+                    tmp[[vi]]$dimnames <- "year"
+                } else if (dimnames == "months") {
+                    tmp[[vi]]$dimnames <- "month"
                 }
             }
             tmp <- list(file=f,
-                        dims=list(time=time, years=years),
+                        dims=list(time=time, year=years, month=months),
                         data=tmp)
             reccap2[[cnt]] <- tmp
             names(reccap2)[cnt] <- names(f)
