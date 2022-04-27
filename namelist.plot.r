@@ -495,7 +495,7 @@ if (F) { # mhw composite data/seas*100
     #fromsp <- c(1002, 1002) # same temporal means
     #tosp <- c(1048, 1048) # same temporal means
     
-} else if (T) { # awi-esm-1-1-lr_kh800 piControl vs historical 
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl vs historical 
     models <- rep("echam6", t=2)
     #models <- rep("fesom", t=2)
     #prefixes <- c("awi-esm-1-1-lr_kh800_piControl_og", "awi-esm-1-1-lr_kh800_historical")
@@ -2226,7 +2226,7 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # 16 settings
-} else if (F) { # 15/16 reccap2 settings
+} else if (T) { # 15/16 reccap2 settings
     models <- c("CCSM-WHOI", # <0: uptake 
                 "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 
@@ -2243,13 +2243,13 @@ if (F) { # mhw composite data/seas*100
         if (F) { # atlantic
             models <- c(models, "ROMS-Atlantic-ETHZ")
             tosf <- c(tosf, 2019)
-        } else if (F) { # pacific
+        } else if (T) { # pacific
             models <- c(models, "ROMS-Pacific-ETHZ")
             tosf <- c(tosf, 2019)
         } else if (F) { # indian
             models <- c(models, "ROMS-NYUAD")
             tosf <- c(tosf, 2018)
-        } else if (T) { # southern
+        } else if (F) { # southern
             models <- c(models, "ROMS-SouthernOcean-ETHZ")
             tosf <- c(tosf, 2018)
         }
@@ -2258,13 +2258,30 @@ if (F) { # mhw composite data/seas*100
     names_short <- names_legend
     prefixes <- rep("reccap2_A", t=length(models))
     varnames_in <- rep("fgco2", t=length(models))
-    plotprefix <- "reccap2_A_global"
     modes <- rep("fldint", t=length(models))
     #areas <- rep("reccap2_atlantic", t=length(models))
     #areas <- rep("reccap2_pacific", t=length(models))
     #areas <- rep("reccap2_indian", t=length(models))
     #areas <- rep("reccap2_arctic", t=length(models))
-    areas <- rep("reccap2_southern", t=length(models))
+    #areas <- rep("reccap2_southern", t=length(models))
+    #areas <- rep("reccap2_na_spss", t=length(models))
+    #areas <- rep("reccap2_na_stss", t=length(models))
+    #areas <- rep("reccap2_na_stps", t=length(models))
+    #areas <- rep("reccap2_aequ", t=length(models))
+    #areas <- rep("reccap2_sa_stps", t=length(models))
+    #areas <- rep("reccap2_med", t=length(models))
+    #areas <- rep("reccap2_np_spss", t=length(models))
+    #areas <- rep("reccap2_np_stss", t=length(models))
+    #areas <- rep("reccap2_np_stps", t=length(models))
+    #areas <- rep("reccap2_pequ_w", t=length(models))
+    #areas <- rep("reccap2_pequ_e", t=length(models))
+    areas <- rep("reccap2_sp_stps", t=length(models))
+    plotpath <- "/work/ollie/cdanek/plots/reccap2"
+    if (!exists("areas")) {
+        plotprefix <- "reccap2_A_global"
+    } else {
+        plotprefix <- paste0("reccap2_A_", areas[1])
+    }
 
 # ======================================================
 # 18 settings

@@ -2167,7 +2167,7 @@ if (F) { # old hist
 
 # ======================================================
 # 16 settings
-} else if (F) { # 15/16 reccap2 settings (global: wout ROMS; regional: with ROMS)
+} else if (T) { # 15/16 reccap2 settings (global: wout ROMS; regional: with ROMS)
     workpath <- "/work/ollie/cdanek"
     post_force <- T
     models <- c("CCSM-WHOI", "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
@@ -2194,19 +2194,22 @@ if (F) { # old hist
         froms <- c(froms, 1980)
         if (F) { # atlantic
             models <- c(models, "ROMS-Atlantic-ETHZ")
-            datapaths[which(models == "ROMS-Atlantic-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-Atlantic-ETHZ" # set griddes (xfirst = 0.5 --> -179.5) and rechunked for faster reading
+            # set griddes (xfirst = 0.5 --> -179.5) and rechunked for faster reading and *100 (damian.loher@usys.ethz.ch) 
+            datapaths[which(models == "ROMS-Atlantic-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-Atlantic-ETHZ" 
             tos <- c(tos, 2019)
-        } else if (F) { # pacific
+        } else if (T) { # pacific
+            # rechunked for faster reading and *100 (damian.loher@usys.ethz.ch) 
             models <- c(models, "ROMS-Pacific-ETHZ")
-            datapaths[which(models == "ROMS-Pacific-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-Pacific-ETHZ" # rechunked for faster reading
+            datapaths[which(models == "ROMS-Pacific-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-Pacific-ETHZ" 
             tos <- c(tos, 2019)
         } else if (F) { # indian
             models <- c(models, "ROMS-NYUAD")
             datapaths[which(models == "ROMS-NYUAD")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-NYUAD"
             tos <- c(tos, 2018)
-        } else if (T) { # southern
+        } else if (F) { # southern
             models <- c(models, "ROMS-SouthernOcean-ETHZ")
-            datapaths[which(models == "ROMS-SouthernOcean-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-SouthernOcean-ETHZ" # rechunked for faster reading
+            # rechunked for faster reading
+            datapaths[which(models == "ROMS-SouthernOcean-ETHZ")] <- "/work/ollie/cdanek/data/reccap2-ocean/ROMS-SouthernOcean-ETHZ" 
             tos <- c(tos, 2018)
         }
     }
@@ -2228,8 +2231,34 @@ if (F) { # old hist
     #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
     #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_arctic"))
     #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
-    mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_southern"))
-    for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_southern"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    # sub-atlantic:
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_na_spss"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,1 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_na_stss"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,2 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_na_stps"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,3 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_aequ"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,4 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_sa_stps"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,5 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_med"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,6 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    # sub-pacific:
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_np_spss"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,1 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_np_stss"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,2 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_np_stps"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,3 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_pequ_w"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,4 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_pequ_e"))
+    #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,5 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
+    mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_sp_stps"))
+    for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,6 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
 
 # ======================================================
 # 27 settings

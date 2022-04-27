@@ -82,6 +82,10 @@ if (!exists("postpaths")) { # default from post_echam.r
     }
 }
 postpaths <- normalizePath(postpaths)
+if (exists("plotprefix")) {
+    if (grepl("/", plotprefix)) stop("character \"/\" not allowed in `plotprefix`")
+}
+if (exists("plotpaths")) stop("`plotpaths` will not be used. did you mean `plotpath`?")
 if (!exists("plotpath")) { # default from post_echam.r
     plotpath <- paste0(host$workpath, "/plots")
     if (!exists("plotprefix")) { # default
@@ -11123,7 +11127,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add legend if wanted
                 if (add_legend) {
-                    message("\nadd default stuff to ", mode_p, " mon legend ...")
+                    message("\nadd datasmon legend ...")
                     le <- list()
                     #le$pos <- "topleft" 
                     le$pos <- "top"
@@ -11147,15 +11151,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             le$pch[i] <- NA
                         }
                     }
-                    # add stuff to legend here
-                    if (F) {
-                        message("\nadd non default stuff to ", mode_p, " mon legend ...")
-
-                    }
+                    le$pt.lwd <- le$pt.bg <- le$pt.cex <- rep(NA, t=length(zmon)) # uncertainty default
+                    
                     # add stuff to datasmon legend here
                     if (length(data_left_mon) > 0) {
                         # add data_left_mon to model legend
-                        message("add ", length(data_left_mon), " data_left_mon entries to legend ...")
+                        message("add ", length(data_left_mon), " data_left_mon to legend ...")
                         le$text <- c(le$text, sapply(data_left_mon, "[[", "text"))
                         le$col <- c(le$col, sapply(data_left_mon, "[[", "col"))
                         le$lty <- c(le$lty, sapply(data_left_mon, "[[", "lty"))
@@ -11852,7 +11853,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add legend if wanted
                 if (T && add_legend) {
-                    message("\nadd default stuff to datasan vs years legend ...")
+                    message("\nadd datasan legend ...")
                     le <- list()
                     le$pos <- "topleft" 
                     #le$pos <- "top"
@@ -11870,7 +11871,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     inds <- which(!is.na(names_legend_pan)) # throw out user provided NA
                     le$text <- names_legend_pan_w_lm[inds]
                     le$cex <- lecex
-                    #le$cex <- 0.66
+                    le$cex <- 0.66
                     #le$cex <- 0.85
                     le$col <- cols_pan[inds]
                     le$lty <- ltys_pan[inds]
@@ -11888,7 +11889,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     # add stuff to datasn legend here
                     if (length(data_left_an) > 0) {
                         # add data_left_an to model legend
-                        message("add ", length(data_left_an), " data_left_an entries to legend ...")
+                        message("add data_left_an to legend ...")
                         le$text <- c(le$text, sapply(data_left_an, "[[", "text"))
                         le$col <- c(le$col, sapply(data_left_an, "[[", "col"))
                         le$lty <- c(le$lty, sapply(data_left_an, "[[", "lty"))
@@ -12372,7 +12373,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # get plot sizes
                 message("open plot ", plotname, " ...")
-                pp <- plot_sizes(width_in=p$map_width_in, asp=p$map_asp, verbose=T)
+                pp <- plot_sizes(width_in=p$map_width_in, asp=p$scatter_asp, verbose=T)
                 if (p$plot_type == "png") {
                     png(plotname, width=pp$png_width_px, height=pp$png_height_px,
                         pointsize=pp$png_pointsize, res=pp$png_ppi, family=p$png_family)
@@ -12386,7 +12387,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 mar[4] <- 1 # decrease right margin
                 if (!add_title) mar[3] <- 1 # decrease upper margin
                 # increase lower margin for vertical setting names
-                if (F) mar[1] <- max(nchar(names_legend_pltm))*0.55 
+                if (T) mar[1] <- max(nchar(names_legend_pltm))*0.55 
                 
                 # open plot
                 par(mar=mar)
@@ -12399,20 +12400,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     barplot(sapply(zltm, "[[", 1),
                             ylim=ylim_ltm, xpd=F, 
                             col=cols_pltm, border=NA, 
-                            #xaxt="n", yaxt="n",
+                            xaxt="n", yaxt="n",
                             axes=F,
                             xlab="", ylab="", 
                             names.arg=names_legend_pltm) # uses axis() to draw labels at column means; supressed if xaxt="n"
                 }
                 axis(1, at=xat_ltm, labels=F) # ticks only
-                if (F) {
+                if (T) { # vertical labels
                     text(x=xat_ltm, 
                          #y=par("usr")[3], 
                          # y-pos of labels: `bottom minus 0.05*dy scaled by plot asp`; is this rly a good solution?
                          #y=par("usr")[3] - abs(diff(par("usr")[3:4])*0.05/p$map_asp),
-                         y=par("usr")[3] - 0.4*abs(diff(yat_ltm)[1]),
+                         #y=par("usr")[3] - 0.4*abs(diff(yat_ltm)[1]),
+                         y=par("usr")[3] - 0.2*abs(diff(yat_ltm)[1]),
                          labels=names_legend_pltm, 
-                         adj=1, srt=90, xpd=T) # vertical labels
+                         adj=1, srt=90, xpd=T) 
                 }
                 axis(2, at=yat_ltm, las=2)
 
