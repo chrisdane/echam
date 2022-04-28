@@ -1349,7 +1349,7 @@ if (F) { # mhw composite data/seas*100
     fromsf <- rep(1958, t=4)
     tosf <- rep(2019, t=4)
 
-} else if (T) { # awi-esm-1-1-lr_kh800 piControl and historical w/wout river flux adjustment rfa
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl and historical w/wout river flux adjustment rfa
     models <- rep("echam6", t=4)
     prefixes <- c("awi-esm-1-1-lr_kh800_piControl_rfa", "awi-esm-1-1-lr_kh800_piControl", 
                   "awi-esm-1-1-lr_kh800_historical_rfa", "awi-esm-1-1-lr_kh800_historical")
@@ -2277,7 +2277,7 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # 16 settings
-} else if (F) { # 15/16 reccap2 settings
+} else if (T) { # 15/16 reccap2 settings
     models <- c("CCSM-WHOI", # <0: uptake 
                 "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 
@@ -2315,12 +2315,14 @@ if (F) { # mhw composite data/seas*100
     #areas <- rep("reccap2_indian", t=length(models))
     #areas <- rep("reccap2_arctic", t=length(models))
     #areas <- rep("reccap2_southern", t=length(models))
+    # sub-atlantic:
     #areas <- rep("reccap2_na_spss", t=length(models))
     #areas <- rep("reccap2_na_stss", t=length(models))
     #areas <- rep("reccap2_na_stps", t=length(models))
     #areas <- rep("reccap2_aequ", t=length(models))
     #areas <- rep("reccap2_sa_stps", t=length(models))
     #areas <- rep("reccap2_med", t=length(models))
+    # sub-pacific:
     #areas <- rep("reccap2_np_spss", t=length(models))
     #areas <- rep("reccap2_np_stss", t=length(models))
     #areas <- rep("reccap2_np_stps", t=length(models))
@@ -2329,9 +2331,9 @@ if (F) { # mhw composite data/seas*100
     areas <- rep("reccap2_sp_stps", t=length(models))
     plotpath <- "/work/ollie/cdanek/plots/reccap2"
     if (!exists("areas")) {
-        plotprefix <- "reccap2_A_global"
+        plotprefix <- paste0(prefixes[1], "_global")
     } else {
-        plotprefix <- paste0("reccap2_A_", areas[1])
+        plotprefix <- paste0(prefixes[1], "_", areas[1])
     }
 
 # ======================================================

@@ -1531,6 +1531,7 @@ reccap2_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_ind
                    "reccap2_np_spss", "reccap2_np_stss", "reccap2_np_stps", "reccap2_pequ_w", "reccap2_pequ_e", "reccap2_sp_stps")
 fs <- sapply(reccap2_areas, function(x) 
              list.files(path=paste0(host$workpath, "/data/reccap2-ocean"), pattern=glob2rx(paste0("reccap2*", x, "*.nc")), full.names=T))
+if (is.list(fs)) fs <- rep("", t=length(fs))
 if (T && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load reccap2 data ...")
     reccap2_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_min", "fgco2_an_max",

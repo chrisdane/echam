@@ -5352,6 +5352,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                            modes[1], "_", zname, "_", areas[1], "_Jan-Dec_", paste(format(tlimct, "%Y"), collapse="-"), ".nc")
             if (!file.exists(fout)) {
                 message("\nspecial: save reccap2 post")
+                # load lacroix_etal_2020 river flux adjustment rfa
+                if (zname == "fgco2" && all(modes == "fldint")) {
+                    flacroix <- paste0(host$workpath, "/post/lacroix_etal_2020/fldint/fgco2/lacroix_etal_2020_lacroix_etal_2020_fldint_fgco2_",
+                                       ifelse(areas[1] == "global", "global", areas[1]), "_Jan-Dec_2022-2022.nc")
+                    if (!file.exists(flacroix)) stop("flacroix not found")
+                    lacroix <- nc_open(flacroix)
+                    lacroix <- ncvar_get(lacroix, "fgco2") * 12.0107 * 365.25*86400 / 1e15 * -1 # molC s-1 --> PgC yr-1; >0: upward --> >0: downward
+                    lacroix <- as.vector(lacroix)
+                    message("add lacroix = ", lacroix)
+                }
                 modeldim <- ncdf4::ncdim_def(name="model", units="", vals=seq_along(z))
                 fromto <- min(fromsf):max(tosf)
                 tvals <- paste0(rep(fromto, e=12), "-", rep(1:12, t=length(fromto)), "-", rep(15, t=length(fromto)*12)) # all monthly data at same time points
@@ -5374,6 +5384,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ncvar_max <- ncdf4::ncvar_def(name="fgco2_mon_max", units="PgC yr-1", dim=tdim, missval=NA)
                 ncvar_mean <- ncdf4::ncvar_def(name="fgco2_mon_mean", units="PgC yr-1", dim=tdim, missval=NA)
                 ncvar_median <- ncdf4::ncvar_def(name="fgco2_mon_median", units="PgC yr-1", dim=tdim, missval=NA)
+                arr_lacroix <- arr + lacroix
+                arr_lacroix_min <- apply(arr_lacroix, 2, min, na.rm=T)
+                arr_lacroix_max <- apply(arr_lacroix, 2, max, na.rm=T)
+                arr_lacroix_mean <- apply(arr_lacroix, 2, mean, na.rm=T)
+                arr_lacroix_median <- apply(arr_lacroix, 2, median, na.rm=T)
+                ncvar_lacroix <- ncdf4::ncvar_def(name="fgco2_rfa_mon", units="PgC yr-1", dim=list(modeldim, tdim), missval=NA)
+                ncvar_lacroix_min <- ncdf4::ncvar_def(name="fgco2_rfa_mon_min", units="PgC yr-1", dim=tdim, missval=NA)
+                ncvar_lacroix_max <- ncdf4::ncvar_def(name="fgco2_rfa_mon_max", units="PgC yr-1", dim=tdim, missval=NA)
+                ncvar_lacroix_mean <- ncdf4::ncvar_def(name="fgco2_rfa_mon_mean", units="PgC yr-1", dim=tdim, missval=NA)
+                ncvar_lacroix_median <- ncdf4::ncvar_def(name="fgco2_rfa_mon_median", units="PgC yr-1", dim=tdim, missval=NA)
                 # annual means
                 anvals <- as.POSIXct(paste0(fromto, "-1-1"), tz="UTC") # placeholder
                 for (i in seq_along(anvals)) {
@@ -5397,6 +5417,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ncvar_an_max <- ncdf4::ncvar_def(name="fgco2_an_max", units="PgC yr-1", dim=andim, missval=NA)
                 ncvar_an_mean <- ncdf4::ncvar_def(name="fgco2_an_mean", units="PgC yr-1", dim=andim, missval=NA)
                 ncvar_an_median <- ncdf4::ncvar_def(name="fgco2_an_median", units="PgC yr-1", dim=andim, missval=NA)
+                arr_an_lacroix <- arr_an + lacroix
+                arr_an_lacroix_min <- apply(arr_an_lacroix, 2, min, na.rm=T)
+                arr_an_lacroix_max <- apply(arr_an_lacroix, 2, max, na.rm=T)
+                arr_an_lacroix_mean <- apply(arr_an_lacroix, 2, mean, na.rm=T)
+                arr_an_lacroix_median <- apply(arr_an_lacroix, 2, median, na.rm=T)
+                ncvar_an_lacroix <- ncdf4::ncvar_def(name="fgco2_rfa_an", units="PgC yr-1", dim=list(modeldim, andim), missval=NA)
+                ncvar_an_lacroix_min <- ncdf4::ncvar_def(name="fgco2_rfa_an_min", units="PgC yr-1", dim=andim, missval=NA)
+                ncvar_an_lacroix_max <- ncdf4::ncvar_def(name="fgco2_rfa_an_max", units="PgC yr-1", dim=andim, missval=NA)
+                ncvar_an_lacroix_mean <- ncdf4::ncvar_def(name="fgco2_rfa_an_mean", units="PgC yr-1", dim=andim, missval=NA)
+                ncvar_an_lacroix_median <- ncdf4::ncvar_def(name="fgco2_rfa_an_median", units="PgC yr-1", dim=andim, missval=NA)
                 # monthly clim
                 monvals <- as.POSIXct(paste0(max(fromto), "-", 1:12, "-15"), tz="UTC") # average of month in placeholder year
                 mondim <- ncdf4::ncdim_def(name="months", units="seconds since 1970-1-1", vals=as.numeric(monvals))
@@ -5421,26 +5451,54 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ncvar_mon_max <- ncdf4::ncvar_def(name="fgco2_ymonmean_max", units="PgC yr-1", dim=mondim, missval=NA)
                 ncvar_mon_mean <- ncdf4::ncvar_def(name="fgco2_ymonmean_mean", units="PgC yr-1", dim=mondim, missval=NA)
                 ncvar_mon_median <- ncdf4::ncvar_def(name="fgco2_ymonmean_median", units="PgC yr-1", dim=mondim, missval=NA)
+                arr_mon_lacroix <- arr_mon + lacroix
+                arr_mon_lacroix_min <- apply(arr_mon_lacroix, 2, min, na.rm=T)
+                arr_mon_lacroix_max <- apply(arr_mon_lacroix, 2, max, na.rm=T)
+                arr_mon_lacroix_mean <- apply(arr_mon_lacroix, 2, mean, na.rm=T)
+                arr_mon_lacroix_median <- apply(arr_mon_lacroix, 2, median, na.rm=T)
+                ncvar_mon_lacroix <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean", units="PgC yr-1", dim=list(modeldim, mondim), missval=NA)
+                ncvar_mon_lacroix_min <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean_min", units="PgC yr-1", dim=mondim, missval=NA)
+                ncvar_mon_lacroix_max <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean_max", units="PgC yr-1", dim=mondim, missval=NA)
+                ncvar_mon_lacroix_mean <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean_mean", units="PgC yr-1", dim=mondim, missval=NA)
+                ncvar_mon_lacroix_median <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean_median", units="PgC yr-1", dim=mondim, missval=NA)
                 # output
                 outnc <- ncdf4::nc_create(fout, vars=list(ncvar, ncvar_min, ncvar_max, ncvar_mean, ncvar_median,
+                                                          ncvar_lacroix, ncvar_lacroix_min, ncvar_lacroix_max, ncvar_lacroix_mean, ncvar_lacroix_median,
                                                           ncvar_an, ncvar_an_min, ncvar_an_max, ncvar_an_mean, ncvar_an_median,
-                                                          ncvar_mon, ncvar_mon_min, ncvar_mon_max, ncvar_mon_mean, ncvar_mon_median), 
+                                                          ncvar_an_lacroix, ncvar_an_lacroix_min, ncvar_an_lacroix_max, ncvar_an_lacroix_mean, ncvar_an_lacroix_median,
+                                                          ncvar_mon, ncvar_mon_min, ncvar_mon_max, ncvar_mon_mean, ncvar_mon_median,
+                                                          ncvar_mon_lacroix, ncvar_mon_lacroix_min, ncvar_mon_lacroix_max, ncvar_mon_lacroix_mean, ncvar_mon_lacroix_median), 
                                           force_v4=T)
                 ncdf4::ncvar_put(outnc, ncvar, arr)
                 ncdf4::ncvar_put(outnc, ncvar_min, arr_min)
                 ncdf4::ncvar_put(outnc, ncvar_max, arr_max)
                 ncdf4::ncvar_put(outnc, ncvar_mean, arr_mean)
                 ncdf4::ncvar_put(outnc, ncvar_median, arr_median)
+                ncdf4::ncvar_put(outnc, ncvar_lacroix, arr_lacroix)
+                ncdf4::ncvar_put(outnc, ncvar_lacroix_min, arr_lacroix_min)
+                ncdf4::ncvar_put(outnc, ncvar_lacroix_max, arr_lacroix_max)
+                ncdf4::ncvar_put(outnc, ncvar_lacroix_mean, arr_lacroix_mean)
+                ncdf4::ncvar_put(outnc, ncvar_lacroix_median, arr_lacroix_median)
                 ncdf4::ncvar_put(outnc, ncvar_an, arr_an)
                 ncdf4::ncvar_put(outnc, ncvar_an_min, arr_an_min)
                 ncdf4::ncvar_put(outnc, ncvar_an_max, arr_an_max)
                 ncdf4::ncvar_put(outnc, ncvar_an_mean, arr_an_mean)
                 ncdf4::ncvar_put(outnc, ncvar_an_median, arr_an_median)
+                ncdf4::ncvar_put(outnc, ncvar_an_lacroix, arr_an_lacroix)
+                ncdf4::ncvar_put(outnc, ncvar_an_lacroix_min, arr_an_lacroix_min)
+                ncdf4::ncvar_put(outnc, ncvar_an_lacroix_max, arr_an_lacroix_max)
+                ncdf4::ncvar_put(outnc, ncvar_an_lacroix_mean, arr_an_lacroix_mean)
+                ncdf4::ncvar_put(outnc, ncvar_an_lacroix_median, arr_an_lacroix_median)
                 ncdf4::ncvar_put(outnc, ncvar_mon, arr_mon)
                 ncdf4::ncvar_put(outnc, ncvar_mon_min, arr_mon_min)
                 ncdf4::ncvar_put(outnc, ncvar_mon_max, arr_mon_max)
                 ncdf4::ncvar_put(outnc, ncvar_mon_mean, arr_mon_mean)
                 ncdf4::ncvar_put(outnc, ncvar_mon_median, arr_mon_median)
+                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix, arr_mon_lacroix)
+                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix_min, arr_mon_lacroix_min)
+                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix_max, arr_mon_lacroix_max)
+                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix_mean, arr_mon_lacroix_mean)
+                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix_median, arr_mon_lacroix_median)
                 for (i in seq_along(z)) {
                     ncdf4::ncatt_put(outnc, "model", i, models[i])
                 }
