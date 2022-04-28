@@ -1526,11 +1526,11 @@ if (T) { # post processed chau_etal_2020 data
 
 
 # reccap2 data
-reccap2_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", "reccap2_arctic", "reccap2_southern")
-fs <- paste0("reccap2-ocean_", c(15, 15, 15, 16, 15, 16), 
-             "_models_fldint_fgco2_", reccap2_areas, "_Jan-Dec_1958-2019.nc")
-fs <- paste0(host$workpath, "/data/reccap2-ocean/", fs)
-names(fs) <- reccap2_areas
+reccap2_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", "reccap2_arctic", "reccap2_southern",
+                   "reccap2_na_spss", "reccap2_na_stss", "reccap2_na_stps", "reccap2_aequ", "reccap2_sa_stps", "reccap2_med",
+                   "reccap2_np_spss", "reccap2_np_stss", "reccap2_np_stps", "reccap2_pequ_w", "reccap2_pequ_e", "reccap2_sp_stps")
+fs <- sapply(reccap2_areas, function(x) 
+             list.files(path=paste0(host$workpath, "/data/reccap2-ocean"), pattern=glob2rx(paste0("reccap2*", x, "*.nc")), full.names=T))
 if (T && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load reccap2 data ...")
     reccap2_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_min", "fgco2_an_max",
@@ -1544,7 +1544,7 @@ if (T && any(file.exists(fs))) {
         f <- fs[fi]
         if (file.exists(f)) {
             cnt <- cnt + 1
-            message("load reccap2 data from \"", f, "\" ...")
+            #message("load reccap2 data from \"", f, "\" ...")
             reccap2_ncin <- nc_open(f)
             time <- as.POSIXct(reccap2_ncin$dim$time$vals, o="1970-1-1", tz="UTC")
             years <- as.POSIXct(reccap2_ncin$dim$years$vals, o="1970-1-1", tz="UTC")

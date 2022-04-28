@@ -1100,8 +1100,10 @@ for (i in seq_len(nsettings)) {
             cmd <- paste0(cdoprefix, " ", cdo_select_no_history, " showname ", datapath, "/", files[1], " 2>&1")
             message("run `", cmd, "`")
             var_exist <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))$value
-            message("-->\n",
-                    paste(var_exist, collapse="\n"))
+            message("-->\n", paste(var_exist, collapse="\n"))
+            if (!is.null(attributes(var_exist))) { # no success
+                stop("sth is wrong with this file")
+            }
             var_exist <- trimws(var_exist)
             if (!is.na(codes[i])) { # code provided
                 teststring <- paste0("var", codes[i])

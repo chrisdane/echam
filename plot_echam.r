@@ -2161,6 +2161,7 @@ for (i in seq_len(nsettings)) {
         # 1 mole C = 12.0107 g C
         # --> convert mole C to g C: *12.0107 
         # 1 mole CO2 = 44.0095 g CO2
+        # --> convert mole CO2 to g CO2: *44.0095
         # --> 12.0107 g C = 44.0095         g CO2
         # <=>       1 g C = 44.0095/12.0107 g CO2
         # <=>       1 g C = 3.664191        g CO2
@@ -3652,7 +3653,7 @@ if (!is.na(remove_setting)) {
 if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
     if (any(!is.na(remove_mean_froms)) || any(!is.na(remove_mean_tos))) {
         message("\nremove temporal means between")
-        for (i in 1:nsettings) {
+        for (i in seq_len(nsettings)) {
             message(i, "/", nsettings, ": ", names_short[i], " ...")
             if (!is.na(remove_mean_froms[i])) {
                 message("   `remove_mean_froms[", i, "]` = ", remove_mean_froms[i], "\n",
@@ -3676,7 +3677,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                     if (length(time_inds) == 0) {
                         stop("no data found between these given dates.")
                     } else {
-                        for (vi in 1:length(datas[[i]])) {
+                        for (vi in seq_along(datas[[i]])) {
                             message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi]) 
                             # check if variable has time dim
                             dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
@@ -4092,7 +4093,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "lon"), any)) &&
 
 # save data after applying offset, multiplication factors, temporal mean or setting mean removal
 message("\nsave data after application of multiplication factors or offsets of temporal mean or setting mean removal etc. ...")
-for (vi in 1:length(varnames_unique)) {
+for (vi in seq_along(varnames_unique)) {
     cmd <- paste0(varnames_unique[vi], "_dims <- list()")
     eval(parse(text=cmd))
     cmd <- paste0(varnames_unique[vi], "_datas <- list()")
@@ -11074,11 +11075,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # add grid
                 if (add_xgrid) {
-                    message("\nadd xgrid ...")
+                    message("add xgrid ...")
                     abline(v=tatn, col="gray", lwd=0.5)
                 }
                 if (add_ygrid) {
-                    message("\nadd ygrid ...")
+                    message("add ygrid ...")
                     abline(h=yat, col="gray", lwd=0.5)
                 }
 

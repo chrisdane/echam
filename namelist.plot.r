@@ -526,11 +526,26 @@ if (F) { # mhw composite data/seas*100
     tosp <- c(2025, NA)
     #modes <- rep("fldmean", t=2)
     modes <- rep("fldint", t=2)
-    #areas <- rep("reccap2_atlantic", t=6)
-    #areas <- rep("reccap2_pacific", t=6)
-    #areas <- rep("reccap2_indian", t=6)
-    #areas <- rep("reccap2_arctic", t=6)
-    areas <- rep("reccap2_southern", t=6)
+    #areas <- rep("reccap2_atlantic", t=2)
+    #areas <- rep("reccap2_pacific", t=2)
+    #areas <- rep("reccap2_indian", t=2)
+    #areas <- rep("reccap2_arctic", t=2)
+    #areas <- rep("reccap2_southern", t=2)
+    # sub-atlantic:
+    areas <- rep("reccap2_na_spss", t=2)
+    #areas <- rep("reccap2_na_stss", t=2)
+    #areas <- rep("reccap2_na_spss", t=2)
+    #areas <- rep("reccap2_na_stps", t=2)
+    #areas <- rep("reccap2_aequ", t=2)
+    #areas <- rep("reccap2_sa_stps", t=2)
+    #areas <- rep("reccap2_med", t=2)
+    # sub-pacific:
+    #areas <- rep("reccap2_np_spss", t=2)
+    #areas <- rep("reccap2_np_stss", t=2)
+    #areas <- rep("reccap2_np_stps", t=2)
+    #areas <- rep("reccap2_pequ_w", t=2)
+    #areas <- rep("reccap2_pequ_e", t=2)
+    #areas <- rep("reccap2_sp_stps", t=2)
 
 } else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl co2 flux echam vs recom
     models <- c("echam6", "fesom")
@@ -1333,6 +1348,42 @@ if (F) { # mhw composite data/seas*100
     modes <- rep("fldint", t=4)
     fromsf <- rep(1958, t=4)
     tosf <- rep(2019, t=4)
+
+} else if (T) { # awi-esm-1-1-lr_kh800 piControl and historical w/wout river flux adjustment rfa
+    models <- rep("echam6", t=4)
+    prefixes <- c("awi-esm-1-1-lr_kh800_piControl_rfa", "awi-esm-1-1-lr_kh800_piControl", 
+                  "awi-esm-1-1-lr_kh800_historical_rfa", "awi-esm-1-1-lr_kh800_historical")
+    names_short <- c("piControl_rfa", "piControl", "historical_rfa", "historical")
+    names_legend <- c("piControl + L20", "piControl", "historical + L20", "historical")
+    ltys <- c(2, 3, 1, 2)
+    cols <- c(1, 1, 2, 2)
+    varnames_in <- rep("co2_flx_ocean", t=4)
+    fromsf <- c(2686, 2686, 1850, 1850)
+    tosf <- c(3000, 3000, 2014, 2014)
+    new_origins <- c(1850, 1850, NA, NA) # 2686=1850
+    fromsp <- c(1980, 1980, 1980, 1980)
+    tosp <- c(2025, 2025, NA, NA)
+    modes <- rep("fldint", t=4)
+    #areas <- rep("reccap2_atlantic", t=4)
+    #areas <- rep("reccap2_pacific", t=4)
+    #areas <- rep("reccap2_indian", t=4)
+    #areas <- rep("reccap2_arctic", t=4)
+    #areas <- rep("reccap2_southern", t=4)
+    # sub-atlantic:
+    #areas <- rep("reccap2_na_spss", t=4)
+    #areas <- rep("reccap2_na_stss", t=4)
+    #areas <- rep("reccap2_na_spss", t=4)
+    #areas <- rep("reccap2_na_stps", t=4)
+    #areas <- rep("reccap2_aequ", t=4)
+    #areas <- rep("reccap2_sa_stps", t=4)
+    #areas <- rep("reccap2_med", t=4)
+    # sub-pacific:
+    #areas <- rep("reccap2_np_spss", t=4)
+    #areas <- rep("reccap2_np_stss", t=4)
+    #areas <- rep("reccap2_np_stps", t=4)
+    #areas <- rep("reccap2_pequ_w", t=4)
+    #areas <- rep("reccap2_pequ_e", t=)
+    #areas <- rep("reccap2_sp_stps", t=4)
 
 } else if (F) { # mpi-esm* vs awi* mlds semmler et al.
     workpath <- "/work/ab0246/a270073"
@@ -2226,7 +2277,7 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # 16 settings
-} else if (T) { # 15/16 reccap2 settings
+} else if (F) { # 15/16 reccap2 settings
     models <- c("CCSM-WHOI", # <0: uptake 
                 "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 
