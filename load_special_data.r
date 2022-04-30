@@ -1416,7 +1416,11 @@ if (F && any(file.exists(fs))) {
 
 if (T) { # post processed gregor_and_fay_2021 data
     message("\ndisable here if you do not want to load post processed gregor_and_fay_2021 data ...")
-    gregor_and_fay_2021_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", "reccap2_arctic", "reccap2_southern")
+    gregor_and_fay_2021_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", 
+                                   "reccap2_arctic", "reccap2_southern", "reccap2_na_spss", "reccap2_na_stss", 
+                                   "reccap2_na_stps", "reccap2_aequ", "reccap2_sa_stps", "reccap2_med", 
+                                   "reccap2_np_spss", "reccap2_np_stss", "reccap2_np_stps", "reccap2_pequ_w", 
+                                   "reccap2_pequ_e", "reccap2_sp_stps")
     gregor_and_fay_2021_varnames <- paste0("fgco2_ens_", c("mean", "median", "sd", "max", "min")) # !!! max-->min due to *-1
     gregor_and_fay_2021_labels <- c(paste0("GF21 mmm", plus_minus_symbol, "mmsd"), paste0("GF21 mmmed", plus_minus_symbol, "mmsd"), "GF21 mmsd", "GF21 mmmin", "G21 mmmax")
     gregor_and_fay_2021_col <- mycols(4)[4]
@@ -1476,7 +1480,11 @@ if (T) { # post processed gregor_and_fay_2021 data
 
 if (T) { # post processed chau_etal_2020 data
     message("\ndisable here if you do not want to load post processed chau_etal_2020 data ...")
-    chau_etal_2020_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", "reccap2_arctic", "reccap2_southern")
+    chau_etal_2020_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", 
+                              "reccap2_arctic", "reccap2_southern", "reccap2_na_spss", "reccap2_na_stss", 
+                              "reccap2_na_stps", "reccap2_aequ", "reccap2_sa_stps", "reccap2_med", 
+                              "reccap2_np_spss", "reccap2_np_stss", "reccap2_np_stps", "reccap2_pequ_w", 
+                              "reccap2_pequ_e", "reccap2_sp_stps")
     chau_etal_2020_varnames <- c("fgco2", "fgco2_uncertainty")
     chau_etal_2020_labels <- c(paste0("C20", plus_minus_symbol, "sd"), "C20 uncert")
     chau_etal_2020_col <- mycols(3)[3]
@@ -1535,9 +1543,12 @@ if (is.list(fs)) fs <- rep("", t=length(fs))
 if (T && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load reccap2 data ...")
     reccap2_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_min", "fgco2_an_max",
-                          "fgco2_ymonmean_mean", "fgco2_ymonmean_median", "fgco2_ymonmean_min", "fgco2_ymonmean_max")
-    reccap2_labels <- rep(c(paste0("GOBM mmm", plus_minus_symbol, "mmr"), paste0("GOBM mmmed", plus_minus_symbol, "mmr"), "GOBM mmmin", "GOBM mmmax"), t=2)
-    reccap2_cols <- rep(c("black", "black", col2rgba("black", 0.15), col2rgba("black", 0.15)), t=2)
+                          "fgco2_ymonmean_mean", "fgco2_ymonmean_median", "fgco2_ymonmean_min", "fgco2_ymonmean_max", 
+                          "fgco2_rfa_an_mean", "fgco2_rfa_an_median", "fgco2_rfa_an_min", "fgco2_rfa_an_max",
+                          "fgco2_rfa_ymonmean_mean", "fgco2_rfa_ymonmean_median", "fgco2_rfa_ymonmean_min", "fgco2_rfa_ymonmean_max")
+    reccap2_labels <- c(rep(c(paste0("GOBM mmm", plus_minus_symbol, "mmr"), paste0("GOBM mmmed", plus_minus_symbol, "mmr"), "GOBM mmmin", "GOBM mmmax"), t=2), 
+                        rep(c(paste0("GOBM mmm", plus_minus_symbol, "mmr + L20"), paste0("GOBM mmmed", plus_minus_symbol, "mmr + L20"), "GOBM mmmin + L20", "GOBM mmmax + L20"), t=2))
+    reccap2_cols <- rep(rep(c("black", "black", col2rgba("black", 0.15), col2rgba("black", 0.15)), t=2), t=2)
     reccap2 <- vector("list", l=length(fs))
     names(reccap2) <- names(fs)
     cnt <- 0
