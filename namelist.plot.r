@@ -1349,7 +1349,7 @@ if (F) { # mhw composite data/seas*100
     fromsf <- rep(1958, t=4)
     tosf <- rep(2019, t=4)
 
-} else if (T) { # awi-esm-1-1-lr_kh800 piControl and historical w/wout river flux adjustment rfa
+} else if (F) { # awi-esm-1-1-lr_kh800 piControl and historical w/wout river flux adjustment rfa
     models <- rep("echam6", t=4)
     prefixes <- c("awi-esm-1-1-lr_kh800_piControl_rfa", "awi-esm-1-1-lr_kh800_piControl", 
                   "awi-esm-1-1-lr_kh800_historical_rfa", "awi-esm-1-1-lr_kh800_historical")
@@ -2277,7 +2277,7 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # 16 settings
-} else if (F) { # 15/16 reccap2 settings
+} else if (T) { # 15/16 reccap2 settings
     models <- c("CCSM-WHOI", # <0: uptake 
                 "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 
@@ -2289,46 +2289,57 @@ if (F) { # mhw composite data/seas*100
                 1980, 1980, 1980, 1980, 1980)
     tosf <- c(2017, 2018, 2018, 2018, 2018, 2018, 2018, 2018, 2019, 2018, 
               2018, 2017, 2018, 2018, 2018)
-    if (T) { # add regional ROMS
+    if (F) { # add regional ROMS if possible; atlantic
+        models <- c(models, "ROMS-Atlantic-ETHZ")
         fromsf <- c(fromsf, 1980)
-        if (F) { # atlantic
-            models <- c(models, "ROMS-Atlantic-ETHZ")
-            tosf <- c(tosf, 2019)
-        } else if (T) { # pacific
-            models <- c(models, "ROMS-Pacific-ETHZ")
-            tosf <- c(tosf, 2019)
-        } else if (F) { # indian
-            models <- c(models, "ROMS-NYUAD")
-            tosf <- c(tosf, 2018)
-        } else if (F) { # southern
-            models <- c(models, "ROMS-SouthernOcean-ETHZ")
-            tosf <- c(tosf, 2018)
-        }
+        tosf <- c(tosf, 2019)
+    }
+    if (F) { # pacific
+        models <- c(models, "ROMS-Pacific-ETHZ")
+        fromsf <- c(fromsf, 1980)
+        tosf <- c(tosf, 2019)
+    }
+    if (F) { # indian
+        models <- c(models, "ROMS-NYUAD")
+        fromsf <- c(fromsf, 1980)
+        tosf <- c(tosf, 2018)
+    }
+    if (T) { # southern
+        models <- c(models, "ROMS-SouthernOcean-ETHZ")
+        fromsf <- c(fromsf, 1980)
+        tosf <- c(tosf, 2018)
     }
     names_legend <- models
     names_short <- names_legend
     prefixes <- rep("reccap2_A", t=length(models))
     varnames_in <- rep("fgco2", t=length(models))
     modes <- rep("fldint", t=length(models))
+    # reccap2 basins:
     #areas <- rep("reccap2_atlantic", t=length(models))
     #areas <- rep("reccap2_pacific", t=length(models))
     #areas <- rep("reccap2_indian", t=length(models))
     #areas <- rep("reccap2_arctic", t=length(models))
     #areas <- rep("reccap2_southern", t=length(models))
-    # sub-atlantic:
+    # reccap2 atlantic biomes:
     #areas <- rep("reccap2_na_spss", t=length(models))
     #areas <- rep("reccap2_na_stss", t=length(models))
     #areas <- rep("reccap2_na_stps", t=length(models))
     #areas <- rep("reccap2_aequ", t=length(models))
     #areas <- rep("reccap2_sa_stps", t=length(models))
     #areas <- rep("reccap2_med", t=length(models))
-    # sub-pacific:
+    # reccap2 pacific biomes:
     #areas <- rep("reccap2_np_spss", t=length(models))
     #areas <- rep("reccap2_np_stss", t=length(models))
     #areas <- rep("reccap2_np_stps", t=length(models))
     #areas <- rep("reccap2_pequ_w", t=length(models))
     #areas <- rep("reccap2_pequ_e", t=length(models))
-    areas <- rep("reccap2_sp_stps", t=length(models))
+    #areas <- rep("reccap2_sp_stps", t=length(models))
+    # gregor_etal_2019 basins:
+    #areas <- rep("gregor_etal_2019_nh-hl", t=length(models))
+    #areas <- rep("gregor_etal_2019_nh-st", t=length(models))
+    #areas <- rep("gregor_etal_2019_equ", t=length(models))
+    #areas <- rep("gregor_etal_2019_sh-st", t=length(models))
+    areas <- rep("gregor_etal_2019_sh-hl", t=length(models))
     plotpath <- "/work/ollie/cdanek/plots/reccap2"
     if (!exists("areas")) {
         plotprefix <- paste0(prefixes[1], "_global")

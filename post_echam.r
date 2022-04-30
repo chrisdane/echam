@@ -2,8 +2,10 @@
 
 # post processing of model output
 # 1: namelist.general.post.r
-# 2: namelist.post.r (user namelist)
-# 3: this script
+# 2: helper_functions.r
+# 3: myfunctions.r
+# 4: namelist.post.r
+# 5: post_echam.r
 
 # host check
 if (T && host$machine_tag == "mistral") {
