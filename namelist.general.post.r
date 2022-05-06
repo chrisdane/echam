@@ -41,7 +41,7 @@ clean <- T # remove temporary files
 cdo_silent <- "" # "-s" for silent or ""
 cdo_select_no_history <- "" # "--no_history" or ""
 cdo_convert_grb2nc <- T # should post processing result be converted to nc (will be set to T if new dates are wanted)?
-cdo_OpenMP_threads <- "-P 4" # "-P n" or "" (will be irgnored on commands that do not support OMP)
+cdo_OpenMP_threads <- paste0("-P ", system("nproc", intern=T)) # "-P n" or "" (will be irgnored on commands that do not support OMP)
 cdo_set_rel_time <- T # conversion from absolute to relative time
 cdo_run_from_script <- T # create temporary file and run long cdo command from there
 # maximum number of args cdo

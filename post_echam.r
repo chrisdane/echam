@@ -376,9 +376,11 @@ if (any(models == "mpiom1")) {
 }
 
 # special filename patterns
-special_patterns <- c("<YYYY>", "<YYYY_from>", "<YYYY_to>", 
-                      "<MM>", "<MM_from>", "<MM_to>",
-                      "<DD>", "<DD_from>", "<DD_to>")
+special_patterns <- c("<year>", "<year_from>", "<year_to>", 
+                      "<mon>", "<mon_from>", "<mon_to>",
+                      "<day>", "<day_from>", "<day_to>",
+                      "<hour>", "<hour_from>", "<hour_to>",
+                      "<min>", "<min_from>", "<min_to>")
 
 message("\nnameslist.post.r checks finished. start running post_echam.r for ", nsettings, 
         " model setup", ifelse(nsettings > 1, "s", ""), " ...")
@@ -477,15 +479,19 @@ for (i in seq_len(nsettings)) {
                 pattern <- substr(datapaths[i], pattern_inds_open[pati], pattern_inds_closed[pati]) # pattern to replace with leading "<" and trailing ">"
                 sub_list[[pati]]$pattern <- pattern
                 sub_list[[pati]]$pattern_inds <- c(pattern_inds_open[pati], pattern_inds_closed[pati])
-                # special patterns: replace <YYYY*>, <MM*>, etc. with "*"
+                # special patterns: replace <year*>, <mon*>, etc. with "*"
                 if (pattern %in% special_patterns) {
                     message("   replace special pattern \"", pattern, "\" by \"?\"")
                     sub_list[[pati]]$replacement <- "?"
-                    if (any(pattern == c("<YYYY>", "<YYYY_from>", "<YYYY_to>"))) {
+                    if (any(pattern == c("<year>", "<year_from>", "<year_to>"))) {
                         sub_list[[pati]]$replacement_times <- 4
-                    } else if (any(pattern == c("<MM>", "<MM_from>", "<MM_to>"))) {
+                    } else if (any(pattern == c("<mon>", "<mon_from>", "<mon_to>"))) {
                         sub_list[[pati]]$replacement_times <- 2
-                    } else if (any(pattern == c("<DD>", "<DD_from>", "<DD_to>"))) {
+                    } else if (any(pattern == c("<day>", "<day_from>", "<day_to>"))) {
+                        sub_list[[pati]]$replacement_times <- 2
+                    } else if (any(pattern == c("<hour>", "<hour_from>", "<hour_to>"))) {
+                        sub_list[[pati]]$replacement_times <- 2
+                    } else if (any(pattern == c("<min>", "<min_from>", "<min_to>"))) {
                         sub_list[[pati]]$replacement_times <- 2
                     } else {
                         stop("not pattern \"", pattern, "\" not defined yet")
@@ -548,15 +554,19 @@ for (i in seq_len(nsettings)) {
                 pattern <- substr(fpatterns[i], pattern_inds_open[pati], pattern_inds_closed[pati]) # pattern to replace with leading "<" and trailing ">"
                 sub_list[[pati]]$pattern <- pattern
                 sub_list[[pati]]$pattern_inds <- c(pattern_inds_open[pati], pattern_inds_closed[pati])
-                # special patterns: replace <YYYY*>, <MM*>, etc. with "*"
+                # special patterns: replace <year*>, <mon*>, etc. with "*"
                 if (pattern %in% special_patterns) {
                     message("   replace special pattern \"", pattern, "\" by \"?\"")
                     sub_list[[pati]]$replacement <- "?"
-                    if (any(pattern == c("<YYYY>", "<YYYY_from>", "<YYYY_to>"))) {
+                    if (any(pattern == c("<year>", "<year_from>", "<year_to>"))) {
                         sub_list[[pati]]$replacement_times <- 4
-                    } else if (any(pattern == c("<MM>", "<MM_from>", "<MM_to>"))) {
+                    } else if (any(pattern == c("<mon>", "<mon_from>", "<mon_to>"))) {
                         sub_list[[pati]]$replacement_times <- 2
-                    } else if (any(pattern == c("<DD>", "<DD_from>", "<DD_to>"))) {
+                    } else if (any(pattern == c("<day>", "<day_from>", "<day_to>"))) {
+                        sub_list[[pati]]$replacement_times <- 2
+                    } else if (any(pattern == c("<hour>", "<hour_from>", "<hour_to>"))) {
+                        sub_list[[pati]]$replacement_times <- 2
+                    } else if (any(pattern == c("<min>", "<min_from>", "<min_to>"))) {
                         sub_list[[pati]]$replacement_times <- 2
                     } else {
                         stop("not pattern \"", pattern, "\" not defined yet")
@@ -621,7 +631,10 @@ for (i in seq_len(nsettings)) {
         ticcmd <- Sys.time()
         files <- system(cmd, intern=T)
         toccmd <- Sys.time()
-        if (length(files) == 0) stop("Zero files found. Is the `find`-command above correct?")
+        if (length(files) == 0) {
+            warning("found zero files for setting ", i, " with cmd\n`", cmd, "`\n--> skip to next setting ...")
+            next # setting i
+        }
         elapsedcmd <- toccmd - ticcmd
         message("`find` of ", length(files), " files took ", elapsedcmd, " ", attributes(elapsedcmd)$units) 
 
@@ -630,6 +643,11 @@ for (i in seq_len(nsettings)) {
                 message("\nspecial: remove Hol-T_echam5_wiso_link_555006 from steffens links ...")
                 files <- files[-which(files == "Hol-T_echam5_wiso_link_555006")]
             }
+        }
+        
+        if (any(files == "fgco2_Omon_CanESM5_piControl_r1i1p1f1_gn_591001-591012.nc")) {
+            message("\nspecial: remove fgco2_Omon_CanESM5_piControl_r1i1p1f1_gn_591001-591012.nc")
+            files <- files[-which(files == "fgco2_Omon_CanESM5_piControl_r1i1p1f1_gn_591001-591012.nc")]
         }
 
         # separate into dirname and basename
@@ -640,17 +658,22 @@ for (i in seq_len(nsettings)) {
             message("\nfound ", length(files), " file", 
                     ifelse(length(files) > 1, "s", ""), ":")
             if (length(files) > 1) {
-                ht(df, n=30)
+                ht(t(df), n=30)
             } else {
                 print(df)
             }
         }
         
-        # identify years/months/etc. of found files based on <YYYY*>, <MM*>, etc. 
+        # identify years/months/etc. of found files based on <year*>, <mon*>, etc. 
         # patterns if given or, alternatively, based on `cdo showdate`
+        years_filenames <- years_filenames_from <- years_filenames_to <-
+            months_filenames <- months_filenames_from <- months_filenames_to <-
+                days_filenames <- days_filenames <- days_filenames <- 
+                    hours_filenames <- hours_filenames <- hours_filenames <- 
+                        mins_filenames <- mins_filenames <- mins_filenames <- NULL # declare
         if (any(special_patterns %in% sapply(sub_list, "[[", "pattern"))) {
-            message("\nfind years/months/etc. based on `special_patterns`=\n",
-                    paste(paste0("   \"", special_patterns), collapse="\"\n"), "\"\n",
+            message("\nfind years/months/etc. based on `special_patterns`=\n   \"",
+                    paste(special_patterns, collapse="\", \""), "\"\n",
                     "of found files ...")
             
             special_patterns_in_filenames <- special_patterns[which(special_patterns %in% sapply(sub_list, "[[", "pattern"))]
@@ -662,21 +685,39 @@ for (i in seq_len(nsettings)) {
                                                    sub_list[[pattern_inds[patj]]]$replacement_inds[1],
                                                    sub_list[[pattern_inds[patj]]]$replacement_inds[2])
                 }
-                # check if all found values for <YYYY*>, <MM*>, etc. patterns are identical
+                # check if all found values for <year*>, <mon*>, etc. patterns are identical
                 if (identical_list(pattern_list)) {
                     df[sub(">", "", sub("<", "", special_patterns_in_filenames[pati]))] <- pattern_list[[1]]
-                    if (special_patterns_in_filenames[pati] == "<YYYY>") {
-                        years_filenames <- as.integer(df$YYYY)
-                    } else if (special_patterns_in_filenames[pati] == "<YYYY_from>") {
-                        years_filenames_from <- as.integer(df$YYYY_from)
-                    } else if (special_patterns_in_filenames[pati] == "<YYYY_to>") {
-                        years_filenames_to <- as.integer(df$YYYY_to)
-                    } else if (special_patterns_in_filenames[pati] == "<MM>") {
-                        months_filenames <- as.integer(df$MM)
-                    } else if (special_patterns_in_filenames[pati] == "<MM_from>") {
-                        months_filenames_from <- as.integer(df$MM_from)
-                    } else if (special_patterns_in_filenames[pati] == "<MM_to>") {
-                        months_filenames_to <- as.integer(df$MM_to)
+                    if (special_patterns_in_filenames[pati] == "<year>") {
+                        years_filenames <- as.integer(df$year)
+                    } else if (special_patterns_in_filenames[pati] == "<year_from>") {
+                        years_filenames_from <- as.integer(df$year_from)
+                    } else if (special_patterns_in_filenames[pati] == "<year_to>") {
+                        years_filenames_to <- as.integer(df$year_to)
+                    } else if (special_patterns_in_filenames[pati] == "<mon>") {
+                        months_filenames <- as.integer(df$mon)
+                    } else if (special_patterns_in_filenames[pati] == "<mon_from>") {
+                        months_filenames_from <- as.integer(df$mon_from)
+                    } else if (special_patterns_in_filenames[pati] == "<mon_to>") {
+                        months_filenames_to <- as.integer(df$mon_to)
+                    } else if (special_patterns_in_filenames[pati] == "<day>") {
+                        days_filenames <- as.integer(df$day)
+                    } else if (special_patterns_in_filenames[pati] == "<day_from>") {
+                        days_filenames_from <- as.integer(df$day_from)
+                    } else if (special_patterns_in_filenames[pati] == "<day_to>") {
+                        days_filenames_to <- as.integer(df$day_to)
+                    } else if (special_patterns_in_filenames[pati] == "<hour>") {
+                        hours_filenames <- as.integer(df$hour)
+                    } else if (special_patterns_in_filenames[pati] == "<hour_from>") {
+                        hours_filenames_from <- as.integer(df$hour_from)
+                    } else if (special_patterns_in_filenames[pati] == "<hour_to>") {
+                        hours_filenames_to <- as.integer(df$hour_to)
+                    } else if (special_patterns_in_filenames[pati] == "<min>") {
+                        mins_filenames <- as.integer(df$min)
+                    } else if (special_patterns_in_filenames[pati] == "<min_from>") {
+                        mins_filenames_from <- as.integer(df$min_from)
+                    } else if (special_patterns_in_filenames[pati] == "<min_to>") {
+                        mins_filenames_to <- as.integer(df$min_to)
                     }
                 } else {
                     message("pattern \"", special_patterns_in_filenames[pati], "\" occurs ", length(pattern_list), 
@@ -687,14 +728,15 @@ for (i in seq_len(nsettings)) {
                 }
             } # for pati all special patterns in fnames
 
-        } else { # no <YYYY*>, <MM*>, etc. special patterns given by user
+        } else { # no <year*>, <mon*>, etc. special patterns given by user
 
             if (length(files) == 1) { # assume that user wants to use one specific file
                 years_filenames <- froms[i]:tos[i]
 
             } else {
-                message("\nno <YYYY*> or <MM*> patterns provided --> find years/months/etc. of based on `cdo showdate` of found files ...")
-                years_filenames <- months_filenames <- vector("list", l=length(files))
+                message("\nno <year*> or <mon*> patterns provided --> find years/months/etc. of based on `cdo showdate` of found files ...")
+                stop("update for showdatetime and add hours and mins")
+                years_filenames <- months_filenames <- days_filenames <- vector("list", l=length(files))
                 for (fi in seq_along(files)) {
                     cmd <- paste0(cdo, " showdate ", datapath, "/", files[fi])
                     message("\nfile ", fi, "/", length(files), ": run `", cmd, "`")
@@ -707,38 +749,40 @@ for (i in seq_len(nsettings)) {
                     }
                     years_filenames[[fi]] <- substr(dates, 1, 4) # e.g. "2731"
                     months_filenames[[fi]] <- substr(dates, 6, 7) # e.g. "02"
+                    days_filenames[[fi]] <- substr(dates, 9, 10) # e.g. "01"
                 }
                 years_filenames <- as.integer(unlist(years_filenames))
                 years_filenames_unique <- unique(years_filenames)
                 if (length(years_filenames) == length(files)) { # case1: one timepoint per file
-                    df$YYYY <- years_filenames
-                    df$MM <- months_filenames
+                    df$year <- years_filenames
+                    df$mon <- months_filenames
+                    df$day <- days_filenames
                 } else if (length(years_filenames) != length(files)) { # case2: more than one timepoint per file
                     if (length(years_filenames_unique) == length(files)) { # case 2.1: same number of unique years as files
-                        df$YYYY <- years_filenames_unique
+                        df$year <- years_filenames_unique
                     } else {
                         stop("not defined; maybe old fesom1 output with wrong nc dates?")
                     }
                 }
             } # if length(files) == 1 or not
 
-        } # if <YYYY*> or <MM*> patterns are given by user or not
+        } # if <year*> or <mon*> patterns are given by user or not
        
         # show years, months, etc. of found files
         if (verbose > 0) {
             message("\nfound years/months/etc. based on ", length(files), " file", 
                     ifelse(length(files) > 1, "s", ""), ":")
             if (length(files) > 1) {
-                ht(df)
+                ht(t(df))
             } else {
                 print(df)
             }
         }
             
-        # special treatment: if only YYYY_from and YYYY_to were provided, but not YYYY, derive `years_filenames` now
-        if (!exists("years_filenames")) {
-            if (exists("years_filenames_from") && exists("years_filenames_to")) {
-                message("\nderive input years based on \"<YYYY_from>\" and \"<YYYY_to>\" in a consecutive order ...") 
+        # if only year_from and year_to were provided, but not year, derive `years_filenames` now
+        if (is.null(years_filenames)) {
+            if (!is.null(years_filenames_from) && !is.null(years_filenames_to)) {
+                message("\nderive input years based on \"<year_from>\" and \"<year_to>\" in a consecutive order ...") 
                 years_filenames <- as.vector(mapply(function(x,y) x:y, years_filenames_from, years_filenames_to))
                 years_filenames <- unlist(years_filenames) # is list if not all x[i]:y[i] sequences from the line above are of same length
                 if (any(diff(years_filenames) < 0)) {
@@ -768,7 +812,7 @@ for (i in seq_len(nsettings)) {
 
         # check if some wanted years are out of found years, which were found based on the file names
         #if (any(years_wanted %in% years_filenames == F)) {
-        message("\ngiven `froms[", i, "]` = ", froms[i], " and `tos[", i, "]` = ", tos[i])
+        message("\ngiven `froms[", i, "]` = \"", froms[i], "\" and `tos[", i, "]` = \"", tos[i], "\"")
         if (as.integer(froms[i]) < min(years_filenames) || 
             as.integer(tos[i]) > max(years_filenames)) { # some wanted years out of years_filenames
             if (fvarnames[i] %in% names(cdo_known_cmds)) {
@@ -784,12 +828,12 @@ for (i in seq_len(nsettings)) {
             #to_ind <- to_ind[length(to_ind)]
             from_ind <- which(years_filenames == as.integer(froms[i]))[1]
             if (is.na(from_ind)) {
-                stop("wanted start year `froms[", i, "]` = ", froms[i], " not available in `years_filenames`")
+                stop("wanted start year `froms[", i, "]` = \"", froms[i], "\" not available in `years_filenames`")
             }
             to_ind <- which(years_filenames == as.integer(tos[i]))
             to_ind <- to_ind[length(to_ind)]
             if (is.na(to_ind)) {
-                stop("wanted end year `tos[", i, "]` = ", tos[i], " not available in `years_filenames`")
+                stop("wanted end year `tos[", i, "]` = \"", tos[i], "\" not available in `years_filenames`")
             }
             years_wanted <- years_filenames[from_ind:to_ind]
             message("--> found filename years from inds ", from_ind, " to ", to_ind, 
@@ -809,17 +853,17 @@ for (i in seq_len(nsettings)) {
                         "      --> assume that data of one year max is saved in one file\n",
                         "      --> remove ", length(outside_years_inds), " file",
                         ifelse(length(outside_years_inds) > 1, "s", ""),
-                        " outside of wanted years defined by froms[", i, "] = ", 
-                        froms[i], " to tos[", i, "] = ", tos[i], " ...")
+                        " outside of wanted years defined by `froms[", i, "]` = \"", 
+                        froms[i], "\" to `tos[", i, "]` = \"", tos[i], "\" ...")
                 files <- files[-outside_years_inds]
                 df <- df[-outside_years_inds,]
                 years_filenames <- years_filenames[-outside_years_inds]
-                if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[-outside_years_inds]
+                if (grepl("<mon>", fpatterns[i])) months_filenames <- months_filenames[-outside_years_inds]
                 if (verbose > 0) {
                     message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
                             " remaining:")
                     if (length(files) > 1) {
-                        ht(df)
+                        ht(t(df))
                     } else {
                         print(df)
                     }
@@ -835,8 +879,8 @@ for (i in seq_len(nsettings)) {
                             "      --> assume that data of more than one year is saved in one file\n",
                             "      --> remove ", length(outside_years_inds), " timestep",
                             ifelse(length(outside_years_inds) > 1, "s", ""),
-                            " outside of wanted years defined by froms[", i, "] = ", 
-                            froms[i], " to tos[", i, "] = ", tos[i], " ...")
+                            " outside of wanted years defined by `froms[", i, "]` = \"", 
+                            froms[i], "\" to `tos[", i, "]` = \"", tos[i], "\" ...")
                 } else {
                     # case b2) more than one input files with multiple years
                     message("   case b2) length(files) = ", length(files), " != length(years_filenames) = ", 
@@ -844,14 +888,14 @@ for (i in seq_len(nsettings)) {
                             "      --> assume that data of more than one year is saved in more than one file\n",
                             "      --> remove ", length(outside_years_inds), " timestep",
                             ifelse(length(outside_years_inds) > 1, "s", ""),
-                            " outside of wanted years defined by froms[", i, "] = ", 
-                            froms[i], " to tos[", i, "] = ", tos[i], " ...")
-                    if (!any(names(df) == "YYYY_from") || !any(names(df) == "YYYY_to")) {
+                            " outside of wanted years defined by `froms[", i, "]` = \"", 
+                            froms[i], "\" `tos[", i, "]` = \"", tos[i], "\" ...")
+                    if (!any(names(df) == "year_from") || !any(names(df) == "year_to")) {
                         stop("this should not happen")
                     }
                     inds <- rep(F, t=length(files))
                     for (fi in seq_along(files)) {
-                        years_to_check <- df$YYYY_from[fi]:df$YYYY_to[fi]
+                        years_to_check <- df$year_from[fi]:df$year_to[fi]
                         if (any(years_to_check %in% years_wanted)) {
                             inds[fi] <- T
                         }
@@ -863,14 +907,14 @@ for (i in seq_len(nsettings)) {
                         message("      --> ", length(files), " file", ifelse(length(files) > 1, "s", ""), 
                                 " remaining:")
                         if (length(files) > 1) {
-                            ht(df)
+                            ht(t(df))
                         } else {
                             print(df)
                         }
                     } 
                     if (length(files) == 0) stop("zero files")
                 } # case b1 or case b2
-                cdoselyear <- paste0("-selyear,", froms[i], "/", tos[i]) # for case b1 and b2
+                cdoselyear <- paste0("-selyear,", as.integer(froms[i]), "/", as.integer(tos[i])) # for case b1 and b2
                 message("      --> `cdoselyear` = \"", cdoselyear, "\"")
             
             } # if (length(files) == length(years_filenames)) or not
@@ -882,23 +926,23 @@ for (i in seq_len(nsettings)) {
         if (season_names[i] != "Jan-Dec" && season_names[i] != "annual") {
             message("\n", "season_inds = ", paste(season_inds[[i]], collapse=","), 
                     " -> season = ", season_names[i])
-            if (grepl("<MM>", fpatterns[i])) { # <MM> given per file
+            if (grepl("<mon>", fpatterns[i])) { # <mon> given per file
                 file_season_inds <- which(months_filenames %in% season_inds[[i]])
                 if (length(file_season_inds) == 0) { # no files in wanted season 
                     stop("no files found at season_inds = ", paste(season_inds[[i]], collapse=","), 
-                         " based on given <MM> pattern.")
+                         " based on given <mon> pattern.")
                 }
                 message("keep ", length(file_season_inds), " files out of these months. files:")
                 files <- files[file_season_inds]
                 df <- df[file_season_inds,]
                 years_filenames <- years_filenames[-outside_years_inds]
                 months_filenames <- months_filenames[-outside_years_inds]
-                if (verbose > 0) ht(df)
+                if (verbose > 0) ht(t(df))
 
-            #} else if (grepl("<MM_from>", fpatterns[i])) {
+            #} else if (grepl("<mon_from>", fpatterns[i])) {
             #    # this does not help?
 
-            } else { # no "<MM>" string in `fpatterns[i]`
+            } else { # no "<mon>" string in `fpatterns[i]`
                 cmd <- paste0("cdo ", cdo_silent, " showmon ", datapath, "/", files[1])
                 message("run `", cmd, "`")
                 months_per_file <- system(cmd, intern=T)
@@ -917,7 +961,7 @@ for (i in seq_len(nsettings)) {
                 cdoselmon <- paste0("-selmon,", paste(season_inds[[i]], collapse=",")) 
                 message("--> defined `cdoselmon = \"", cdoselmon, "\"")
 
-            } # if <MM> is given in fpatterns or not
+            } # if <mon> is given in fpatterns or not
         } # if season_name != "Jan_Dec"
 
         # sort found years and months (which were found based on the file names)
@@ -947,13 +991,13 @@ for (i in seq_len(nsettings)) {
             files <- files[years_filenames_ordered_inds]
             df <- df[years_filenames_ordered_inds,]
             years_filenames <- years_filenames[years_filenames_ordered_inds]
-            if (grepl("<MM>", fpatterns[i])) months_filenames <- months_filenames[years_filenames_ordered_inds]
-            if (verbose > 0) ht(df) 
+            if (grepl("<mon>", fpatterns[i])) months_filenames <- months_filenames[years_filenames_ordered_inds]
+            if (verbose > 0) ht(t(df)) 
         } # if years_filenames are not monotonically increasing/decreasing
 
         # sort months
         if (F) { # not correct yet; however, not needed because of `find ... | sort`
-            if (grepl("<MM>", fpatterns[i])) {
+            if (grepl("<mon>", fpatterns[i])) {
                 #if (months_filenames) { # <-- correct condition missing
                     message("\n", "months obtained from file names are not monotonically increasing\n",
                             " --> sort from 1 to 12 ...")
@@ -973,9 +1017,9 @@ for (i in seq_len(nsettings)) {
                     df <- df[months_filenames_ordered_inds,]
                     years_filenames <- years_filenames[months_filenames_ordered_inds]
                     months_filenames <- months_filenames[months_filenames_ordered_inds]
-                    if (verbose > 0) ht(df)
+                    if (verbose > 0) ht(t(df))
                 #} # if months_filenames are not monotonically increasing/decreasing
-            } # if <MM> is given in fpatterns or not
+            } # if <mon> is given in fpatterns or not
         } # F
 
         # todo: if links, check for broken links
@@ -1007,7 +1051,7 @@ for (i in seq_len(nsettings)) {
 
         # construct cdo command (chained cdo commands will be executed from right to left)
         # prefix
-        cdoprefix <- paste0(cdo, " ", cdo_silent)
+        cdoprefix <- paste0(cdo, " ", cdo_OpenMP_threads, " ", cdo_silent)
 
         # convert to nc if grb
         cdoconvert <- "" # default: no conversion
@@ -1309,7 +1353,7 @@ for (i in seq_len(nsettings)) {
                         "\" --> `cdocalc` = \"", cdocalc, "\" ...")
                 
                 if (all(cdo_before_calcs[[i]] == "")) {
-                    message("\n`cdo_before_calcs[[", i, "]]` not given --> do not run some command before `cdo ", 
+                    message("`cdo_before_calcs[[", i, "]]` not given --> do not run some command before `cdo ", 
                             cdocalc, "` ...")
                 } else {
                     message("\n`cdo_before_calcs[[", i, "]]` = ", 
@@ -1320,7 +1364,7 @@ for (i in seq_len(nsettings)) {
                 }
                 
                 if (all(cdo_after_calcs[[i]] == "")) {
-                    message("\n`cdo_after_calcs[", i, "]` not given --> do not run some command after `cdo ", 
+                    message("`cdo_after_calcs[[", i, "]]` not given --> do not run some command after `cdo ", 
                             cdocalc, "` ...")
                 } else {
                     message("\n`cdo_after_calcs[[", i, "]]` = ", 
@@ -1393,7 +1437,7 @@ for (i in seq_len(nsettings)) {
                     cdoshifttime <- paste0("-shifttime,", cdoshifttimes[i])
                     message("--> `cdoshifttime` = \"", cdoshifttime, "\"")
                 } else {
-                    message("\n`cdoshifttimes[", i, "]` not provided. set to e.g. \"-1mo\" or \"-1dt\", if wanted")
+                    message("`cdoshifttimes[", i, "]` not given --> set to e.g. \"-1mo\" or \"-1dt\", if wanted")
                 } # if cdoshifttime is provided
 
                 # add further cdo chain commands here
@@ -1538,7 +1582,7 @@ for (i in seq_len(nsettings)) {
                         
                         # if monthly files, do not separate files from within a year
                         # --> necessary that e.g. `cdo yearsum` sums all files of a year 
-                        if (grepl("<MM>", fpatterns[i])) {
+                        if (grepl("<mon>", fpatterns[i])) {
                             if (years_filenames[nfiles_per_chunk+1] != years_filenames[nfiles_per_chunk] + 1) {
                                 one_year_earlier_inds <- which(years_filenames == years_filenames[nfiles_per_chunk] - 1)
                                 if (length(one_year_earlier_inds) == 0) {
@@ -1979,7 +2023,7 @@ for (i in seq_len(nsettings)) {
 
                                     # special case
                                     if (datapath == "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" &&
-                                        fpatterns[i] == "fort.75_fort_<YYYY>0101_<YYYY>1231.nc") { # daily moc data
+                                        fpatterns[i] == "fort.75_fort_<year>0101_<year>1231.nc") { # daily moc data
                                         message("\nfix special case manually:\n",
                                                 "6 years occur twice in annual fort.75* files of Hol-T2 ",
                                                 "(`cdo showdate` reports them 730/732 times): 8817,8824,8947,8969,9002,9004")
@@ -2011,7 +2055,7 @@ for (i in seq_len(nsettings)) {
                                         #years_in_chunki <- unique(dates_in_list[[chunki]]$years)
 
                                     } else if (datapath == "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" &&
-                                               fpatterns[i] == "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc") { # monthly moc data
+                                               fpatterns[i] == "fort.75_fort_<year>0101_<year>1231_monmean.nc") { # monthly moc data
                                         message("\nfix special case manually:\n",
                                                 "6 years occur twice in annual fort.75* files of Hol-T2 ",
                                                 "(`cdo showdate` reports them 730/732 times): 8817,8824,8947,8969,9002,9004")
@@ -2721,13 +2765,12 @@ for (i in seq_len(nsettings)) {
                 xsize <- which(base::startsWith(griddes, "xsize"))
                 xsize <- gsub(" ", "", griddes[xsize]) # e.g. "xsize=192"
                 xsize <- as.integer(strsplit(xsize, "=")[[1]][2]) # e.g. 192
-                message("--> xsize= \"", xsize, "\"")
                 ysize <- which(base::startsWith(griddes, "ysize"))
                 ysize <- gsub(" ", "", griddes[ysize]) # e.g. "ysize=96"
                 ysize <- as.integer(strsplit(ysize, "=")[[1]][2]) # e.g. 96
-                message("--> ysize= \"", ysize, "\"")
+                message("--> xsize = ", xsize, ", ysize = ", ysize, "")
                 if (xsize == 1 && ysize == 1) {
-                    message("xsize and ysize = 1 --> skip fldint calculation")
+                    message("--> xsize and ysize = 1 --> skip fldint calculation")
                     check <- F
                 }
                 if (check) {
@@ -2752,13 +2795,20 @@ for (i in seq_len(nsettings)) {
                     xsize <- which(base::startsWith(griddes, "xsize"))
                     xsize <- gsub(" ", "", griddes[xsize]) # e.g. "xsize=192"
                     xsize <- as.integer(strsplit(xsize, "=")[[1]][2]) # e.g. 192
-                    message("--> xsize= \"", xsize, "\"")
                     ysize <- which(base::startsWith(griddes, "ysize"))
                     ysize <- gsub(" ", "", griddes[ysize]) # e.g. "ysize=96"
                     ysize <- as.integer(strsplit(ysize, "=")[[1]][2]) # e.g. 96
-                    message("--> ysize= \"", ysize, "\"")
-                    if (xsize != 1 || ysize != 1) {
-                        stop("xsize and/or ysize != 1 --> fldint error")
+                    message("--> xsize = ", xsize, " ... ", appendLF=F)
+                    if (xsize != 1) {
+                        message(); stop("xsize != 1 --> fldint error")
+                    } else {
+                        message("ok")
+                    }
+                    message("--> ysize = ", ysize, " ... ", appendLF=F)
+                    if (ysize != 1) {
+                        message(); stop("ysize != 1 --> fldint error")
+                    } else {
+                        message("ok")
                     }
                     if (clean) invisible(file.remove(area_file))
                 } # if check

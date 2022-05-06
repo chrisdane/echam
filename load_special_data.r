@@ -1414,7 +1414,7 @@ if (F && any(file.exists(fs))) {
 } # if post processed holte et al. 2017 data
 
 
-if (T) { # post processed gregor_and_fay_2021 data
+if (F) { # post processed gregor_and_fay_2021 data
     message("\ndisable here if you do not want to load post processed gregor_and_fay_2021 data ...")
     gregor_and_fay_2021_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", 
                                    "reccap2_arctic", "reccap2_southern", "reccap2_na_spss", "reccap2_na_stss", 
@@ -1478,7 +1478,7 @@ if (T) { # post processed gregor_and_fay_2021 data
 } # if post processed gregor_and_fay_2021 data
 
 
-if (T) { # post processed chau_etal_2020 data
+if (F) { # post processed chau_etal_2020 data
     message("\ndisable here if you do not want to load post processed chau_etal_2020 data ...")
     chau_etal_2020_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", 
                               "reccap2_arctic", "reccap2_southern", "reccap2_na_spss", "reccap2_na_stss", 
@@ -1533,14 +1533,75 @@ if (T) { # post processed chau_etal_2020 data
 } # if post processed chau_etal_2020 data
 
 
+# cmip6 data
+cmip6_areas <- c("global", "cmip6_atlantic", "cmip6_pacific", "cmip6_indian", "cmip6_arctic", "cmip6_southern",
+                 "cmip6_na_spss", "cmip6_na_stss", "cmip6_na_stps", "cmip6_aequ", "cmip6_sa_stps", "cmip6_med",
+                 "cmip6_np_spss", "cmip6_np_stss", "cmip6_np_stps", "cmip6_pequ_w", "cmip6_pequ_e", "cmip6_sp_stps")
+fs <- sapply(cmip6_areas, function(x) 
+             list.files(path=paste0(host$workpath, "/post/cmip6"), pattern=glob2rx(paste0("cmip6*", x, "*.nc")), full.names=T))
+fs <- unlist(fs)
+if (T && any(file.exists(fs))) {
+    message("\ndisable here if you do not want to load cmip6 data ...")
+    cmip6_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_sd", "fgco2_an_min", "fgco2_an_max",
+                        "fgco2_ymonmean_mean", "fgco2_ymonmean_median", "fgco2_ymonmean_sd", "fgco2_ymonmean_min", "fgco2_ymonmean_max", 
+                        "fgco2_rfa_an_mean", "fgco2_rfa_an_median", "fgco2_rfa_an_sd", "fgco2_rfa_an_min", "fgco2_rfa_an_max",
+                        "fgco2_rfa_ymonmean_mean", "fgco2_rfa_ymonmean_median", "fgco2_rfa_ymonmean_sd", "fgco2_rfa_ymonmean_min", "fgco2_rfa_ymonmean_max")
+    cmip6_labels <- c(rep(c(paste0("CMIP6 mmm", plus_minus_symbol, "mmr"), paste0("CMIP6 mmmed", plus_minus_symbol, "mmr"), "CMIP6 sd", "CMIP6 mmmin", "CMIP6 mmmax"), t=2), 
+                      rep(c(paste0("CMIP6 mmm", plus_minus_symbol, "mmr + L20"), paste0("CMIP6 mmmed", plus_minus_symbol, "mmr + L20"), "CMIP6 sd + L20", "CMIP6 mmmin + L20", "CMIP6 mmmax + L20"), t=2))
+    cmip6_cols <- rep(rep(c("black", "black", rep(col2rgba("black", 0.15), t=3)), t=2), t=2)
+    cmip6 <- vector("list", l=length(fs))
+    names(cmip6) <- names(fs)
+    cnt <- 0
+    for (fi in seq_along(fs)) {
+        f <- fs[fi]
+        if (file.exists(f)) {
+            cnt <- cnt + 1
+            #message("load cmip6 data from \"", f, "\" ...")
+            cmip6_ncin <- nc_open(f)
+            time <- as.POSIXct(cmip6_ncin$dim$time$vals, o="1970-1-1", tz="UTC")
+            years <- as.POSIXct(cmip6_ncin$dim$years$vals, o="1970-1-1", tz="UTC")
+            years <- as.numeric(format(years, "%Y"))
+            months <- as.POSIXct(cmip6_ncin$dim$months$vals, o="1970-1-1", tz="UTC")
+            months <- as.numeric(format(months, "%m"))
+            tmp <- vector("list", l=length(cmip6_varnames))
+            names(tmp) <- cmip6_varnames
+            for (vi in seq_along(tmp)) {
+                dimnames <- sapply(cmip6_ncin$var[[cmip6_varnames[vi]]]$dim, "[[", "name")
+                #message("   load \"", cmip6_varnames[vi], "\" (dims = ", paste(dimnames, collapse=", "), ") ...")
+                if (any(names(cmip6_ncin$var) == cmip6_varnames[vi])) {
+                    dat <- ncvar_get(cmip6_ncin, cmip6_varnames[vi])
+                    tmp[[vi]] <- list(vals=dat, size=dim(dat), 
+                                      unit=ncatt_get(cmip6_ncin, cmip6_varnames[vi])$units,
+                                      col=cmip6_cols[vi], label=cmip6_labels[vi])
+                    if (dimnames == "time") {
+                        tmp[[vi]]$dimnames <- "time"
+                    } else if (dimnames == "years") {
+                        tmp[[vi]]$dimnames <- "year"
+                    } else if (dimnames == "months") {
+                        tmp[[vi]]$dimnames <- "month"
+                    }
+                }
+            }
+            tmp <- list(file=f,
+                        dims=list(time=time, year=years, month=months),
+                        data=tmp)
+            cmip6[[cnt]] <- tmp
+            names(cmip6)[cnt] <- names(f)
+        } # if f exists
+    } # for fi
+} else {
+    message("enable here to load cmip6 data ...")
+} # if cmip6 data
+
+
 # reccap2 data
 reccap2_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", "reccap2_arctic", "reccap2_southern",
                    "reccap2_na_spss", "reccap2_na_stss", "reccap2_na_stps", "reccap2_aequ", "reccap2_sa_stps", "reccap2_med",
                    "reccap2_np_spss", "reccap2_np_stss", "reccap2_np_stps", "reccap2_pequ_w", "reccap2_pequ_e", "reccap2_sp_stps")
 fs <- sapply(reccap2_areas, function(x) 
-             list.files(path=paste0(host$workpath, "/data/reccap2-ocean"), pattern=glob2rx(paste0("reccap2*", x, "*.nc")), full.names=T))
-if (is.list(fs)) fs <- rep("", t=length(fs))
-if (T && any(file.exists(fs))) {
+             list.files(path=paste0(host$workpath, "/post/reccap2-ocean"), pattern=glob2rx(paste0("reccap2*", x, "*.nc")), full.names=T))
+fs <- unlist(fs)
+if (F && any(file.exists(fs))) {
     message("\ndisable here if you do not want to load reccap2 data ...")
     reccap2_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_min", "fgco2_an_max",
                           "fgco2_ymonmean_mean", "fgco2_ymonmean_median", "fgco2_ymonmean_min", "fgco2_ymonmean_max", 

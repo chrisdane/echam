@@ -445,122 +445,183 @@ for (i in seq_len(nsettings)) {
     if (any(names(dims[[i]]) == "time")) {
 
         message("\ndetected time dim of length ", length(dims[[i]]$time), "; dims[[", i, "]]$time:")
-        cat(capture.output(str(ncin$dim[[dims_of_settings[[i]]["time"]]])), sep="\n")
+        cat(capture.output(str(ncin$dim[[dims_of_settings[[i]]["time"]]], max.level=1, vec.len=15)), sep="\n")
+        timein_unit_string <- ncin$dim[[dims_of_settings[[i]]["time"]]]$units
+        message("\ntime vals in ", timein_unit_string, ":") 
         ht(dims[[i]]$time)
         
-        if (prefixes[i] == "Hol-T_stschuett_echam5_wiso") {
+        if (prefixes[i] == "Hol-T_stschuett_echam5_wiso") { # special
             message("\nspecial: rev steffens time ...")
             dims[[i]]$time <- rev(dims[[i]]$time)
             ht(dims[[i]]$time, n=20)
         }
         
-        # convert any unit to seconds for POSIX
-        timein_calendar <- timein_leap <- NULL
-        if (!is.null(ncin$dim[[dims_of_settings[[i]]["time"]]]$calendar)) {
-            timein_calendar <- ncin$dim[[dims_of_settings[[i]]["time"]]]$calendar
-            if (any(timein_calendar == c("365_day", "proleptic_gregorian", "gregorian"))) {
-                timein_leap <- F
-            } else if (any(timein_calendar == c("366_day", "standard"))) {
-                timein_leap <- T
+        # make posix from numerical time vals
+        timein_calendar <- NA # default
+        posix_method <- "own" # "cdo" "own" "own_phd"
+        message("\nmake POSIX object from timein_unit_string = \"", timein_unit_string, "\" with `posix_method` = \"", posix_method, "\" ...")
+        if (posix_method == "cdo") { # own way todo: not complete yet        
+            cmd <- Sys.which("cdo")
+            if (cmd == "") stop("could not find cdo")
+            cmd <- paste0(cmd, " -s showtimestamp ", inpath, "/", fname)
+            message("run `", cmd, "` ...")
+            dates <- system(cmd, intern=T)
+            dates <- strsplit(trimws(dates), "  ")[[1]] # e.g. "1960-01-16T00:00:00" "1960-02-16T00:00:00" ...
+            timein_lt <- as.POSIXlt(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC")
+
+        } else if (posix_method == "own") {
+        
+            # case 1: e.g. "days since 1538-1-1 00:00:00"  
+            if (regexpr(" since ", timein_unit_string) != -1) {
+                timein_unit <- substr(timein_unit_string, 1, regexpr(" since ", timein_unit_string) - 1)
+                timein_origin <- substr(timein_unit_string, regexpr(" since ", timein_unit_string) + 7, nchar(timein_unit_string))
+                
+                timein_lt <- NULL
+                # get multiplication factor to convert input time vals to seconds
+                if (any(timein_unit == c("second", "seconds"))) {
+                    timein_fac <- 1
+                } else if (grepl("day", timein_unit)) {
+                    timein_fac <- 86400
+                } else if (grepl("hour", timein_unit)) {
+                    timein_fac <- 60*60
+                } else if (grepl("month", timein_unit)) {
+                    if (all(diff(dims[[i]]$time) == 1)) {
+                        timein_lt <- as.POSIXlt(seq(as.POSIXct(timein_origin, tz="UTC"), 
+                                                    by=paste0(diff(dims[[i]]$time)[1], " months"),
+                                                    l=length(dims[[i]]$time)))
+                    } else {
+                        stop("time dim is given in months with uneven dt")
+                    }
+                } else {
+                    stop("`timein_unit` \"", timein_unit, "\" obtained from `timein_unit_string` \"", 
+                         timein_unit_string, "\" is unknown")
+                }
+                message("--> multiply `timein_unit` = \"", timein_unit, "\" with `timein_fac` = ", timein_fac, " to get seconds")
+                
+                # check input calendar if some days per year need to be added
+                if (is.null(timein_lt)) {
+                    timein_leap <- T # default
+                    timein_add_nfeb29 <- timein_add_ndays_per_year <- timein_add_nyears <- 0 # default
+                    timein_calendar <- ncin$dim[[dims_of_settings[[i]]["time"]]]$calendar
+                    if (!is.null(timein_calendar)) {
+                        message("time calendar = \"", timein_calendar, "\"")
+                        if (any(timein_calendar == c("360_day", "365_day", "gregorian", "proleptic_gregorian"))) {
+                            timein_leap <- F
+                            if (any(timein_calendar == c("360_day"))) { # add further if needed
+                                timein_add_ndays_per_year <- 5
+                                warn <- options()$warn; options(warn=2) # stop on warning
+                                origin_year <- as.integer(substr(timein_origin, 1, 4)) # origin year of relative time unit
+                                options(warn=warn)
+                                first_year <- as.integer(fromsf[i]) # first year of filename-time, no matter what is in actual time vals
+                                timein_add_nyears <- length(seq(origin_year, first_year, b=1)) - 1 # -1 to not add additional days for last year
+                                message("--> time unit is relative and calendar is non-366 --> add ", timein_add_ndays_per_year, 
+                                        " days per year for ", timein_add_nyears, " years (-1 for last year) ...")
+                            }
+                        } else if (any(timein_calendar == c("366_day", "standard"))) {
+                            timein_leap <- T
+                        } else {
+                            stop("time dim `calendar` attribute \"", timein_calendar, "\" unknown")
+                        }
+                    } # if `calendar` attribute 
+                    
+                    if (!timein_leap) { # input time is without leap years
+                        # --> add number of feb29 days to get correct posix time
+                        warn <- options()$warn; options(warn=2) # stop on warning
+                        origin_year <- as.integer(substr(timein_origin, 1, 4)) # origin year of relative time unit
+                        options(warn=warn)
+                        first_year <- as.integer(fromsf[i]) # first year of filename-time, no matter what is in actual time vals
+                        timein_add_nfeb29 <- length(which(is.leap(seq(origin_year, first_year, b=1)))) # can be zero
+                        message("--> time unit is relative and calendar is non-leap --> add ", timein_add_nfeb29, 
+                                " Feb29 from origin year ", origin_year, " to first year `fromsf[", i, "]` = ", 
+                                first_year, " ", appendLF=F)
+                        if (is.leap(first_year) && timein_add_nfeb29 > 0) { # why is condition `is.leap(first_year)` necessary?
+                            timein_add_nfeb29 <- timein_add_nfeb29 - 1 # -1 to not add additional day for last year
+                            message("(-1 since first year ", first_year, " is neap year) ", appendLF=F)
+                        }
+                        message("...")
+                    }
+                    
+                    # get posix
+                    timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac + 
+                                            timein_add_nfeb29*timein_fac + 
+                                            timein_add_nyears*timein_add_ndays_per_year*timein_fac, 
+                                            origin=timein_origin, tz="UTC")
+                }
+                # test:
+                # numeric input 39615 days since 1850-01-01 with calendar "360_day" must yield date 1960-01-16
+                # --> years 1850:1960 = 111 years; 27 feb29
+                # --> add 111*5 days (360_day calendar) and 27*1 days (feb29)
+                # --> as.POSIXct((39615 + 111*5 + 27*1)*86400, o="1850-01-01", tz="UTC")         = 1960-01-22 UTC --> 6 days too late
+                # --> as.POSIXct((39615 + (111-1)*5 + (27-1)*1)*86400, o="1850-01-01", tz="UTC") = 1960-01-16 UTC --> correct
+
+            # case 2: e.g. "day as %Y%m%d.%f"
+            } else if (regexpr(" as ", timein_unit_string) != -1) { 
+                timein_unit <- substr(timein_unit_string, 1, regexpr(" as ", timein_unit_string) - 1)
+                timein_format <- substr(timein_unit_string, regexpr(" as ", timein_unit_string) + 4, nchar(timein_unit_string))
+                if (timein_format == "%Y%m%d.%f") { # e.g. "29991201.9944444"
+                    hours <- 24*(dims[[i]]$time - floor(dims[[i]]$time))
+                    mins <- 60*(hours - floor(hours))
+                    secs <- 60*(mins - floor(mins))
+                    hours <- floor(hours)
+                    mins <- floor(mins)
+                    secs <- floor(secs)
+                    timein_lt <- as.POSIXlt(paste0(substr(dims[[i]]$time, 1, 4), "-", 
+                                                   substr(dims[[i]]$time, 5, 6), "-",
+                                                   substr(dims[[i]]$time, 7, 8), " ",
+                                                   hours, ":", mins, ":", secs), tz="UTC")
+                } else if (timein_format == "%Y.%f") { # e.g. 7000
+                    # only years given -> take mid-year for months & days
+                    months <- rep(6, t=length(dims[[i]]$time))
+                    days <- rep(15, t=length(dims[[i]]$time))
+                    timein_lt <- as.POSIXlt(paste0(substr(dims[[i]]$time, 1, 4), "-", 
+                                                   months, "-", days), tz="UTC")
+                } else {
+                    stop("timein_format = \"", timein_format, "\" not defined")
+                }
+
             } else {
-                stop("time dim `calendar` attribute \"", timein_calendar, "\" unknown")
-            }
-        }
-        timein_units <- ncin$dim[[dims_of_settings[[i]]["time"]]]$units
-        if (timein_units == "") { # my phd stuff
-            if (is.null(ncin$var[[dims_of_settings[[i]]["time"]]]$units)) stop("not defined")
-            timein_units <- ncin$var[[dims_of_settings[[i]]["time"]]]$units
-        }
-        if (all(dims[[i]]$time == 0)) { # my phd stuff
-            message("make my phd special monthly time from `fromsf[i]` = ", fromsf[i], " to `tosf[i]` = ", tosf[i])
-            timein_units <- "months"
-            if (length(dims[[i]]$time) == 743) { # dt
-                dims[[i]]$time <- rep(fromsf[i]:tosf[i], e=12) + rep((0:11)/12, t=length(fromsf[i]:tosf[i]))
-                dims[[i]]$time <- dims[[i]]$time[2:744]
-            } else if (length(dims[[i]]$time) == 744) {
-                dims[[i]]$time <- rep(fromsf[i]:tosf[i], e=12) + rep((0:11)/12, t=length(fromsf[i]:tosf[i]))
+                stop("`timein_unit_string` = \"", timein_unit_string, "\" not defined")
+            
+            } # which timein_unit_string "days since", "day as", etc.
+
+            # check if own method is correct --> must equal result with cdo method
+            message("\ncheck own time with cdo time ...")
+            cmd <- Sys.which("cdo")
+            if (cmd == "") stop("could not find cdo")
+            cmd <- paste0(cmd, " -s showtimestamp ", inpath, "/", fname)
+            message("run `", cmd, "` ... ", appendLF=F)
+            dates <- system(cmd, intern=T)
+            dates <- strsplit(trimws(dates), "  ")[[1]] # e.g. "1960-01-16T00:00:00" "1960-02-16T00:00:00" ...
+            timein_lt_cdo <- as.POSIXlt(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC")
+            if (timein_lt[1] != timein_lt_cdo[1]) {
+                message("\n`timein_lt`:")
+                cat(capture.output(str(timein_lt, vec.len=15)), sep="\n")
+                message("`timein_lt_cdo`:")
+                cat(capture.output(str(timein_lt_cdo, vec.len=15)), sep="\n")
+                stop("own posix time `time_lt` differ from time vals obtained with cdo `time_lt_cdo`")
             } else {
-                stop("time length ", length(dims[[i]]$time), " not defined here")
+                message("ok")
             }
-            if (grepl("Arc22_sub_daily", prefixes[i])) { # every (also leap) year has ntime=365; dt=86400 sec 
-                message("days!!!")
-                timein_units <- "days"
+
+        } else if (posix_method == "own_phd") { # special
+            message("make my phd special monthly time from `fromsf[", i, "]` = ", fromsf[i], " to `tosf[", i, "]` = ", tosf[i])
+            timein_unit_string <- "years as %Y.f"
+            if (grepl("^Low", prefixes[i]) || grepl("^LSea", prefixes[i])) { # every year (also leap) has ntime=365; dt=86400 sec 
+                if (length(dims[[i]]$time) == 743) { # dt
+                    dims[[i]]$time <- rep(fromsf[i]:tosf[i], e=12) + rep((0:11)/12, t=length(fromsf[i]:tosf[i]))
+                    dims[[i]]$time <- dims[[i]]$time[2:744]
+                } else if (length(dims[[i]]$time) == 744) {
+                    dims[[i]]$time <- rep(fromsf[i]:tosf[i], e=12) + rep((0:11)/12, t=length(fromsf[i]:tosf[i]))
+                } else {
+                    stop("time length ", length(dims[[i]]$time), " not defined here")
+                }
+            } else if (grepl("Arc22_sub_daily", prefixes[i])) { # every year (also leap) has ntime=365; dt=86400 sec 
                 dims[[i]]$time <- rep(fromsf[i]:tosf[i], e=365) + rep((0:364)/365, t=length(fromsf[i]:tosf[i]))
             }
-        }
-        message("\n--> make POSIX object from timein_units = \"", timein_units, "\" ...")
-
-        # 3 different time units so far:
-        # case 1: e.g. "days since 1538-1-1 00:00:00"  
-        if (regexpr(" since ", timein_units) != -1) {
-            timein_unit <- substr(timein_units, 1, regexpr(" since ", timein_units) - 1)
-            timein_origin <- substr(timein_units, regexpr(" since ", timein_units) + 7, nchar(timein_units))
-            timein_fac <- NULL
-            if (any(timein_unit == c("second", "seconds"))) {
-                timein_fac <- 1
-            } else if (grepl("day", timein_unit)) {
-                timein_fac <- 86400
-            } else if (grepl("hour", timein_unit)) {
-                timein_fac <- 60*60
-            } else if (grepl("month", timein_unit)) {
-                if (all(diff(dims[[i]]$time) == 1)) {
-                    timein_lt <- as.POSIXlt(seq(as.POSIXct(timein_origin, tz="UTC"), 
-                                                by=paste0(diff(dims[[i]]$time)[1], " months"),
-                                                l=length(dims[[i]]$time)))
-                } else {
-                    stop("time dim is given in months with uneven dt. who is doing such thing o_O")
-                }
-            } else {
-                stop("timein_unit \"", timein_unit, "\" obtained from time units \"", 
-                     timein_units, "\" is unknown")
-            }
-            if (!is.null(timein_fac)) {
-                if (!is.null(timein_leap) && !timein_leap) {
-                    origin_year <- as.integer(substr(timein_origin, 1, 4))
-                    message("detected relative time unit AND non-leap calendar --> add number of feb29 from ",
-                            "`origin year` = ", origin_year, " to `fromsf[", i, "] = ", fromsf[i])
-                    nfeb29 <- length(which(is.leap(origin_year:fromsf[i])))
-                    message("--> add ", nfeb29, " feb29 in time unit \"", timein_unit, "\" to time vals ...")
-                    timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac+nfeb29*timein_fac, origin=timein_origin, tz="UTC")
-                } else {
-                    timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac, origin=timein_origin, tz="UTC")
-                }
-            }
-
-        # case 2: e.g. "day as %Y%m%d.%f"
-        } else if (regexpr(" as ", timein_units) != -1) { 
-            timein_unit <- substr(timein_units, 1, regexpr(" as ", timein_units) - 1)
-            timein_format <- substr(timein_units, regexpr(" as ", timein_units) + 4, nchar(timein_units))
-            if (timein_format == "%Y%m%d.%f") { # e.g. "29991201.9944444"
-                hours <- 24*(dims[[i]]$time - floor(dims[[i]]$time))
-                mins <- 60*(hours - floor(hours))
-                secs <- 60*(mins - floor(mins))
-                hours <- floor(hours)
-                mins <- floor(mins)
-                secs <- floor(secs)
-                timein_lt <- as.POSIXlt(paste0(substr(dims[[i]]$time, 1, 4), "-", 
-                                               substr(dims[[i]]$time, 5, 6), "-",
-                                               substr(dims[[i]]$time, 7, 8), " ",
-                                               hours, ":", mins, ":", secs), tz="UTC")
-            } else if (timein_format == "%Y.%f") { # e.g. 7000
-                # only years given -> take mid-year for months & days
-                months <- rep(6, t=length(dims[[i]]$time))
-                days <- rep(15, t=length(dims[[i]]$time))
-                timein_lt <- as.POSIXlt(paste0(substr(dims[[i]]$time, 1, 4), "-", 
-                                               months, "-", days), tz="UTC")
-            } else {
-                stop("timein_format = \"", timein_format, "\" not defined")
-            }
-
-        # case 3: # my phd stuff
-        } else if (any(timein_units == c("days", "months"))) {
             message("\nspecial: my old phd stuff")
             timein_lt <- make_posixlt_origin(dims[[i]]$time)
         
-        } else {
-            stop("`timein_units` = \"", timein_units, "\" not defined")
-        
-        } # which timein_units "days since", "day as", etc.
+        } # which posix_method
         message("timein_lt:")
         ht(timein_lt, n=20)
         message("range(timein_lt) = ", appendLF=F)
@@ -706,7 +767,9 @@ for (i in seq_len(nsettings)) {
         if (!is.null(time_inds)) {
             dims[[i]]$timen <- dims[[i]]$timen[time_inds]
         }
-        dims[[i]]$timeunits <- timein_units
+        dims[[i]]$time_unit_string <- timein_unit_string
+        dims[[i]]$time_unit <- timein_unit
+        dims[[i]]$time_calendar <- timein_calendar
         
         # POSIXlt as numeric
         #dims[[i]]$timen <- lapply(dims[[i]]$time, as.numeric)
@@ -2067,16 +2130,16 @@ varnames_unique <- unique(as.vector(unlist(sapply(datas, names))))
 
 # save data before applying offset, multiplication factors, etc. for later
 message("\nsave original data without multiplication factors or offsets or removal of a temporal mean etc. ...")
-for (vi in 1:length(varnames_unique)) {
+for (vi in seq_along(varnames_unique)) {
     cmd <- paste0(varnames_unique[vi], "_datas_orig <- list()")
     eval(parse(text=cmd))
     cnt <- 0
-    for (i in 1:nsettings) {
+    for (i in seq_len(nsettings)) {
         if (varnames_unique[vi] %in% names(datas[[i]])) { # if variables is present in setting
             cnt <- cnt + 1
             varind <- which(names(datas[[i]]) == varnames_unique[vi])
             cmd <- paste0(varnames_unique[vi], "_datas_orig[[", cnt, "]] <- datas[[", i, "]][[", varind, "]]")
-            message("   run `", cmd, "` ...")
+            if (i == 1) message("   run `", cmd, "` ...")
             eval(parse(text=cmd))
             cmd <- paste0("names(", varnames_unique[vi], "_datas_orig)[", cnt, "] <- names_short[", i, "]")
             #message("   run `", cmd, "` ...")
@@ -3572,12 +3635,12 @@ for (vi in seq_along(varnames_unique)) {
     cmd <- paste0(varnames_unique[vi], "_infos <- list()")
     eval(parse(text=cmd))
     cnt <- 0
-    for (i in 1:nsettings) {
+    for (i in seq_len(nsettings)) {
         if (varnames_unique[vi] %in% names(datas[[i]])) { # if variables is present in setting
             cnt <- cnt + 1
             varind <- which(names(datas[[i]]) == varnames_unique[vi])
             cmd <- paste0(varnames_unique[vi], "_infos[[", cnt, "]] <- data_infos[[", i, "]][[", varind, "]]")
-            message("   run `", cmd, "` ...")
+            if (i == 1) message("   run `", cmd, "` ...")
             eval(parse(text=cmd))
             cmd <- paste0("names(", varnames_unique[vi], "_infos)[", cnt, "] <- names_short[", i, "]")
             #message("   run `", cmd, "` ...")
@@ -5165,8 +5228,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 tlimct <- as.POSIXct(tlimlt)
                 tlabcex <- 1
                 #tlabcex <- 0.8
-                monlim <- range(tlimlt$mon+1)
-                anlim <- range(tlimlt$year+1900)
 
                 # time labels
                 tlablt <- as.POSIXlt(pretty(tlimlt, n=10)) # todo: this does not work with large negative years, e.g. -800000 (800ka) 
@@ -5174,8 +5235,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     message("my special tlablt")
                     tlablt <- make_posixlt_origin(seq(-7000, 0, b=1000)) 
                 }
-                monat <- monlim[1]:monlim[2]
-                monlab <- substr(month.abb[monat], 1, 1) # Jan -> J
 
                 # remove lables which are possibly out of limits due to pretty
                 tlab_diff_secs <- as.numeric(diff(range(tlablt)), units="secs") # duration of time labels
@@ -5279,6 +5338,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("final tlablt = ", paste(tlablt, collapse=", "))
 
                 # if all dates < 0 AD, use "abs(dates) BP" instead
+                anlim <- range(tlimlt$year+1900)
                 if (all(anlim <= 0)) {
                     message("all times are <= 0 AD --> use `abs(times)` for time labels instead ...")
                     neg_inds <- which(tlablt < 0)
@@ -5295,12 +5355,19 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
                 message("final tunit = \"", tunit, "\"")
                 
-                # use years from time for plots versus years 
-                #anlab <- tlablt$year+1900
-                #anat <- as.numeric(as.POSIXct(paste0(anlab, "-1-1"), o="1970-1-1", tz="UTC"))
-                anlab <- tlablt
-                #anat <- tatn # --> annual plots use numeric years as dim, not POSIX
-                anat <- tlablt
+                # month labels
+                monlim <- range(tlimlt$mon+1)
+                monat <- monlim[1]:monlim[2]
+                monlab <- substr(month.abb[monat], 1, 1) # Jan -> J
+                
+                # annual labels; annual plots use integer years as dim, not POSIX
+                anvals <- seq(anlim[1], anlim[2], b=1)
+                anlab <- pretty(anvals, n=min(length(anvals), 15))
+                anlab <- unique(as.integer(anlab))
+                if (any(anlab < min(anvals))) anlab <- anlab[-which(anlab < min(anvals))]
+                if (any(anlab > max(anvals))) anlab <- anlab[-which(anlab > max(anvals))]
+                anat <- anlab
+                rm(anvals)
 
             } # if any(ntime_per_setting > 1)
 
@@ -5345,166 +5412,32 @@ for (plot_groupi in seq_len(nplot_groups)) {
         message("d:")
         cat(capture.output(str(d)), sep="\n")
 
-        # special: reccp2 time series output in one nc file
-        if (plot_groups[plot_groupi] == "samevars" && all(grepl("reccap2", prefixes)) && 
-            length(unique(modes)) == 1 && length(unique(areas)) == 1) {
-            fout <- paste0(host$workpath, "/data/reccap2-ocean/reccap2-ocean_", length(models), "_models_", 
-                           modes[1], "_", zname, "_", areas[1], "_Jan-Dec_", paste(format(tlimct, "%Y"), collapse="-"), ".nc")
+        # special: save aggreagted data to nc
+        if (T && 
+            ndims == 1 && dim_names == "time" &&
+            plot_groups[plot_groupi] == "samevars" && 
+            exists("plotprefix") &&
+            length(unique(modes)) == 1 && 
+            length(unique(areas)) == 1) {
+            if (grepl("cmip6", plotprefix)) {
+                fout <- paste0(host$workpath, "/post/cmip6/", plotprefix, "_", length(models), "_models_", 
+                               modes[1], "_", zname, "_", areas[1], "_Jan-Dec_", paste(format(tlimct, "%Y"), collapse="-"), ".nc")
+            } else if (grepl("reccap2", plotprefix)) {
+                fout <- paste0(host$workpath, "/post/reccap2-ocean/", plotprefix, "_", length(models), "_models_", 
+                               modes[1], "_", zname, "_", areas[1], "_Jan-Dec_", paste(format(tlimct, "%Y"), collapse="-"), ".nc")
+            } else {
+                stop("not defined")
+            }
             if (!file.exists(fout)) {
-                message("\nspecial: save reccap2 post")
-                # load lacroix_etal_2020 river flux adjustment rfa
-                if (zname == "fgco2" && all(modes == "fldint")) {
-                    flacroix <- paste0(host$workpath, "/post/lacroix_etal_2020/fldint/fgco2/lacroix_etal_2020_lacroix_etal_2020_fldint_fgco2_",
-                                       ifelse(areas[1] == "global", "global", areas[1]), "_Jan-Dec_2022-2022.nc")
-                    if (!file.exists(flacroix)) stop("flacroix not found")
-                    lacroix <- nc_open(flacroix)
-                    lacroix <- ncvar_get(lacroix, "fgco2") * 12.0107 * 365.25*86400 / 1e15 * -1 # molC s-1 --> PgC yr-1; >0: upward --> >0: downward
-                    lacroix <- as.vector(lacroix)
-                    message("add lacroix = ", lacroix)
-                }
-                modeldim <- ncdf4::ncdim_def(name="model", units="", vals=seq_along(z))
-                fromto <- min(fromsf):max(tosf)
-                tvals <- paste0(rep(fromto, e=12), "-", rep(1:12, t=length(fromto)), "-", rep(15, t=length(fromto)*12)) # all monthly data at same time points
-                tvals <- as.POSIXct(tvals, tz="UTC")
-                tdim <- ncdf4::ncdim_def(name="time", units="seconds since 1970-1-1", vals=as.numeric(tvals))
-                arr <- array(NA, dim=c(nsettings, length(tvals)))
-                for (i in seq_along(z)) {
-                    for (ti in seq_along(z[[i]])) {
-                        ind <- which(format(tvals, "%Y-%m") == format(d$time[[i]][ti], "%Y-%m"))
-                        if (length(ind) != 1) stop("this should not happen")
-                        arr[i,ind] <- z[[i]][ti]
-                    }
-                }
-                arr_min <- apply(arr, 2, min, na.rm=T)
-                arr_max <- apply(arr, 2, max, na.rm=T)
-                arr_mean <- apply(arr, 2, mean, na.rm=T)
-                arr_median <- apply(arr, 2, median, na.rm=T)
-                ncvar <- ncdf4::ncvar_def(name="fgco2_mon", units="PgC yr-1", dim=list(modeldim, tdim), missval=NA)
-                ncvar_min <- ncdf4::ncvar_def(name="fgco2_mon_min", units="PgC yr-1", dim=tdim, missval=NA)
-                ncvar_max <- ncdf4::ncvar_def(name="fgco2_mon_max", units="PgC yr-1", dim=tdim, missval=NA)
-                ncvar_mean <- ncdf4::ncvar_def(name="fgco2_mon_mean", units="PgC yr-1", dim=tdim, missval=NA)
-                ncvar_median <- ncdf4::ncvar_def(name="fgco2_mon_median", units="PgC yr-1", dim=tdim, missval=NA)
-                arr_lacroix <- arr + lacroix
-                arr_lacroix_min <- apply(arr_lacroix, 2, min, na.rm=T)
-                arr_lacroix_max <- apply(arr_lacroix, 2, max, na.rm=T)
-                arr_lacroix_mean <- apply(arr_lacroix, 2, mean, na.rm=T)
-                arr_lacroix_median <- apply(arr_lacroix, 2, median, na.rm=T)
-                ncvar_lacroix <- ncdf4::ncvar_def(name="fgco2_rfa_mon", units="PgC yr-1", dim=list(modeldim, tdim), missval=NA)
-                ncvar_lacroix_min <- ncdf4::ncvar_def(name="fgco2_rfa_mon_min", units="PgC yr-1", dim=tdim, missval=NA)
-                ncvar_lacroix_max <- ncdf4::ncvar_def(name="fgco2_rfa_mon_max", units="PgC yr-1", dim=tdim, missval=NA)
-                ncvar_lacroix_mean <- ncdf4::ncvar_def(name="fgco2_rfa_mon_mean", units="PgC yr-1", dim=tdim, missval=NA)
-                ncvar_lacroix_median <- ncdf4::ncvar_def(name="fgco2_rfa_mon_median", units="PgC yr-1", dim=tdim, missval=NA)
-                # annual means
-                anvals <- as.POSIXct(paste0(fromto, "-1-1"), tz="UTC") # placeholder
-                for (i in seq_along(anvals)) {
-                    anvals[i] <- mean(as.POSIXct(paste0(fromto[i], "-", c(1, 12), "-", c(1, 31)), tz="UTC")) # average of year
-                }
-                andim <- ncdf4::ncdim_def(name="years", units="seconds since 1970-1-1", vals=as.numeric(anvals))
-                arr_an <- array(NA, dim=c(nsettings, length(anvals)))
-                for (i in seq_along(zan)) {
-                    for (ti in seq_along(zan[[i]])) {
-                        ind <- which(format(anvals, "%Y") == dan$year[[i]][ti])
-                        if (length(ind) != 1) stop("this should not happen")
-                        arr_an[i,ind] <- zan[[i]][ti]
-                    }
-                }
-                arr_an_min <- apply(arr_an, 2, min, na.rm=T)
-                arr_an_max <- apply(arr_an, 2, max, na.rm=T)
-                arr_an_mean <- apply(arr_an, 2, mean, na.rm=T)
-                arr_an_median <- apply(arr_an, 2, median, na.rm=T)
-                ncvar_an <- ncdf4::ncvar_def(name="fgco2_an", units="PgC yr-1", dim=list(modeldim, andim), missval=NA)
-                ncvar_an_min <- ncdf4::ncvar_def(name="fgco2_an_min", units="PgC yr-1", dim=andim, missval=NA)
-                ncvar_an_max <- ncdf4::ncvar_def(name="fgco2_an_max", units="PgC yr-1", dim=andim, missval=NA)
-                ncvar_an_mean <- ncdf4::ncvar_def(name="fgco2_an_mean", units="PgC yr-1", dim=andim, missval=NA)
-                ncvar_an_median <- ncdf4::ncvar_def(name="fgco2_an_median", units="PgC yr-1", dim=andim, missval=NA)
-                arr_an_lacroix <- arr_an + lacroix
-                arr_an_lacroix_min <- apply(arr_an_lacroix, 2, min, na.rm=T)
-                arr_an_lacroix_max <- apply(arr_an_lacroix, 2, max, na.rm=T)
-                arr_an_lacroix_mean <- apply(arr_an_lacroix, 2, mean, na.rm=T)
-                arr_an_lacroix_median <- apply(arr_an_lacroix, 2, median, na.rm=T)
-                ncvar_an_lacroix <- ncdf4::ncvar_def(name="fgco2_rfa_an", units="PgC yr-1", dim=list(modeldim, andim), missval=NA)
-                ncvar_an_lacroix_min <- ncdf4::ncvar_def(name="fgco2_rfa_an_min", units="PgC yr-1", dim=andim, missval=NA)
-                ncvar_an_lacroix_max <- ncdf4::ncvar_def(name="fgco2_rfa_an_max", units="PgC yr-1", dim=andim, missval=NA)
-                ncvar_an_lacroix_mean <- ncdf4::ncvar_def(name="fgco2_rfa_an_mean", units="PgC yr-1", dim=andim, missval=NA)
-                ncvar_an_lacroix_median <- ncdf4::ncvar_def(name="fgco2_rfa_an_median", units="PgC yr-1", dim=andim, missval=NA)
-                # monthly clim
-                monvals <- as.POSIXct(paste0(max(fromto), "-", 1:12, "-15"), tz="UTC") # average of month in placeholder year
-                mondim <- ncdf4::ncdim_def(name="months", units="seconds since 1970-1-1", vals=as.numeric(monvals))
-                arr_mon <- array(NA, dim=c(nsettings, length(monvals)))
-                for (i in seq_along(zmon)) {
-                    for (ti in seq_along(zmon[[i]])) {
-                        ind <- which(gsub("^0", "", format(monvals, "%m")) == dmon$month[[i]][ti])
-                        if (length(ind) != 1) stop("this should not happen")
-                        arr_mon[i,ind] <- zmon[[i]][ti]
-                    }
-                    if (length(unique(as.vector(arr_mon[i,]))) == 1) { # OCIM-v2014 has constant monthly values
-                        message("exclude ", models[i], " from reccap2 mon ens stats ...")
-                        arr_mon[i,] <- NA
-                    }
-                }
-                arr_mon_min <- apply(arr_mon, 2, min, na.rm=T)
-                arr_mon_max <- apply(arr_mon, 2, max, na.rm=T)
-                arr_mon_mean <- apply(arr_mon, 2, mean, na.rm=T)
-                arr_mon_median <- apply(arr_mon, 2, median, na.rm=T)
-                ncvar_mon <- ncdf4::ncvar_def(name="fgco2_ymonmean", units="PgC yr-1", dim=list(modeldim, mondim), missval=NA)
-                ncvar_mon_min <- ncdf4::ncvar_def(name="fgco2_ymonmean_min", units="PgC yr-1", dim=mondim, missval=NA)
-                ncvar_mon_max <- ncdf4::ncvar_def(name="fgco2_ymonmean_max", units="PgC yr-1", dim=mondim, missval=NA)
-                ncvar_mon_mean <- ncdf4::ncvar_def(name="fgco2_ymonmean_mean", units="PgC yr-1", dim=mondim, missval=NA)
-                ncvar_mon_median <- ncdf4::ncvar_def(name="fgco2_ymonmean_median", units="PgC yr-1", dim=mondim, missval=NA)
-                arr_mon_lacroix <- arr_mon + lacroix
-                arr_mon_lacroix_min <- apply(arr_mon_lacroix, 2, min, na.rm=T)
-                arr_mon_lacroix_max <- apply(arr_mon_lacroix, 2, max, na.rm=T)
-                arr_mon_lacroix_mean <- apply(arr_mon_lacroix, 2, mean, na.rm=T)
-                arr_mon_lacroix_median <- apply(arr_mon_lacroix, 2, median, na.rm=T)
-                ncvar_mon_lacroix <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean", units="PgC yr-1", dim=list(modeldim, mondim), missval=NA)
-                ncvar_mon_lacroix_min <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean_min", units="PgC yr-1", dim=mondim, missval=NA)
-                ncvar_mon_lacroix_max <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean_max", units="PgC yr-1", dim=mondim, missval=NA)
-                ncvar_mon_lacroix_mean <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean_mean", units="PgC yr-1", dim=mondim, missval=NA)
-                ncvar_mon_lacroix_median <- ncdf4::ncvar_def(name="fgco2_rfa_ymonmean_median", units="PgC yr-1", dim=mondim, missval=NA)
-                # output
-                outnc <- ncdf4::nc_create(fout, vars=list(ncvar, ncvar_min, ncvar_max, ncvar_mean, ncvar_median,
-                                                          ncvar_lacroix, ncvar_lacroix_min, ncvar_lacroix_max, ncvar_lacroix_mean, ncvar_lacroix_median,
-                                                          ncvar_an, ncvar_an_min, ncvar_an_max, ncvar_an_mean, ncvar_an_median,
-                                                          ncvar_an_lacroix, ncvar_an_lacroix_min, ncvar_an_lacroix_max, ncvar_an_lacroix_mean, ncvar_an_lacroix_median,
-                                                          ncvar_mon, ncvar_mon_min, ncvar_mon_max, ncvar_mon_mean, ncvar_mon_median,
-                                                          ncvar_mon_lacroix, ncvar_mon_lacroix_min, ncvar_mon_lacroix_max, ncvar_mon_lacroix_mean, ncvar_mon_lacroix_median), 
-                                          force_v4=T)
-                ncdf4::ncvar_put(outnc, ncvar, arr)
-                ncdf4::ncvar_put(outnc, ncvar_min, arr_min)
-                ncdf4::ncvar_put(outnc, ncvar_max, arr_max)
-                ncdf4::ncvar_put(outnc, ncvar_mean, arr_mean)
-                ncdf4::ncvar_put(outnc, ncvar_median, arr_median)
-                ncdf4::ncvar_put(outnc, ncvar_lacroix, arr_lacroix)
-                ncdf4::ncvar_put(outnc, ncvar_lacroix_min, arr_lacroix_min)
-                ncdf4::ncvar_put(outnc, ncvar_lacroix_max, arr_lacroix_max)
-                ncdf4::ncvar_put(outnc, ncvar_lacroix_mean, arr_lacroix_mean)
-                ncdf4::ncvar_put(outnc, ncvar_lacroix_median, arr_lacroix_median)
-                ncdf4::ncvar_put(outnc, ncvar_an, arr_an)
-                ncdf4::ncvar_put(outnc, ncvar_an_min, arr_an_min)
-                ncdf4::ncvar_put(outnc, ncvar_an_max, arr_an_max)
-                ncdf4::ncvar_put(outnc, ncvar_an_mean, arr_an_mean)
-                ncdf4::ncvar_put(outnc, ncvar_an_median, arr_an_median)
-                ncdf4::ncvar_put(outnc, ncvar_an_lacroix, arr_an_lacroix)
-                ncdf4::ncvar_put(outnc, ncvar_an_lacroix_min, arr_an_lacroix_min)
-                ncdf4::ncvar_put(outnc, ncvar_an_lacroix_max, arr_an_lacroix_max)
-                ncdf4::ncvar_put(outnc, ncvar_an_lacroix_mean, arr_an_lacroix_mean)
-                ncdf4::ncvar_put(outnc, ncvar_an_lacroix_median, arr_an_lacroix_median)
-                ncdf4::ncvar_put(outnc, ncvar_mon, arr_mon)
-                ncdf4::ncvar_put(outnc, ncvar_mon_min, arr_mon_min)
-                ncdf4::ncvar_put(outnc, ncvar_mon_max, arr_mon_max)
-                ncdf4::ncvar_put(outnc, ncvar_mon_mean, arr_mon_mean)
-                ncdf4::ncvar_put(outnc, ncvar_mon_median, arr_mon_median)
-                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix, arr_mon_lacroix)
-                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix_min, arr_mon_lacroix_min)
-                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix_max, arr_mon_lacroix_max)
-                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix_mean, arr_mon_lacroix_mean)
-                ncdf4::ncvar_put(outnc, ncvar_mon_lacroix_median, arr_mon_lacroix_median)
-                for (i in seq_along(z)) {
-                    ncdf4::ncatt_put(outnc, "model", i, models[i])
-                }
-                ncdf4::nc_close(outnc)
-            } # if fout does not exist
-        } # special reccap2
+                message("\nspecial: aggregate post ", plotprefix, " to: ", fout)
+                dir.create(dirname(fout), recursive=T, showWarnings=F)
+                if (!dir.exists(dirname(fout))) stop("could not create dir ", dirname(fout))
+                
+                message("run `source(aggregate_plot_data.r)` ...")
+                source("aggregate_plot_data.r")
+
+            } # if fout already exists or not
+        } # special: save aggregated data to nc
 
 
         ## plot `datas` (`datas` always exists; no exists() check necessary)
@@ -8961,16 +8894,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_unsmoothed) {
                 message("\n", mode_p, " versus time min / mean / max ", varname, " z:")
                 for (i in seq_along(z)) {
-                    message(names_short_p[i], ": ", min(z[[i]], na.rm=T), " / ",
-                            mean(z[[i]], na.rm=T), " / ", max(z[[i]], na.rm=T))
+                    message(sprintf(paste0("%", max(nchar(names_short_p)), "s"), names_short_p[i]), ": ", 
+                            min(z[[i]], na.rm=T), " / ", mean(z[[i]], na.rm=T), " / ", max(z[[i]], na.rm=T))
                 }
                 ylim <- range(z, na.rm=T)
             }
             if (exists("zma")) {
                 message("\n", mode_p, " versus time min / mean / max ", varname, " zma:")
                 for (i in seq_along(z)) {
-                    message(names_short_p[i], ": ", min(zma[[i]], na.rm=T), " / ",
-                            mean(zma[[i]], na.rm=T), " / ", max(zma[[i]], na.rm=T))
+                    message(sprintf(paste0("%", max(nchar(names_short_p)), "s"), names_short_p[i]), ": ", 
+                            min(zma[[i]], na.rm=T), " / ", mean(zma[[i]], na.rm=T), " / ", max(zma[[i]], na.rm=T))
                 }
                 ylimma <- range(zma, na.rm=T)
             }
@@ -10605,7 +10538,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         message("save ", outname, " ...")
                     }
                     stop("update dinds/vinds")
-                    time_dim_outnc <- ncdim_def(name="time", units=dims[[i]]$timeunits, vals=time_dim[[i]])
+                    time_dim_outnc <- ncdim_def(name="time", units=dims[[i]]$time_unit_string, vals=time_dim[[i]])
                     moc_max_ts_var <- vector("list", l=length(moc_max_ts[[i]]))
                     moc_max_depths_var <- moc_max_ts_var
                     for (li in 1:length(moc_max_ts[[i]])) { 
@@ -10830,8 +10763,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # ylims for fldmean versus months plot
                 message("\n", mode_p, " versus months min / mean / max ", varname, " zmon:")
                 for (i in seq_along(zmon)) {
-                    message(names_short_pmon[i], ": ", min(zmon[[i]], na.rm=T), " / ",
-                            mean(zmon[[i]], na.rm=T), " / ", max(zmon[[i]], na.rm=T))
+                    message(sprintf(paste0("%", max(nchar(names_short_pmon)), "s"), names_short_pmon[i]), ": ", 
+                            min(zmon[[i]], na.rm=T), " / ", mean(zmon[[i]], na.rm=T), " / ", max(zmon[[i]], na.rm=T))
                 }
                 ylim_mon <- range(zmon, na.rm=T)
                 message("\nylim_mon=", appendLF=F)
@@ -11409,8 +11342,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # ylims for plot vs years
                 message("\n", mode_p, " versus years min / mean / max ", varname, " zan:")
                 for (i in seq_along(zan)) {
-                    message(names_short_pan[i], ": ", min(zan[[i]], na.rm=T), " / ",
-                            mean(zan[[i]], na.rm=T), " / ", max(zan[[i]], na.rm=T))
+                    message(sprintf(paste0("%", max(nchar(names_short_pan)), "s"), names_short_pan[i]), ": ", 
+                            min(zan[[i]], na.rm=T), " / ", mean(zan[[i]], na.rm=T), " / ", max(zan[[i]], na.rm=T))
                 }
                 ylim_an <- range(zan, na.rm=T)
                 message("\nylim_an=", appendLF=F)
@@ -12405,9 +12338,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("xlim_ltm = ", appendLF=F)
                 dput(xlim_ltm)
 
+                # varplot ylim
                 ylim_ltm <- range(zltm, na.rm=T)
                 # extend data range by 4 pcnt for barplot(), similarly as default yaxs="r" of plot()
                 ylim_ltm <- ylim_ltm + c(-1, 1)*0.04*(max(ylim_ltm)-min(ylim_ltm))
+                
+                message("\n", mode_p, " versus ltm_range min / mean / max ", varname, " zan:")
+                for (i in seq_along(zan)) {
+                    message(sprintf(paste0("%", max(nchar(names_short_pltm)), "s"), names_short_pltm[i]), ": ", 
+                            min(zltm[[i]], na.rm=T), " / ", mean(zltm[[i]], na.rm=T), " / ", max(zltm[[i]], na.rm=T))
+                }
                 message("ylim_ltm = ", appendLF=F)
                 dput(ylim_ltm)
                 yat_ltm <- pretty(ylim_ltm, n=8)
@@ -12416,7 +12356,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 if (exists("plotprefix")) {
                     plotprefixp <- plotprefix
                 } else { # default
-                    plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
+                    plotprefixp <- paste(unique(names_short_pltm), collapse="_vs_")
                     if (F && plot_groups[plot_groupi] == "samedims") {
                         plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
                     }

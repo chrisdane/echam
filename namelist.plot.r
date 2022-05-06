@@ -2277,7 +2277,7 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # 16 settings
-} else if (T) { # 15/16 reccap2 settings
+} else if (F) { # 15/16 reccap2 settings
     models <- c("CCSM-WHOI", # <0: uptake 
                 "CESM-ETHZ", "CNRM-ESM2-1", "EC-Earth3", "ECCO-Darwin", 
                 "FESOM_REcoM_HR", # says unit "mmol C m-2 s-1" but its "mol" 
@@ -2509,7 +2509,42 @@ if (F) { # mhw composite data/seas*100
     tosf <- rep(2685, t=27)
     new_origins <- rep(736, t=27)
 
-} # which settings
+# ======================================================
+# special: cmip6 nml created by ~/slurm/cronjobs/filter_esgf_lists.r
+} else if (T) { # 27 levels
+    fnml <- "~/slurm/cronjobs/namelist.plot_24settings_Omon_fgco2_23models_piControl_2-2nyears_2022-05-05_12-19-46.r"
+    if (!file.exists(fnml)) stop("could not find file ", fnml)
+    message("run `source(\"", fnml, "\")` ...")
+    source(fnml)
+    # exclude wrong fgco2 values of model GISS-E2-1-G
+    indsvar <- which(varnames_in == "fgco2")
+    if (length(indsvar) > 0) {
+        indsmodel <- which(models == "GISS-E2-1-G")
+        if (length(indsmodel) > 0) {
+            indsmatch <- match(indsmodel, indsvar)
+            if (length(indsmatch) > 0) {
+                message("exclude wrong GISS-E2-1-G fgco2 entries from namelist ...")
+                models <- models[-indsmatch]
+                prefixes <- prefixes[-indsmatch]
+                names_short <- names_short[-indsmatch]
+                names_legend <- names_legend[-indsmatch]
+                varnames_in <- varnames_in[-indsmatch]
+                fromsf <- fromsf[-indsmatch]
+                tosf <- tosf[-indsmatch]
+            }
+        }
+    }
+    # which mode
+    modes <- rep("fldint", t=length(models))
+    if (T) { # adjust piControl years for plot
+        new_origins <- rep(NA, t=length(models))
+        inds <- grep("piControl", prefixes)
+        if (length(inds) > 0) {
+            new_origins[inds] <- 1850
+        }
+    }
+
+} # which setting
 
 # run
 source(paste0(repopath, "/plot_echam.r"))

@@ -12,7 +12,7 @@ workpath <- host$workpath
 # 1 setting
 if (F) { # old hist
     datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/hist/outdata/echam"
-    fpatterns <- "hist_echam6_echammon_<YYYY><MM>.nc"
+    fpatterns <- "hist_echam6_echammon_<year><mon>.nc"
     #fvarnames <- "temp2"
     fvarnames <- "srad0d"
     models <- "echam6"
@@ -26,32 +26,32 @@ if (F) { # old hist
 } else if (F) { # my stupid cmip6 awi-esm-1-1-lr pi chunks
     if (F) { # chunk 1: restart_from_hu_oceanonly 2701 to 2702 
         datapaths <- "/work/ab0246/a270073/awicm-CMIP6/restart_from_hu_oceanonly/outdata/echam"
-        fpatterns <- "restart_from_hu_oceanonly_echam6_g3bid_<YYYY><MM>.grb"
+        fpatterns <- "restart_from_hu_oceanonly_echam6_g3bid_<year><mon>.grb"
         froms <- 2701
         tos <- 2702
     } else if (F) { # chunk 2: restart_from_restart_from_hu_oceanonly 2703 to 2710
         datapaths <- "/work/ab0246/a270073/awicm-CMIP6/restart_from_restart_from_hu_oceanonly/outdata/echam"
-        fpatterns <- "restart_from_restart_from_hu_oceanonly_echam6_g3bid_<YYYY><MM>.grb"
+        fpatterns <- "restart_from_restart_from_hu_oceanonly_echam6_g3bid_<year><mon>.grb"
         froms <- 2703
         tos <- 2710
     } else if (F) { # pi-ctrl: 2711-2869
         datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL/outdata/echam"
-        fpatterns <- "PI-CTRL_echam6_g3bid_<YYYY><MM>.grb"
+        fpatterns <- "PI-CTRL_echam6_g3bid_<year><mon>.grb"
         froms <- 2750 # 2711 to 2749 are missing?!
         tos <- 2869
     } else if (F) { # pi-ctrl2: 2870-2899 
         datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL2/outdata/echam"
-        fpatterns <- "PI-CTRL2_echam6_g3bid_<YYYY><MM>.grb"
+        fpatterns <- "PI-CTRL2_echam6_g3bid_<year><mon>.grb"
         froms <- 2870
         tos <- 2899
     } else if (F) { # pi-ctrl3: 2900-2910
         datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL3/outdata/echam"
-        fpatterns <- "PI-CTRL3_echam6_g3bid_<YYYY><MM>.grb"
+        fpatterns <- "PI-CTRL3_echam6_g3bid_<year><mon>.grb"
         froms <- 2900
         tos <- 2910
     } else if (F) { # pi-ctrl4: 2911:2999
         datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/piControl/outdata/echam/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL4/outdata/echam"
-        fpatterns <- "PI-CTRL4_echam6_g3bid_<YYYY><MM>.grb"
+        fpatterns <- "PI-CTRL4_echam6_g3bid_<year><mon>.grb"
         froms <- 2911
         tos <- 2999
     }
@@ -134,72 +134,72 @@ if (F) { # old hist
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/1pctCO2/r1i1p1f1/SImon/<fvarnames>/gn/v20190710"
     #datapaths <- "/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/abrupt-4xCO2/r1i1p1f1/Amon/<fvarnames>/gn/v20190710"
     # awi-cm-1-1-lr
-   # fpatterns <- "historical_jsbach_jsbachmon_<YYYY><MM>.grb"
+   # fpatterns <- "historical_jsbach_jsbachmon_<year><mon>.grb"
     # awi-esm-1-1-lr
-    fpatterns <- "PI-CTRL6_echam6_co2_<YYYY><MM>.grb"
-    #fpatterns <- "PI-CTRL6_jsbach_jsbachmon_<YYYY><MM>.grb"
-    #fpatterns <- "PI-CTRL6_fesom_<fvarnames>_<YYYY>0101.nc"
-    #fpatterns <- "1percCO2_fesom_<fvarnames>_<YYYY>0101.nc"
-    #fpatterns <- "historical_echam6_echamday_<YYYY><MM>.grb"
-    #fpatterns <- "<fvarnames>_day_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Emon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Omon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_3hr_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>01010300-<YYYY_to>01010000.nc"
-    #fpatterns <- "<fvarnames>_6hrPlev_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>01010300-<YYYY_to>12312100.nc"
-    #fpatterns <- "<fvarnames>_6hrLev_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>01010600-<YYYY_to>01010000.nc"
-    #fpatterns <- "<fvarnames>_day_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_AERmon_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Eday_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_SIday_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_Omon_AWI-ESM-1-1-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
-    #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_day_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_Omon_AWI-ESM-1-1-LR_lgm_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "PI-CTRL6_echam6_co2_<year><mon>.grb"
+    #fpatterns <- "PI-CTRL6_jsbach_jsbachmon_<year><mon>.grb"
+    #fpatterns <- "PI-CTRL6_fesom_<fvarnames>_<year>0101.nc"
+    #fpatterns <- "1percCO2_fesom_<fvarnames>_<year>0101.nc"
+    #fpatterns <- "historical_echam6_echamday_<year><mon>.grb"
+    #fpatterns <- "<fvarnames>_day_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<year><mon_from>-<year><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Emon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<year><mon_from>-<year><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Omon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_3hr_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<year_from>01010300-<year_to>01010000.nc"
+    #fpatterns <- "<fvarnames>_6hrPlev_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<year_from>01010300-<year_to>12312100.nc"
+    #fpatterns <- "<fvarnames>_6hrLev_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<year_from>01010600-<year_to>01010000.nc"
+    #fpatterns <- "<fvarnames>_day_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_AERmon_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Eday_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_SIday_AWI-ESM-1-1-LR_historical_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_Omon_AWI-ESM-1-1-LR_1pctCO2_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_day_AWI-ESM-1-1-LR_midHolocene_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_Omon_AWI-ESM-1-1-LR_lgm_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     # awi-cm-1-1-mr
-    #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_SImon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_day_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<YYYY>0101-<YYYY>1231.nc"
-    #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_abrupt-4xCO2_r1i1p1f1_gn_<YYYY><MM_from>-<YYYY><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<year><mon_from>-<year><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_SImon_AWI-CM-1-1-MR_piControl_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_day_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<year>0101-<year>1231.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_historical_r1i1p1f1_gn_<year><mon_from>-<year><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_1pctCO2_r1i1p1f1_gn_<year><mon_from>-<year><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_AWI-CM-1-1-MR_abrupt-4xCO2_r1i1p1f1_gn_<year><mon_from>-<year><mon_to>.nc"
     # mpi-esm1-2-lr
-    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_day_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_day_MPI-ESM1-2-HR_historical_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_abrupt-4xCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_day_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_day_MPI-ESM1-2-HR_historical_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-LR_1pctCO2_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-LR_abrupt-4xCO2_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
     # mpi-esm1-2-hr
-    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_historical_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<YYYY_from>0101-<YYYY_to>1231.nc"
-    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_abrupt-4xCO2_r1i1p1f1_gn_<YYYY_from><MM_from>-<YYYY_to><MM_to>.nc"
-    #fpatterns <- "PI-CTRL_nodynveg2_echam6_echam_<YYYY><MM>.grb"
-    #fpatterns <- "PI-CTRL_nodynveg2_fesom_<fvarnames>_<YYYY>0101.nc"
-    #fpatterns <- "PI-CTRL6_echam6_echam_<YYYY><MM>.grb"
-    #fpatterns <- "piControl_echam6_echam_<YYYY><MM>.grb"
-    #fpatterns <- "piControl_echam6_echammon_<YYYY><MM>.grb"
-    #fpatterns <- "piControl_echam6_aeroptmon_<YYYY><MM>.grb"
-    #fpatterns <- "1percCO2_echam6_echam_<YYYY><MM>.grb"
-    #fpatterns <- "1percCO2_echam6_echam_<YYYY><MM>.nc"
-    #fpatterns <- "4CO2_echam6_echam_<YYYY><MM>.grb"
-    #fpatterns <- "4CO2_echam6_echam_<YYYY><MM>.nc"
-    #fpatterns <- "CMIP6_HIST_echam6_echam_<YYYY><MM>.grb"
+    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_historical_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Oday_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<year_from>0101-<year_to>1231.nc"
+    #fpatterns <- "<fvarnames>_Omon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_SImon_MPI-ESM1-2-HR_1pctCO2_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "<fvarnames>_Amon_MPI-ESM1-2-HR_abrupt-4xCO2_r1i1p1f1_gn_<year_from><mon_from>-<year_to><mon_to>.nc"
+    #fpatterns <- "PI-CTRL_nodynveg2_echam6_echam_<year><mon>.grb"
+    #fpatterns <- "PI-CTRL_nodynveg2_fesom_<fvarnames>_<year>0101.nc"
+    #fpatterns <- "PI-CTRL6_echam6_echam_<year><mon>.grb"
+    #fpatterns <- "piControl_echam6_echam_<year><mon>.grb"
+    #fpatterns <- "piControl_echam6_echammon_<year><mon>.grb"
+    #fpatterns <- "piControl_echam6_aeroptmon_<year><mon>.grb"
+    #fpatterns <- "1percCO2_echam6_echam_<year><mon>.grb"
+    #fpatterns <- "1percCO2_echam6_echam_<year><mon>.nc"
+    #fpatterns <- "4CO2_echam6_echam_<year><mon>.grb"
+    #fpatterns <- "4CO2_echam6_echam_<year><mon>.nc"
+    #fpatterns <- "CMIP6_HIST_echam6_echam_<year><mon>.grb"
     #prefixes <- "awi-cm-1-1-lr_piControl"
     #prefixes <- "awi-cm-1-1-lr_historical"
     #prefixes <- "awi-cm-1-1-lr_1percCO2"
@@ -347,24 +347,24 @@ if (F) { # old hist
     models <- "echam6"
     #models <- "fesom"
     #datapaths <- "/home/ollie/hyang/work/pi477/cpl_output/copy" # 2700 to 3249
-    #fpatterns <- "MM_<YYYY>01.01_echam.nc"
+    #fpatterns <- "MM_<year>01.01_echam.nc"
     #datapaths <- "/home/ollie/hyang/work/mh477/cpl_output/copy" # 2623 to 2657
-    #fpatterns <- "MM_<YYYY>01.01_echam.nc"
+    #fpatterns <- "MM_<year>01.01_echam.nc"
     #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_new/outdata/echam" # 2624 to 3001
-    #fpatterns <- "MMnew_echam6_echam_<YYYY>01.nc"
+    #fpatterns <- "MMnew_echam6_echam_<year>01.nc"
     #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/echam" # 3105 to 3166 
-    #fpatterns <- "mh_cold_echam6_BOT_mm_<YYYY><MM>.nc" # 3105 to 3264 but strange and 3124 is missing
-    #fpatterns <- "mh_cold_echam6_echammon_<YYYY><MM>.grb" # 3123 to 3266
+    #fpatterns <- "mh_cold_echam6_BOT_mm_<year><mon>.nc" # 3105 to 3264 but strange and 3124 is missing
+    #fpatterns <- "mh_cold_echam6_echammon_<year><mon>.grb" # 3123 to 3266
     #datapaths <- "/work/ab0246/a270073/out/awi-esm-1-1-lr/mh_cold"
-    #fpatterns <- "mh_cold_echam6_BOT_mm_temp2_<YYYY_from>-<YYYY_to>_with_time.nc"
+    #fpatterns <- "mh_cold_echam6_BOT_mm_temp2_<year_from>-<year_to>_with_time.nc"
     #fpatterns <- "mh_cold_echam6_BOT_mm_temp2_3105-3207.nc"
     #fpatterns <- "mh_cold_echam6_BOT_mm_temp2_3105-3207_with_time.nc"
     #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cold/outdata/fesom" 
-    #fpatterns <- "mh_cold_fesom_tosga_<YYYY>0101.nc"
+    #fpatterns <- "mh_cold_fesom_tosga_<year>0101.nc"
     #datapaths <- "/pf/a/a270064/work/esm-experiments/mh_cmip/outdata/echam" # mh branched from piControl: 1955-2105
-    #fpatterns <- "mh_cmip_echam6_echammon_<YYYY><MM>.grb"
+    #fpatterns <- "mh_cmip_echam6_echammon_<year><mon>.grb"
     datapaths <- "/work/ab0246/a270077/model_acid_tests/mat_0013/outdata/echam" # 1855-1968
-    fpatterns <- "mat_0013_echam6_echammon_<YYYY><MM>.grb"
+    fpatterns <- "mat_0013_echam6_echammon_<year><mon>.grb"
     #prefixes <- "awi-esm-1-1-lr_pi477_ollie"
     #prefixes <- "awi-esm-1-1-lr_lgm"
     #prefixes <- "awi-esm-1-1-lr_mh477_ollie"
@@ -409,35 +409,35 @@ if (F) { # old hist
 } else if (F) { # echam restart issue Jan tests
     models <- "echam6"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1a/outdata/echam"
-    #fpatterns <- "Jan1a_echam6_echamday_<YYYY><MM>.grb"
+    #fpatterns <- "Jan1a_echam6_echamday_<year><mon>.grb"
     #prefixes <- "awi-esm-1-1-lr_Jan1a_echamday"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1b/work"
-    #fpatterns <- "Jan1b_<YYYY><MM>.01_echamday"
+    #fpatterns <- "Jan1b_<year><mon>.01_echamday"
     #prefixes <- "awi-esm-1-1-lr_Jan1b_echamday"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1c/work"
-    #fpatterns <- "Jan1c_<YYYY><MM>.01_echamday"
+    #fpatterns <- "Jan1c_<year><mon>.01_echamday"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1c/outdata/echam"
-    #fpatterns <- "Jan1c_echam6_echamday_<YYYY><MM>.grb"
+    #fpatterns <- "Jan1c_echam6_echamday_<year><mon>.grb"
     #prefixes <- "awi-esm-1-1-lr_Jan1c_echamday"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1d/work"
-    #fpatterns <- "Jan1d_<YYYY><MM>.01_echamday"
+    #fpatterns <- "Jan1d_<year><mon>.01_echamday"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1d/outdata/echam"
-    #fpatterns <- "Jan1d_echam6_echamday_<YYYY><MM>.grb"
+    #fpatterns <- "Jan1d_echam6_echamday_<year><mon>.grb"
     #prefixes <- "awi-esm-1-1-lr_Jan1d_echamday"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1e_timelimit/work" # 1st try
-    #fpatterns <- "Jan1e_<YYYY>01.01_g3bid.nc"
+    #fpatterns <- "Jan1e_<year>01.01_g3bid.nc"
     #prefixes <- "awi-esm-1-1-lr_Jan1e_g3bid"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1e/work" # 2nd try
-    #fpatterns <- "Jan1e_<YYYY>01.01_g3bid.nc"
+    #fpatterns <- "Jan1e_<year>01.01_g3bid.nc"
     #prefixes <- "awi-esm-1-1-lr_Jan1e2_g3bid"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1f/outdata/echam"
-    #fpatterns <- "Jan1f_echam6_g3bid_<YYYY>01.nc"
+    #fpatterns <- "Jan1f_echam6_g3bid_<year>01.nc"
     #prefixes <- "awi-esm-1-1-lr_Jan1f_g3bid"
     #datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1g/outdata/echam"
-    #fpatterns <- "Jan1g_echam6_g3bid_<YYYY>01.nc"
+    #fpatterns <- "Jan1g_echam6_g3bid_<year>01.nc"
     #prefixes <- "awi-esm-1-1-lr_Jan1g_g3bid"
     datapaths <- "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/Jan1h/outdata/echam"
-    fpatterns <- "Jan1h_echam6_g3bid_<YYYY>01.nc"
+    fpatterns <- "Jan1h_echam6_g3bid_<year>01.nc"
     prefixes <- "awi-esm-1-1-lr_Jan1h_g3bid"
     fvarnames <- "temp2"
     #codes <- 167
@@ -449,31 +449,31 @@ if (F) { # old hist
 } else if (F) { # echam restart issue
     models <- "echam6"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/historical/outdata/echam"
-    #fpatterns <- "historical_echam6_echam3hr_<YYYY><MM>.grb"
+    #fpatterns <- "historical_echam6_echam3hr_<year><mon>.grb"
     #prefixes <- "awi-cm-1-1-lr_historical_3hr"
-    #fpatterns <- "historical_echam6_echam6hr_<YYYY><MM>.grb"
+    #fpatterns <- "historical_echam6_echam6hr_<year><mon>.grb"
     #prefixes <- "awi-cm-1-1-lr_historical_6hr"
-    #fpatterns <- "historical_echam6_echamday_<YYYY><MM>.grb"
+    #fpatterns <- "historical_echam6_echamday_<year><mon>.grb"
     #prefixes <- "awi-cm-1-1-lr_historical_day"
-    #fpatterns <- "historical_echam6_echammon_<YYYY><MM>.grb"
+    #fpatterns <- "historical_echam6_echammon_<year><mon>.grb"
     #prefixes <- "awi-cm-1-1-lr_historical_mon"
-    #fpatterns <- "historical_echam6_tdiagmon_<YYYY><MM>.grb"
+    #fpatterns <- "historical_echam6_tdiagmon_<year><mon>.grb"
     #prefixes <- "awi-cm-1-1-lr_historical_tdiagmon"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL4/restart/echam"
-    #fpatterns <- "restart_PI-CTRL4_echam_<YYYY>1231.nc"
+    #fpatterns <- "restart_PI-CTRL4_echam_<year>1231.nc"
     #prefixes <- "awi-esm-1-1-lr_piControl_restart_echam"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL4/outdata/echam"
-    #fpatterns <- "PI-CTRL4_echam6_sp6h_<YYYY>12.grb"
+    #fpatterns <- "PI-CTRL4_echam6_sp6h_<year>12.grb"
     #prefixes <- "awi-esm-1-1-lr_piControl_sp6h"
     datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/restart/echam"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/tar/restart/echam"
-    fpatterns <- "restart_PI-CTRL6_echam_<YYYY>1231.nc"
+    fpatterns <- "restart_PI-CTRL6_echam_<year>1231.nc"
     prefixes <- "awi-esm-1-1-lr_piControl_restart_echam"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/PI-CTRL6/tar/outdata/echam"
-    #fpatterns <- "PI-CTRL6_echam6_echamday_<YYYY>.grb"
+    #fpatterns <- "PI-CTRL6_echam6_echamday_<year>.grb"
     #prefixes <- "awi-esm-1-1-lr_piControl_echamday"
     #datapaths <- "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/historical/restart/echam"
-    #fpatterns <- "restart_historical_echam_<YYYY>1231.nc"
+    #fpatterns <- "restart_historical_echam_<year>1231.nc"
     #prefixes <- "awi-esm-1-1-lr_historical_restart_echam"
     #codes <- "152"
     #fvarnames <- "lsp"
@@ -500,10 +500,10 @@ if (F) { # old hist
 } else if (F) { # sara
     models <- "echam6"
     #datapaths <- "/work/aa0238/a270118/Experiments/test_Chris/outdata/echam"
-    #fpatterns <- "test_Chris_echam6_echam_<YYYY><MM><DD>.grb"
-    #fpatterns <- "test_Chris_echam6_g3b6h_<YYYY><MM><DD>.grb"
+    #fpatterns <- "test_Chris_echam6_echam_<year><mon><DD>.grb"
+    #fpatterns <- "test_Chris_echam6_g3b6h_<year><mon><DD>.grb"
     #datapaths <- "/work/aa0238/a270118/Experiments/100y_HICE_LAMO/outdata/echam"
-    #fpatterns <- "100y_HICE_LAMO_echam6_g3b6h_<YYYY><MM>.grb"
+    #fpatterns <- "100y_HICE_LAMO_echam6_g3b6h_<year><mon>.grb"
     datapaths <- "/work/aa0238/a270118/Experiments/100y_HICE_LAMO_old"
     #prefixes <- "test_Chris_echam"
     #prefixes <- "test_Chris_g3b6h"
@@ -519,7 +519,7 @@ if (F) { # old hist
 } else if (F) { # christian
     models <- "echam6"
     datapaths <- "/work/ba1066/a270061/esm_experiments_v4/PI_ctrl_4xCO2_awiesm-2.1_LR/outdata/echam"
-    fpatterns <- "PI_ctrl_4xCO2_awiesm-2.1_LR_<YYYY><MM>.01_g3bday"
+    fpatterns <- "PI_ctrl_4xCO2_awiesm-2.1_LR_<year><mon>.01_g3bday"
     prefixes <- "awi-esm-2-1-lr_PI_ctrl_4xCO2_g3bday"
     #fvarnames <- "tslm1"
     #codes <- 139
@@ -534,8 +534,8 @@ if (F) { # old hist
 } else if (F) { # tido
     models <- "echam6"
     datapaths <- "/work/bk0988/awicm/a270062/AWICM/hist1/outdata/echam"
-    fpatterns <- "echam6_g3bid_<YYYY>01.nc"
-    #fpatterns <- "echam6_g3bday_<YYYY>01.nc"
+    fpatterns <- "echam6_g3bid_<year>01.nc"
+    #fpatterns <- "echam6_g3bday_<year>01.nc"
     prefixes <- "awi-cm-1-1-mr_historical_g3bday"
     fvarnames <- "temp2"
     #fvarnames <- "tsi"
@@ -562,18 +562,18 @@ if (F) { # old hist
     datapaths <- "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_HIST/outdata/echam"
     #datapaths <- "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_4CO2/outdata/echam"
     #datapaths <- "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_1percCO2/outdata/echam"
-    #fpatterns <- "PI_LA04_cont02_echam6_echam_<YYYY><MM>.grb"
-    #fpatterns <- "PI_LA04_cont02_echam6_echammon_<YYYY><MM>.grb"
-    #fpatterns <- "PI_LA04_cont03_echam6_echam_<YYYY><MM>.grb"
-    #fpatterns <- "PI_LA04_cont03_echam6_echam_<YYYY>.grb"
-    #fpatterns <- "PI_LA04_cont03_echam6_echammon_<YYYY><MM>.grb"
-    #fpatterns <- "PI_LA04_cont03_echam6_echammon_<YYYY>.grb"
-    #fpatterns <- "PI_LA04_cont04_echam6_echammon_<YYYY><MM>.grb"
-    #fpatterns <- "CMIP6_HIST_echam6_echamday_<YYYY><MM>.grb"
-    fpatterns <- "CMIP6_HIST_echam6_echam_<YYYY><MM>.grb"
-    #fpatterns <- "CMIP6_HIST_echam6_echammon_<YYYY><MM>.grb"
-    #fpatterns <- "CMIP6_4CO2_echam6_echam_<YYYY><MM>.grb"
-    #fpatterns <- "CMIP6_1percCO2_echam6_echam_<YYYY><MM>.grb"
+    #fpatterns <- "PI_LA04_cont02_echam6_echam_<year><mon>.grb"
+    #fpatterns <- "PI_LA04_cont02_echam6_echammon_<year><mon>.grb"
+    #fpatterns <- "PI_LA04_cont03_echam6_echam_<year><mon>.grb"
+    #fpatterns <- "PI_LA04_cont03_echam6_echam_<year>.grb"
+    #fpatterns <- "PI_LA04_cont03_echam6_echammon_<year><mon>.grb"
+    #fpatterns <- "PI_LA04_cont03_echam6_echammon_<year>.grb"
+    #fpatterns <- "PI_LA04_cont04_echam6_echammon_<year><mon>.grb"
+    #fpatterns <- "CMIP6_HIST_echam6_echamday_<year><mon>.grb"
+    fpatterns <- "CMIP6_HIST_echam6_echam_<year><mon>.grb"
+    #fpatterns <- "CMIP6_HIST_echam6_echammon_<year><mon>.grb"
+    #fpatterns <- "CMIP6_4CO2_echam6_echam_<year><mon>.grb"
+    #fpatterns <- "CMIP6_1percCO2_echam6_echam_<year><mon>.grb"
     #prefixes <- "awi-esm-1-2-lr_piControl"
     prefixes <- "awi-esm-1-2-lr_historical"
     #prefixes <- "awi-esm-1-2-lr_historical_day"
@@ -620,27 +620,27 @@ if (F) { # old hist
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/mpiom" # links w correct timestamps
     #datapaths <- "/ace/user/cdanek/out/cosmos-aso-wiso/Hol-T/outdata/jsbach" # links w correct timestamps
     #datapaths <- "/ace/user/stschuet/Hol-T_echam5_wiso_links"
-    #fpatterns <- "Hol-Tx10_echam5_main_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-T_echam5_main_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-7_echam5_wiso_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<YYYY><MM>.nc"
-    fpatterns <- "Hol-T_echam5_wiso_mm_<YYYY><MM>.nc"
-    #fpatterns <- "Hol-T_echam5_wiso_link_<YYYY><MM>" # steffens links
-    #fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
-    #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231.nc" # daily
-    #fpatterns <- "fort.75_fort_<YYYY>0101_<YYYY>1231_monmean.nc" # monthly
-    #fpatterns <- "fort.75.<YYYY>0101_<YYYY>1231_monmean" # monthly
-    #fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231.grb"
-    #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231.grb"
-    #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_2_remapcon2_r120x101.nc" # THO
-    #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_5_remapcon2_r120x101.nc" # SAO
-    #fpatterns <- "Hol-7_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc" # zmld
-    #fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"
-    #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_183_remapcon2_r120x101.nc"
-    #fpatterns <- "Hol-7_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc" # sicmom
-    #fpatterns <- "Hol-Tx10_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
-    #fpatterns <- "Hol-T_mpiom_<YYYY>0101_<YYYY>1231_select_code_15_remapcon2_r120x101.nc"
-    #fpatterns <- "Hol-T_jsbach_veg_mm_<YYYY><MM>.grb" 
+    #fpatterns <- "Hol-Tx10_echam5_main_mm_<year><mon>.nc"
+    #fpatterns <- "Hol-T_echam5_main_mm_<year><mon>.nc"
+    #fpatterns <- "Hol-7_echam5_wiso_mm_<year><mon>.nc"
+    #fpatterns <- "Hol-Tx10_echam5_wiso_mm_<year><mon>.nc"
+    fpatterns <- "Hol-T_echam5_wiso_mm_<year><mon>.nc"
+    #fpatterns <- "Hol-T_echam5_wiso_link_<year><mon>" # steffens links
+    #fpatterns <- "TIMESER.<year>0101_<year>1231.ext.nc"
+    #fpatterns <- "fort.75_fort_<year>0101_<year>1231.nc" # daily
+    #fpatterns <- "fort.75_fort_<year>0101_<year>1231_monmean.nc" # monthly
+    #fpatterns <- "fort.75.<year>0101_<year>1231_monmean" # monthly
+    #fpatterns <- "Hol-Tx10_mpiom_<year>0101_<year>1231.grb"
+    #fpatterns <- "Hol-T_mpiom_<year>0101_<year>1231.grb"
+    #fpatterns <- "Hol-T_mpiom_<year>0101_<year>1231_select_code_2_remapcon2_r120x101.nc" # THO
+    #fpatterns <- "Hol-T_mpiom_<year>0101_<year>1231_select_code_5_remapcon2_r120x101.nc" # SAO
+    #fpatterns <- "Hol-7_mpiom_<year>0101_<year>1231_select_code_183_remapcon2_r120x101.nc" # zmld
+    #fpatterns <- "Hol-Tx10_mpiom_<year>0101_<year>1231_select_code_183_remapcon2_r120x101.nc"
+    #fpatterns <- "Hol-T_mpiom_<year>0101_<year>1231_select_code_183_remapcon2_r120x101.nc"
+    #fpatterns <- "Hol-7_mpiom_<year>0101_<year>1231_select_code_15_remapcon2_r120x101.nc" # sicmom
+    #fpatterns <- "Hol-Tx10_mpiom_<year>0101_<year>1231_select_code_15_remapcon2_r120x101.nc"
+    #fpatterns <- "Hol-T_mpiom_<year>0101_<year>1231_select_code_15_remapcon2_r120x101.nc"
+    #fpatterns <- "Hol-T_jsbach_veg_mm_<year><mon>.grb" 
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm"
     #prefixes <- "cosmos-aso-wiso_Hol-Tx10_main_mm_plev"
     prefixes <- "cosmos-aso-wiso_Hol-T_main_mm"
@@ -906,7 +906,7 @@ if (F) { # old hist
 } else if (F) { # recT127era5: echam6-wiso; T127L95; ERA-5 nudging; ollie
     datapaths <- "/work/ollie/mwerner/echam6-wiso/T127L95/NUDGING_ERA5_T127L95/MONMEAN"
     models <- "echam6"
-    fpatterns <- "NUDGING_ERA5_T127L95_echam6_<YYYY>.monmean.wiso.nc"
+    fpatterns <- "NUDGING_ERA5_T127L95_echam6_<year>.monmean.wiso.nc"
     prefixes <- "echam6_recT127era5_wiso"
     #fvarnames <- "temp2"
     #fvarnames <- "tsurf"
@@ -919,14 +919,14 @@ if (F) { # old hist
 } else if (F) { # E280_280ppm
     datapaths <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/E280_280ppm/outdata/mpiom"
     models <- "mpiom1"
-    fpatterns <- "TIMESER.<YYYY>0101_<YYYY>1231.ext.nc"
+    fpatterns <- "TIMESER.<year>0101_<year>1231.ext.nc"
     prefixes <- "E280_280ppm_mpiom_timeser"
     fvarnames <- "c25_TMERCI3"
     modes <- "select"
     froms <- "2650"
     tos <- "2749"
 
-} else if (T) { # lacroix_etal_2020
+} else if (F) { # lacroix_etal_2020
     models <- "lacroix_etal_2020"
     datapaths <- paste0(workpath, "/data/reccap2-ocean")
     fpatterns <- "fgco2_lacroix-river_v20220218.nc" # setgrid to original file; needs cdo >= 2
@@ -1008,7 +1008,7 @@ if (F) { # old hist
 } else if (F) { # chau_etal_2020
     models <- "chau_etal_2020"
     datapaths <- "/work/ba1103/a270073/data/chau_etal_2020/data"
-    fpatterns <- "dataset-carbon-rep-<YYYY_from>-<YYYY_to>_T0000Z_P20210930T1545Z.nc"
+    fpatterns <- "dataset-carbon-rep-<year_from>-<year_to>_T0000Z_P20210930T1545Z.nc"
     prefixes <- "chau_etal_2020"
     fvarnames <- "fgco2"
     #fvarnames <- "fgco2_uncertainty"
@@ -1060,14 +1060,14 @@ if (F) { # old hist
     #fpatterns <- "SeaFlux_v2021.04_fgco2_all_winds_products_timmean_ensemble_stats.nc"
     prefixes <- "gregor_and_fay_2021"
     #fvarnames <- "fgco2_ens_mean"
-    fvarnames <- "fgco2_ens_median"
-    #fvarnames <- "fgco2_ens_sd"
+    #fvarnames <- "fgco2_ens_median"
+    fvarnames <- "fgco2_ens_sd"
     #fvarnames <- "fgco2_ens_min"
     #fvarnames <- "fgco2_ens_max"
     modes <- "fldint"
     froms <- 1990
     tos <- 2019
-    mask_list <- list(list(
+    mask_list <- list(list(# reccap2
                            #name="reccap2_atlantic",
                            #cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_pacific",
@@ -1078,7 +1078,7 @@ if (F) { # old hist
                            #cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_southern",
                            #cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
-                           # sub-atlantic: 
+                           # reccap2 atlantic biomes: 
                            #name="reccap2_na_spss",
                            #cdo_mask=paste0("-eqc,1 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_na_stss",
@@ -1091,7 +1091,7 @@ if (F) { # old hist
                            #cdo_mask=paste0("-eqc,5 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_med",
                            #cdo_mask=paste0("-eqc,6 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
-                           # sub-pacific: 
+                           # reccap2 pacific biomes: 
                            #name="reccap2_np_spss",
                            #cdo_mask=paste0("-eqc,1 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_np_stss",
@@ -1104,27 +1104,38 @@ if (F) { # old hist
                            #cdo_mask=paste0("-eqc,5 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_sp_stps",
                            #cdo_mask=paste0("-eqc,6 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
-                           # sub-indian:
+                           # reccap2 indian biomes:
                            #name="reccap2_ind_stps",
                            #cdo_mask=paste0("-eqc,1 -select,name=indian ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_ind_interior",
                            #cdo_mask=paste0("-eqc,2 -select,name=indian ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
-                           # sub-arctic
+                           # reccap2 arctic biomes:
                            #name="reccap2_arctic_ice",
                            #cdo_mask=paste0("-eqc,1 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
-                           name="reccap2_np_ice",
-                           cdo_mask=paste0("-eqc,2 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
+                           #name="reccap2_np_ice",
+                           #cdo_mask=paste0("-eqc,2 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_na_ice",
                            #cdo_mask=paste0("-eqc,3 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_barents",
                            #cdo_mask=paste0("-eqc,4 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
-                           # sub-southern
+                           # reccap2 southern biomes:
                            #name="reccap2_so_stss",
                            #cdo_mask=paste0("-eqc,1 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_so_spss",
                            #cdo_mask=paste0("-eqc,2 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            #name="reccap2_so_ice",
                            #cdo_mask=paste0("-eqc,3 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
+                           # gregor_etal_2019 basins:
+                           name="gregor_etal_2019_nh-hl",
+                           cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
+                           #name="gregor_etal_2019_nh-st",
+                           #cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
+                           #name="gregor_etal_2019_equ",
+                           #cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
+                           #name="gregor_etal_2019_sh-st",
+                           #cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
+                           #name="gregor_etal_2019_sh-hl",
+                           #cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1 to 3
     models <- "echam6"
@@ -1134,38 +1145,38 @@ if (F) { # old hist
     #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/echam" # chunk 1
     #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/jsbach" # chunk 1
     #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
-    #fpatterns <- "SR_output_echam6_echam_<YYYY>01.nc" # chunk 1
-    #fpatterns <- "SR_output_echam6_co2_<YYYY>01.nc" # chunk 1
-    #fpatterns <- "SR_output_jsbach_jsbach_<YYYY>01.grb"
+    #fpatterns <- "SR_output_echam6_echam_<year>01.nc" # chunk 1
+    #fpatterns <- "SR_output_echam6_co2_<year>01.nc" # chunk 1
+    #fpatterns <- "SR_output_jsbach_jsbach_<year>01.grb"
     #codes_files <- paste0(datapaths, "/SR_output_195001.01_jsbach.codes")
-    #fpatterns <- "SR_output_jsbach_veg_<YYYY>01.grb"
+    #fpatterns <- "SR_output_jsbach_veg_<year>01.grb"
     #codes_files <- paste0(datapaths, "/SR_output_195001.01_veg.codes")
-    #fpatterns <- "SR_output_jsbach_yasso_<YYYY>01.grb"
+    #fpatterns <- "SR_output_jsbach_yasso_<year>01.grb"
     #codes_files <- paste0(datapaths, "/SR_output_195001.01_yasso.codes")
     # chunk 2: 2030:2685
     #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
     #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/jsbach" # chunk 2
     #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
-    #fpatterns <- "test_echam6_g3bid_<YYYY>01.nc" # chunk 2
-    #fpatterns <- "test_echam6_echam_<YYYY>01.nc" # chunk 2
-    #fpatterns <- "test_echam6_co2_<YYYY>01.nc" # chunk 2
-    #fpatterns <- "test_jsbach_jsbach_<YYYY>01.grb" # chunk 2
+    #fpatterns <- "test_echam6_g3bid_<year>01.nc" # chunk 2
+    #fpatterns <- "test_echam6_echam_<year>01.nc" # chunk 2
+    #fpatterns <- "test_echam6_co2_<year>01.nc" # chunk 2
+    #fpatterns <- "test_jsbach_jsbach_<year>01.grb" # chunk 2
     #codes_files <- paste0(datapaths, "/test_203001.01_jsbach.codes")
-    #fpatterns <- "test_jsbach_veg_<YYYY>01.grb" # chunk 2
+    #fpatterns <- "test_jsbach_veg_<year>01.grb" # chunk 2
     #codes_files <- paste0(datapaths, "/test_203001.01_veg.codes")
-    #fpatterns <- "test_jsbach_yasso_<YYYY>01.grb"
+    #fpatterns <- "test_jsbach_yasso_<year>01.grb"
     #codes_files <- paste0(datapaths, "/test_203001.01_yasso.codes")
-    #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc" # chunk 1 and 2 
+    #fpatterns <- "<fvarnames>_fesom_<year>0101.nc" # chunk 1 and 2 
     # chunk 3 from 2686
     datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/echam" # chunk3
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/jsbach" # chunk3
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom" # chunk3
-    #fpatterns <- "piControl_<YYYY><MM>.01_echam"
-    fpatterns <- "piControl_<YYYY><MM>.01_co2"
-    #fpatterns <- "piControl_<YYYY><MM>.01_jsbach"
-    #fpatterns <- "piControl_<YYYY><MM>.01_veg"
-    #fpatterns <- "piControl_<YYYY><MM>.01_yasso"
-    #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
+    #fpatterns <- "piControl_<year><mon>.01_echam"
+    fpatterns <- "piControl_<year><mon>.01_co2"
+    #fpatterns <- "piControl_<year><mon>.01_jsbach"
+    #fpatterns <- "piControl_<year><mon>.01_veg"
+    #fpatterns <- "piControl_<year><mon>.01_yasso"
+    #fpatterns <- "<fvarnames>_fesom_<year>0101.nc"
     #
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_3hr"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_day"
@@ -1348,7 +1359,7 @@ if (F) { # old hist
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl LUtrans1850
     models <- "echam6"
     datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/echam"
-    fpatterns <- "piControl_LUtrans1850_<YYYY><MM>.01_co2"
+    fpatterns <- "piControl_LUtrans1850_<year><mon>.01_co2"
     prefixes <- "awi-esm-1-1-lr_kh800_piControl_LUtrans1850"
     #codes <- 6
     #fvarnames <- "co2_flx_land"
@@ -1370,10 +1381,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf ACCESS-ESM1-5
     models <- "ACCESS-ESM1-5" # ocean: mom5: native: tripolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CSIRO/ACCESS-ESM1-5/piControl/r1i1p1f1/Omon/fgco2/gn/v20191214"
-    #fpatterns <- "fgco2_Omon_ACCESS-ESM1-5_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_ACCESS-ESM1-5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CSIRO/ACCESS-ESM1-5/piControl/r1i1p1f1/Lmon/nbp/gn/v20210316"
-    fpatterns <- "nbp_Lmon_ACCESS-ESM1-5_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_ACCESS-ESM1-5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     fvarnames <- "co2_flx_total"
     prefixes <- "ACCESS-ESM1-5_piControl_r1i1p1f1"
@@ -1386,10 +1397,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf AWI-ESM-1-1-LR
     models <- "AWI-ESM-1-1-LR"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20200212"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AWI/AWI-ESM-1-1-LR/piControl/r1i1p1f1/Emon/fLuc/gn/v20200212"
-    fpatterns <- "fLuc_Emon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fLuc_Emon_AWI-ESM-1-1-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "fLuc"
     prefixes <- "AWI-ESM-1-1-LR_piControl_r1i1p1f1"
     modes <- "fldint"
@@ -1399,24 +1410,24 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf BCC-ESM1
     models <- "BCC-ESM1" # ocean: mom4: native: curvilinear; fldint todo
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/BCC/BCC-ESM1/piControl/r1i1p1f1/Omon/fgco2/gn/v20191121"
-    fpatterns <- "fgco2_Omon_BCC-ESM1_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fgco2_Omon_BCC-ESM1_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     prefixes <- "BCC-ESM1_piControl_r1i1p1f1"
     fvarnames <- "fgco2"
     modes <- "fldint"
     froms <- 2201 # last 100a
     tos <- 2300 # last 100a
-    if (sapply(modes, function(x) any(x == "fldint"))) stop("mom4 fldint todo: cdo gridarea --> Cell corner coordinates missing")
+    if (any(modes == c("fldmean", "fldint"))) cdo_before_calcs <- "remapbil,global_1"
 
 } else if (F) { # cmip6 esgf CanESM5;
     models <- "CanESM5" # ocean: nemo3.4.1: native: orca1 tripolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CCCma/CanESM5/piControl/r1i1p1f1/Omon/fgco2/gn/v20190429"
-    #fpatterns <- "fgco2_Omon_CanESM5_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_CanESM5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CCCma/CanESM5/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20190429"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_CanESM5_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_CanESM5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CCCma/CanESM5/piControl/r1i1p1f1/Lmon/nbp/gn/v20190429"
-    fpatterns <- "nbp_Lmon_CanESM5_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_CanESM5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     fvarnames <- "co2_flx_total"
     prefixes <- "CanESM5_piControl_r1i1p1f1"
@@ -1427,10 +1438,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf CanESM5-CanOE;
     models <- "CanESM5-CanOE" # ocean: nemo3.4.1: native: orca1 tripolar; cdo: curvilinear; fldint ok
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CCCma/CanESM5-CanOE/piControl/r1i1p2f1/Lmon/nbp/gn/v20190429"
-    fpatterns <- "nbp_Lmon_CanESM5-CanOE_piControl_r1i1p2f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_CanESM5-CanOE_piControl_r1i1p2f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CCCma/CanESM5-CanOE/piControl/r1i1p2f1/Omon/fgco2/gn/v20190429"
-    #fpatterns <- "fgco2_Omon_CanESM5-CanOE_piControl_r1i1p2f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_CanESM5-CanOE_piControl_r1i1p2f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     fvarnames <- "co2_flx_total"
     prefixes <- "CanESM5-CanOE_piControl_r1i1p2f1"
@@ -1443,16 +1454,16 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf CESM2 
     models <- "CESM2" # ocean: pop2: native: ?; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2/piControl/r1i1p1f1/Omon/fgco2/gr/v20190320"
-    #fpatterns <- "fgco2_Omon_CESM2_piControl_r1i1p1f1_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_CESM2_piControl_r1i1p1f1_gr_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2/piControl/r1i1p1f1/Lmon/nbp/gn/v20190320"
-    #fpatterns <- "nbp_Lmon_CESM2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_CESM2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2/piControl/r1i1p1f1/Emon/fLuc/gn/v20190320"
-    #fpatterns <- "fLuc_Emon_CESM2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fLuc_Emon_CESM2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fLuc"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20190320"
-    fpatterns <- "fHarvest_Lmon_CESM2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fHarvest_Lmon_CESM2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "fHarvest"
     #fvarnames <- "co2_flx_total"
     prefixes <- "CESM2_piControl_r1i1p1f1"
@@ -1463,19 +1474,19 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf CESM2-FV2
     models <- "CESM2-FV2" # ocean: pop2: native: ?; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20191120"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_CESM2-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_CESM2-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/piControl/r1i1p1f1/Lmon/nbp/gn/v20191120"
-    #fpatterns <- "nbp_Lmon_CESM2-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_CESM2-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/piControl/r1i1p1f1/Omon/fgco2/gn/v20191120"
-    #fpatterns <- "fgco2_Omon_CESM2-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_CESM2-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/piControl/r1i1p1f1/Emon/fLuc/gn/v20191120"
-    #fpatterns <- "fLuc_Emon_CESM2-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fLuc_Emon_CESM2-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fLuc"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20191120"
-    fpatterns <- "fHarvest_Lmon_CESM2-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fHarvest_Lmon_CESM2-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "fHarvest"
     #fvarnames <- "co2_flx_total"
     prefixes <- "CESM2-FV2_piControl_r1i1p1f1"
@@ -1486,16 +1497,16 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf CESM2-WACCM
     models <- "CESM2-WACCM" # ocean: pop2: native: ?; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20190320"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_CESM2-WACCM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_CESM2-WACCM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM/piControl/r1i1p1f1/Omon/fgco2/gn/v20190320"
-    #fpatterns <- "fgco2_Omon_CESM2-WACCM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_CESM2-WACCM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM/piControl/r1i1p1f1/Emon/fLuc/gn/v20190320"
-    #fpatterns <- "fLuc_Emon_CESM2-WACCM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fLuc_Emon_CESM2-WACCM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fLuc"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20190320"
-    fpatterns <- "fHarvest_Lmon_CESM2-WACCM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fHarvest_Lmon_CESM2-WACCM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "fHarvest"
     prefixes <- "CESM2-WACCM_piControl_r1i1p1f1"
     modes <- "fldint"
@@ -1505,19 +1516,19 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf CESM2-WACCM-FV2
     models <- "CESM2-WACCM-FV2" # ocean: pop2: native: ?; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM-FV2/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20191120"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM-FV2/piControl/r1i1p1f1/Lmon/nbp/gn/v20191120"
-    #fpatterns <- "nbp_Lmon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM-FV2/piControl/r1i1p1f1/Omon/fgco2/gn/v20191120"
-    #fpatterns <- "fgco2_Omon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM-FV2/piControl/r1i1p1f1/Emon/fLuc/gn/v20191120"
-    #fpatterns <- "fLuc_Emon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fLuc_Emon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fLuc"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM-FV2/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20191120"
-    fpatterns <- "fHarvest_Lmon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fHarvest_Lmon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "fHarvest"
     #fvarnames <- "co2_flx_total"
     prefixes <- "CESM2-WACCM-FV2_piControl_r1i1p1f1"
@@ -1528,13 +1539,13 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf CMCC-CM2-SR5
     models <- "CMCC-CM2-SR5"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CMCC/CMCC-CM2-SR5/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20200616"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_CMCC-CM2-SR5_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_CMCC-CM2-SR5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CMCC/CMCC-CM2-SR5/piControl/r1i1p1f1/Lmon/nbp/gn/v20200616"
-    #fpatterns <- "nbp_Lmon_CMCC-CM2-SR5_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_CMCC-CM2-SR5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CMCC/CMCC-CM2-SR5/piControl/r1i1p1f1/Emon/fLuc/gn/v20200616"
-    fpatterns <- "fLuc_Emon_CMCC-CM2-SR5_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fLuc_Emon_CMCC-CM2-SR5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "fLuc"
     prefixes <- "CMCC-CM2-SR5_piControl_r1i1p1f1"
     modes <- "fldint"
@@ -1544,10 +1555,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf CMCC-ESM2
     models <- "CMCC-ESM2" # ocean: nemo3.6: native: ORCA1 tripolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CMCC/CMCC-ESM2/piControl/r1i1p1f1/Omon/fgco2/gn/v20210126"
-    #fpatterns <- "fgco2_Omon_CMCC-ESM2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_CMCC-ESM2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CMCC/CMCC-ESM2/piControl/r1i1p1f1/Lmon/nbp/gn/v20210126"
-    fpatterns <- "nbp_Lmon_CMCC-ESM2_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_CMCC-ESM2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     fvarnames <- "co2_flx_total"
     prefixes <- "CMCC-ESM2_piControl_r1i1p1f1"
@@ -1558,16 +1569,16 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf CNRM-ESM2-1
     models <- "CNRM-ESM2-1" # ocean: nemo3.6: native: eORCA1 tripolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CNRM-CERFACS/CNRM-ESM2-1/piControl/r1i1p1f2/Omon/fgco2/gn/v20181115"
-    #fpatterns <- "fgco2_Omon_CNRM-ESM2-1_piControl_r1i1p1f2_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_CNRM-ESM2-1_piControl_r1i1p1f2_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CNRM-CERFACS/CNRM-ESM2-1/piControl/r1i1p1f2/Emon/netAtmosLandCO2Flux/gr/v20181115"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_CNRM-ESM2-1_piControl_r1i1p1f2_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_CNRM-ESM2-1_piControl_r1i1p1f2_gr_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CNRM-CERFACS/CNRM-ESM2-1/piControl/r1i1p1f2/Lmon/nbp/gr/v20181115"
-    #fpatterns <- "nbp_Lmon_CNRM-ESM2-1_piControl_r1i1p1f2_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_CNRM-ESM2-1_piControl_r1i1p1f2_gr_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CNRM-CERFACS/CNRM-ESM2-1/piControl/r1i1p1f2/Emon/fLuc/gr/v20181115"
-    fpatterns <- "fLuc_Emon_CNRM-ESM2-1_piControl_r1i1p1f2_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fLuc_Emon_CNRM-ESM2-1_piControl_r1i1p1f2_gr_<year_from>01-<year_to>12.nc"
     fvarnames <- "fLuc"
     #fvarnames <- "co2_flx_total"
     prefixes <- "CNRM-ESM2-1_piControl_r1i1p1f2"
@@ -1578,7 +1589,7 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf EC-Earth3-CC
     models <- "EC-Earth3-CC" # ocean: nemo3.6: native: ORCA1 tripolar; cdo: curvilinear; fldint ok
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/EC-Earth-Consortium/EC-Earth3-CC/piControl/r1i1p1f1/Omon/fgco2/gn/v20210416"
-    fpatterns <- "fgco2_Omon_EC-Earth3-CC_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fgco2_Omon_EC-Earth3-CC_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     prefixes <- "EC-Earth3-CC_piControl_r1i1p1f1"
     fvarnames <- "fgco2"
     modes <- "fldint"
@@ -1588,7 +1599,7 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf EC-Earth3-Veg
     models <- "EC-Earth3-Veg" # ocean: nemo3.6: native: ORCA1 tripolar; cdo: curvilinear; fldint ok
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/EC-Earth-Consortium/EC-Earth3-Veg/piControl/r1i1p1f1/Lmon/nbp/gr/v20200226"
-    fpatterns <- "nbp_Lmon_EC-Earth3-Veg_piControl_r1i1p1f1_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_EC-Earth3-Veg_piControl_r1i1p1f1_gr_<year_from>01-<year_to>12.nc"
     fvarnames <- "nbp"
     prefixes <- "EC-Earth3-Veg_piControl_r1i1p1f1"
     modes <- "fldint"
@@ -1598,10 +1609,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf EC-Earth3-Veg-LR
     models <- "EC-Earth3-Veg-LR" # ocean: nemo3.6: native: ORCA1 tripolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/EC-Earth-Consortium/EC-Earth3-CC/piControl/r1i1p1f1/Omon/fgco2/gn/v20210416"
-    #fpatterns <- "fgco2_Omon_EC-Earth3-CC_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_EC-Earth3-CC_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/EC-Earth-Consortium/EC-Earth3-Veg-LR/piControl/r1i1p1f1/Lmon/nbp/gr/v20201113"
-    fpatterns <- "nbp_Lmon_EC-Earth3-Veg-LR_piControl_r1i1p1f1_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_EC-Earth3-Veg-LR_piControl_r1i1p1f1_gr_<year_from>01-<year_to>12.nc"
     fvarnames <- "nbp"
     prefixes <- "EC-Earth3-Veg-LR_piControl_r1i1p1f1"
     modes <- "fldint"
@@ -1613,7 +1624,7 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf GFDL-CM4
     models <- "GFDL-CM4" # ocean: gfdl-mom6: native: tripolar; cdo: ?
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NOAA-GFDL/GFDL-CM4/piControl/r1i1p1f1/Omon/fgco2/gr/v20180701"
-    fpatterns <- "fgco2_Omon_GFDL-CM4_piControl_r1i1p1f1_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fgco2_Omon_GFDL-CM4_piControl_r1i1p1f1_gr_<year_from>01-<year_to>12.nc"
     prefixes <- "GFDL-CM4_piControl_r1i1p1f1"
     fvarnames <- "fgco2"
     modes <- "fldint"
@@ -1623,10 +1634,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf GFDL-ESM4
     models <- "GFDL-ESM4" # ocean: gfdl-mom6: native: tripolar; cdo: ?
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NOAA-GFDL/GFDL-ESM4/piControl/r1i1p1f1/Omon/fgco2/gr/v20180701"
-    #fpatterns <- "fgco2_Omon_GFDL-ESM4_piControl_r1i1p1f1_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_GFDL-ESM4_piControl_r1i1p1f1_gr_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NOAA-GFDL/GFDL-ESM4/piControl/r1i1p1f1/Lmon/nbp/gr1/v20180701"
-    fpatterns <- "nbp_Lmon_GFDL-ESM4_piControl_r1i1p1f1_gr1_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_GFDL-ESM4_piControl_r1i1p1f1_gr1_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     fvarnames <- "co2_flx_total"
     prefixes <- "GFDL-ESM4_piControl_r1i1p1f1"
@@ -1637,7 +1648,7 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf GISS-E2-1-G
     models <- "GISS-E2-1-G" # ocean: giss_ocean: native: ?; cdo: lonlat; fldint ok
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NASA-GISS/GISS-E2-1-G/piControl/r101i1p1f1/Omon/fgco2/gn/v20190815"
-    fpatterns <- "fgco2_Omon_GISS-E2-1-G_piControl_r101i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fgco2_Omon_GISS-E2-1-G_piControl_r101i1p1f1_gn_<year_from>01-<year_to>12.nc"
     prefixes <- "GISS-E2-1-G_piControl_r101i1p1f1"
     fvarnames <- "fgco2" # strange large values 1e14 to 1e15
     modes <- "fldint"
@@ -1647,10 +1658,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf INM-CM4-8
     models <- "INM-CM4-8" # ocean: inm-om5: native: North Pole shifted; cdo ?
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/INM/INM-CM4-8/piControl/r1i1p1f1/Omon/fgco2/gr1/v20190605"
-    #fpatterns <- "fgco2_Omon_INM-CM4-8_piControl_r1i1p1f1_gr1_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_INM-CM4-8_piControl_r1i1p1f1_gr1_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/INM/INM-CM4-8/piControl/r1i1p1f1/Lmon/nbp/gr1/v20190605"
-    fpatterns <- "nbp_Lmon_INM-CM4-8_piControl_r1i1p1f1_gr1_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_INM-CM4-8_piControl_r1i1p1f1_gr1_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     fvarnames <- "co2_flx_total"
     prefixes <- "INM-CM4-8_piControl_r1i1p1f1"
@@ -1661,10 +1672,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf INM-CM5-0
     models <- "INM-CM5-0" # ocean: inm-om5: native: North Pole shifted; cdo ?
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/INM/INM-CM5-0/piControl/r1i1p1f1/Omon/fgco2/gr1/v20190619"
-    #fpatterns <- "fgco2_Omon_INM-CM5-0_piControl_r1i1p1f1_gr1_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_INM-CM5-0_piControl_r1i1p1f1_gr1_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/INM/INM-CM5-0/piControl/r1i1p1f1/Lmon/nbp/gr1/v20190619"
-    fpatterns <- "nbp_Lmon_INM-CM5-0_piControl_r1i1p1f1_gr1_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_INM-CM5-0_piControl_r1i1p1f1_gr1_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     fvarnames <- "co2_flx_total"
     prefixes <- "INM-CM5-0_piControl_r1i1p1f1"
@@ -1675,16 +1686,16 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf IPSL-CM6A-LR
     models <- "IPSL-CM6A-LR" # ocean: nemo-opa: native: eORCA1.3, tripolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/IPSL/IPSL-CM6A-LR/piControl/r1i1p1f1/Omon/fgco2/gn/v20200326"
-    #fpatterns <- "fgco2_Omon_IPSL-CM6A-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_IPSL-CM6A-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/IPSL/IPSL-CM6A-LR/piControl/r1i1p1f1/Lmon/nbp/gr/v20200326"
-    #fpatterns <- "nbp_Lmon_IPSL-CM6A-LR_piControl_r1i1p1f1_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_IPSL-CM6A-LR_piControl_r1i1p1f1_gr_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/IPSL/IPSL-CM6A-LR/piControl/r1i2p1f1/Emon/fLuc/gr/v20190319"
-    #fpatterns <- "fLuc_Emon_IPSL-CM6A-LR_piControl_r1i2p1f1_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fLuc_Emon_IPSL-CM6A-LR_piControl_r1i2p1f1_gr_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fLuc"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/IPSL/IPSL-CM6A-LR/piControl/r1i2p1f1/Lmon/fHarvest/gr/v20190319"
-    fpatterns <- "fHarvest_Lmon_IPSL-CM6A-LR_piControl_r1i2p1f1_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fHarvest_Lmon_IPSL-CM6A-LR_piControl_r1i2p1f1_gr_<year_from>01-<year_to>12.nc"
     fvarnames <- "fHarvest"
     #fvarnames <- "co2_flx_total"
     #prefixes <- "IPSL-CM6A-LR_piControl_r1i1p1f1"
@@ -1698,13 +1709,13 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf MIROC-ES2L
     models <- "MIROC-ES2L" # ocean: coco4.9: native: tripolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MIROC/MIROC-ES2L/piControl/r1i1p1f2/Omon/fgco2/gn/v20200124"
-    #fpatterns <- "fgco2_Omon_MIROC-ES2L_piControl_r1i1p1f2_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_MIROC-ES2L_piControl_r1i1p1f2_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MIROC/MIROC-ES2L/piControl/r1i1p1f2/Emon/netAtmosLandCO2Flux/gn/v20190823"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_MIROC-ES2L_piControl_r1i1p1f2_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_MIROC-ES2L_piControl_r1i1p1f2_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MIROC/MIROC-ES2L/piControl/r1i1p1f2/Lmon/nbp/gn/v20190823"
-    fpatterns <- "nbp_Lmon_MIROC-ES2L_piControl_r1i1p1f2_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_MIROC-ES2L_piControl_r1i1p1f2_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     fvarnames <- "co2_flx_total"
     prefixes <- "MIROC-ES2L_piControl_r1i1p1f2"
@@ -1715,19 +1726,19 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf MPI-ESM-1-2-HAM
     models <- "MPI-ESM-1-2-HAM" # ocean: mpiom1.63: native: bipolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/HAMMOZ-Consortium/MPI-ESM-1-2-HAM/piControl/r1i1p1f1/Omon/fgco2/gn/v20200120"
-    #fpatterns <- "fgco2_Omon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/HAMMOZ-Consortium/MPI-ESM-1-2-HAM/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20200120"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/HAMMOZ-Consortium/MPI-ESM-1-2-HAM/piControl/r1i1p1f1/Lmon/nbp/gn/v20200120"
-    #fpatterns <- "nbp_Lmon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/HAMMOZ-Consortium/MPI-ESM-1-2-HAM/piControl/r1i1p1f1/Emon/fLuc/gn/v20200120"
-    #fpatterns <- "fLuc_Emon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fLuc_Emon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fLuc"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/HAMMOZ-Consortium/MPI-ESM-1-2-HAM/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20200120"
-    fpatterns <- "fHarvest_Lmon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fHarvest_Lmon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "fHarvest"
     #fvarnames <- "co2_flx_total"
     prefixes <- "MPI-ESM-1-2-HAM_piControl_r1i1p1f1"
@@ -1738,7 +1749,7 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf MPI-ESM1-2-HR
     models <- "MPI-ESM1-2-HR" # ocean: mpiom1.63: native: bipolar; cdo: curvilinear; fldint ok
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-HR/piControl/r1i1p1f1/Omon/fgco2/gn/v20190710"
-    fpatterns <- "fgco2_Omon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fgco2_Omon_MPI-ESM1-2-HR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     prefixes <- "MPI-ESM1-2-HR_piControl_r1i1p1f1"
     fvarnames <- "fgco2"
     modes <- "fldint"
@@ -1748,19 +1759,19 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf MPI-ESM1-2-LR
     models <- "MPI-ESM1-2-LR" # ocean: mpiom1.63: native: bipolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Omon/fgco2/gn/v20190710"
-    #fpatterns <- "fgco2_Omon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20190710"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "netAtmosLandCO2Flux_Emon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "netAtmosLandCO2Flux"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Lmon/nbp/gn/v20190710"
-    #fpatterns <- "nbp_Lmon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Emon/fLuc/gn/v20190710"
-    #fpatterns <- "fLuc_Emon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fLuc_Emon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fLuc"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20190710"
-    fpatterns <- "fHarvest_Lmon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fHarvest_Lmon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "fHarvest"
     #fvarnames <- "co2_flx_total"
     prefixes <- "MPI-ESM1-2-LR_piControl_r1i1p1f1"
@@ -1771,10 +1782,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf MRI-ESM2-0 
     models <- "MRI-ESM2-0" # ocean: mri.com4.4: native: tripolar; cdo ?
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MRI/MRI-ESM2-0/piControl/r1i2p1f1/Omon/fgco2/gr/v20200222"
-    #fpatterns <- "fgco2_Omon_MRI-ESM2-0_piControl_r1i2p1f1_gr_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_MRI-ESM2-0_piControl_r1i2p1f1_gr_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MRI/MRI-ESM2-0/piControl/r1i2p1f1/Lmon/nbp/gn/v20200313"
-    fpatterns <- "nbp_Lmon_MRI-ESM2-0_piControl_r1i2p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_MRI-ESM2-0_piControl_r1i2p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     fvarnames <- "co2_flx_total"
     prefixes <- "MRI-ESM2-0_piControl_r1i2p1f1"
@@ -1785,16 +1796,16 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf NorCPM1
     models <- "NorCPM1" # ocean: micom1.1: native: ?; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCC/NorCPM1/piControl/r1i1p1f1/Omon/fgco2/gn/v20190914"
-    #fpatterns <- "fgco2_Omon_NorCPM1_piControl_r1i1p1f1_gn_<YYYY_from>0?-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_NorCPM1_piControl_r1i1p1f1_gn_<year_from>0?-<year_to>12.nc"
     #fvarnames <- "fgco2"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCC/NorCPM1/piControl/r1i1p1f1/Lmon/nbp/gn/v20190914"
-    #fpatterns <- "nbp_Lmon_NorCPM1_piControl_r1i1p1f1_gn_<YYYY_from>0?-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_NorCPM1_piControl_r1i1p1f1_gn_<year_from>0?-<year_to>12.nc"
     #fvarnames <- "nbp"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCC/NorCPM1/piControl/r1i1p1f1/Emon/fLuc/gn/v20190914"
-    #fpatterns <- "fLuc_Emon_NorCPM1_piControl_r1i1p1f1_gn_<YYYY_from>0?-<YYYY_to>12.nc"
+    #fpatterns <- "fLuc_Emon_NorCPM1_piControl_r1i1p1f1_gn_<year_from>0?-<year_to>12.nc"
     #fvarnames <- "fLuc"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCC/NorCPM1/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20190914"
-    fpatterns <- "fHarvest_Lmon_NorCPM1_piControl_r1i1p1f1_gn_<YYYY_from>0?-<YYYY_to>12.nc"
+    fpatterns <- "fHarvest_Lmon_NorCPM1_piControl_r1i1p1f1_gn_<year_from>0?-<year_to>12.nc"
     fvarnames <- "fHarvest"
     prefixes <- "NorCPM1_piControl_r1i1p1f1"
     modes <- "fldint"
@@ -1804,7 +1815,7 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf NorESM1-F
     models <- "NorESM1-F" # ocean: micom: native: ?; cdo: curvilinear; fldint ok
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCC/NorESM1-F/piControl/r1i1p1f1/Omon/fgco2/gn/v20190920"
-    fpatterns <- "fgco2_Omon_NorESM1-F_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fgco2_Omon_NorESM1-F_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     prefixes <- "NorESM1-F_piControl_r1i1p1f1"
     fvarnames <- "fgco2"
     modes <- "fldint"
@@ -1814,7 +1825,7 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf NorESM2-LM
     models <- "NorESM2-LM" # ocean: micom: native: ?; cdo: curvilinear; fldint ok
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCC/NorESM2-LM/piControl/r1i1p1f1/Lmon/nbp/gn/v20210118"
-    fpatterns <- "nbp_Lmon_NorESM2-LM_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_NorESM2-LM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "nbp"
     prefixes <- "NorESM2-LM_piControl_r1i1p1f1"
     modes <- "fldint"
@@ -1824,10 +1835,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf SAM0-UNICON
     models <- "SAM0-UNICON" # ocean: pop2
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/SNU/SAM0-UNICON/piControl/r1i1p1f1/Lmon/nbp/gn/v20190910"
-    #fpatterns <- "nbp_Lmon_SAM0-UNICON_piControl_r1i1p1f1_gn_<YYYY_from>01_<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_SAM0-UNICON_piControl_r1i1p1f1_gn_<year_from>01_<year_to>12.nc"
     #fvarnames <- "nbp"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/SNU/SAM0-UNICON/piControl/r1i1p1f1/Emon/fLuc/gn/v20190910"
-    fpatterns <- "fLuc_Emon_SAM0-UNICON_piControl_r1i1p1f1_gn_<YYYY_from>01_<YYYY_to>12.nc"
+    fpatterns <- "fLuc_Emon_SAM0-UNICON_piControl_r1i1p1f1_gn_<year_from>01_<year_to>12.nc"
     fvarnames <- "fLuc"
     prefixes <- "SAM0-UNICON_piControl_r1i1p1f1"
     modes <- "fldint"
@@ -1838,13 +1849,13 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf TaiESM1
     models <- "TaiESM1" # ocean: pop2
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AS-RCEC/TaiESM1/piControl/r1i1p1f1/Lmon/nbp/gn/v20200302"
-    #fpatterns <- "nbp_Lmon_TaiESM1_piControl_r1i1p1f1_gn_<YYYY_from>0?-<YYYY_to>12.nc"
+    #fpatterns <- "nbp_Lmon_TaiESM1_piControl_r1i1p1f1_gn_<year_from>0?-<year_to>12.nc"
     #fvarnames <- "nbp"
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AS-RCEC/TaiESM1/piControl/r1i1p1f1/Emon/fLuc/gn/v20200309"
-    #fpatterns <- "fLuc_Emon_TaiESM1_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fLuc_Emon_TaiESM1_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fLuc"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/AS-RCEC/TaiESM1/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20200302"
-    fpatterns <- "fHarvest_Lmon_TaiESM1_piControl_r1i1p1f1_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "fHarvest_Lmon_TaiESM1_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     fvarnames <- "fHarvest"
     prefixes <- "TaiESM1_piControl_r1i1p1f1"
     modes <- "fldint"
@@ -1854,10 +1865,10 @@ if (F) { # old hist
 } else if (F) { # cmip6 esgf UKESM1-0-LL
     models <- "UKESM1-0-LL" # ocean: nemo-hadgem3-go6.0: native: eORCA1 tripolar; cdo: curvilinear; fldint ok
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MOHC/UKESM1-0-LL/piControl/r1i1p1f2/Omon/fgco2/gn/v20200828"
-    #fpatterns <- "fgco2_Omon_UKESM1-0-LL_piControl_r1i1p1f2_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    #fpatterns <- "fgco2_Omon_UKESM1-0-LL_piControl_r1i1p1f2_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "fgco2"
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MOHC/UKESM1-0-LL/piControl/r1i1p1f2/Lmon/nbp/gn/v20200828"
-    fpatterns <- "nbp_Lmon_UKESM1-0-LL_piControl_r1i1p1f2_gn_<YYYY_from>01-<YYYY_to>12.nc"
+    fpatterns <- "nbp_Lmon_UKESM1-0-LL_piControl_r1i1p1f2_gn_<year_from>01-<year_to>12.nc"
     #fvarnames <- "nbp"
     fvarnames <- "co2_flx_total"
     prefixes <- "UKESM1-0-LL_piControl_r1i1p1f2"
@@ -1874,11 +1885,11 @@ if (F) { # old hist
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/echam"
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/jsbach"
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/fesom"
-    #fpatterns <- "historical_<YYYY>01.01_echam"
-    #fpatterns <- "historical_<YYYY>01.01_g3bid"
-    #fpatterns <- "historical_<YYYY>01.01_co2"
-    #fpatterns <- "historical_<YYYY>01.01_jsbach"
-    #fpatterns <- "historical_<YYYY>01.01_nitro"
+    #fpatterns <- "historical_<year>01.01_echam"
+    #fpatterns <- "historical_<year>01.01_g3bid"
+    #fpatterns <- "historical_<year>01.01_co2"
+    #fpatterns <- "historical_<year>01.01_jsbach"
+    #fpatterns <- "historical_<year>01.01_nitro"
     #prefixes <- "awi-esm-1-1-lr_kh800_historical"
     #prefixes <- "awi-esm-1-1-lr_kh800_historical_3hr"
     #prefixes <- "awi-esm-1-1-lr_kh800_historical_day"
@@ -1886,12 +1897,12 @@ if (F) { # old hist
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam"
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/jsbach"
     datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/fesom"
-    #fpatterns <- "historical2_<YYYY><MM>.01_echam"
-    #fpatterns <- "historical2_<YYYY><MM>.01_g3bid"
-    #fpatterns <- "historical2_<YYYY><MM>.01_co2"
-    #fpatterns <- "historical2_<YYYY>01.01_jsbach"
-    #fpatterns <- "historical2_<YYYY><MM>.01_nitro"
-    fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
+    #fpatterns <- "historical2_<year><mon>.01_echam"
+    #fpatterns <- "historical2_<year><mon>.01_g3bid"
+    #fpatterns <- "historical2_<year><mon>.01_co2"
+    #fpatterns <- "historical2_<year>01.01_jsbach"
+    #fpatterns <- "historical2_<year><mon>.01_nitro"
+    fpatterns <- "<fvarnames>_fesom_<year>0101.nc"
     prefixes <- "awi-esm-1-1-lr_kh800_historical2"
     # echam echamstream
     #codes <- 167
@@ -1945,12 +1956,12 @@ if (F) { # old hist
 } else if (F) { # awi-esm-1-1-lr_kh800 ssp585
     models <- "echam6"
     #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585b/outdata/echam"
-    #fpatterns <- "ssp585b_<YYYY><MM>.01_echam"
-    #fpatterns <- "ssp585b_<YYYY><MM>.01_co2"
+    #fpatterns <- "ssp585b_<year><mon>.01_echam"
+    #fpatterns <- "ssp585b_<year><mon>.01_co2"
     #prefixes <- "awi-esm-1-1-lr_kh800_ssp585b"
     datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/echam"
-    #fpatterns <- "ssp585_<YYYY><MM>.01_echam"
-    fpatterns <- "ssp585_<YYYY><MM>.01_co2"
+    #fpatterns <- "ssp585_<year><mon>.01_echam"
+    fpatterns <- "ssp585_<year><mon>.01_co2"
     prefixes <- "awi-esm-1-1-lr_kh800_ssp585"
     #codes <- 167
     #fvarnames <- "temp2"
@@ -1973,7 +1984,7 @@ if (F) { # old hist
 } else if (F) { # awi-esm-1-1-lr_kh800 og esm-piControl test
     models <- "echam6"
     datapaths <- "/mnt/lustre02/work/ba1103/a270094/AWIESM/test_esm3/outdata/echam"
-    fpatterns <- "test_esm3_echam6_echam_<YYYY><MM>.nc"
+    fpatterns <- "test_esm3_echam6_echam_<year><mon>.nc"
     prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl"
     fvarnames <- "temp2"
     modes <- list("fldmean_monmean"=c("fldmean", "monmean"))
@@ -1983,7 +1994,7 @@ if (F) { # old hist
 } else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl init
     models <- "echam6"
     datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/echam"
-    fpatterns <- "esm-piControl_<YYYY><MM>.01_g3bmon"
+    fpatterns <- "esm-piControl_<year><mon>.01_g3bmon"
     prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl"
     codes <- 167
     fvarnames <- "temp2"
@@ -1998,39 +2009,39 @@ if (F) { # old hist
     if (F) {
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/echam"
         #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
-        #fpatterns <- "esm-piControl_2685_<YYYY><MM>.01_g3bmon"
-        #fpatterns <- "esm-piControl_2685_<YYYY><MM>.01_tracermon"
-        fpatterns <- "esm-piControl_2685_<YYYY><MM>.01_co2mon"
-        #fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
+        #fpatterns <- "esm-piControl_2685_<year><mon>.01_g3bmon"
+        #fpatterns <- "esm-piControl_2685_<year><mon>.01_tracermon"
+        fpatterns <- "esm-piControl_2685_<year><mon>.01_co2mon"
+        #fpatterns <- "<fvarnames>_fesom_<year>0101.nc"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_2percatm"
     } else if (F) {
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2percfalse/outdata/echam"
-        fpatterns <- "esm-piControl_2percfalse_<YYYY><MM>.01_co2mon"
+        fpatterns <- "esm-piControl_2percfalse_<year><mon>.01_co2mon"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_2percfalse"
     } else if (F) {
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2percboth/outdata/echam"
-        fpatterns <- "esm-piControl_<YYYY><MM>.01_co2mon"
+        fpatterns <- "esm-piControl_<year><mon>.01_co2mon"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_2percboth"
     } else if (F) {
         #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/echam"
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
-        #fpatterns <- "esm-piControl_co2fsign_<YYYY><MM>.01_co2mon"
-        fpatterns <- "<fvarnames>_fesom_<YYYY>0101.nc"
+        #fpatterns <- "esm-piControl_co2fsign_<year><mon>.01_co2mon"
+        fpatterns <- "<fvarnames>_fesom_<year>0101.nc"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
     } else if (F) {
         #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_restartall/outdata/echam"
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_restartall/outdata/jsbach"
-        #fpatterns <- "esm-piControl_restartall_<YYYY><MM>.01_co2mon"
-        #fpatterns <- "esm-piControl_restartall_<YYYY><MM>.01_vegmon"
-        fpatterns <- "esm-piControl_restartall_<YYYY><MM>.01_jsbachmon"
+        #fpatterns <- "esm-piControl_restartall_<year><mon>.01_co2mon"
+        #fpatterns <- "esm-piControl_restartall_<year><mon>.01_vegmon"
+        fpatterns <- "esm-piControl_restartall_<year><mon>.01_jsbachmon"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_restartall"
     } else if (F) {
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/echam"
-        fpatterns <- "esm-piControl_<YYYY><MM>.01_co2mon"
+        fpatterns <- "esm-piControl_<year><mon>.01_co2mon"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl"
     } else if (T) {
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/echam"
-        fpatterns <- "esm-piControl_wout_talk_rest_<YYYY><MM>.01_co2mon"
+        fpatterns <- "esm-piControl_wout_talk_rest_<year><mon>.01_co2mon"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest"
     }
     #codes <- 167
@@ -2086,7 +2097,7 @@ if (F) { # old hist
 } else if (F) { # mpiesm-1.2.01p5 mpiesm-s
     models <- "jsbach"
     datapaths <- "/work/ba1103/a270073/out/mpiesm-1.2.01p5/mpiesm-s/piControl_2801_ndepo_init_model_restart/outdata/jsbach"
-    fpatterns <- "piControl_2801_jsbach_jsbach_<YYYY>.grb"
+    fpatterns <- "piControl_2801_jsbach_jsbach_<year>.grb"
     prefixes <- "jsbach-3.20p1_piControl_ndepo_init_restart"
     #codes <- 12
     #fvarnames <- "cover_fract"
@@ -2099,7 +2110,7 @@ if (F) { # old hist
 } else if (F) { # foci from seb wahl
     models <- "echam6"
     datapaths <- "/work/bb0519/b350071/tmp/"
-    fpatterns <- "FOCI1.3-SW038_echam6_co2_co2_flx_lcc_<YYYY_from>-<YYYY_to>.nc"
+    fpatterns <- "FOCI1.3-SW038_echam6_co2_co2_flx_lcc_<year_from>-<year_to>.nc"
     prefixes <- "FOCI1.3-SW038_piControl"
     fvarnames <- "co2_flx_lcc"
     cdo_before_calcs <- "monmean"
@@ -2113,9 +2124,9 @@ if (F) { # old hist
     models <- c("echam6", "echam6")
     datapaths <- c("/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/hist/outdata/echam",
                    "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/hist_LUH/outdata/echam")
-    fpatterns <- c(#"hist5_echam6_echammon_<YYYY>.grb",
-                   "hist_echam6_echammon_<YYYY><MM>.nc",
-                   "hist_LUH_echam6_echammon_<YYYY><MM>.grb")
+    fpatterns <- c(#"hist5_echam6_echammon_<year>.grb",
+                   "hist_echam6_echammon_<year><mon>.nc",
+                   "hist_LUH_echam6_echammon_<year><mon>.grb")
     fvarnames <- c("temp2", "temp2")
     codes <- c(NA, 167) # necessary for grb files
     froms <- c(1850, 1850)
@@ -2127,8 +2138,8 @@ if (F) { # old hist
 } else if (F) {
     datapaths <- c("/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/1percCO2/outdata/echam",
                    "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_true/4CO2/outdata/echam")
-    fpatterns <- c("1percCO2_echam6_echammon_<YYYY><MM>.nc",
-                   "4CO2_echam6_echammon_<YYYY><MM>.nc")
+    fpatterns <- c("1percCO2_echam6_echammon_<year><mon>.nc",
+                   "4CO2_echam6_echammon_<year><mon>.nc")
     fvarnames <- c("temp2", "temp2")
     models <- c("echam6", "echam6") # for check if `cdo -t echam6` can be used
     froms <- c(1850, 1850)
@@ -2160,18 +2171,18 @@ if (F) { # old hist
         datapaths <- c("/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/hist/outdata/echam",
                        "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/1percCO2/outdata/echam",
                        "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/4CO2/outdata/echam")
-        fpatterns <- c("hist_echam6_echam_<YYYY><MM>.nc",
-                       "1percCO2_echam6_echam_<YYYY><MM>.nc",
-                       "4CO2_echam6_echam_<YYYY><MM>.nc")
+        fpatterns <- c("hist_echam6_echam_<year><mon>.nc",
+                       "1percCO2_echam6_echam_<year><mon>.nc",
+                       "4CO2_echam6_echam_<year><mon>.nc")
         prefixes <- paste0("awi-esm-1-1-lr_", c("historical", "1percCO2", "4CO2"), 
                            "_echam6_echam") 
     } else if (F) { # awi-esm-1-2-lr
         datapaths <- c("/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_HIST/outdata/echam",
                        "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_1percCO2/outdata/echam",
                        "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_4CO2/outdata/echam")
-        fpatterns <- c("CMIP6_HIST_echam6_echam_<YYYY><MM>.grb",
-                       "CMIP6_1percCO2_echam6_echam_<YYYY><MM>.grb",
-                       "CMIP6_4CO2_echam6_echam_<YYYY><MM>.grb")
+        fpatterns <- c("CMIP6_HIST_echam6_echam_<year><mon>.grb",
+                       "CMIP6_1percCO2_echam6_echam_<year><mon>.grb",
+                       "CMIP6_4CO2_echam6_echam_<year><mon>.grb")
         prefixes <- paste0("awi-esm-1-2-lr_", c("historical", "1percCO2", "4CO2"), 
                            "_echam6_echam") 
     }
@@ -2203,17 +2214,17 @@ if (F) { # old hist
                        "/work/ab0246/a270073/awicm-test/CMIP6/CMIP_PMIP/dynveg_false/1percCO2/outdata/echam",
                        "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_false/4CO2/outdata/echam")
         if (F) { # srad0, trad0
-            fpatterns <- c("PI-CTRL_nodynveg2_echam6_echam_<YYYY><MM>.grb",
-                           "historical_echam6_echam_<YYYY><MM>.grb",
-                           "1percCO2_echam6_echam_<YYYY><MM>.grb",
-                           "4CO2_echam6_echam_<YYYY><MM>.grb")
+            fpatterns <- c("PI-CTRL_nodynveg2_echam6_echam_<year><mon>.grb",
+                           "historical_echam6_echam_<year><mon>.grb",
+                           "1percCO2_echam6_echam_<year><mon>.grb",
+                           "4CO2_echam6_echam_<year><mon>.grb")
             prefixes <- paste0("awi-cm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
                                "_echam6_echam") 
         } else if (F) { # temp2
-            fpatterns <- c("PI-CTRL_nodynveg2_echam6_echammon_<YYYY><MM>.grb",
-                           "historical_echam6_echammon_<YYYY><MM>.grb",
-                           "1percCO2_echam6_echammon_<YYYY><MM>.grb",
-                           "4CO2_echam6_echammon_<YYYY><MM>.grb")
+            fpatterns <- c("PI-CTRL_nodynveg2_echam6_echammon_<year><mon>.grb",
+                           "historical_echam6_echammon_<year><mon>.grb",
+                           "1percCO2_echam6_echammon_<year><mon>.grb",
+                           "4CO2_echam6_echammon_<year><mon>.grb")
             prefixes <- paste0("awi-cm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
                                "_echam6_echammon") 
         }
@@ -2225,24 +2236,24 @@ if (F) { # old hist
                        "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/1percCO2/outdata/echam",
                        "/work/ba0989/a270077/CMIP6_PMIP4/a270073/CMIP6/CMIP_PMIP/dynveg_true/old/4CO2/outdata/echam")
         if (F) { # srad0, trad0
-            fpatterns <- c("piControl_echam6_echam_<YYYY><MM>.grb",
-                           "hist_echam6_echam_<YYYY><MM>.nc",
-                           "1percCO2_echam6_echam_<YYYY><MM>.nc",
-                           "4CO2_echam6_echam_<YYYY><MM>.nc")
+            fpatterns <- c("piControl_echam6_echam_<year><mon>.grb",
+                           "hist_echam6_echam_<year><mon>.nc",
+                           "1percCO2_echam6_echam_<year><mon>.nc",
+                           "4CO2_echam6_echam_<year><mon>.nc")
             prefixes <- paste0("awi-esm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
                                "_echam6_echam") 
         } else if (F) { # temp2
-            fpatterns <- c("piControl_echam6_echammon_<YYYY><MM>.grb",
-                           "hist_echam6_echammon_<YYYY><MM>.nc",
-                           "1percCO2_echam6_echammon_<YYYY><MM>.nc",
-                           "4CO2_echam6_echammon_<YYYY><MM>.nc")
+            fpatterns <- c("piControl_echam6_echammon_<year><mon>.grb",
+                           "hist_echam6_echammon_<year><mon>.nc",
+                           "1percCO2_echam6_echammon_<year><mon>.nc",
+                           "4CO2_echam6_echammon_<year><mon>.nc")
             prefixes <- paste0("awi-esm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
                                "_echam6_echammon") 
         } else if (F) { # tau_aero_550
-            fpatterns <- c("piControl_echam6_aeroptmon_<YYYY><MM>.grb",
-                           "hist_echam6_echammon_<YYYY><MM>.nc",
-                           "1percCO2_echam6_echammon_<YYYY><MM>.nc",
-                           "4CO2_echam6_echammon_<YYYY><MM>.nc")
+            fpatterns <- c("piControl_echam6_aeroptmon_<year><mon>.grb",
+                           "hist_echam6_echammon_<year><mon>.nc",
+                           "1percCO2_echam6_echammon_<year><mon>.nc",
+                           "4CO2_echam6_echammon_<year><mon>.nc")
             prefixes <- paste0("awi-esm-1-1-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
                                "_echam6_", c("aeroptmon", "echammon", "echammon", "echammon")) 
         }
@@ -2253,10 +2264,10 @@ if (F) { # old hist
                        "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_HIST/outdata/echam",
                        "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_1percCO2/outdata/echam",
                        "/work/ba1066/a270124/esm-experiments/awicm_pism/CMIP6_4CO2/outdata/echam")
-        fpatterns <- c("PI_LA04_cont02_echam6_echam_<YYYY><MM>.grb",
-                       "CMIP6_HIST_echam6_echam_<YYYY><MM>.grb",
-                       "CMIP6_1percCO2_echam6_echam_<YYYY><MM>.grb",
-                       "CMIP6_4CO2_echam6_echam_<YYYY><MM>.grb")
+        fpatterns <- c("PI_LA04_cont02_echam6_echam_<year><mon>.grb",
+                       "CMIP6_HIST_echam6_echam_<year><mon>.grb",
+                       "CMIP6_1percCO2_echam6_echam_<year><mon>.grb",
+                       "CMIP6_4CO2_echam6_echam_<year><mon>.grb")
         prefixes <- paste0("awi-esm-1-2-lr_", c("piControl", "historical", "1percCO2", "4CO2"), 
                            "_echam6_echam")
         froms <- c(1016, 1850, 1850, 1850) # lars
@@ -2289,9 +2300,9 @@ if (F) { # old hist
                         #"/outdata/fesom"
                         )
     fpatterns <- paste0(c("piControl", "historical2", "ssp126", "ssp245", "ssp534-over", "ssp585"), 
-                        #"_<YYYY><MM>.01_echam")
-                        "_<YYYY><MM>.01_co2")
-    #fpatterns <- rep("<fvarnames>_fesom_<YYYY>0101.nc", t=6)
+                        #"_<year><mon>.01_echam")
+                        "_<year><mon>.01_co2")
+    #fpatterns <- rep("<fvarnames>_fesom_<year>0101.nc", t=6)
     prefixes <- paste0("awi-esm-1-1-lr_kh800_", 
                        c("piControl", "historical", "ssp126", "ssp245", "ssp534-over", "ssp585"))
     #codes <- rep(167, t=6)
@@ -2311,70 +2322,83 @@ if (F) { # old hist
     modes <- rep("fldint", t=6)
     #modes <- rep("timmean", t=6)
     mask_list <- lapply(vector("list", l=length(models)), base::append, 
-    #                    list(name="reccap2_atlantic",
-    #                         cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_pacific",
-    #                         cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_indian",
-    #                         cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_arctic",
-    #                         cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_southern",
-    #                         cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    # sub-atlantic: 
-    #                    list(name="reccap2_na_spss",
-    #                        cdo_mask=paste0("-eqc,1 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_na_stss",
-    #                        cdo_mask=paste0("-eqc,2 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_na_stps",
-    #                         cdo_mask=paste0("-eqc,3 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_aequ",
-    #                         cdo_mask=paste0("-eqc,4 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_sa_stps",
-    #                         cdo_mask=paste0("-eqc,5 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_med",
-    #                         cdo_mask=paste0("-eqc,6 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    # sub-pacific: 
-    #                    list(name="reccap2_np_spss",
-    #                         cdo_mask=paste0("-eqc,1 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_np_stss",
-    #                         cdo_mask=paste0("-eqc,2 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_np_stps",
-    #                         cdo_mask=paste0("-eqc,3 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_pequ_w",
-    #                         cdo_mask=paste0("-eqc,4 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_pequ_e",
-    #                         cdo_mask=paste0("-eqc,5 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_sp_stps",
-    #                         cdo_mask=paste0("-eqc,6 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    # sub-indian: 
-    #                    list(name="reccap2_ind_stps",
-    #                         cdo_mask=paste0("-eqc,1 -select,name=indian ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_ind_interior",
-    #                         cdo_mask=paste0("-eqc,2 -select,name=indian ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    # sub-arctic: 
-    #                    list(name="reccap2_arctic_ice",
-    #                         cdo_mask=paste0("-eqc,1 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_np_ice",
-    #                         cdo_mask=paste0("-eqc,2 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_na_ice",
-    #                         cdo_mask=paste0("-eqc,3 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_barents",
-    #                         cdo_mask=paste0("-eqc,4 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    # sub-southern: 
-    #                    list(name="reccap2_so_stss",
-    #                         cdo_mask=paste0("-eqc,1 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    #                    list(name="reccap2_so_spss",
-    #                         cdo_mask=paste0("-eqc,2 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-                        list(name="reccap2_so_ice",
-                             cdo_mask=paste0("-eqc,3 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        # reccap2 basins:
+                        #list(name="reccap2_atlantic",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_pacific",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_indian",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_arctic",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_southern",
+                        #     cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        # reccap2 atlantic biomes:
+                        #list(name="reccap2_na_spss",
+                        #    cdo_mask=paste0("-eqc,1 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_na_stss",
+                        #    cdo_mask=paste0("-eqc,2 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_na_stps",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_aequ",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_sa_stps",
+                        #     cdo_mask=paste0("-eqc,5 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_med",
+                        #     cdo_mask=paste0("-eqc,6 -select,name=atlantic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        # reccap2 pacific biomes: 
+                        #list(name="reccap2_np_spss",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_np_stss",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_np_stps",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_pequ_w",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_pequ_e",
+                        #     cdo_mask=paste0("-eqc,5 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_sp_stps",
+                        #     cdo_mask=paste0("-eqc,6 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        # reccap2 indian biomes: 
+                        #list(name="reccap2_ind_stps",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=indian ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_ind_interior",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=indian ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        # reccap2 arctic biomes: 
+                        #list(name="reccap2_arctic_ice",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_np_ice",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_na_ice",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_barents",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=arctic ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        # reccap2 southern biomes: 
+                        #list(name="reccap2_so_stss",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_so_spss",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_so_ice",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        # gregor_etal_2019 basins:
+                        #list(name="gregor_etal_2019_nh-hl",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+                        #list(name="gregor_etal_2019_nh-st",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+                        #list(name="gregor_etal_2019_equ",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+                        #list(name="gregor_etal_2019_sh-st",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+                        list(name="gregor_etal_2019_sh-hl",
+                             cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+
 
 # ======================================================
 # 12 settings
 } else if (F) { # 12 months timmeans
     models <- rep("echam6", t=12)
     datapaths <- rep("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/echam", t=12)
-    fpatterns <- rep("esm-piControl_co2fsign_<YYYY><MM>.01_co2mon", t=12)
+    fpatterns <- rep("esm-piControl_co2fsign_<year><mon>.01_co2mon", t=12)
     prefixes <- rep("awi-esm-1-1-lr_kh800_esm-piControl_co2fsign", t=12)
     #codes <- rep(7, t=12)
     #fvarnames <- rep("co2_flx_ocean", t=12)
@@ -2500,7 +2524,7 @@ if (F) { # old hist
 } else if (F) { # 27 levels
     models <- rep("echam6", t=27)
     datapaths <- rep("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_og_restart_processed/restart", t=27)
-    fpatterns <- rep("restart_test_<YYYY>1231_tracer_ncpdq_co2_aps_hl.nc", t=27) # original dims permuted; model levels -> height levels
+    fpatterns <- rep("restart_test_<year>1231_tracer_ncpdq_co2_aps_hl.nc", t=27) # original dims permuted; model levels -> height levels
     prefixes <- rep("awi-esm-1-1-lr_kh800_piControl_restart_hl_ppm", t=27)
     fvarnames <- rep("CO2", t=27)
     cdo_after_calcs <- vector("list", l=27)
@@ -2511,6 +2535,33 @@ if (F) { # old hist
     modes <- rep("select", t=27)
     froms <- rep(2685, t=27) # last piControl og year
     tos <- rep(2685, t=27)
+
+# ======================================================
+# special: cmip6 nml created by ~/slurm/cronjobs/filter_esgf_lists.r
+} else if (T) { # 27 levels
+    post_force <- T # for test
+    if (F) { # piControl test
+        fnml <- "~/slurm/cronjobs/namelist.post_24settings_Omon_fgco2_23models_piControl_2-2nyears_2022-05-05_12-19-46.r"
+    } else if (T) { # piControl
+        fnml <- "~/slurm/cronjobs/namelist.post_23settings_Omon_fgco2_23models_piControl_251-251nyears_2022-05-06_09-04-39.r"
+    }
+    if (!file.exists(fnml)) stop("could not find file ", fnml)
+    message("run `source(\"", fnml, "\")` ...")
+    source(fnml)
+    # which mode
+    modes <- rep("fldint", t=length(models))
+    # do spatial interpolation if necessary
+    cdo_before_calcs <- rep("", t=length(models))
+    indsmode <- which(!is.na(match(modes, c("fldmean", "fldint"))))
+    if (length(indsmode) > 0) {
+        indsmodel <- which(models == "BCC-ESM1")
+        if (length(indsmodel) > 0) {
+            indsmatch <- match(indsmodel, indsmode)
+            if (length(indsmatch) > 0) {
+                cdo_before_calcs[indsmatch] <- "remapbil,global_1"
+            }
+        }
+    }
 
 } # which setting
 
