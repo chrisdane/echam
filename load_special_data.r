@@ -11,7 +11,7 @@
 if (F) {
     f <- paste0(host$repopath, "/echam/T31GR30_OROMEA.nc")
     if (file.exists(f)) {
-        message("\ndisable here if you do not want to load echam OROMEA from ", f, " ...")
+        message("disable here if you do not want to load echam OROMEA from ", f, " ...")
         ncin <- nc_open(f)
         data360 <- ncvar_get(ncin, "OROMEA")
         lon360 <- ncin$dim$lon$vals
@@ -23,7 +23,7 @@ if (F) {
                                       OROMEA=data180$data180)
         add_echam_TR31GR30_oromea_contour <- T
         rm(data360, lon360)
-        message("set add_echam_TR31GR30_oromea_contour=T if you want to add to lon,lat plot ...\n")
+        message("set add_echam_TR31GR30_oromea_contour=T if you want to add to lon,lat plot ...")
     } else {
         message("file ", f, " does not exist. cannot load echam OROMEA from ...")
     }
@@ -36,7 +36,7 @@ if (F) {
 fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon180.txt")
 #fs <- paste0(host$repopath, "/mpiom/mpiom_", c("GR30s", "GR15s", "TP04s"), "_land_sea_mask_segments_lon360.txt")
 if (F && any(file.exists(fs))) {
-    message("\ndisable here if you do not want to load mpiom land sea mask segments ...")
+    message("disable here if you do not want to load mpiom land sea mask segments ...")
     for (f in fs) {
         if (file.exists(f)) {
             cmd <- paste0(tools::file_path_sans_ext(basename(f)), " <- read.table(f, header=T)")
@@ -58,7 +58,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba1103/a270073/data/reccap2-ocean/R2-shared-resources/data/regions/RECCAP2_region_masks_all.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load reccap2 lsm from ", f, " ...")
+    message("disable here if you do not want to load reccap2 lsm from ", f, " ...")
     reccap2_lsm_ncin <- nc_open(f)
 } else {
     message("enable here to load reccap2 lsm ...")
@@ -66,35 +66,32 @@ if (T && file.exists(f)) {
 
 
 # cmip6 co2 hist
-f <- ""
-if (host$machine_tag == "mistral") {
-    f <- "/pool/data/ECHAM6/input/r0007/greenhouse_historical.nc"
-}
+f <- "/pool/data/ECHAM6/input/r0007/greenhouse_historical.nc"
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load hist CO2 from ", f, " ...")
+    message("disable here if you do not want to load hist CO2 from ", f, " ...")
     co2_hist_ncin <- nc_open(f)
-    time <- co2_hist_ncin$dim$time$vals
-    timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
+    time <- co2_hist_ncin$dim$time$vals # year as %Y.%f
+    timelt <- as.POSIXlt(paste0(time, "-1-1"), tz="UTC")
     co2_hist <- list(file=f,
                      co2_ppm=ncvar_get(co2_hist_ncin, "CO2"), time=timelt, timen=time,
                      text="", col="red", lty=2, lwd=0.5, pch=NA)
+    timelt_diff <- diff(timelt)
+    co2_hist$time_diff <- timelt[1:(length(timelt)-1)] + timelt_diff/2
+    co2_hist$timen_diff <- as.numeric(co2_hist$time_diff)
+    co2_hist$co2_diff_ppm <- diff(co2_hist$co2_ppm)
     add_co2_hist <- F
     message("set add_co2_hist=T if you want to add to plot")
 } else {
     message("enable here to load hist CO2 ...")
 }
 
-
 # cmip6 co2 1pct
-f <- ""
-if (host$machine_tag == "mistral") {
-    f <- "/pool/data/ECHAM6/input/r0008/greenhouse_1pctCO2.nc"
-}
+f <- "/pool/data/ECHAM6/input/r0008/greenhouse_1pctCO2.nc"
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load 1pctCO2 CO2 from ", f, " ...")
+    message("disable here if you do not want to load 1pctCO2 CO2 from ", f, " ...")
     co2_1pct_ncin <- nc_open(f)
     time <- co2_1pct_ncin$dim$time$vals
-    timelt <- as.POSIXlt(time*365.25*86400, origin="0000-01-01", tz="UTC", format="%Y")
+    timelt <- as.POSIXlt(paste0(time, "-1-1"), tz="UTC")
     co2_1pct <- list(file=f,
                      co2_ppm=ncvar_get(co2_1pct_ncin, "CO2"), time=timelt, timen=time,
                      text="", col="#377EB8", lty=2, lwd=0.5, pch=NA)
@@ -104,25 +101,52 @@ if (T && file.exists(f)) {
     message("enable here to load 1pctCO2 CO2 ...")
 }
 
-
 # cmip6 4CO2 
 co2_4co2 <- list(co2_ppm=1137.2679,
                  text="", col="#1B9E77", lty=2, lwd=0.5, pch=NA)
-message("\nset 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
+message("set 4CO2 to ", co2_4co2$co2_ppm, " ppm") 
 add_co2_4co2 <- F
 message("set add_co2_4co2=T if you want to add to plot")
 
+# cmip6 ssp126
+f <-"/pool/data/ECHAM6/input/r0008/greenhouse_ssp126.nc"
+if (T && file.exists(f)) {
+    message("disable here if you do not want to load ssp126 CO2 from ", f, " ...")
+    co2_ssp126_ncin <- nc_open(f)
+    time <- co2_ssp126_ncin$dim$time$vals # year as %Y.%f
+    timelt <- as.POSIXlt(paste0(time, "-1-1"), tz="UTC")
+    co2_ssp126 <- list(file=f,
+                       co2_ppm=ncvar_get(co2_ssp126_ncin, "CO2"), time=timelt, timen=time,
+                       text="", col="red", lty=2, lwd=0.5, pch=NA)
+    timelt_diff <- diff(timelt)
+    co2_ssp126$time_diff <- timelt[1:(length(timelt)-1)] + timelt_diff/2
+    co2_ssp126$timen_diff <- as.numeric(co2_ssp126$time_diff)
+    co2_ssp126$co2_diff_ppm <- diff(co2_ssp126$co2_ppm)
+    add_co2_ssp126 <- F
+    message("set add_co2_hist=T if you want to add to plot")
+} else {
+    message("enable here to load hist CO2 ...")
+}
 
 # nao time series
 f <- paste0(host$workpath, "/NAO/nao_pc_djfm.txt")
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load ucar hurrel NAO time series ", f, " ...")
+    message("disable here if you do not want to load ucar hurrel NAO time series ", f, " ...")
     source(paste0(host$workpath, "/NAO/read_ucar_nao_function.r"))
     nao <- read_ucar_nao_function(f)
 } else {
     message("enable here to load ucar hurrel NAO time series ...")
 }
 
+# nino34 enso time series
+f <- "/work/ab0246/a270073/data/noaa/nino34/read_noaa_nino34_function.r"
+if (T && file.exists(f)) {
+    message("disable here if you do not want to load noaa nino34 times series ...")
+    source(f)
+    nino34 <- read_noaa_nino34_function(f, path=dirname(f))
+} else {
+    message("enable here to load ucar hurrel NAO time series ...")
+}
 
 # koehler et al. 2017 ghg by paul
 f <- ""
@@ -132,7 +156,7 @@ if (host$machine_tag == "stan") {
     f <- "/isibhv/projects/paleo_work/cdanek/data/koehler_etal_2017/Koehler_GHG_forcing_0.001ka_resolution.dat"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load koehler et al. 2017 ghg forcing from ", f, " from paul ...")
+    message("disable here if you do not want to load koehler et al. 2017 ghg forcing from ", f, " from paul ...")
     koehler_etal_2017_paul <- read.table(f, col.names=c("year_before_1950", "CO2", "CH4", "N2O"))
     years <- koehler_etal_2017_paul$year_before_1950 # kyr before 1950 in reverse order --> 6.999, 6.998, 6997, ...
     years <- -1000*years # --> -6999, -6998, -6997, ...
@@ -180,7 +204,7 @@ if (T && file.exists(f)) {
             " if you ", ifelse(add_koehler_etal_2017_paul, 
                                "dont want (or set add_data_right_yaxis_ts=F)", 
                                "want (set also add_data_right_yaxis_ts=T)"), 
-            " to add this data to plot\n")
+            " to add this data to plot")
 } else {
     message("enable here to load koehler et al. 2017 ghg forcing from paul ...")
 }
@@ -195,7 +219,7 @@ if (host$machine_tag == "stan") {
 if (file.exists(f)) {
     from <- 6999
     to <- 0
-    message("\ndisable here if you do not want to load koehler et al. 2017 ghg forcing from ", f, " from ", from, " to ", to, " ...")
+    message("disable here if you do not want to load koehler et al. 2017 ghg forcing from ", f, " from ", from, " to ", to, " ...")
     koehler_etal_2017_co2 <- read_koehler_etal_2017(f=f, from=from, to=to)
     # reverse time order from 0-6999 to 6999-0
     koehler_etal_2017_co2 <- koehler_etal_2017_co2[dim(koehler_etal_2017_co2)[1]:1,]
@@ -230,7 +254,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_monthly_1850-2014.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load historical monthly total solar irradiance from ", f, " ...")
+    message("disable here if you do not want to load historical monthly total solar irradiance from ", f, " ...")
     tsi_hist_ncin <- nc_open(f)
     time <- tsi_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*86400, origin="1850-01-01", tz="UTC")
@@ -252,7 +276,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/cmip6/solar_irradiance/swflux_14band_annual_1850-2014.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load historical monthly total solar irradiance from ", f, " ...")
+    message("disable here if you do not want to load historical monthly total solar irradiance from ", f, " ...")
     tsi_hist_ncin <- nc_open(f)
     time <- tsi_hist_ncin$dim$time$vals
     timelt <- as.POSIXlt(time*86400, origin="1850-01-01", tz="UTC")
@@ -274,7 +298,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.monthly_ns_avg.txt.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load hadcrut4 global monthly SAT anomalies wrt to 1961-1990 from ", f, " ...")
+    message("disable here if you do not want to load hadcrut4 global monthly SAT anomalies wrt to 1961-1990 from ", f, " ...")
     hadcrut4_ncin <- nc_open(f)
     time <- hadcrut4_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -295,7 +319,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/HadCRUT4/HadCRUT_global_SAT_anomaly_wrt_1961-1990_HadCRUT.4.6.0.0.annual_ns_avg.txt.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load hadcrut4 global annual SAT anomalies wrt to 1961-1990 from ", f, " ...")
+    message("disable here if you do not want to load hadcrut4 global annual SAT anomalies wrt to 1961-1990 from ", f, " ...")
     hadcrut4_ncin <- nc_open(f)
     time <- hadcrut4_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -319,7 +343,7 @@ if (host$machine_tag == "paleosrv") {
     source("/isibhv/projects/paleo_work/cdanek/data/marcott_etal_2013/read_marcott_etal_2013_function.r")
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load marcott et al. 2013 temperature anomalies wrt to 1961-1990 from ", f, " ...")
+    message("disable here if you do not want to load marcott et al. 2013 temperature anomalies wrt to 1961-1990 from ", f, " ...")
     marcott_etal_2013 <- read_marcott_etal_2013_function(f)
     time <- marcott_etal_2013$year_before_1950 # -50 -30 -10  10 ... 11210 11230 11250 11270 11290
     time <- rev(-1*time) # -11290 -11270 -11250 -11230 -11210 -11190 -11170 ... -70 -50 -30 -10  10  30  50
@@ -346,7 +370,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ba0941/a270073/data/GISTEMPv4/GISTEMPv4_global_SAT_anomaly_wrt_1951-1980_GLB.Ts+dSST.csv.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load gistempv4 global annual SAT anomalies wrt to 1951-1980 from ", f, " ...")
+    message("disable here if you do not want to load gistempv4 global annual SAT anomalies wrt to 1951-1980 from ", f, " ...")
     gistempv4_ncin <- nc_open(f)
     time <- gistempv4_ncin$dim$time$vals # YYYY
     timelt <- as.POSIXlt(as.Date(paste0(time, "-06-30")), tz="UTC") # use mid-year
@@ -366,7 +390,7 @@ if (host$machine_tag == "mistral") {
     f_err <- "/work/ba0941/a270073/data/RAPID/moc_error.mat"
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load rapid moc from ", f, " ...")
+    message("disable here if you do not want to load rapid moc from ", f, " ...")
     rapid_ncin <- nc_open(f)
     time <- rapid_ncin$dim$time$vals # "days since 2004-4-1 00:00:00" 
     timelt <- as.POSIXlt(time*86400, origin="2004-04-01T00:00:00Z", tz="UTC") # use mid-year
@@ -406,7 +430,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ab0246/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_monthly_v3.0.csv_1978-10-26_to_2022-03-30.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load northern nsidc sea ice index from ", f, " ...")
+    message("disable here if you do not want to load northern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -427,7 +451,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ab0246/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_monthly_v3.0.csv_1978-10-26_to_2022-03-30.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load monthly southern nsidc sea ice index from ", f, " ...")
+    message("disable here if you do not want to load monthly southern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -448,7 +472,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ab0246/a270073/data/NSIDC/sea_ice_index/data/N_seaice_extent_annual_v3.0.csv_1978-10-26_to_2022-03-30.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load annual northern nsidc sea ice index from ", f, " ...")
+    message("disable here if you do not want to load annual northern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -474,7 +498,7 @@ if (host$machine_tag == "mistral") {
     f <- "/work/ab0246/a270073/data/NSIDC/sea_ice_index/data/S_seaice_extent_annual_v3.0.csv_1978-10-26_to_2022-03-30.nc"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load annual southern nsidc sea ice index from ", f, " ...")
+    message("disable here if you do not want to load annual southern nsidc sea ice index from ", f, " ...")
     nsidc_ncin <- nc_open(f)
     time <- nsidc_ncin$dim$time$vals
     timelt <- as.POSIXlt(time, origin="1970-01-01", tz="UTC")
@@ -500,7 +524,7 @@ if (host$machine_tag == "paleosrv") {
     f <- "/scratch/simulation_database/incoming/Hol-Tx10/script/HOL_ORB_forcing_0.01ka_resolution_combined.dat"
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load pauls transient accelerated berger orbital parameters from ", f, " ...")
+    message("disable here if you do not want to load pauls transient accelerated berger orbital parameters from ", f, " ...")
     orb_berger_acc <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
     years <- orb_berger_acc$year_before_1950 # kyr before 1950 --> 7.00 6.99 6.98 6.97 ... 0.03 0.02 0.01 0.00
     years <- -1*years*1000 # --> -7000 -6990 -6980 -6970 -6960 ... -40 -30 -20 -10   0
@@ -541,7 +565,7 @@ if (host$machine_tag == "stan") {
     f <- "/isibhv/projects/paleo_work/cdanek/out/cosmos-aso-wiso/Hol-T/scripts/Berger_ORB_forcing_0.001ka_resolution.dat"
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load pauls transient non-accelerated berger orbital parameters from ", f, " ...")
+    message("disable here if you do not want to load pauls transient non-accelerated berger orbital parameters from ", f, " ...")
     orb_berger <- read.table(f, col.names=c("year_before_1950", "eccentricity", "precession", "obliquity"))
     years <- orb_berger$year_before_1950 # kyr before 1950 --> 6.999, 6.998, 6997, ...
     years <- -1*years*1000 # --> -6999, -6998, -6997, ...
@@ -580,7 +604,7 @@ if (host$machine_tag == "stan") {
     f <- "/home/ace/cdanek/scripts/fortran/berger_1978/berger_1978_years_-800_to_0_kyears_before_1950.txt"
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load my berger orbital parameters from ", f, " ...")
+    message("disable here if you do not want to load my berger orbital parameters from ", f, " ...")
     my_orb_berger <- read.table(f, header=T)
     # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: calendar_day_of_perihelion 5: angle_of_perihelion_deg_from_vernal_equinox
     years <- my_orb_berger$kyear_from_1950 # kyr before 1950 in reverse order --> -800, -799, -798, ...
@@ -623,7 +647,7 @@ if (host$machine_tag == "stan") {
     f <- "/home/csys/cdanek/scripts/fortran/laskar_etal_2004/laskar_etal_2004_years_-800_to_0_kyears_before_2000.txt"
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load laskar orbital parameters from ", f, " ...")
+    message("disable here if you do not want to load laskar orbital parameters from ", f, " ...")
     my_orb_laskar <- read.table(f, header=T)
     # column 1: kyear_from_1950 2: ecc 3: obl_deg 4: angle_of_perihelion_deg_from_vernal_equinox
     years <- my_orb_laskar$kyear_from_2000 # kyr before 2000 in reverse order --> -800, -799, -798, ..., -3, -2, -1,  0
@@ -662,7 +686,7 @@ if (F && file.exists(f)) {
 # PLOT coords as eval list
 f <- "~/awi/PLOT/git/PLOT/lakes/lake_coords.txt"
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
+    message("disable here if you do not want to load PLOT lake coords from ", f, " and save in `PLOT_coords_cmd_list` ...")
     lakes_table <- read.table(f, header=T, stringsAsFactors=F)
     PLOT_coords_cmd_list <- NULL
     lakes <- c("A"="ladoga")
@@ -713,7 +737,7 @@ if (host$machine_tag == "paleosrv") {
     source("/isibhv/projects/paleo_work/cdanek/data/meyer_etal/read_meyer_etal_function.r")
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load hanno meyer et al. PLOT data from ", f)
+    message("disable here if you do not want to load hanno meyer et al. PLOT data from ", f)
     message("run read_meyer_etal_function() ...")
     lakes <- c("A"="Lake Ladoga")
     if (F) {
@@ -749,7 +773,7 @@ if (host$machine_tag == "paleosrv") {
     f <- "/isibhv/projects/paleo_work/cdanek/data/kostrova_etal_2021/Kostrova et al_Oxygen isotope composition of diatoms from Lake Emanda (northeastern Siberia, Russia).xlsx"
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load kostrova et al. 2021 emanda data from ", f)
+    message("disable here if you do not want to load kostrova et al. 2021 emanda data from ", f)
     suppressPackageStartupMessages(library(xlsx))
     kostrova_etal_2021 <- xlsx::read.xlsx(f, 1,
                                           startRow=17, endRow=62, colIndex=2:9, 
@@ -780,7 +804,7 @@ if (host$machine_tag == "paleosrv") {
     f <- "/isibhv/projects/paleo_work/cdanek/data/hoogakker_etal_2011/hoogakker2011.xls"
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load hoogakker et al. 2011 silt data from ", f, " ...")
+    message("disable here if you do not want to load hoogakker et al. 2011 silt data from ", f, " ...")
     suppressPackageStartupMessages(library(xlsx))
     # get available sheet names
     wb <- loadWorkbook(f)
@@ -841,7 +865,7 @@ if (host$machine_tag == "paleosrv") {
     f <- "/isibhv/projects/paleo_work/cdanek/data/thornalley_etal_2013/thornalley2013-cop-stack.txt"
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load thornalley et al. 2013 silt data from ", f, " ...")
+    message("disable here if you do not want to load thornalley et al. 2013 silt data from ", f, " ...")
     dat <- read.table(f, header=T, sep="\t", comment.char="#")
     years <- rev(dat$age_calkaBP) # BP = 1950
     silt_size_change <- rev(dat$SS.depwgt.grp)
@@ -873,7 +897,7 @@ if (host$machine_tag == "paleosrv") {
     f <- "/isibhv/projects/paleo_work/cdanek/data/mjell_etal_2015/palo20202-sup-0002-tables1.xlsx"
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load mjell et al. 2015 silt data from ", f, " ...")
+    message("disable here if you do not want to load mjell et al. 2015 silt data from ", f, " ...")
     library(xlsx)
     dat <- read.xlsx(f, "Ark1")
     years <- rev(dat[["Age..BP."]]) # BP = 1950
@@ -914,7 +938,7 @@ if (host$machine_tag == "ollie") {
                             pattern=glob2rx("*.csv"), full.names=T)
 }
 if (F && file.exists(ghcdn_csv[1])) {
-    message("\ndisable here if you do not want to load NOAA station datasets ...")
+    message("disable here if you do not want to load NOAA station datasets ...")
     message("station", appendLF=F)
     noaa_ghcdn <- vector("list", l=length(ghcdn_csv))
     for (i in seq_along(ghcdn_csv)) { # one file per station
@@ -1000,7 +1024,7 @@ if (host$machine_tag == "paleosrv") {
                 )
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load GNIP monthly station data ...\n")
+    message("disable here if you do not want to load GNIP monthly station data ...")
     load(f) # gnip_list 
 } else {
     message("enable here to load monthly GNIP station data ...")
@@ -1014,7 +1038,7 @@ if (host$machine_tag == "paleosrv") {
             "/isibhv/projects/paleo_work/cdanek/data/bartlein_etal_2011/QRec_2013-12_nc/map_delta_06ka_ALL_grid_2x2_ex.nc")
 }
 if (T && any(file.exists(fs))) {
-    message("\ndisable here if you do not want to load bartlein et al. 2011 data ...")
+    message("disable here if you do not want to load bartlein et al. 2011 data ...")
     bartlein_etal_2011 <- vector("list", l=length(fs))
     for (i in seq_along(fs)) {
         bartlein_etal_2011[[i]] <- list()
@@ -1058,7 +1082,7 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k data from ", f, " ...")
+    message("disable here if you do not want to load kaufman et al. 2020 temp12k data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
                                     paste(datnames, collapse="\", \""), 
@@ -1077,7 +1101,7 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load kaufman et al. 2020 temp12k isotope data from ", f, " ...")
+    message("disable here if you do not want to load kaufman et al. 2020 temp12k isotope data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
                                     paste(datnames, collapse="\", \""), 
@@ -1097,7 +1121,7 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (F && file.exists(f)) {
-    message("\ndisable here if you do not want to load global holcene lipd temp data from ", f, " ...")
+    message("disable here if you do not want to load global holcene lipd temp data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
                                     paste(datnames, collapse="\", \""), 
@@ -1116,7 +1140,7 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load global holcene lipd precip data from ", f, " ...")
+    message("disable here if you do not want to load global holcene lipd precip data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
                                     paste(datnames, collapse="\", \""), 
@@ -1139,7 +1163,7 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k d18o_precip data from ", f, " ...")
+    message("disable here if you do not want to load konecky et al. 2020 iso2k d18o_precip data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
                                     paste(datnames, collapse="\", \""), 
@@ -1160,7 +1184,7 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load konecky et al. 2020 iso2k d18o_nonprecip data from ", f, " ...")
+    message("disable here if you do not want to load konecky et al. 2020 iso2k d18o_nonprecip data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
                                     paste(datnames, collapse="\", \""), 
@@ -1180,7 +1204,7 @@ if (host$machine_tag == "paleosrv") {
                 ".RData2")
 }
 if (T && file.exists(f)) {
-    message("\ndisable here if you do not want to load comas-bru et al. 2020 sisal data from ", f, " ...")
+    message("disable here if you do not want to load comas-bru et al. 2020 sisal data from ", f, " ...")
     datnames <- load(f)
     if (length(datnames) != 1) stop("loaded ", length(datnames), " objects: \"",
                                     paste(datnames, collapse="\", \""), 
@@ -1206,7 +1230,7 @@ if (host$machine_tag == "paleosrv") {
     fs <- "/isibhv/projects/paleo_work/cdanek/data/ERA5/post"
 }
 if (F && fs != "") {
-    message("\ndisable here if you do not want to load ERA5 time series ...")
+    message("disable here if you do not want to load ERA5 time series ...")
     fs <- list.files(fs, pattern=glob2rx("era5_select_*"), full.names=T)
     if (length(fs) > 0) { # e.g. "era5_select_viwvn_emanda_remapnn_Jan-Dec_1990-2010.nc"
         era5_ts <- list(fs=fs, name="ERA5", n_ma=36,
@@ -1223,7 +1247,7 @@ if (host$machine_tag == "paleosrv") {
     fs <- paste0("/isibhv/projects/paleo_work/cdanek/data/ERA5/post/", fs)
 }
 if (F && any(file.exists(fs))) {
-    message("\ndisable here if you do not want to load ERA5 spatial datasets ...")
+    message("disable here if you do not want to load ERA5 spatial datasets ...")
     era5_spatial <- vector("list", l=length(fs))
     cnt <- 0
     for (f in fs) {
@@ -1279,7 +1303,7 @@ if (host$machine_tag == "mistral") {
     fs <- paste0("/work/ba0941/a270073/data/aviso/post/madt/uv/", fs)
 }
 if (T && any(file.exists(fs))) {
-    message("\ndisable here if you do not want to load post processed aviso data ...")
+    message("disable here if you do not want to load post processed aviso data ...")
     aviso <- vector("list", l=length(fs))
     cnt <- 0
     for (f in fs) {
@@ -1330,7 +1354,7 @@ if (host$machine_tag == "mistral") {
     fs <- paste0("/work/ba0941/a270073/data/en4/post/", fs)
 }
 if (T && any(file.exists(fs))) {
-    message("\ndisable here if you do not want to load post processed en4 data ...")
+    message("disable here if you do not want to load post processed en4 data ...")
     en4 <- vector("list", l=length(fs))
     cnt <- 0
     for (f in fs) {
@@ -1374,7 +1398,7 @@ if (host$machine_tag == "mistral") {
     fs <- paste0("/work/ba0941/a270073/data/holte_etal_2017/", fs)
 }
 if (F && any(file.exists(fs))) {
-    message("\ndisable here if you do not want to load post processed holte et al. 2017 data ...")
+    message("disable here if you do not want to load post processed holte et al. 2017 data ...")
     holte_etal_2017 <- vector("list", l=length(fs))
     cnt <- 0
     for (f in fs) {
@@ -1414,72 +1438,89 @@ if (F && any(file.exists(fs))) {
 } # if post processed holte et al. 2017 data
 
 
-if (F) { # post processed gregor_and_fay_2021 data
-    message("\ndisable here if you do not want to load post processed gregor_and_fay_2021 data ...")
-    gregor_and_fay_2021_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", 
-                                   "reccap2_arctic", "reccap2_southern", "reccap2_na_spss", "reccap2_na_stss", 
-                                   "reccap2_na_stps", "reccap2_aequ", "reccap2_sa_stps", "reccap2_med", 
-                                   "reccap2_np_spss", "reccap2_np_stss", "reccap2_np_stps", "reccap2_pequ_w", 
-                                   "reccap2_pequ_e", "reccap2_sp_stps")
-    gregor_and_fay_2021_varnames <- paste0("fgco2_ens_", c("mean", "median", "sd", "max", "min")) # !!! max-->min due to *-1
-    gregor_and_fay_2021_labels <- c(paste0("GF21 mmm", plus_minus_symbol, "mmsd"), paste0("GF21 mmmed", plus_minus_symbol, "mmsd"), "GF21 mmsd", "GF21 mmmin", "G21 mmmax")
-    gregor_and_fay_2021_col <- mycols(4)[4]
-    gregor_and_fay_2021 <- vector("list", l=3)
-    names(gregor_and_fay_2021) <- c("Jan-Dec", "annual", "ymonmean")
-    for (modei in seq_along(gregor_and_fay_2021)) {
-        for (ai in seq_along(gregor_and_fay_2021_areas)) {
-            tmpa <- list()
-            for (vi in seq_along(gregor_and_fay_2021_varnames)) {
-                f <- paste0(host$workpath, "/post/gregor_and_fay_2021/fldint/", gregor_and_fay_2021_varnames[vi], "/",
-                            "gregor_and_fay_2021_gregor_and_fay_2021_fldint_", gregor_and_fay_2021_varnames[vi], "_", 
-                            gregor_and_fay_2021_areas[ai], "_", names(gregor_and_fay_2021)[modei], "_1990-2019.nc")
-                if (file.exists(f)) {
-                    #message("load gregor_and_fay_2021 data from \"", f, "\" ...")
-                    nc <- nc_open(f)
-                    time <- as.POSIXct(nc$dim$time$vals*86400, o="1981-12-15", tz="UTC")
-                    years <- as.numeric(format(time, "%Y"))
-                    months <- as.numeric(format(time, "%m"))
-                    dat <- ncvar_get(nc, gregor_and_fay_2021_varnames[vi])*12.0107/1e3/1e12 # molC->gC, gC->kgC, kgC->PgC
-                    if (gregor_and_fay_2021_varnames[vi] != "fgco2_ens_sd") {
-                        dat <- dat*-1 # uptake<0->uptake>0
-                    }
-                    tmpv <- list(vals=dat, size=dim(dat), 
-                                 unit=ncatt_get(nc, gregor_and_fay_2021_varnames[vi])$units,
-                                 col=gregor_and_fay_2021_col, label=gregor_and_fay_2021_labels[vi])
-                    if (names(gregor_and_fay_2021)[modei] == "Jan-Dec") {
-                        tmpv <- list(file=f, dimnames="time", dims=list(time=time), data=tmpv)
-                    } else if (names(gregor_and_fay_2021)[modei] == "annual") {
-                        tmpv <- list(file=f, dimnames="year", dims=list(year=years), data=tmpv)
-                    } else if (names(gregor_and_fay_2021)[modei] == "ymonmean") {
-                        tmpv <- list(file=f, dimnames="month", dims=list(month=months), data=tmpv)
-                    }
-                    tmpa[[length(tmpa)+1]] <- tmpv
-                    names(tmpa)[length(tmpa)] <- gregor_and_fay_2021_varnames[vi]
-                    if (gregor_and_fay_2021_varnames[vi] == "fgco2_ens_min") { # min-->max due to *-1 
-                        names(tmpa)[length(tmpa)] <- "fgco2_ens_max"
-                    }
-                    if (gregor_and_fay_2021_varnames[vi] == "fgco2_ens_max") {
-                        names(tmpa)[length(tmpa)] <- "fgco2_ens_min"
-                    }
-                } # if f exists
-            } # for vi
-            if (length(tmpa) > 0) {
-                gregor_and_fay_2021[[modei]][[ai]] <- tmpa
-                names(gregor_and_fay_2021[[modei]])[ai] <- gregor_and_fay_2021_areas[ai]
+# post processed gregor_and_fay_2021 data
+gregor_and_fay_2021_col <- mycols(3)[3]
+gregor_and_fay_2021_varnames <- c("fgco2", "spco2")
+gregor_and_fay_2021_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", 
+                               "reccap2_arctic", "reccap2_southern", "reccap2_na_spss", "reccap2_na_stss", 
+                               "reccap2_na_stps", "reccap2_aequ", "reccap2_sa_stps", "reccap2_med", 
+                               "reccap2_np_spss", "reccap2_np_stss", "reccap2_np_stps", "reccap2_pequ_w", 
+                               "reccap2_pequ_e", "reccap2_sp_stps")
+gregor_and_fay_2021 <- vector("list", l=length(gregor_and_fay_2021_varnames))
+names(gregor_and_fay_2021) <- gregor_and_fay_2021_varnames
+for (vi in seq_along(gregor_and_fay_2021)) {
+    tmp <- vector("list", l=length(gregor_and_fay_2021_areas))
+    names(tmp) <- gregor_and_fay_2021_areas
+    for (ai in seq_along(tmp)) {
+        file <- list.files(paste0(host$workpath, "/data/gregor_and_fay_2021/post"), 
+                           pattern=glob2rx(paste0("*gregor_and_fay_2021_*", 
+                                                  gregor_and_fay_2021_varnames[vi], "_",
+                                                  gregor_and_fay_2021_areas[ai], "*.nc")), full.names=T)
+        if (length(file) > 0) {
+            if (length(file) > 1) {
+                warning("found ", length(file), " gregor_and_fay_2021 ", gregor_and_fay_2021_varnames[vi],
+                        gregor_and_fay_2021_areas[ai], " files:\n",
+                        paste(file, collapse="\n"), "\n--> use the first")
             }
+            tmp[[ai]]$file <- file[1]
+        }
+    } # for ai
+    inds <- which(sapply(tmp, is.null))
+    if (length(inds) > 0) tmp <- tmp[-inds]
+    if (length(tmp) > 0) gregor_and_fay_2021[[vi]] <- tmp
+} # for vi
+inds <- which(sapply(gregor_and_fay_2021, is.null))
+if (length(inds) > 0) gregor_and_fay_2021 <- gregor_and_fay_2021[-inds]
+if (T && length(gregor_and_fay_2021) > 0) {
+    message("disable here if you do not want to load gregor_and_fay_2021 data ...")
+    for (vi in seq_along(gregor_and_fay_2021)) {
+        for (ai in seq_along(gregor_and_fay_2021[[vi]])) {
+            nc <- nc_open(gregor_and_fay_2021[[vi]][[ai]]$file)
+            dims <- nc$dim
+            dimnames <- names(dims)
+            for (di in seq_along(dimnames)) {
+                dims[[di]]$atts <- ncatt_get(nc, dimnames[di])
+                if (any(dimnames[di] == c("time", "years", "months"))) {
+                    vals <- as.POSIXct(dims[[di]]$vals, o="1970-1-1", tz="UTC")
+                    if (dimnames[di] == "time") {
+                        dims[[di]]$vals <- vals
+                    } else if (dimnames[di] == "years") {
+                        dims[[di]]$vals <- as.numeric(format(vals, "%Y"))
+                        dimnames[di] <- "year" # mydefault
+                    } else if (dimnames[di] == "months") {
+                        dims[[di]]$vals <- as.numeric(format(vals, "%m"))
+                        dimnames[di] <- "month" # mydefault
+                    }
+                }
+            } # for di
+            names(dims) <- dimnames # update dimnames
+            gregor_and_fay_2021[[vi]][[ai]]$dims <- dims
+            varnames <- names(nc$var)
+            tmp <- vector("list", l=length(varnames))
+            names(tmp) <- varnames
+            for (vari in seq_along(varnames)) {
+                atts <- ncatt_get(nc, varnames[vari])
+                atts$vals <- ncvar_get(nc, varnames[vari])
+                atts$label <- "GF21"
+                if (grepl("_mean", varnames[vari])) atts$label <- paste0("GF21 mmm ", plus_minus_symbol, "mmsd")
+                if (grepl("_median", varnames[vari])) atts$label <- paste0("GF21 mmmed ", plus_minus_symbol, "mmsd")
+                if (grepl("_min", varnames[vari])) atts$label <- "GF21 mmmin"
+                if (grepl("_max", varnames[vari])) atts$label <- "GF21 mmmax"
+                if (grepl("_sd", varnames[vari])) atts$label <- "GF21 mmmsd"
+                atts$col <- gregor_and_fay_2021_col
+                if (grepl("_sd", varnames[vari])) atts$col <- col2rgba(gregor_and_fay_2021_col, 0.15) 
+                tmp[[vari]] <- atts
+            } # for vari
+            gregor_and_fay_2021[[vi]][[ai]]$data <- tmp
         } # for ai
-    } # for modei
-    if (all(sapply(gregor_and_fay_2021, is.null))) {
-        message("found zero data --> remove `gregor_and_fay_2021`")
-        rm(gregor_and_fay_2021)
-    }
+    } # for vi
 } else {
-    message("enable here to load post processed gregor_and_fay_2021 data ...")
-} # if post processed gregor_and_fay_2021 data
-
+    message("enable here to load gregor_and_fay_2021 data ...")
+} # if gregor_and_fay_2021 data
+ 
 
 if (F) { # post processed chau_etal_2020 data
-    message("\ndisable here if you do not want to load post processed chau_etal_2020 data ...")
+    message("disable here if you do not want to load post processed chau_etal_2020 data ...")
     chau_etal_2020_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_indian", 
                               "reccap2_arctic", "reccap2_southern", "reccap2_na_spss", "reccap2_na_stss", 
                               "reccap2_na_stps", "reccap2_aequ", "reccap2_sa_stps", "reccap2_med", 
@@ -1534,61 +1575,75 @@ if (F) { # post processed chau_etal_2020 data
 
 
 # cmip6 data
-cmip6_areas <- c("global", "cmip6_atlantic", "cmip6_pacific", "cmip6_indian", "cmip6_arctic", "cmip6_southern",
-                 "cmip6_na_spss", "cmip6_na_stss", "cmip6_na_stps", "cmip6_aequ", "cmip6_sa_stps", "cmip6_med",
-                 "cmip6_np_spss", "cmip6_np_stss", "cmip6_np_stps", "cmip6_pequ_w", "cmip6_pequ_e", "cmip6_sp_stps")
-fs <- sapply(cmip6_areas, function(x) 
-             list.files(path=paste0(host$workpath, "/post/cmip6"), pattern=glob2rx(paste0("cmip6*", x, "*.nc")), full.names=T))
-fs <- unlist(fs)
-if (T && any(file.exists(fs))) {
-    message("\ndisable here if you do not want to load cmip6 data ...")
-    cmip6_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_sd", "fgco2_an_min", "fgco2_an_max",
-                        "fgco2_ymonmean_mean", "fgco2_ymonmean_median", "fgco2_ymonmean_sd", "fgco2_ymonmean_min", "fgco2_ymonmean_max", 
-                        "fgco2_rfa_an_mean", "fgco2_rfa_an_median", "fgco2_rfa_an_sd", "fgco2_rfa_an_min", "fgco2_rfa_an_max",
-                        "fgco2_rfa_ymonmean_mean", "fgco2_rfa_ymonmean_median", "fgco2_rfa_ymonmean_sd", "fgco2_rfa_ymonmean_min", "fgco2_rfa_ymonmean_max")
-    cmip6_labels <- c(rep(c(paste0("CMIP6 mmm", plus_minus_symbol, "mmr"), paste0("CMIP6 mmmed", plus_minus_symbol, "mmr"), "CMIP6 sd", "CMIP6 mmmin", "CMIP6 mmmax"), t=2), 
-                      rep(c(paste0("CMIP6 mmm", plus_minus_symbol, "mmr + L20"), paste0("CMIP6 mmmed", plus_minus_symbol, "mmr + L20"), "CMIP6 sd + L20", "CMIP6 mmmin + L20", "CMIP6 mmmax + L20"), t=2))
-    cmip6_cols <- rep(rep(c("black", "black", rep(col2rgba("black", 0.15), t=3)), t=2), t=2)
-    cmip6 <- vector("list", l=length(fs))
-    names(cmip6) <- names(fs)
-    cnt <- 0
-    for (fi in seq_along(fs)) {
-        f <- fs[fi]
-        if (file.exists(f)) {
+cmip6_exps <- c("piControl_21_models", "piControl_22_models", 
+                "historical_25_models", "historical_26_models",
+                "historical_and_ssp126_15_models")
+cmip6_areas <- c("global")
+fs <- c(); cnt <- 0
+for (ei in seq_along(cmip6_exps)) {
+    for (ai in seq_along(cmip6_areas)) {
+        f <- list.files(path=paste0(host$workpath, "/data/cmip6/post"), pattern=glob2rx(paste0("cmip6*", cmip6_exps[ei], "*", cmip6_areas[ai], "*.nc")), full.names=T)
+        #f <- list.files(path=paste0(host$workpath, "/data/cmip6/post"), pattern=glob2rx(paste0("cmip6*", cmip6_exps[ei], "*", cmip6_areas[ai], "*1850*.nc")), full.names=T)
+        if (length(f) > 0) {
+            if (length(f) > 1) warning("found ", length(f), " cmip6 files, continue with first:\n", paste(f, collapse="\n"))
             cnt <- cnt + 1
-            #message("load cmip6 data from \"", f, "\" ...")
-            cmip6_ncin <- nc_open(f)
-            time <- as.POSIXct(cmip6_ncin$dim$time$vals, o="1970-1-1", tz="UTC")
-            years <- as.POSIXct(cmip6_ncin$dim$years$vals, o="1970-1-1", tz="UTC")
-            years <- as.numeric(format(years, "%Y"))
-            months <- as.POSIXct(cmip6_ncin$dim$months$vals, o="1970-1-1", tz="UTC")
-            months <- as.numeric(format(months, "%m"))
-            tmp <- vector("list", l=length(cmip6_varnames))
-            names(tmp) <- cmip6_varnames
-            for (vi in seq_along(tmp)) {
-                dimnames <- sapply(cmip6_ncin$var[[cmip6_varnames[vi]]]$dim, "[[", "name")
-                #message("   load \"", cmip6_varnames[vi], "\" (dims = ", paste(dimnames, collapse=", "), ") ...")
-                if (any(names(cmip6_ncin$var) == cmip6_varnames[vi])) {
-                    dat <- ncvar_get(cmip6_ncin, cmip6_varnames[vi])
-                    tmp[[vi]] <- list(vals=dat, size=dim(dat), 
-                                      unit=ncatt_get(cmip6_ncin, cmip6_varnames[vi])$units,
-                                      col=cmip6_cols[vi], label=cmip6_labels[vi])
-                    if (dimnames == "time") {
-                        tmp[[vi]]$dimnames <- "time"
-                    } else if (dimnames == "years") {
-                        tmp[[vi]]$dimnames <- "year"
-                    } else if (dimnames == "months") {
-                        tmp[[vi]]$dimnames <- "month"
+            fs[cnt] <- f[1]
+            names(fs)[cnt] <- cmip6_areas[ai]
+        }
+    }
+}
+if (T && any(file.exists(fs))) {
+    message("disable here if you do not want to load cmip6 data ...")
+    cmip6_freqs <- c("mon", "an", "ymonmean")
+    cmip6_modes <- c("mean", "median", "sd", "min", "max")
+    cmip6_varnames <- as.vector(t(outer(cmip6_freqs, cmip6_modes, function(x, y) paste0(x, "_", y)))) 
+    cmip6_varnames <- c(paste0("fgco2_", cmip6_varnames), paste0("fgco2_rfa_", cmip6_varnames)) # e.g fgco2_mon_mean or fgco2_rfa_mon_mean
+    cmip6_labels <- c(rep(c(paste0("CMIP6 mmm", plus_minus_symbol, "mmsd"), paste0("CMIP6 mmmed", plus_minus_symbol, "mmsd"), "CMIP6 mmsd", "CMIP6 mmmin", "CMIP6 mmmax"), t=length(cmip6_freqs)), 
+                      rep(c(paste0("CMIP6 mmm", plus_minus_symbol, "mmsd + L20"), paste0("CMIP6 mmmed", plus_minus_symbol, "mmsd + L20"), "CMIP6 mmsd + L20", "CMIP6 mmmin + L20", "CMIP6 mmmax + L20"), t=length(cmip6_freqs)))
+    cmip6_cols <- rep(rep(c("black", "black", rep(col2rgba("black", 0.15), t=3)), t=length(cmip6_freqs)), t=2)
+    cmip6 <- vector("list", l=length(cmip6_exps))
+    names(cmip6) <- cmip6_exps
+    for (ei in seq_along(cmip6)) {
+        cnt <- 0
+        for (fi in seq_along(fs)) {
+            f <- fs[fi]
+            if (grepl(paste0("_", cmip6_exps[ei], "_"), basename(f)) && file.exists(f)) {
+                cnt <- cnt + 1
+                #message("load cmip6 data from \"", f, "\" ...")
+                cmip6_ncin <- nc_open(f)
+                time <- as.POSIXct(cmip6_ncin$dim$time$vals, o="1970-1-1", tz="UTC")
+                years <- as.POSIXct(cmip6_ncin$dim$years$vals, o="1970-1-1", tz="UTC")
+                years <- as.numeric(format(years, "%Y"))
+                months <- as.POSIXct(cmip6_ncin$dim$months$vals, o="1970-1-1", tz="UTC")
+                months <- as.numeric(format(months, "%m"))
+                tmp <- vector("list", l=length(cmip6_varnames))
+                names(tmp) <- cmip6_varnames
+                for (vi in seq_along(tmp)) {
+                    dimnames <- sapply(cmip6_ncin$var[[cmip6_varnames[vi]]]$dim, "[[", "name")
+                    #message("   load \"", cmip6_varnames[vi], "\" (dims = ", paste(dimnames, collapse=", "), ") ...")
+                    if (any(names(cmip6_ncin$var) == cmip6_varnames[vi])) {
+                        dat <- ncvar_get(cmip6_ncin, cmip6_varnames[vi])
+                        tmp[[vi]] <- list(vals=dat, size=dim(dat), 
+                                          unit=ncatt_get(cmip6_ncin, cmip6_varnames[vi])$units,
+                                          col=cmip6_cols[vi], label=cmip6_labels[vi])
+                        tmp[[vi]]$col_rgb <- col2rgba(tmp[[vi]]$col, 0.15)
+                        if (dimnames == "time") {
+                            tmp[[vi]]$dimnames <- "time"
+                        } else if (dimnames == "years") {
+                            tmp[[vi]]$dimnames <- "year"
+                        } else if (dimnames == "months") {
+                            tmp[[vi]]$dimnames <- "month"
+                        }
                     }
                 }
-            }
-            tmp <- list(file=f,
-                        dims=list(time=time, year=years, month=months),
-                        data=tmp)
-            cmip6[[cnt]] <- tmp
-            names(cmip6)[cnt] <- names(f)
-        } # if f exists
-    } # for fi
+                tmp <- list(file=f,
+                            dims=list(time=time, year=years, month=months),
+                            data=tmp)
+                cmip6[[ei]][[cnt]] <- tmp
+                names(cmip6[[ei]])[cnt] <- names(f)
+            } # if f exists
+        } # for fi
+    } # for ei
 } else {
     message("enable here to load cmip6 data ...")
 } # if cmip6 data
@@ -1599,10 +1654,10 @@ reccap2_areas <- c("global", "reccap2_atlantic", "reccap2_pacific", "reccap2_ind
                    "reccap2_na_spss", "reccap2_na_stss", "reccap2_na_stps", "reccap2_aequ", "reccap2_sa_stps", "reccap2_med",
                    "reccap2_np_spss", "reccap2_np_stss", "reccap2_np_stps", "reccap2_pequ_w", "reccap2_pequ_e", "reccap2_sp_stps")
 fs <- sapply(reccap2_areas, function(x) 
-             list.files(path=paste0(host$workpath, "/post/reccap2-ocean"), pattern=glob2rx(paste0("reccap2*", x, "*.nc")), full.names=T))
+             list.files(path=paste0(host$workpath, "/data/reccap2-ocean/post"), pattern=glob2rx(paste0("reccap2*", x, "*.nc")), full.names=T))
 fs <- unlist(fs)
 if (F && any(file.exists(fs))) {
-    message("\ndisable here if you do not want to load reccap2 data ...")
+    message("disable here if you do not want to load reccap2 data ...")
     reccap2_varnames <- c("fgco2_an_mean", "fgco2_an_median", "fgco2_an_min", "fgco2_an_max",
                           "fgco2_ymonmean_mean", "fgco2_ymonmean_median", "fgco2_ymonmean_min", "fgco2_ymonmean_max", 
                           "fgco2_rfa_an_mean", "fgco2_rfa_an_median", "fgco2_rfa_an_min", "fgco2_rfa_an_max",

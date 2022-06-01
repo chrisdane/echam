@@ -6,10 +6,41 @@
 repopath <- "~/scripts/r/echam"
 repopath <- normalizePath(repopath, mustWork=T) # error if not found
 source(paste0(repopath, "/namelist.general.plot.r"))
+workpath <- host$workpath
 
 # 1 setting
-if (F) { # mhw composite data/seas*100
-    workpaths <- "/work/ba1103/a270073"
+if (T) { # gregor_and_fay_2021
+    if (F) { # fgco2
+        prefixes <- c("wind_CCMP2_pco2_CMEMS_FFNN", "wind_CCMP2_pco2_CSIR_ML6", "wind_CCMP2_pco2_JENA_MLS", 
+                      "wind_CCMP2_pco2_JMA_MLR", "wind_CCMP2_pco2_MPI_SOMFFN", "wind_CCMP2_pco2_NIES_FNN", 
+                      "wind_ERA5_pco2_CMEMS_FFNN", "wind_ERA5_pco2_CSIR_ML6", "wind_ERA5_pco2_JENA_MLS", 
+                      "wind_ERA5_pco2_JMA_MLR", "wind_ERA5_pco2_MPI_SOMFFN", "wind_ERA5_pco2_NIES_FNN", 
+                      "wind_JRA55_pco2_CMEMS_FFNN", "wind_JRA55_pco2_CSIR_ML6", "wind_JRA55_pco2_JENA_MLS", 
+                      "wind_JRA55_pco2_JMA_MLR", "wind_JRA55_pco2_MPI_SOMFFN", "wind_JRA55_pco2_NIES_FNN", 
+                      "wind_NCEP1_pco2_CMEMS_FFNN", "wind_NCEP1_pco2_CSIR_ML6", "wind_NCEP1_pco2_JENA_MLS", 
+                      "wind_NCEP1_pco2_JMA_MLR", "wind_NCEP1_pco2_MPI_SOMFFN", "wind_NCEP1_pco2_NIES_FNN", 
+                      "wind_NCEP2_pco2_CMEMS_FFNN", "wind_NCEP2_pco2_CSIR_ML6", "wind_NCEP2_pco2_JENA_MLS", 
+                      "wind_NCEP2_pco2_JMA_MLR", "wind_NCEP2_pco2_MPI_SOMFFN", "wind_NCEP2_pco2_NIES_FNN")
+        varnames_in <- rep("fgco2", t=length(prefixes))
+        modes <- rep("fldint", t=length(prefixes))
+    } else if (F) { # spco2
+        prefixes <- c("JENA_MLS", "MPI_SOMFFN", "CMEMS_FFNN", "CSIR_ML6", "JMA_MLR", "NIES_FNN")
+        varnames_in <- rep("spco2", t=length(prefixes))
+        modes <- rep("fldmean", t=length(prefixes))
+    } else if (T) { # dpco2
+        prefixes <- c("JENA_MLS", "MPI_SOMFFN", "CMEMS_FFNN", "CSIR_ML6", "JMA_MLR", "NIES_FNN")
+        varnames_in <- rep("dpco2", t=length(prefixes))
+        modes <- rep("fldmean", t=length(prefixes))
+    }
+    models <- rep("gregor_and_fay_2021", t=length(prefixes))
+    names_short <- prefixes
+    names_legend <- names_short
+    plotprefix <- "gregor_and_fay_2021"
+    fromsf <- rep(1990, t=length(prefixes))
+    tosf <- rep(2019, t=length(prefixes))
+
+} else if (F) { # mhw composite data/seas*100
+    workpath <- "/work/ba1103/a270073"
     models <- "fesom"
     prefixes <- "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_anom_pcnt_regular_dx0.250_dy0.250"
     names_short <- "awicm1-recom_mhw_composite_anom_pcnt"
@@ -164,10 +195,9 @@ if (F) { # mhw composite data/seas*100
     #fromsp <- 700
     #remove_mean_froms <- c(1, 1)
     #remove_mean_tos <- remove_mean_froms
-    #n_mas <- 12
-    n_mas <- 36
-    #n_mas <- 60
-    #n_mas <- 120
+    n_mas_an <- 3
+    #n_mas_an <- 5
+    #n_mas_an <- 10
     #modes <- "select"
     #modes <- "timmean"
     #modes <- "fldmean"
@@ -175,25 +205,35 @@ if (F) { # mhw composite data/seas*100
     #modes <- "depth"
 
 } else if (F) { # awi-esm-1-1-lr_kh800 historical historical2
-    #models <- "echam6"
-    models <- "jsbach"
+    models <- "echam6"
+    #odels <- "jsbach"
     #models <- "fesom"
     #prefixes <- "awi-esm-1-1-lr_kh800_historical"
+    #prefixes <- "awi-esm-1-1-lr_kh800_historical2"
+    prefixes <- "awi-esm-1-1-lr_kh800_historical_and_ssp126"
     #names_short <- "awi-esm-1-1-lr_kh800_historical"
-    prefixes <- "awi-esm-1-1-lr_kh800_historical2"
-    names_short <- "awi-esm-1-1-lr_kh800_historical2"
-    names_legend <- "historical"
+    names_short <- "awi-esm-1-1-lr_kh800_historical_ssp126"
+    #names_legend <- "historical"
+    names_legend <- "AWI-ESM-1-1-REcoM-LR"
     varnames_in <- "co2_flx_ocean"
     echam6_global_setNA <- "land"
     addland <- F
+    #center_ts <- T
+    #detrend_ts <- T
+    diff_ts <- T
+    cols <- 2
     #varnames_in <- "co2_flx_land"
     #varnames_in <- "tos"
-    #fromsf <- 1850
-    fromsf <- 1887
-    tosf <- 1906
-    modes <- "timmean"
+    fromsf <- 1850
+    #fromsf <- 1887
+    #tosf <- 1906
+    tosf <- 2100
+    fromsp <- 1990
+    tosp <- 2019
+    n_mas_an <- 3
+    #modes <- "timmean"
     #modes <- "fldmean"
-    #modes <- "fldint"
+    modes <- "fldint"
 
 } else if (F) { # awi-esm-1-1-lr piControl
     workpath <- "/work/ab0246/a270073"
@@ -217,7 +257,6 @@ if (F) { # mhw composite data/seas*100
     tosf <- 2014
     varnames_in <- "temp2"
     modes <- "fldmean"
-    n_mas <- 1
     cols <- "#E41A1C"
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
@@ -282,17 +321,8 @@ if (F) { # mhw composite data/seas*100
     new_origins <- -6996 # Hol-T; model year 1 = 6999 BP -> model year 4 = 6999 BP - 3 = 6996 BP
     #new_origins <- -29 # last 30 years before 1950
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- 1
-    #n_mas <- 30
-    #n_mas <- 5*12
-    n_mas <- 100
-    #n_mas <- 150
-    #n_mas <- 20/3*12
-    #n_mas <- 10*12
-    #n_mas <- 20*12
-    #n_mas <- 3*90
-    #n_mas <- 30*12
-    #n_mas <- 100*12
+    #n_mas_an <- 5
+    n_mas_an <- 10
     #remove_mean_froms <- -827
     #remove_mean_tos <- -827
     #remove_mean_froms <- -6996
@@ -383,7 +413,7 @@ if (F) { # mhw composite data/seas*100
     regboxes <- list(list(regbox="NAsiberia"))
 
 } else if (F) { # phd stuff 1 setting
-    workpaths <- "/work/ba0941/a270073"
+    workpath <- "/work/ba0941/a270073"
     models <- "fesom"
     prefixes <- "LSea5_s5_regular_dx0.250_dy0.250"
     names_short <- "Lsea5_s5"
@@ -394,7 +424,7 @@ if (F) { # mhw composite data/seas*100
 # =====================================
 # 2 settings
 } else if (F) { # mhw composite data vs seas
-    workpaths <- "/work/ba1103/a270073"
+    workpath <- "/work/ba1103/a270073"
     models <- rep("fesom", t=2)
     prefixes <- c("awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_seas_regular_dx0.250_dy0.250",
                   "awi-esm-1-1-lr_kh800_piControl_mhw_tos_ts_26860101-30001231_clim_26860101-30001231_pctile_90_minDuration_5_withTrend_composite_data_regular_dx0.250_dy0.250")
@@ -644,9 +674,8 @@ if (F) { # mhw composite data/seas*100
         fromsf <- c(2070, 2070)
         tosf <- c(2099, 2099)
     }
-    #n_mas <- rep(60, t=2)
-    n_mas <- rep(36, t=2)
-    #n_mas <- rep(1, t=2)
+    #n_mas_an <- rep(5, t=2)
+    n_mas_an <- rep(3, t=2)
     if (F) {
         names_legend <- c(eval(substitute(expression(paste("1%CO"[2])))),
                           eval(substitute(expression(paste("abrupt-4" %*% "CO"[2])))))
@@ -781,15 +810,10 @@ if (F) { # mhw composite data/seas*100
     #seasonsp <- rep("Jun", t=2)
     #seasonsp <- rep("Sep", t=2)
     #seasonsp <- rep("Dec", t=2)
-    #n_mas <- c(1, 1)
-    #n_mas <- c(30, 10)
-    #n_mas <- c(90, 30)
-    #n_mas <- c(175, 30)
-    #n_mas <- c(200, 20)
-    n_mas <- c(250, 50) # jqs fig. 6
-    #n_mas <- c(30*12, 10*12)
-    #n_mas <- c(250*12, 50*12) # jan-dec
-    #n_mas <- c(120*12, 20*12) # seasons
+    n_mas_an <- c(20.83333, 4.16667) # jqs fig. 6
+    #n_mas_an <- c(30, 10)
+    #n_mas_an <- c(250, 50) # jan-dec
+    #n_mas_an <- c(120, 20) # seasons
     #remove_mean_froms <- c(-179, 0)
     #remove_mean_tos <- c(-179, 0)
     #regboxes <- lapply(vector("list", l=2), base::append, list(regbox="NAsiberia"))
@@ -805,7 +829,7 @@ if (F) { # mhw composite data/seas*100
     tosf <- c("7001", "7001") # Hol-Tx10
     new_origins <- c(-7000, -7000) # Hol-Tx10
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- c(120, 120)
+    n_mas_an <- c(10, 10)
     modes <- c("select", "select")
     #modes <- c("yearsum", "yearsum")
     #seasonsf <- c("yearsum", "yearsum")
@@ -860,7 +884,7 @@ if (F) { # mhw composite data/seas*100
     names_legend <- c("T106 ERA-I", "T127 ERA5")
     fromsf <- c(1958, 1979)
     tosf <- c(2019, 2019)
-    n_mas <- rep(36, t=2)
+    n_mas_an <- rep(3, t=2)
     varnames_in <- rep("temp2", t=2)
     #varnames_in <- rep("tsurf", t=2)
     #varnames_in <- rep("aprt", t=2)
@@ -964,7 +988,7 @@ if (F) { # mhw composite data/seas*100
     fromsf <- rep(1948, t=2)
     tosf <- rep(2009, t=2)
     #seasonsf <- rep("Mar", t=2)
-    n_mas <- rep(36, t=2)
+    n_mas_an <- rep(3, t=2)
     #modes <- rep("timmean", t=2)
     modes <- rep("fldmean", t=2)
     #modes <- rep("fldint", t=2)
@@ -1003,8 +1027,8 @@ if (F) { # mhw composite data/seas*100
     new_origins <- c(1114, NA, NA) # historical starts from pi 2686 = spinup year 737 --> 1850 - 737 + 1 = 1114
     fromsp <- c(1850, NA, NA)
     tosp <- c(2006, NA, NA)
-    #n_mas <- rep(5*12, t=3)
-    #n_mas <- rep(10*12, t=3)
+    #n_mas_an <- rep(5, t=3)
+    #n_mas_an <- rep(10, t=3)
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl vs historical2 vs ssp585
     models <- rep("echam6", t=3)
@@ -1031,9 +1055,9 @@ if (F) { # mhw composite data/seas*100
     fromsp <- c(2010, 2010, NA) # zoom 2010-2018
     tosp <- c(2018, NA, 2018)
     types <- c("o", "o", "o")
-    #n_mas <- rep(3*12, t=3)
-    #n_mas <- rep(5*12, t=3)
-    #n_mas <- rep(10*12, t=3)
+    #n_mas_an <- rep(3, t=3)
+    #n_mas_an <- rep(5, t=3)
+    #n_mas_an <- rep(10, t=3)
 
 } else if (F) { # awicm1-recom piControl vs esm-piControl
     models <- rep("echam6", t=3)
@@ -1046,7 +1070,7 @@ if (F) { # mhw composite data/seas*100
     tunit <- "model year"
     new_origins <- c(fromsf[1:2]-1950+1, fromsf[3]-2686+736+1) # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
     fromsp <- c(1051+1-c(1000, 131), NA) # last xxx years of piControl
-    n_mas <- rep(120, t=3)
+    n_mas_an <- rep(10, t=3)
     add_linear_trend <- T
     modes <- rep("fldint", t=3)
 
@@ -1064,7 +1088,7 @@ if (F) { # mhw composite data/seas*100
     new_origins <- c(fromsf[1]-1950+1, fromsf[2]-1950+1, fromsf[3]-2686+736+1) # 2686 = 1 --> new_origin = `fromsf` - 2686 + 1 = 
     fromsp <- c(1051+1-852, NA, NA) # last xxx years of piControl
     tosp <- c(1001, 1051, NA)
-    n_mas <- rep(120, t=3)
+    n_mas_an <- rep(10, t=3)
     add_linear_trend <- T
     add_linear_trend_froms <- c(700, NA, NA)
     modes <- rep("fldint", t=3)
@@ -1272,18 +1296,8 @@ if (F) { # mhw composite data/seas*100
     #areas <- rep("two-yurts_remapnn", t=3)
     #areas <- rep("kotokel_remapnn", t=3)
     #levs <- rep(2, t=3)
-    #n_mas <- rep(100, t=3)
-    #n_mas <- rep(150, t=3)
-    #n_mas <- rep(300, t=3) # jqs paper fig 1 srad0d
-    #n_mas <- c(30, 3*30, 30) 
-    #n_mas <- c(90, 3*90, 90) 
-    #n_mas <- rep(120, t=3)
-    n_mas <- c(120, 360, 120) # jqs paper fig 1 temp2
-    #n_mas <- rep(360, t=3)
-    #n_mas <- c(90, 3*150, 150) # compare seasons
-    #n_mas <- c(1000, 3*500, 500) # Hol-7 mean
-    #n_mas <- c(1000, 6*500, 3*500) # Hol-7 mean
-    #n_mas <- c(1200, 12000, 1200)
+    #n_mas_an <- rep(25, t=3) # jqs paper fig 1 srad0d
+    n_mas_an <- c(10, 30, 10) # jqs paper fig 1 temp2
     #regboxes <- lapply(vector("list", l=3), base::append, list(regbox="NAsiberia"))
 
 } else if (F) { # Hol-T three var plus vectors: wind10 (u10, v10) or quv (qu, qv)
@@ -1301,7 +1315,7 @@ if (F) { # mhw composite data/seas*100
     new_origins <- rep(-6996, t=3) # Hol-Tx10
     #new_origins <- rep(-7000, t=3) # Hol-Tx10
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- c(120, 120, 120)
+    n_mas_an <- c(10, 10, 10)
     #seasonsf <- rep("annual", t=3)
     seasonsf <- rep("NDJFMmean", t=3)
     #seasonsp <- "Feb" # cdo's default season timestamps: Feb, May, Aug, Nov
@@ -1439,7 +1453,7 @@ if (F) { # mhw composite data/seas*100
     #varnames_in <- rep("temp2", t=4)
     varnames_in <- rep("co2_flx_ocean", t=4)
     #varnames_in <- rep("co2_flx_land", t=4)
-    #n_mas <- rep(60, t=4)
+    #n_mas_an <- rep(5, t=4)
     #varnames_in <- rep("tos", t=4)
     #varnames_in <- rep("aCO2", t=4)
     fromsf <- c(1950, 2686, 1850, 2686)
@@ -1555,9 +1569,8 @@ if (F) { # mhw composite data/seas*100
     #seasonsp <- rep("JFM", t=4) 
     #seasonsp <- rep("Mar", t=4)
     #seasonsp <- rep("Jul", t=4)
-    #n_mas <- rep(60, t=4)
-    #n_mas <- rep(36, t=4)
-    #n_mas <- rep(1, t=4)
+    #n_mas_an <- rep(5, t=4)
+    #n_mas_an <- rep(3, t=4)
     if (T) {
         names_legend <- c("piControl", 
                           "historical", 
@@ -1612,7 +1625,7 @@ if (F) { # mhw composite data/seas*100
                                           list(season=seasonsf[3], from=fromsf[3], to=tosf[3]))),
                           paste0("LGM ", seasonsf[4], " ", fromsf[4], "-", tosf[4]))
     }
-    n_mas <- rep(60, t=4)
+    n_mas_an <- rep(5, t=4)
     #varnames_in <- rep("temp2", t=4)
     varnames_in <- rep("srad0", t=4)
     
@@ -1660,10 +1673,9 @@ if (F) { # mhw composite data/seas*100
     #new_origins <- c(-6996, -6996, -7000, -7000)
     new_origins <- rep(-6996, t=4)
     time_ref <- 1950 # any string, e.g. "BP", or number
-    #n_mas <- rep(30, t=4)
-    n_mas <- rep(90, t=4)
-    #n_mas <- rep(120, t=4)
-    #n_mas <- c(100*12, 10*10, 10*12, 10)
+    #n_mas_an <- rep(2.5, t=4)
+    n_mas_an <- rep(7.5, t=4)
+    #n_mas_an <- rep(10, t=4)
     #varnames_in <- rep("temp2", t=4)
     #varnames_in <- rep("tsurf", t=4)
     #varnames_in <- rep("aprt", t=4)
@@ -1705,7 +1717,7 @@ if (F) { # mhw composite data/seas*100
     new_origins <- c(1, 551, 551, 551)
     #fromsp <- c(546, rep(NA, t=3))
     #tosp <- c(NA, rep(555, t=3))
-    n_mas <- rep(36, t=4)
+    n_mas_an <- rep(3, t=4)
     varnames_in <- c("temp2", "tas", "temp2", "tas")
     modes <- rep("fldmean", t=4)
     varnames_out_samedims <- "temp2"
@@ -1732,7 +1744,7 @@ if (F) { # mhw composite data/seas*100
     modes <- rep("fldmean", t=4)
 
 } else if (F) { # phd stuff divuvt* fldint 4 settings
-    workpaths <- "/work/ba0941/a270073"
+    workpath <- "/work/ba0941/a270073"
     models <- rep("fesom", t=4)
     if (T) {
         prefixes <- rep("Low01_sub_lsea_s52", t=4)
@@ -1755,11 +1767,11 @@ if (F) { # mhw composite data/seas*100
     depthsf <- rep("_int0-MLD", t=4)
     fromsf <- rep(1948, t=4)
     tosf <- rep(2009, t=4)
-    n_mas <- rep(36, t=4)
+    n_mas_an <- rep(3, t=4)
     modes <- rep("fldint", t=4)
 
 } else if (F) { # phd stuff lorenz energy cycle fldint 4 settings
-    workpaths <- "/work/ba0941/a270073"
+    workpath <- "/work/ba0941/a270073"
     models <- rep("fesom", t=4)
     if (T) {
         prefixes <- rep("Low01_sub_lsea_s52", t=4)
@@ -1780,7 +1792,7 @@ if (F) { # mhw composite data/seas*100
     names_legend_samedims <- varnames_in
     fromsf <- rep(1948, t=4)
     tosf <- rep(2009, t=4)
-    n_mas <- rep(36, t=4)
+    n_mas_an <- rep(3, t=4)
     modes <- rep("fldint", t=4)
 
 # ==================================================
@@ -1824,12 +1836,11 @@ if (F) { # mhw composite data/seas*100
     #new_origins <- c(-6996, -6996, -7000, -7000)
     new_origins <- rep(-6996, t=5)
     time_ref <- 1950 # any string, e.g. "BP", or number
-    #n_mas <- rep(30, t=5)
-    n_mas <- c(rep(30, t=4), 4*30)
-    #n_mas <- rep(30, t=5)
-    #n_mas <- c(4*90, rep(90, t=5))
-    #n_mas <- rep(120, t=5)
-    #n_mas <- c(100*12, 10*10, 10*12, 10)
+    #n_mas_an <- rep(2.5, t=5)
+    n_mas_an <- c(rep(2.5, t=4), 10)
+    #n_mas_an <- c(30, rep(7.5, t=5))
+    #n_mas_an <- rep(10, t=5)
+    #n_mas_an <- c(100, 8.3333, 10, 0.83333)
     varnames_in <- rep("temp2", t=5)
     #varnames_in <- rep("tsurf", t=5)
     #varnames_in <- rep("tsurfaprt", t=5)
@@ -1937,8 +1948,8 @@ if (F) { # mhw composite data/seas*100
     new_origins <- rep(-6996, t=6)
     #new_origins <- rep(-7000, t=6)
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- rep(30, t=6)
-    #n_mas <- rep(120, t=6)
+    n_mas_an <- rep(2.5, t=6)
+    #n_mas_an <- rep(10, t=6)
     #varnames_in <- rep("temp2", t=6)
     varnames_in <- rep("aprt", t=6)
     areas <- c("ladoga_remapnn", "shuchye_remapnn", "levinson-lessing_remapnn", "taymyr_remapnn", "emanda_remapnn", "elgygytgyn_remapnn")
@@ -1955,10 +1966,10 @@ if (F) { # mhw composite data/seas*100
     new_origins <- c(rep(-6996, t=3), rep(-7000, t=3))
     time_ref <- 1950 # any string, e.g. "BP", or number
     seasonsp <- rep("JJA", t=6)
-    #n_mas <- rep(30, t=6)
-    #n_mas <- rep(120, t=6)
-    n_mas <- c(rep(10*12, t=3), rep(5*12, t=3))
-    #n_mas <- c(rep(100*12, t=3), rep(20*12, t=3))
+    #n_mas_an <- rep(2.5, t=6)
+    #n_mas_an <- rep(10, t=6)
+    n_mas_an <- c(rep(10, t=3), rep(5, t=3))
+    #n_mas_an <- c(rep(100, t=3), rep(20, t=3))
     modes <- rep("select", t=6)
     #varnames_in <- rep("amoc", t=6)
     #codes <- rep(101, t=6)
@@ -2008,7 +2019,7 @@ if (F) { # mhw composite data/seas*100
     new_origins <- c(2051, 2051, 2350, NA, NA, NA, NA)
     #fromsp <- c(546, rep(NA, t=3))
     #tosp <- c(NA, rep(555, t=3))
-    n_mas <- rep(36, t=7)
+    n_mas_an <- rep(3, t=7)
     varnames_in <- c("temp2", "temp2", "tas", "temp2", "temp2", "tas", "temp2")
     modes <- rep("fldmean", t=7)
     varnames_out_samedims <- "temp2"
@@ -2063,7 +2074,7 @@ if (F) { # mhw composite data/seas*100
     tosf <- c(rep("7001", t=4), rep("7000", t=4))
     new_origins <- c(rep(-7000, t=4), rep(-6996, t=4)) 
     time_ref <- 1950 # any string, e.g. "BP", or number
-    n_mas <- c(rep(120, t=4), rep(1200, t=4))
+    n_mas_an <- c(rep(10, t=4), rep(100, t=4))
     cols <- c(rep(1, t=4), rep(2, t=4))
     #varnames_in <- rep(c("c208_SST_GLO", "c210_T200_GLO", "c212_T700_GLO", "c214_T2200_GLO"), t=2)
     #varnames_in <- rep(c("c128_SST_ATL", "c130_T200_ATL", "c132_T700_ATL", "c134_T2200_ATL"), t=2)
@@ -2095,7 +2106,7 @@ if (F) { # mhw composite data/seas*100
     new_origins <- c(NA,   NA,   3000, 2700, 2701, 3183, 3200, 3000)
     #fromsp <- c(546, rep(NA, t=3))
     #tosp <- c(NA, rep(555, t=3))
-    n_mas <- rep(36, t=8)
+    n_mas_an <- rep(3, t=8)
     codes <- c("", "", "", "", "", "", "", 167)
     varnames_in <- c("temp2", "temp2", "tas", "temp2", "temp2", "tas", "temp2", "temp2")
     modes <- rep("fldmean", t=8)
@@ -2162,7 +2173,7 @@ if (F) { # mhw composite data/seas*100
     ltys_samedims <- c(rep(1, t=7), 2)
     ltws_samedims <- rep(2, t=8)
     modes <- rep("fldint", t=8)
-    n_mas <- rep(36, t=8)
+    n_mas_an <- rep(3, t=8)
     fromsf <- rep(1948, t=8)
     tosf <- rep(2009, t=8)
 
@@ -2180,7 +2191,7 @@ if (F) { # mhw composite data/seas*100
     names_legend <- models
     names_short <- names_legend
     varnames_in <- rep("fHarvest", t=9)
-    plotprefix <- "cmip6"
+    plotprefix <- "cmip6_piControl"
     modes <- rep("fldint", t=9)
     fromsf <- c(1101, 401, 400, 401, 2000, 2750, 2750, 401, 601) # last 100a
     tosf <- c(1200, 500, 499, 500, 2099, 2849, 2849, 500, 700) # last 100a
@@ -2201,7 +2212,7 @@ if (F) { # mhw composite data/seas*100
     names_short <- names_legend
     prefixes[which(names_legend == "AWICM1-RECOM")] <- "awi-esm-1-1-lr_kh800_piControl"
     varnames_in <- rep("netAtmosLandCO2Flux", t=11)
-    plotprefix <- "cmip6"
+    plotprefix <- "cmip6_piControl"
     modes <- rep("fldint", t=11)
     #modes <- rep("fldint_timmean", t=20)
     fromsf <- c(1855, 2686, 6101, 401, 400, 401, 2250, 2250, 2250, 2750, 2750) # last 100a
@@ -2309,8 +2320,8 @@ if (F) { # mhw composite data/seas*100
         fromsf <- c(fromsf, 1980)
         tosf <- c(tosf, 2018)
     }
-    names_legend <- models
-    names_short <- names_legend
+    names_short <- models
+    names_legend <- names_short
     prefixes <- rep("reccap2_A", t=length(models))
     varnames_in <- rep("fgco2", t=length(models))
     modes <- rep("fldint", t=length(models))
@@ -2369,7 +2380,7 @@ if (F) { # mhw composite data/seas*100
     names_short <- names_legend
     prefixes[which(names_legend == "AWICM1-RECOM")] <- "awi-esm-1-1-lr_kh800_piControl"
     varnames_in <- rep("co2_flx_total", t=18)
-    plotprefix <- "cmip6"
+    plotprefix <- "cmip6_piControl"
     modes <- rep("fldint", t=18)
     fromsf <- c(901, 2896, 6101, 5901, 1101, 401, 401, 2000, 2250, 401, 
                 2281, 3097, 3750, 2250, 2750, 2750, 2001, 3740)
@@ -2440,7 +2451,7 @@ if (F) { # mhw composite data/seas*100
     names_short <- names_legend
     prefixes[which(names_legend == "AWICM1-RECOM")] <- "awi-esm-1-1-lr_kh800_piControl"
     varnames_in <- rep("fgco2", t=24)
-    plotprefix <- "cmip6"
+    plotprefix <- "cmip6_piControl"
     modes <- rep("fldint", t=24)
     #modes <- rep("fldint_timmean", t=20)
     fromsf <- c(901, 2896, 6101, 5901, 1101, 401, 400, 401, 2000, 2250, 2255, 551, 401, 
@@ -2474,7 +2485,7 @@ if (F) { # mhw composite data/seas*100
     names_short <- names_legend
     prefixes[which(names_legend == "AWICM1-RECOM")] <- "awi-esm-1-1-lr_kh800_piControl"
     varnames_in <- rep("nbp", t=25)
-    plotprefix <- "cmip6"
+    plotprefix <- "cmip6_piControl"
     modes <- rep("fldint", t=25)
     fromsf <- c(1001, 2686, 6101, 5951, 1101, 401, 401, 2250, 2000, 2250, 2250, 2701, 401, 
                 2281, 3097, 3750, 2250, 2750, 2750, 2001, 401, 2001, 601, 601, 3740)
@@ -2511,19 +2522,32 @@ if (F) { # mhw composite data/seas*100
 
 # ======================================================
 # special: cmip6 nml created by ~/slurm/cronjobs/filter_esgf_lists.r
-} else if (T) { # 27 levels
-    fnml <- "~/slurm/cronjobs/namelist.plot_24settings_Omon_fgco2_23models_piControl_2-2nyears_2022-05-05_12-19-46.r"
+} else if (F) { # 27 levels
+    if (F) { # piControl test
+        fnml <- "~/slurm/cronjobs/namelist.plot_24settings_Omon_fgco2_23models_piControl_2-2nyears_2022-05-05_12-19-46.r"
+    } else if (F) { # piControl
+        fnml <- "~/slurm/cronjobs/namelist.plot_23settings_Omon_fgco2_23models_piControl_251-251nyears_2022-05-06_09-04-39.r"
+    } else if (F) { # historical test
+        fnml <- "~/slurm/cronjobs/namelist.plot_29settings_Omon_fgco2_29models_historical_2-2nyears_2022-05-06_09-48-29.r"
+    } else if (F) { # historical
+        fnml <- "~/slurm/cronjobs/namelist.plot_29settings_Omon_fgco2_29models_historical_165-165nyears_2022-05-06_09-45-36.r"
+    } else if (T) { # ssp126
+        fnml <- "~/slurm/cronjobs/namelist.plot_16settings_Omon_fgco2_16models_ssp126_86-86nyears_2022-05-10_16-33-40.r"
+    }
     if (!file.exists(fnml)) stop("could not find file ", fnml)
     message("run `source(\"", fnml, "\")` ...")
     source(fnml)
-    # exclude wrong fgco2 values of model GISS-E2-1-G
+    # exclude wrong fgco2 values
     indsvar <- which(varnames_in == "fgco2")
     if (length(indsvar) > 0) {
-        indsmodel <- which(models == "GISS-E2-1-G")
+        indsmodel <- which(!is.na(match(models, c("BCC-CSM2-MR", "GISS-E2-1-G", "GISS-E2-1-G-CC")))) # wrong factors; reported to DKRZ
+        if (F) {
+            indsmodel <- c(indsmodel, which(!is.na(match(models, c("CNRM-ESM2-1"))))) # CNRM applies carbon from rivers
+        }
         if (length(indsmodel) > 0) {
             indsmatch <- match(indsmodel, indsvar)
             if (length(indsmatch) > 0) {
-                message("exclude wrong GISS-E2-1-G fgco2 entries from namelist ...")
+                message("exclude ", length(indsmatch), " wrong models ", paste(models[indsmatch], collapse=", "))
                 models <- models[-indsmatch]
                 prefixes <- prefixes[-indsmatch]
                 names_short <- names_short[-indsmatch]
@@ -2536,12 +2560,24 @@ if (F) { # mhw composite data/seas*100
     }
     # which mode
     modes <- rep("fldint", t=length(models))
-    if (T) { # adjust piControl years for plot
-        new_origins <- rep(NA, t=length(models))
-        inds <- grep("piControl", prefixes)
-        if (length(inds) > 0) {
-            new_origins[inds] <- 1850
-        }
+    new_origins <- rep(NA, t=length(models))
+    center_ts <- T
+    fromsp <- rep(1990, t=length(models))
+    tosp <- rep(2020, t=length(models))
+    # special: adjust piControl years for plot
+    inds <- grep("piControl", prefixes)
+    if (length(inds) > 0) { 
+        message("special: adjust ", length(inds), " piControl new_origins ...")
+        new_origins[inds] <- 1850
+    }
+    # special: replace with historical+ssp16 data
+    inds <- grep("ssp126", prefixes)
+    if (length(inds) > 0) { 
+        message("special: replace ", length(inds), " ssp126 prefixes with historical+ssp16")
+        prefixes[inds] <- sub("ssp126", "historical_and_ssp126", prefixes[inds])
+        fromsf[inds] <- 1850
+        tosp[inds] <- 2020
+        plotprefix <- "cmip6_historical_and_ssp126"
     }
 
 } # which setting

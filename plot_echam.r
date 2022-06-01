@@ -15,20 +15,20 @@
 
 graphics.off()
 options(show.error.locations=T)
-#options(warn=2) # stop on warnings
 if (T && options()$warn != 0) options(warn=0) # back to default
 fctbackup <- `[`
 `[` <- function(...) { fctbackup(..., drop=F) } # set back to default: `[` <- fctbackup 
 
+#options(warn=2) # stop on warnings for debug
+
 if (!exists("host")) {
-    stop("`host` does not exist. did you accidentally run `source(\"plot.echam.r\")` instead of `source(\"namelist.plot.r\")`?")
+    stop("obj `host` does not exist. did you accidentally run `source(\"plot.echam.r\")` instead of `source(\"namelist.plot.r\")`?")
 }
 
 # load libraries necessary for plot_echam.r
 message("\nload packages defined in ", host$repopath, "/requirements_plot.txt ...")
-requirements <- readLines(paste0(host$repopath, "/requirements_plot.txt"))
+requirements <- trimws(readLines(paste0(host$repopath, "/requirements_plot.txt")))
 for (r in requirements) {
-    r <- trimws(r)
     if (substr(r, 1, 1) != "#") { # current line is not a comment
         if (grepl(" ", r)) { # there is a space
             r <- substr(r, 1, regexpr(" ", r)-1) # everything until first space
@@ -63,8 +63,8 @@ if (exists("varnames_uv")) {
     }
 }
 
-if (center_ts && scale_ts) {
-    stop("both `center_ts` and `scale_ts` are true. choose one: center = x-mu; scale = (x-mu)/sd.")
+if (length(which(c(center_ts, scale_ts, detrend_ts, diff_ts))) > 1) {
+    stop("only one of `center_ts`, `scale_ts`, `detrend_ts` and `diff_ts` can be true")
 }
 
 # set defaults
@@ -109,17 +109,25 @@ if (!exists("tosp")) tosp <- rep(NA, t=nsettings)
 froms_plot <- tos_plot <- rep(NA, t=nsettings)
 if (!exists("seasonsp")) seasonsp <- seasonsf
 if (any(is.na(seasonsp))) seasonsp[is.na(seasonsp)] <- seasonsf[is.na(seasonsp)]
-if (!exists("n_mas")) n_mas <- rep(1, t=nsettings) # 1 = no moving average effect
-if (all(n_mas == 1)) {
-    if (add_unsmoothed == F) {
-        message("all `n_mas` = 1, change `add_unsmoothed` from F to T ...")
+if (!exists("n_mas_an")) n_mas_an <- rep(1, t=nsettings) # 1 = no moving average effect
+if (all(n_mas_an == 1)) {
+    if (!add_unsmoothed) {
+        message("all `n_mas_an` = 1 and `add_unsmoothed` is false --> change to true ...")
         add_unsmoothed <- T
     }
-    if (add_smoothed == T) {
-        message("all `n_mas` = 1, change `add_smoothed` from T to F ...")
+    if (add_smoothed) {
+        message("all `n_mas_an` = 1 and `add_smoothed` is true --> change to false ...")
         add_smoothed <- F
     }
+} else { # some n_mas_an != 1
+    if (!add_smoothed) {
+        message("some `n_mas_an` != 1 and `add_smoothed` is false --> set to true if you want to include smoothed time series")
+    }
 }
+if (!add_unsmoothed && !add_smoothed) {
+    message("both `add_unsmoothed` and `add_smoothed` are false --> set `add_unsmoothed` true")
+    add_unsmoothed <- T
+}           
 if (!exists("new_origins")) new_origins <- rep(NA, t=nsettings)
 if (!exists("time_ref")) time_ref <- NA # only one
 if (!exists("remove_setting")) remove_setting <- NA
@@ -248,9 +256,7 @@ if (exists("cols_samedims")) {
     }
 }
 
-plotname_suffix <- "" # default: nothing
-if (center_ts) plotname_suffix <- "_center_ts"
-if (scale_ts) plotname_suffix <- "_scale_ts"
+plotname_suffix <- "" # default
 if (!ts_highlight_seasons$bool) ts_highlight_seasons$suffix <- ""
 
 if (!exists("add_linear_trend_froms")) add_linear_trend_froms <- rep(NA, t=nsettings)
@@ -458,7 +464,7 @@ for (i in seq_len(nsettings)) {
         
         # make posix from numerical time vals
         timein_calendar <- NA # default
-        posix_method <- "own" # "cdo" "own" "own_phd"
+        posix_method <- "cdo" # "cdo" "own" "own_phd"
         message("\nmake POSIX object from timein_unit_string = \"", timein_unit_string, "\" with `posix_method` = \"", posix_method, "\" ...")
         if (posix_method == "cdo") { # own way todo: not complete yet        
             cmd <- Sys.which("cdo")
@@ -469,7 +475,7 @@ for (i in seq_len(nsettings)) {
             dates <- strsplit(trimws(dates), "  ")[[1]] # e.g. "1960-01-16T00:00:00" "1960-02-16T00:00:00" ...
             timein_lt <- as.POSIXlt(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC")
 
-        } else if (posix_method == "own") {
+        } else if (posix_method == "own") { # replicate result of `cdo showtimestamp` or `ncdump -ct`
         
             # case 1: e.g. "days since 1538-1-1 00:00:00"  
             if (regexpr(" since ", timein_unit_string) != -1) {
@@ -505,48 +511,110 @@ for (i in seq_len(nsettings)) {
                     timein_calendar <- ncin$dim[[dims_of_settings[[i]]["time"]]]$calendar
                     if (!is.null(timein_calendar)) {
                         message("time calendar = \"", timein_calendar, "\"")
-                        if (any(timein_calendar == c("360_day", "365_day", "gregorian", "proleptic_gregorian"))) {
+                        if (any(timein_calendar == c("360_day", "365_day", "gregorian"))) {
                             timein_leap <- F
                             if (any(timein_calendar == c("360_day"))) { # add further if needed
-                                timein_add_ndays_per_year <- 5
-                                warn <- options()$warn; options(warn=2) # stop on warning
-                                origin_year <- as.integer(substr(timein_origin, 1, 4)) # origin year of relative time unit
-                                options(warn=warn)
+                                if (timein_calendar == "360_day") {
+                                    timein_add_ndays_per_year <- 5
+                                } else {
+                                    stop("not defined")
+                                }
                                 first_year <- as.integer(fromsf[i]) # first year of filename-time, no matter what is in actual time vals
-                                timein_add_nyears <- length(seq(origin_year, first_year, b=1)) - 1 # -1 to not add additional days for last year
-                                message("--> time unit is relative and calendar is non-366 --> add ", timein_add_ndays_per_year, 
-                                        " days per year for ", timein_add_nyears, " years (-1 for last year) ...")
+                                last_year <- as.integer(tosf[i]) # last year of filename-time, no matter what is in actual time vals
+                                timein_add_nyears <- length(seq(first_year, last_year, b=1)) - 1 # -1 to not add additional days for last year
+                                message("--> time unit is relative and calendar `timein_calendar` = \"", timein_calendar, 
+                                        "\" is non-366 --> add ", timein_add_ndays_per_year, " days per year * ", 
+                                        timein_add_nyears, " nyears from `fromsf[", i, "]`=", fromsf[i], 
+                                        " to `tosf[", i, "]`=", tosf[i], " (-1 for last year) = ", 
+                                        timein_add_ndays_per_year*timein_add_nyears, " days ...")
                             }
-                        } else if (any(timein_calendar == c("366_day", "standard"))) {
+                        } else if (any(timein_calendar == c("366_day", "standard", "proleptic_gregorian"))) {
                             timein_leap <- T
                         } else {
-                            stop("time dim `calendar` attribute \"", timein_calendar, "\" unknown")
+                            stop("time dim `calendar` attribute \"", timein_calendar, "\" not defined")
                         }
                     } # if `calendar` attribute 
                     
-                    if (!timein_leap) { # input time is without leap years
-                        # --> add number of feb29 days to get correct posix time
-                        warn <- options()$warn; options(warn=2) # stop on warning
-                        origin_year <- as.integer(substr(timein_origin, 1, 4)) # origin year of relative time unit
-                        options(warn=warn)
-                        first_year <- as.integer(fromsf[i]) # first year of filename-time, no matter what is in actual time vals
-                        timein_add_nfeb29 <- length(which(is.leap(seq(origin_year, first_year, b=1)))) # can be zero
-                        message("--> time unit is relative and calendar is non-leap --> add ", timein_add_nfeb29, 
-                                " Feb29 from origin year ", origin_year, " to first year `fromsf[", i, "]` = ", 
-                                first_year, " ", appendLF=F)
-                        if (is.leap(first_year) && timein_add_nfeb29 > 0) { # why is condition `is.leap(first_year)` necessary?
-                            timein_add_nfeb29 <- timein_add_nfeb29 - 1 # -1 to not add additional day for last year
-                            message("(-1 since first year ", first_year, " is neap year) ", appendLF=F)
-                        }
-                        message("...")
-                    }
-                    
-                    # get posix
-                    timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac + 
-                                            timein_add_nfeb29*timein_fac + 
-                                            timein_add_nyears*timein_add_ndays_per_year*timein_fac, 
-                                            origin=timein_origin, tz="UTC")
-                }
+                    # calc posix
+                    timein_lt <- as.POSIXlt(dims[[i]]$time*timein_fac, origin=timein_origin, tz="UTC") # default: 366_day calendar
+                    if (!timein_leap) { # add timevals all timepoints after feb28 of non-leap-years
+                        message("time dim calendar \"", timein_calendar, "\" is non-leap")
+                        message("--> add one day to all timepoints of a leap year after feb28 and all following timepoints ...")
+                        cnt_leap <- 0
+                        years <- unique(timein_lt$year)+1900
+                        for (yi in seq_along(years)) {
+                            if (is.leap(years[yi])) {
+                                feb28 <- as.POSIXlt(paste0(years[yi], "-2-28"), tz="UTC")
+                                cnt_leap <- cnt_leap + 1
+                                inds <- which(timein_lt > feb28)
+                                if (length(inds) > 0) {
+                                    #message("add ", cnt_leap, "th feb29 to ", length(inds), " timespoints > ", feb28, " until end:")
+                                    #print(timein_lt[inds])
+                                    timein_lt[inds] <- timein_lt[inds] + 86400 # seconds = 1 day
+                                    #message("-->")
+                                    #print(timein_lt[inds])
+                                }
+                                if (F) {
+                                    # for whatever reason, dates between feb1 and feb28 get additional 12 hours in `cdo showdate` and `ncdump -ct`
+                                    message("--> add 12 hours to all february timepoints of every leap year ...")
+                                    feb1 <- as.POSIXlt(paste0(years[yi], "-2-1"), tz="UTC")
+                                    inds <- which(timein_lt >= feb1 & timein_lt <= feb28)
+                                    if (length(inds) > 0) {
+                                        #message("add 12 hours to ", length(inds), " timepoints >= ", feb1, " and <= ", feb28, " ...")
+                                        timein_lt[inds] <- timein_lt[inds] - 86400/2 # seconds = half day = 12 hours
+                                    }
+                                }
+                            } # is current year is leap year
+                        } # for yi
+                        # add feb29 since time_origin if necessary
+                        origin_lt <- as.POSIXlt(timein_origin, tz="UTC")
+                        if (timein_lt[1] != origin_lt) {
+                            message("`timein_origin` = ", timein_origin, " != first date = ", timein_lt[1])
+                            nfeb29 <- length(which(is.leap(origin_lt$year:timein_lt$year[1])))
+                            if (nfeb29 > 0) {
+                                nfeb29 <- nfeb29 - 1 # -1 necessary
+                                message("--> add ", nfeb29, " Feb29 days to all timepoints ...")
+                                timein_lt <- timein_lt + nfeb29*86400
+                            }
+                            if (F) {
+                                message("--> add one day to all timepoints of a leap-year after feb28 ...")
+                                cnt_leap <- 0
+                                years <- unique(timein_lt$year)+1900
+                                for (yi in seq_along(years)) {
+                                    if (is.leap(years[yi])) {
+                                        feb28 <- as.POSIXlt(paste0(years[yi], "-2-28"), tz="UTC")
+                                        cnt_leap <- cnt_leap + 1
+                                        inds <- which(timein_lt > feb28)
+                                        if (length(inds) > 0) {
+                                            #message("add ", cnt_leap, "th feb29 to ", length(inds), " timespoints > ", feb28, " until end:")
+                                            #print(timein_lt[inds])
+                                            timein_lt[inds] <- timein_lt[inds] + 86400 # seconds = 1 day
+                                            #message("-->")
+                                            #print(timein_lt[inds])
+                                        }
+                                    }
+                                }
+                            }
+                        } # if origin and first date differ
+                    } # if !timein_leap
+                    if (timein_add_ndays_per_year != 0) { # add timevals to all timepoints of non-366_day-years 
+                        message("--> input calendar \"", timein_calendar, "\" is non-366_day --> add `timein_add_ndays_per_year` = ", 
+                                timein_add_ndays_per_year, " days per year to all following timepoints ...")
+                        years <- unique(timein_lt$year)+1900
+                        for (yi in seq_along(years)) {
+                            jan1 <- as.POSIXlt(paste0(years[yi], "-1-1"), tz="UTC")
+                            inds <- which(timein_lt >= jan1)
+                            if (length(inds) > 0) {
+                                #message("add 1 day to ", length(inds), " timespoints > ", jan1, " until end:")
+                                #print(timein_lt[inds])
+                                timein_lt[inds] <- timein_lt[inds] + 86400 # seconds = 1 day
+                                #message("-->")
+                                #print(timein_lt[inds])
+                            }
+                        } # for yi
+                    } # if timein_add_ndays_per_year != 0
+                } # if timein_lt was not calculated earlier
+
                 # test:
                 # numeric input 39615 days since 1850-01-01 with calendar "360_day" must yield date 1960-01-16
                 # --> years 1850:1960 = 111 years; 27 feb29
@@ -593,12 +661,17 @@ for (i in seq_len(nsettings)) {
             dates <- system(cmd, intern=T)
             dates <- strsplit(trimws(dates), "  ")[[1]] # e.g. "1960-01-16T00:00:00" "1960-02-16T00:00:00" ...
             timein_lt_cdo <- as.POSIXlt(dates, format="%Y-%m-%dT%H:%M:%S", tz="UTC")
-            if (timein_lt[1] != timein_lt_cdo[1]) {
+            if (!identical(timein_lt, timein_lt_cdo)) {
                 message("\n`timein_lt`:")
                 cat(capture.output(str(timein_lt, vec.len=15)), sep="\n")
                 message("`timein_lt_cdo`:")
                 cat(capture.output(str(timein_lt_cdo, vec.len=15)), sep="\n")
                 stop("own posix time `time_lt` differ from time vals obtained with cdo `time_lt_cdo`")
+                if (F) {
+                    data.frame(own=timein_lt, cdo=timein_lt_cdo, 
+                               dt_day=difftime(timein_lt, timein_lt_cdo, units="day"),
+                               dt_sec=difftime(timein_lt, timein_lt_cdo, units="sec"))
+                }
             } else {
                 message("ok")
             }
@@ -768,7 +841,6 @@ for (i in seq_len(nsettings)) {
             dims[[i]]$timen <- dims[[i]]$timen[time_inds]
         }
         dims[[i]]$time_unit_string <- timein_unit_string
-        dims[[i]]$time_unit <- timein_unit
         dims[[i]]$time_calendar <- timein_calendar
         
         # POSIXlt as numeric
@@ -2166,7 +2238,7 @@ for (i in seq_len(nsettings)) {
 
         varname <- names(datas[[i]])[vi]
         message("variable ", vi, "/", length(datas[[i]]), ": ", varname, ":")
-        cat(capture.output(str(data_infos[[i]])), sep="\n")
+        cat(capture.output(str(data_infos[[i]][[vi]])), sep="\n")
         
         # default: dont apply any factor
         data_infos[[i]][[vi]]$offset$operator <- NULL 
@@ -2526,6 +2598,9 @@ for (i in seq_len(nsettings)) {
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("Total CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into land/ocean)"))))
                     } else if (varname == "co2_flx_ocean") {
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
+                        if (center_ts) data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux centered [PgC yr"^paste(-1), "]"))))
+                        if (detrend_ts) data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux detrended [PgC yr"^paste(-1), "]"))))
+                        if (diff_ts) data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux diff [PgC yr"^paste(-1), "]"))))
                     } else if (varname == "co2_flx_land") {
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into land)"))))
                     } else if (varname == "co2_flx_npp") {
@@ -2635,10 +2710,10 @@ for (i in seq_len(nsettings)) {
                 }
             }
 
-        # cmip6 carbon fluxes away from atm
+        # carbon fluxes 
         } else if (any(varname == c("fgco2", "nbp", "netAtmosLandCO2Flux", "co2_flx_total"))) {
             if (grepl("reccap2", prefixes[i])) {
-                data_infos[[i]][[vi]]$units <- "molC m-2 s-1"
+                data_infos[[i]][[vi]]$units <- "molC m-2 s-1" # >0: downward
                 if (models[i] == "CCSM-WHOI") {
                     message("<0: into ocean --> >0: into ocean")
                     data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
@@ -2667,9 +2742,34 @@ for (i in seq_len(nsettings)) {
                         stop("not yet")
                     }
                 } # convert carbon units
+            
+            } else if (grepl("gregor_and_fay_2021", models[i])) {
+                data_infos[[i]][[vi]]$units <- "molC m-2 yr-1" # >0: upward
+                if (varname == "fgco2") {
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [molC m"^paste(-2), " yr"^paste(-1), "] (>0 into atm)"))))
+                }
+                if (T) { # convert carbon units
+                    message(">0: upward --> downward")
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1) # >0: upward --> downward
+                    if (varname == "fgco2") {
+                        data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [molC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+                    }
+                    if (grepl("fldint", modes[i])) {
+                        message("molC -> Pg")
+                        data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*", "/", "/")
+                        data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 12.0107, 1e3, 1e12) # molC-->gC, gC-->kg, kg->Pg
+                        data_infos[[i]][[vi]]$units <- "PgC yr-1"
+                        if (varname == "fgco2") {
+                            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
+                        }
+                    } else {
+                        stop("not yet")
+                    }
+                } # convert carbon units
 
-            } else { # default: original units kgC m-2 s-1
-                data_infos[[i]][[vi]]$units <- "kgC m-2 s-1"
+            } else { # echam default: original units kgC m-2 s-1
+                data_infos[[i]][[vi]]$units <- "kgC m-2 s-1" # >0: downward
                 if (varname == "fgco2") {
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
                 } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
@@ -3742,10 +3842,9 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                     } else {
                         for (vi in seq_along(datas[[i]])) {
                             message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi]) 
-                            # check if variable has time dim
                             dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
                             timedimind <- which(dims_of_var == "time")
-                            if (length(timedimind) == 1) {
+                            if (length(timedimind) == 1) { # if variable has time dim
                                 message("      found ", length(time_inds), " time points from ", 
                                         min(dims[[i]]$time[time_inds]), " to ", max(dims[[i]]$time[time_inds]))
                                 apply_dims <- 1:length(dims_of_var)
@@ -3787,66 +3886,6 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
         message("\n`remove_mean_froms` all NA --> do not remove temporal means ...")
     } # finished removing a temporal mean
 } # if any data has time dim
-
-
-# apply moving average in time --> datasma
-n_mas_fname <- rep("", t=nsettings) # default
-if (add_smoothed && 
-    any(sapply(lapply(lapply(dims, names), "==", "time"), any)) &&
-    #any(seasonsp == "Jan-Dec") && 
-    !all(n_mas == 1)) {
-    message("\nsome settings have time dim AND `add_smoothed` = T AND some `n_mas` != 1 --> apply moving averages ...")
-    datasma <- datas
-    for (i in seq_len(nsettings)) {
-        message(i, "/", nsettings, ": ", names_short[i], " ...")
-        #if (seasonsp[i] == "Jan-Dec" && n_mas[i] != 1) { # applying moving average
-        if (n_mas[i] != 1) {
-            for (vi in seq_along(datas[[i]])) { 
-                dims_of_var <- attributes(datas[[i]][[vi]])$dims # e.g. "time", "lon", "lat"
-                timedimind <- which(dims_of_var == "time")
-                if (length(timedimind) == 1) {
-                    # how many data points per year?
-                    midind <- length(dims[[i]]$time)/2 # middle of time series to avoid incomplete start/end of ts
-                    yearinds <- which(dims[[i]]$timelt$year == dims[[i]]$timelt$year[midind]) # all time points equal middle year
-                    npy <- length(yearinds) # how many time points eqial middle year
-                    n_mas_fname[i] <- paste0("_ma", round(n_mas[i]/npy), "yr") # years
-                    apply_dims <- 1:length(dim(datas[[i]][[vi]]))
-                    message("   var ", vi, "/", length(datas[[i]]), ": ", names(datas[[i]])[vi], 
-                            ": ntime = ", length(dims[[i]]$time), ", npy = ", npy, " --> n_ma/npy = ", 
-                            n_mas[i], "/", npy, " = ", n_mas[i]/npy, " year running mean")
-                    if (length(dims_of_var) == 1) { # variable has only 1 dim and its time
-                        datasma[[i]][[vi]] <- stats::filter(datas[[i]][[vi]], filter=rep(1/n_mas[i], t=n_mas[i]))
-                        # `forecast::ma(x, order=n_mas[i], centre=ifelse(n_mas[i] %% 2 == 0, F, T))` yields the same
-                    } else { # variable has more than 1 dims
-                        apply_dims <- apply_dims[-timedimind]
-                        cmd <- paste0("datasma[[", i, "]][[", vi, "]] <- ",
-                                      "apply(datas[[", i, "]][[", vi, "]], ",
-                                      "c(", paste(apply_dims, collapse=","), "), ",
-                                      "function(x) filter(x, rep(1/", n_mas[i], ", t=", n_mas[i], ")))")
-                        message("   ", cmd)
-                        eval(parse(text=cmd))
-                    }
-                } else { # variable has no time dim
-                    message("variable \"", names(datas[[i]])[vi], "\" has no time dim ...")
-                    datasma[[i]][[vi]] <- array(NA, dim=dim(datas[[i]][[vi]]))
-                } # if variable has time dim or not
-                
-                attributes(datasma[[i]][[vi]]) <- attributes(datas[[i]][[vi]])
-                if (length(timedimind) == 1) {
-                    attributes(datasma[[i]][[vi]])$n_ma <- n_mas[i]
-                    attributes(datasma[[i]][[vi]])$npy <- npy
-                }
-
-            } # for vi nvars
-        } # if n_mas != 1    
-    } # for i nsettings
-} # if add_smoothed && any(attributes(datas[[i]][[vi]])$dims == "time") && !all(n_mas == 1)
-if (!exists("datasma")) {
-    message("\n`datasma` does not exist\n--> set `add_smoothed` = T ",
-            "and/or `n_mas` not equal 1 in order to apply moving averages ...")
-    add_smoothed <- F
-}
-# finished applying moving average
 
 
 # calculate monthly and annual means
@@ -3961,12 +4000,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                             indsrhs[timedimind] <- paste0("time_inds")
                             cmd1 <- paste0("tmp2 <- mean(")
                             # use smoothed input time series for annual means if possible 
-                            if (F && exists("datasma") && !all(is.na(datasma[[i]]))) {
-                                # doesnt make sense
-                                cmd1 <- paste0(cmd1, "datasma")
-                            } else {
-                                cmd1 <- paste0(cmd1, "datas")
-                            }
+                            cmd1 <- paste0(cmd1, "datas")
                             cmd1 <- paste0(cmd1, "[[", i, "]][[", vi, "]][")
                             if (length(datasan_dims) == 1) { # var has only time dim
                                 cmd1 <- paste0(cmd1, paste(indsrhs, collapse=""), "], na.rm=T)")
@@ -4114,7 +4148,7 @@ if (any(sapply(lapply(lapply(dims, names), "==", "lon"), any)) &&
     bilinear_interp_factor > 1) {
     message("\n`bilinear_interp_factor` = ", bilinear_interp_factor, " > 1 (default) --> ",
             "interp data for smoother plot using fields::interp.surface.grid() ...")
-    cnt <- 0 # just for `plot_suffix`
+    cnt <- 0 # just for `plotname_suffix`
     for (i in seq_len(nsettings)) {
         for (vi in seq_along(datas[[i]])) {
             if (length(dim(datas[[i]][[vi]])) == 2) { # if variable has 2 dims
@@ -4209,8 +4243,8 @@ for (vi in seq_along(varnames_unique)) {
 # finished saving data for later
 
 ## plotting
-# 1st: plot all vars with same name together (datas, datasma, datasmon, datasltm)
-# 2nd: plot all vars with same dims together (datas, datasma, datasmon, datasltm)
+# 1st: plot all vars with same name together (datas, datasmon, datasltm)
+# 2nd: plot all vars with same dims together (datas, datasmon, datasltm)
 # 3rd: <define>
 plot_groups <- c("samevars", "samedims")
 message("\n********************* prepare plot groups *********************")
@@ -4234,26 +4268,24 @@ if (F) { # test
     varnames_unique <- c(varnames_unique, "myvar", "myvar2", "myvar3")
 }
     
-# prepare temporary data matrices for plot (z, zuv, zma, zmon, zlm)
+# prepare temporary data matrices for plot (z, zuv, zmon, zlm)
 nplot_groups <- length(plot_groups)
 for (plot_groupi in seq_len(nplot_groups)) {
 
     message("\nprepare \"", plot_groups[plot_groupi], "\" plots ...")
 
-    # plot same vars together (datas, datasma, datasmon, datasan, datasltm)
+    # plot same vars together (datas, datasmon, datasan, datasltm)
     if (plot_groups[plot_groupi] == "samevars") { 
 
         # prepare datas plots same vars
         z_samevars <- vector("list", l=length(varnames_unique))
         names(z_samevars) <- varnames_unique
         if (exists("varnames_uv")) zuv_samevars <- list()
-        if (exists("datasma")) zma_samevars <- z_samevars
         dinds_samevars <- vinds_samevars <- z_samevars
         for (vi in seq_along(varnames_unique)) { # wind10, u10, v10
             varname <- varnames_unique[vi]
             z <- dinds <- vinds <- list()
             if (exists("varnames_uv")) zuv <- z
-            if (exists("datasma")) zma <- z
             cnt <- 0
             tmp <- list()
             for (i in seq_len(nsettings)) {
@@ -4282,10 +4314,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             zuv[[length(zuv)+1]] <- NA
                         }
                     } # if varnames_uv exists
-                    if (exists("datasma")) {
-                        zma[[cnt]] <- datasma[[i]][[varind]]
-                        names(zma)[cnt] <- names_short[i]
-                    }
                 } else {
                     #message("setting ", i, " \"", names_short[i], "\" does not have variable \"", varname, "\"")
                 }
@@ -4297,7 +4325,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 zuv_samevars[[length(zuv_samevars)+1]] <- zuv
                 names(zuv_samevars)[length(zuv_samevars)] <- varname
             }
-            if (exists("datasma")) zma_samevars[[vi]] <- zma
         } # vi in varnames_unique
         # dimensinons in same order as data 
         d_samevars <- vector("list", l=length(z_samevars))
@@ -4436,7 +4463,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         } # if exists("datasltm")
         # finished datasltm plot preparation 
 
-    # plot all vars with same dims together (datas, datasma, datasmon, datasan, datasltm)
+    # plot all vars with same dims together (datas, datasmon, datasan, datasltm)
     } else if (plot_groups[plot_groupi] == "samedims") { 
         
         # prepare `datas` samedims
@@ -4463,7 +4490,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
         z_samedims <- list()
         dinds_samedims <- vinds_samedims <- z_samedims
-        if (exists("datasma")) zma_samedims <- z_samedims
         cnt_all <- 0
         for (dimleni in seq_along(dnames_unique)) {
             for (dimi in seq_along(dnames_unique[[dimleni]][,1])) {
@@ -4473,7 +4499,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         "   name(s) of dim(s) = \"", 
                         paste(dnames_unique[[dimleni]][dimi,], collapse="\", \""), "\" ...")
                 z <- d <- dinds <- vinds <- list()
-                #if (exists("datasma")) zma <- z
                 cnt <- 0
                 for (i in seq_along(datas)) {
                     for (vi in seq_along(datas[[i]])) {
@@ -4487,10 +4512,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             # --> <names_short>_vs_<varnames_in> --> these names are used for the varnames_uv check in lon vs lat plots
                             dinds[[cnt]] <- i
                             vinds[[cnt]] <- vi
-                            if (exists("datasma")) {
-                                zma[[cnt]] <- datasma[[i]][[vi]]
-                                names(zma)[cnt] <- paste0(names(datasma)[i], "_", names(datasma[[i]])[vi])
-                            }
                         } # if variable belongs to current dimlengh-dimname combination
                     } # vi vars of setting
                 } # i nsettings
@@ -4498,7 +4519,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 names(z_samedims)[cnt_all] <- paste(dnames_unique[[dimleni]][dimi,], collapse="_vs_")
                 dinds_samedims[[cnt_all]] <- dinds
                 vinds_samedims[[cnt_all]] <- vinds
-                if (exists("datasma")) zma_samedims[[cnt_all]] <- zma
             } # for dimi: all variables with same number of dims and whose dim(s) have the same name(s); e.g. all "time" or "lon","lat", etc.
         } # for dimleni: all variables with same number of dims
         d_samedims <- vector("list", l=length(z_samedims))
@@ -4752,8 +4772,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
     } # if plot_groupi == 1,2,...
 
 } # for plot_groupi in nplot_groups:
-# 1st: plot same vars together (datas, datasma, datasmon, datasan, datasltm)
-# 2nd: plot all vars with same dims together (datas, datasma, datasmon, datasan, datasltm)
+# 1st: plot same vars together (datas, datasmon, datasan, datasltm)
+# 2nd: plot all vars with same dims together (datas, datasmon, datasan, datasltm)
 
 # test if z_samevars == z_samedims
 if ("samevars" %in% plot_groups && "samedims" %in% plot_groups) {
@@ -4828,7 +4848,7 @@ message("--> plot ", nplot_groups, " group", ifelse(nplot_groups > 1, "s", ""), 
 message("\n********************* prepare plots *********************")
 for (plot_groupi in seq_len(nplot_groups)) {
         
-    if (plot_groups[plot_groupi] == "samevars") { # --> plot same vars together (datas, datasma, datasmon, datasan, datasltm)
+    if (plot_groups[plot_groupi] == "samevars") { # --> plot same vars together (datas, datasmon, datasan, datasltm)
         nplots <- length(z_samevars)
     } else if (plot_groups[plot_groupi] == "samedims") {
         nplots <- length(z_samedims)
@@ -4841,7 +4861,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 ": \"", plot_groups[plot_groupi], "\" ...\n",
                 "========================================")
 
-        # plot same vars together (datas, datasma, datasmon, datasan, datasltm)
+        # plot same vars together (datas, datasmon, datasan, datasltm)
         if (plot_groups[plot_groupi] == "samevars") { 
             varname <- varnames_unique[ploti]
             zname <- names(z_samevars)[ploti]
@@ -4862,7 +4882,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     zuv <- NA
                 }
             }
-            if (exists("datasma")) zma <- zma_samevars[[ploti]]
             if (exists("datasmon")) {
                 zname_mon <- names(zmon_samevars)[ploti]
                 zmon <- zmon_samevars[[ploti]]
@@ -4891,7 +4910,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 text_cols_pltm <- text_cols[sapply(dltminds, "[")]
             }
             
-        # plot all vars with same dims together (datas, datasma, datasmon, datasan, datasltm)
+        # plot all vars with same dims together (datas, datasmon, datasan, datasltm)
         } else if (plot_groups[plot_groupi] == "samedims") { 
             varname <- varnames_out_samedims[ploti]
             zname <- names(z_samedims)[ploti]
@@ -4917,7 +4936,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else {
                 lwds_p <- lwds_samedims[sapply(dinds, "[")]
             }
-            if (exists("datasma")) zma <- zma_samedims[[ploti]]
             if (exists("datasmon")) {
                 zname_mon <- names(zmon_samedims)[ploti]
                 zmon <- zmon_samedims[[ploti]]
@@ -4964,7 +4982,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
         cols_rgb_p <- rgb(t(col2rgb(cols_p)/255), alpha=alpha_rgb)
         lwds_p <- lwds[sapply(dinds, "[")]
         pchs_p <- pchs[sapply(dinds, "[")]
-        n_mas_fname_p <- n_mas_fname[sapply(dinds, "[")]
         if (exists("datasmon")) {
             varnames_in_pmon <- gsub("_", "", varnames_in[sapply(dmoninds, "[")])
             names_short_pmon <- names_short[sapply(dmoninds , "[")]
@@ -5034,6 +5051,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (ndims == 1 && dim_names == "time") {
 
                 if (F && exists("era5_ts") && length(unique(areas)) == 1) {
+                    stop("update: move to data_left")
                     message("\nload varname-and-area-specific era5 ts data. disable here if you do not want that.")
                     era5var <- NULL # default
                     if (zname == "quv") era5var <- "viwv"
@@ -5067,8 +5085,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             }
                         } # if any(seasnosp != "Jan-Dec")
                         # temporal smooth
-                        if (exists("datasma")) {
-                           tmp[[paste0(era5var, "_ma")]] <- filter(tmp[[era5var]], rep(1/era5_ts$n_ma, t=era5_ts$n_ma)) 
+                        if (add_smoothed) {
+                            stop("update")
+                            tmp[[paste0(era5var, "_ma")]] <- filter(tmp[[era5var]], rep(1/era5_ts$n_ma, t=era5_ts$n_ma)) 
                         }
                         # annual means
                         tmp$year <- unique(tmp$timelt$year+1900)
@@ -5116,7 +5135,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         cols_rgb_p <- rgb(t(col2rgb(cols_p)/255), alpha=alpha_rgb)
                         lwds_p <- c(lwds_p, era5_ts$lwd)
                         pchs_p <- c(pchs_p, era5_ts$pch)
-                        if (exists("datasma")) {
+                        if (add_smoothed) {
                             zma[[era5_ts$name]] <- era5_ts$data[[era5var]][[paste0(era5var, "_ma")]]
                         }
                         if (exists("datasmon")) {
@@ -5420,13 +5439,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
             length(unique(modes)) == 1 && 
             length(unique(areas)) == 1) {
             if (grepl("cmip6", plotprefix)) {
-                fout <- paste0(host$workpath, "/post/cmip6/", plotprefix, "_", length(models), "_models_", 
+                fout <- paste0(host$workpath, "/data/cmip6/post/", plotprefix, "_", length(models), "_models_", 
                                modes[1], "_", zname, "_", areas[1], "_Jan-Dec_", paste(format(tlimct, "%Y"), collapse="-"), ".nc")
             } else if (grepl("reccap2", plotprefix)) {
-                fout <- paste0(host$workpath, "/post/reccap2-ocean/", plotprefix, "_", length(models), "_models_", 
+                fout <- paste0(host$workpath, "/data/reccap2-ocean/post/", plotprefix, "_", length(models), "_models_", 
+                               modes[1], "_", zname, "_", areas[1], "_Jan-Dec_", paste(format(tlimct, "%Y"), collapse="-"), ".nc")
+            } else if (grepl("gregor_and_fay_2021", plotprefix)) {
+                fout <- paste0(host$workpath, "/data/gregor_and_fay_2021/post/", plotprefix, "_", length(models), "_models_", 
                                modes[1], "_", zname, "_", areas[1], "_Jan-Dec_", paste(format(tlimct, "%Y"), collapse="-"), ".nc")
             } else {
-                stop("not defined")
+                stop("aggregate case not defined")
             }
             if (!file.exists(fout)) {
                 message("\nspecial: aggregate post ", plotprefix, " to: ", fout)
@@ -5436,6 +5458,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("run `source(aggregate_plot_data.r)` ...")
                 source("aggregate_plot_data.r")
 
+            } else { 
+                message("\nspecial: aggregate fout ", fout, " already exists")
             } # if fout already exists or not
         } # special: save aggregated data to nc
 
@@ -8027,6 +8051,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             message("\n", zname, " ", mode_p, " plot time vs lat ...")
 
             if (add_smoothed) {
+                stop("update: calc moving average after center_ts etc.")
                 message("\n`add_smoothed` = T --> use zma and not z ...")
                 z <- zma
             }
@@ -8175,6 +8200,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (ndims == 2 && all(dim_names == c("time", "depth"))) {
        
             if (add_smoothed) {
+                stop("update: calc moving average after center_ts etc.")
                 message("\n`add_smoothed` = T --> replace z with zma ...")
                 z <- zma
             }
@@ -8263,6 +8289,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         if (ndims == 2 && all(dim_names == c("time", "lev"))) {
        
             if (add_smoothed) {
+                stop("update: calc moving average after center_ts etc.")
                 message("\n`add_smoothed` = T --> replace z with zma ...")
                 z <- zma
             }
@@ -8333,11 +8360,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
         ### 1 dim
         ## plot `datas` as time 
         if (ndims == 1 && dim_names == "time") {
-
-            if (!add_unsmoothed && !add_smoothed) {
-                warning("both `add_unsmoothed=F` and `add_smoothed=F`. set `add_unsmoothed=T` to show time series.")
-                add_unsmoothed <- T # default
-            }
 
             message("\n", varname, " ", mode_p, " plot vs time ...")
             
@@ -8537,7 +8559,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         ncin <- nc_open(paste0(inpath, "/", fname))
                         data_right$data[[i]] <- list(x=d$time[[i]],
                                                      y=ncvar_get(ncin, "mke")/1e11,
-                                                     n_ma=n_mas[i],
+                                                     n_ma=n_mas_an[i]*12,
                                                      text="MKE",
                                                      col=cols[i],
                                                      lty=2, lwd=1, pch=NA)
@@ -8561,7 +8583,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         ncin <- nc_open(paste0(inpath, "/", fname))
                         data_right$data[[i]] <- list(x=d$time[[i]],
                                                      y=ncvar_get(ncin, "eke")/1e11,
-                                                     n_ma=n_mas[i],
+                                                     n_ma=n_mas_an[i]*12,
                                                      text="EKE",
                                                      col=cols[i],
                                                      lty=2, lwd=1, pch=NA)
@@ -8585,7 +8607,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         ncin <- nc_open(paste0(inpath, "/", fname))
                         data_right$data[[i]] <- list(x=d$time[[i]],
                                                      y=ncvar_get(ncin, "eke")*100,
-                                                     n_ma=n_mas[i],
+                                                     n_ma=n_mas_an[i]*12,
                                                      text="EKE",
                                                      col=cols[i],
                                                      lty=2, lwd=1, pch=NA)
@@ -8618,7 +8640,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         ncin <- nc_open(paste0(inpath, "/", fname))
                         data_right$data[[i]] <- list(x=d$time[[i]],
                                                      y=ncvar_get(ncin, "VRS")/1e4,
-                                                     n_ma=n_mas[i],
+                                                     n_ma=n_mas_an[i]*12,
                                                      text="VRS",
                                                      col=cols[i],
                                                      lty=2, lwd=1, pch=NA)
@@ -8687,9 +8709,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 if (add_smoothed) {
                     for (i in seq_len(nsettings_right)) {
                         if (!is.null(data_right$data[[i]]$n_ma) && !is.na(data_right$data[[i]]$n_ma)) {
-                            data_right$data[[i]]$yma <- filter(data_right$data[[i]]$y, 
-                                                               rep(1/data_right$data[[i]]$n_ma, 
-                                                                   t=data_right$data[[i]]$n_ma))
+                            data_right$data[[i]]$yma <- as.numeric(stats::filter(data_right$data[[i]]$y, 
+                                                                                 filter=rep(1/data_right$data[[i]]$n_ma, 
+                                                                                            t=data_right$data[[i]]$n_ma)))
                         } else {
                             message("no `data_right$data[[", i, "]]$n_ma` defined")
                             data_right$data[[i]]$yma <- data_right$data[[i]]$y
@@ -8779,7 +8801,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     tlimlt_upper[[1]] <- range(data_upper$data[[1]]$x)
                 } # if amoc and Hol-Tx10 
                 
-                # check
+                # check data_upper
                 if (length(data_upper$data) == 0) {
                     warning("you provided `add_data_upper_xaxis_ts=T` but did not ",
                             "define which data should be plotted on upper xaxis.\n",
@@ -8842,10 +8864,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
             if (add_data_upper_xaxis_ts) {
                 nsettings_upper <- length(data_upper$data)
                 if (add_smoothed) {
+                    stop("update smooth n_mas_an condition")
                     for (i in seq_len(nsettings_upper)) {
-                        data_upper$data[[i]]$yma <- filter(data_upper$data[[i]]$y, 
-                                                           rep(1/n_mas[data_upper$data[[i]]$ind], 
-                                                               t=n_mas[data_upper$data[[i]]$ind]))
+                        data_upper$data[[i]]$yma <- as.numeric(stats::filter(data_upper$data[[i]]$y, 
+                                                                             filter=rep(1/n_mas_an[data_upper$data[[i]]$ind], 
+                                                                                        t=n_mas_an[data_upper$data[[i]]$ind])))
                     }
                 }
 
@@ -8873,44 +8896,79 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } 
             # if add_data_upper_xaxis_ts finished prepare upper axis data
             
-            if (center_ts || scale_ts) {
-                if (center_ts) {
-                    message("\n`center_ts` = T --> center ts before plot ...")
-                } else if (scale_ts) {
-                    message("\n`scale_ts` = T --> scale ts before plot ...")
-                }
+            if (center_ts || scale_ts || detrend_ts || diff_ts) {
                 for (i in seq_along(z)) {
                     if (center_ts) {
+                        if (i == 1) message("\n`center_ts` = T --> center z before plot ...")
                         z[[i]] <- base::scale(z[[i]], scale=F)
-                        if (exists("zma")) zma[[i]] <- base::scale(zma[[i]], scale=F)
+                        plotname_suffix <- paste0(plotname_suffix, "_center_ts")
                     } else if (scale_ts) {
+                        if (i == 1) message("\n`scale_ts` = T --> scale z before plot ...")
                         z[[i]] <- base::scale(z[[i]])
-                        if (exists("zma")) zma[[i]] <- base::scale(zma[[i]])
+                        plotname_suffix <- paste0(plotname_suffix, "_scale_ts")
+                    } else if (detrend_ts) {
+                        if (i == 1) message("\n`detrend_ts` = T --> remove z trend before plot ...")
+                        x <- as.numeric(d$time[[i]])
+                        lm <- stats::lm(z[[i]] ~ x)
+                        z[[i]] <- z[[i]] - lm$fitted.values
+                        plotname_suffix <- paste0(plotname_suffix, "_detrend_ts")
+                    } else if (diff_ts) {
+                        if (i == 1) message("\n`diff_ts` = T --> diff z before plot ...")
+                        z[[i]] <- c(NA, base::diff(z[[i]]))
+                        plotname_suffix <- paste0(plotname_suffix, "_diff_ts")
                     }
                 }
-            } # if center_ts or scale_ts
+            } # if center_ts scale_ts detrend_ts diff_ts
 
-            ## ylim model
+            # apply running mean to ts
+            if (add_smoothed) { # implies any n_mas_an != 1
+                message("\n`add_smoothed` is true --> calc running mean of datas ...")
+                plotname_suffix <- paste0(plotname_suffix, "_ma", paste(unique(n_mas_an), collapse="_"), "yr")
+                zma <- z
+                n_mas <- n_mas_an
+                for (i in seq_along(zma)) {
+                    if (n_mas_an[i] != 1) {
+                        dt <- diff(d$time[[i]])
+                        if (attr(dt, "units") == "days") {
+                            if (!any(is.na(match(unique(dt), c(28, 29, 30, 31))))) {
+                                dt <- "monthly"
+                            } else {
+                                stop("not defined")
+                            } 
+                        } else {
+                            stop("not definded")
+                        }
+                        if (dt == "monthly") {
+                            n_ma <- n_mas_an[i]*12
+                        } else {
+                            stop("not defined")
+                        }
+                        n_mas[i] <- n_ma
+                        names(n_mas)[i] <- dt
+                        zma[[i]] <- as.numeric(stats::filter(z[[i]], filter=rep(1/n_ma, t=n_ma)))
+                    } else {
+                        # nothing to do: zma = z
+                    }
+                } # for i
+            } # if add_smoothed
+
+            # ylim model
+            ylim <- NA
             if (add_unsmoothed) {
                 message("\n", mode_p, " versus time min / mean / max ", varname, " z:")
                 for (i in seq_along(z)) {
                     message(sprintf(paste0("%", max(nchar(names_short_p)), "s"), names_short_p[i]), ": ", 
                             min(z[[i]], na.rm=T), " / ", mean(z[[i]], na.rm=T), " / ", max(z[[i]], na.rm=T))
                 }
-                ylim <- range(z, na.rm=T)
+                ylim <- range(ylim, z, na.rm=T)
             }
-            if (exists("zma")) {
+            if (add_smoothed) {
                 message("\n", mode_p, " versus time min / mean / max ", varname, " zma:")
                 for (i in seq_along(z)) {
                     message(sprintf(paste0("%", max(nchar(names_short_p)), "s"), names_short_p[i]), ": ", 
                             min(zma[[i]], na.rm=T), " / ", mean(zma[[i]], na.rm=T), " / ", max(zma[[i]], na.rm=T))
                 }
-                ylimma <- range(zma, na.rm=T)
-            }
-            if (add_unsmoothed && add_smoothed) {
-                ylim <- range(ylim, ylimma)
-            } else if (!add_unsmoothed && add_smoothed) {
-                ylim <- range(ylimma)
+                ylim <- range(ylim, zma, na.rm=T)
             }
             ylim[is.infinite(ylim)] <- 0
             
@@ -8958,46 +9016,81 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     if (is.null(data_left_before[[i]]$pch)) data_left_before[[i]]$pch <- 1
                     if (is.null(data_left_before[[i]]$lty)) data_left_before[[i]]$lty <- 1
                     if (is.null(data_left_before[[i]]$lwd)) data_left_before[[i]]$lwd <- 1
-                    if (is.null(data_left_before[[i]]$n_ma)) data_left_before[[i]]$n_ma <- 1 # no low-pass filter
                     if (is.null(data_left_before[[i]]$lepos)) data_left_before[[i]]$lepos <- NA
                     if (is.null(data_left_before[[i]]$ncol)) data_left_before[[i]]$ncol <- 1
                     if (is.null(data_left_before[[i]]$text)) data_left_before[[i]]$text <- "set text"
                 } # for i in data_left_before
-            } # if length(data_left_before) > 0
 
-            # apply moving average on data_left_before
-            if (length(data_left_before) > 0) {
-                for (i in seq_along(data_left_before)) {
-                    if (data_left_before[[i]]$n_ma != 1) {
-                        stop("implement")
+                # apply moving average on data_left_before
+                if (add_smoothed) {
+                    stop("implement")
+                    for (i in seq_along(data_left_before)) {
+                        if (!is.null(data_left_before[[i]]$n_ma) && data_left_before[[i]]$n_ma != 1) {
+                            stop("do it")
+                        }
                     }
                 }
+            
             } # if length(data_left_before) > 0
 
             # scale data_left_before
             if (length(data_left_before) > 0) {
-                if (center_ts || scale_ts) {
-                    if (center_ts) {
-                        message("\n`center_ts` = T --> center data_left_before before plot ...")
-                    } else if (scale_ts) {
-                        message("\n`scale_ts` = T --> scale data_left_before before plot ...")
-                    }
+                if (center_ts || scale_ts || detrend_ts || diff_ts) {
                     for (i in seq_along(data_left_before)) {
                         if (center_ts) {
+                            if (i == 1) message("\n`center_ts` = T --> center data_left_before before plot ...")
                             data_left_before[[i]]$y <- base::scale(data_left_before[[i]]$y, scale=F)
+                            center <- attr(data_left_before[[i]]$y, "scaled:center")
                             if (!is.null(data_left_before[[i]]$y_lower)) {
-                                data_left_before[[i]]$y_lower <- base::scale(data_left_before[[i]]$y_lower, scale=F)
+                                data_left_before[[i]]$y_lower <- data_left_before[[i]]$y_lower - center
                             }
                             if (!is.null(data_left_before[[i]]$y_upper)) {
-                                data_left_before[[i]]$y_upper <- base::scale(data_left_before[[i]]$y_upper, scale=F)
+                                data_left_before[[i]]$y_upper <- data_left_before[[i]]$y_upper - center
                             }
                         } else if (scale_ts) {
+                            if (i == 1) message("\n`scale_ts` = T --> scale data_left_before before plot ...")
                             data_left_before[[i]]$y <- base::scale(data_left_before[[i]]$y)
+                            center <- attr(data_left_before[[i]]$y, "scaled:center")
+                            sd <- attr(data_left_before[[i]]$y, "scaled:scale")
                             if (!is.null(data_left_before[[i]]$y_lower)) {
-                                data_left_before[[i]]$y_lower <- base::scale(data_left_before[[i]]$y_lower)
+                                data_left_before[[i]]$y_lower <- (data_left_before[[i]]$y_lower - center)/sd
                             }
                             if (!is.null(data_left_before[[i]]$y_upper)) {
-                                data_left_before[[i]]$y_upper <- base::scale(data_left_before[[i]]$y_upper)
+                                data_left_before[[i]]$y_upper <- (data_left_before[[i]]$y_upper - center)/sd
+                            }
+                        } else if (detrend_ts) {
+                            if (i == 1) message("\n`detrend_ts` = T --> remove data_left_before trend before plot ...")
+                            x <- as.numeric(data_left_before[[i]]$x)
+                            lm <- stats::lm(data_left_before[[i]]$y ~ x)
+                            data_left_before[[i]]$y <- data_left_before[[i]]$y - lm$fitted.values
+                            if (!is.null(data_left_before[[i]]$y_lower)) {
+                                data_left_before[[i]]$y_lower <- data_left_before[[i]]$y_lower - lm$fitted.values
+                            }
+                            if (!is.null(data_left_before[[i]]$y_upper)) {
+                                data_left_before[[i]]$y_upper <- data_left_before[[i]]$y_upper - lm$fitted.values
+                            }
+                        } else if (diff_ts) {
+                            if (i == 1) message("\n`diff_ts` = T --> diff data_left_before before plot ...")
+                            diff <- base::diff(data_left_before[[i]]$y)
+                            data_left_before[[i]]$y <- c(NA, diff)
+                            if (!is.null(data_left_before[[i]]$y_lower) && !is.null(data_left_before[[i]]$y_upper)) {
+                                # find new lower and upper uncert limits
+                                diffl <- base::diff(data_left_before[[i]]$y_lower)
+                                diffu <- base::diff(data_left_before[[i]]$y_upper)
+                                arr <- cbind(diff, diffl, diffu)
+                                inds <- t(apply(arr, 1, function(x) base::sort(x, index.return=T)$ix))
+                                if (any(inds[,2] != 1)) { # `diff` not between `diffu` and `diffl` if all are sorted?
+                                    errinds <- which(inds[,2] != 1) 
+                                    stop("diff is not between diffl and diffl at ", length(errinds), " time points. this never happened")
+                                }
+                                diffl2 <- rep(NA, t=length(diffl))
+                                diffl2[inds[,1] == 2] <- diffl[inds[,1] == 2]
+                                diffl2[inds[,1] == 3] <- diffu[inds[,1] == 3]
+                                data_left_before[[i]]$y_lower <- c(NA, diffl2)
+                                diffu2 <- rep(NA, t=length(diffl))
+                                diffu2[inds[,3] == 2] <- diffl[inds[,3] == 2]
+                                diffu2[inds[,3] == 3] <- diffu[inds[,3] == 3]
+                                data_left_before[[i]]$y_upper <- c(NA, diffu2)
                             }
                         }
                     }
@@ -9017,10 +9110,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     ylim_left_before <- range(ylim_left_before, ylim_left_before_lower)
                 }
                 ylim_left_before_upper <- lapply(data_left_before, "[[", "y_upper")
-                if (!all(sapply(ylim_left_before_lower, is.null))) {
+                if (!all(sapply(ylim_left_before_upper, is.null))) {
                     ylim_left_before_upper <- range(ylim_left_before_upper, na.rm=T)
                     message("update `ylim_left_before` = ", paste(ylim_left_before, collapse=", "), 
-                            " with ylim_left_before_upper = ", paste(ylim_left_before_lower, collapse=", "), " ...") 
+                            " with ylim_left_before_upper = ", paste(ylim_left_before_upper, collapse=", "), " ...") 
                     ylim_left_before <- range(ylim_left_before, ylim_left_before_upper)
                 }
                 message("final `ylim_left_before` = ", paste(ylim_left_before, collapse=", "))
@@ -9028,7 +9121,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
 
             ## add data to left yaxis (e.g. obs)
-            message("\nprepare additional left yaxis datas (e.g. obs)")
+            message("\nprepare additional left yaxis datas (e.g. obs):")
             data_left <- list() # default: dont add additional data to left yaxis
             
             # add to data_left
@@ -9039,8 +9132,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                          y_lower=hadcrut4_sat_anom_annual$hadcrut4_sat_anom_lower_uncert,
                                                          y_upper=hadcrut4_sat_anom_annual$hadcrut4_sat_anom_upper_uncert)
             } # if add som obs to ylim
-
-            # add to data_left
             if (F && varname == "moc_max_26.25deg") {
                 message("add rapid$moc_annual to ylim ...")
                 okinds <- which(!is.na(moc_rapid$moc) & !is.na(moc_rapid$moc_error)) 
@@ -9049,15 +9140,11 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                          y_lower=moc_rapid$moc[okinds] - moc_rapid$moc_error[okinds],
                                                          y_upper=moc_rapid$moc[okinds] + moc_rapid$moc_error[okinds])
             } # if add moc ts
-            
-            # add to data_left
             if (T && varname == "siarean") {
                 message("add nsidc annual to ylim ...")
                 data_left[[length(data_left)+1]] <- list(x=nsidc_siextentn_annual$time,
                                                          y=nsidc_siextentn_annual$siarean)
             } # if add nsidc
-            
-            # add to data_left
             if (zname == "wisoaprt_d" && any(names(pg) == "d18o_w_smow")) {
                 varind <- which(names(pg) == "d18o_w_smow")
                 for (i in seq_along(pg[[varind]])) { # all d18o_w_smow records loaded from pangaea
@@ -9080,11 +9167,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
                     } # special case elgygytgyn
                 } # for all d18o_w_smow pg records
-
-                # thruo
             } # if zname == "wisoaprt_d" && any(names(pg) == "d18o_w_smow"))
-            
-            # add to data_left
             if (T && any(varname == c("wisoaprt_d", "wisoaprt_d_post", "wisoevap_d", "wisope_d"))) {
                 if (T && exists("kostrova_etal_2021") && all(grepl("emanda", areas))) {
                     message("add kostrova et al. 2021 d18o emanda data to data_left ...")
@@ -9142,8 +9225,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 } # if exists("meyer_etal")
             } # if any(varname == c("wisoaprt_d", "wisoaprt_d_post", "wisoevap_d", "wisope_d"))
-
-            # add to data_left
             if (T && exists("noaa_ghcdn")) {
                 if (any(varname == c("temp2", "tsurf", "aprt"))) {
                     message("add noadd ghcdn monthly data\n", 
@@ -9177,82 +9258,191 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 } # if temp2, tsurf, aprt
             } # if exists("noaa_ghcdn")
+            if (any(varname == c("co2_flx_ocean", "fgco2"))) {
+                if (exists("cmip6") && length(unique(areas) == 1) && any(sapply(cmip6, names) == areas[1])) {
+                    message("add cmip6 fgco2 data to data_left ...")
+                    if (T) {
+                        x <- cmip6$historical_and_ssp126_15_models[[areas[1]]]$dims$time
+                        y <- cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_mon_median$vals
+                        y_lower <- cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_mon_median$vals - 
+                                    cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_mon_sd$vals
+                        y_upper <- cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_mon_median$vals + 
+                                    cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_mon_sd$vals
+                    }
+                    data_left[[length(data_left)+1]] <- list(x=x, y=y, y_lower=y_lower, y_upper=y_upper,
+                                                             n_ma=n_mas_an[1]*12,
+                                                             col=cmip6[[1]][[1]]$data$fgco2_mon_median$col,
+                                                             col_rgb=cmip6[[1]][[1]]$data$fgco2_mon_median$col_rgb,
+                                                             text=cmip6[[1]][[1]]$data$fgco2_mon_median$label)
+                    names(data_left)[length(data_left)] <- "cmip6"
+                }
+                if (exists("gregor_and_fay_2021") && length(unique(areas) == 1) && any(names(gregor_and_fay_2021) == areas[1])) {
+                    message("add gregor_and_fay_2021 data to data_left ...")
+                    if (T) {
+                        x <- gregor_and_fay_2021[[areas[1]]]$dims$time
+                        y <- gregor_and_fay_2021[[areas[1]]]$data$fgco2_mon_median$vals
+                        y_lower <- gregor_and_fay_2021[[areas[1]]]$data$fgco2_mon_median$vals - 
+                                    gregor_and_fay_2021[[areas[1]]]$data$fgco2_mon_sd$vals
+                        y_upper <- gregor_and_fay_2021[[areas[1]]]$data$fgco2_mon_median$vals + 
+                                    gregor_and_fay_2021[[areas[1]]]$data$fgco2_mon_sd$vals
+                    }
+                    data_left[[length(data_left)+1]] <- list(x=x, y=y, y_lower=y_lower, y_upper=y_upper,
+                                                             n_ma=n_mas_an[1]*12,
+                                                             col=gregor_and_fay_2021[[areas[1]]]$data$fgco2_mon_median$col,
+                                                             col_rgb=gregor_and_fay_2021[[areas[1]]]$data$fgco2_mon_median$col_rgb,
+                                                             text=gregor_and_fay_2021[[areas[1]]]$data$fgco2_mon_median$label)
+                    names(data_left)[length(data_left)] <- "gregor_and_fay_2021"
+                }
+                if (exists("reccap2") && length(unique(areas) == 1) && any(names(reccap2) == areas[1])) {
+                    if (T) {
+                        x <- reccap2[[areas[1]]]$dims$time
+                        y <- reccap2[[areas[1]]]$data$fgco2_rfa_mon_median$vals
+                        y_lower <- reccap2[[areas[1]]]$data$fgco2_rfa_mon_median$vals - 
+                                    reccap2[[areas[1]]]$data$fgco2_rfa_mon_sd$vals
+                        y_upper <- reccap2[[areas[1]]]$data$fgco2_rfa_mon_median$vals + 
+                                    reccap2[[areas[1]]]$data$fgco2_rfa_mon_sd$vals
+                    }
+                    message("add reccap2 fgco2 data to data_left ...")
+                    data_left[[length(data_left)+1]] <- list(x=x, y=y, y_lower=y_lower, y_upper=y_upper, 
+                                                             n_ma=n_mas_an[1]*12,
+                                                             col=reccap2[[areas[1]]]$data$fgco2_rfa_mon_median$col,
+                                                             col_rgb=reccap2[[areas[1]]]$data$fgco2_rfa_mon_median$col_rgb,
+                                                             text=reccap2[[areas[1]]]$data$fgco2_rfa_mon_median$label)
+                    names(data_left)[length(data_left)] <- "reccap2"
+                }
+                if (exists("chau_etal_2020") && length(unique(areas) == 1) && any(names(chau_etal_2020$annual) == areas[1])) {
+                    message("add chau_etal_2020 data to data_left ...")
+                    stop("update an-->mon")
+                    data_left[[length(data_left)+1]] <- list(x=chau_etal_2020$annual[[areas[1]]]$fgco2$dims$time, 
+                                                             y=chau_etal_2020$annual[[areas[1]]]$fgco2$data$vals,
+                                                             y_lower=chau_etal_2020$annual[[areas[1]]]$fgco2$data$vals-chau_etal_2020$annual[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                             y_upper=chau_etal_2020$annual[[areas[1]]]$fgco2$data$vals+chau_etal_2020$annual[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                             n_ma=n_mas_an[1]*12,
+                                                             col=chau_etal_2020$annual[[areas[1]]]$fgco2$data$col,
+                                                             col_rgb=col2rgba(chau_etal_2020$annual[[areas[1]]]$fgco2$data$col, 0.15),
+                                                             text=chau_etal_2020$annual[[areas[1]]]$fgco2$data$label)
+                    names(data_left)[length(data_left)] <- "chau_etal_2020"
+                }
+            } #if (any(varname == c("co2_flx_ocean", "fgco2"))) {
             # finished adding data to data_left
 
             # check data_left
             if (length(data_left) > 0) {
-                for (i in seq_along(data_left)) {
-                    if (is.null(data_left[[i]]$type)) data_left[[i]]$type <- "p" # default: point
+                    
+                # set defaults
+                for (i in seq_along(data_left)) { 
+                    if (is.null(data_left[[i]]$type)) data_left[[i]]$type <- "l"
                     if (is.null(data_left[[i]]$col)) data_left[[i]]$col <- i
                     if (is.null(data_left[[i]]$col_rgb)) col2rgba(data_left[[i]]$col, alpha_rgb)
-                    if (is.null(data_left[[i]]$pch)) data_left[[i]]$pch <- 1
+                    if (is.null(data_left[[i]]$pch)) data_left[[i]]$pch <- NA
                     if (is.null(data_left[[i]]$lty)) data_left[[i]]$lty <- 1
                     if (is.null(data_left[[i]]$lwd)) data_left[[i]]$lwd <- 1
-                    if (is.null(data_left[[i]]$n_ma)) data_left[[i]]$n_ma <- 1 # no low-pass filter
                     if (is.null(data_left[[i]]$text)) data_left[[i]]$text <- "set text"
                     if (is.null(data_left[[i]]$legend.pos)) data_left[[i]]$legend.pos <- NA
                 } # for i in data_left
-            } # if length(data_left) > 0
 
-            # apply moving average on data_left
-            if (length(data_left) > 0) {
-                for (i in seq_along(data_left)) {
-                    if (data_left[[i]]$n_ma != 1) {
-                        stop("implement")
-                    }
-                }
-            } # if length(data_left) > 0
-
-            # scale data_left
-            if (length(data_left) > 0) {
-                if (center_ts || scale_ts) {
-                    if (center_ts) {
-                        message("\n`center_ts` = T --> center data_left before plot ...")
-                    } else if (scale_ts) {
-                        message("\n`scale_ts` = T --> scale data_left before plot ...")
-                    }
+                # scale data_left
+                if (center_ts || scale_ts || detrend_ts || diff_ts) {
                     for (i in seq_along(data_left)) {
                         if (center_ts) {
+                            if (i == 1) message("\n`center_ts` = T --> center data_left before plot ...")
                             data_left[[i]]$y <- base::scale(data_left[[i]]$y, scale=F)
+                            center <- attr(data_left[[i]]$y, "scaled:center")
                             if (!is.null(data_left[[i]]$y_lower)) {
-                                data_left[[i]]$y_lower <- base::scale(data_left[[i]]$y_lower, scale=F)
+                                data_left[[i]]$y_lower <- data_left[[i]]$y_lower - center
                             }
                             if (!is.null(data_left[[i]]$y_upper)) {
-                                data_left[[i]]$y_upper <- base::scale(data_left[[i]]$y_upper, scale=F)
+                                data_left[[i]]$y_upper <- data_left[[i]]$y_upper - center
                             }
                         } else if (scale_ts) {
+                            if (i == 1) message("\n`scale_ts` = T --> scale data_left before plot ...")
                             data_left[[i]]$y <- base::scale(data_left[[i]]$y)
+                            center <- attr(data_left[[i]]$y, "scaled:center")
+                            sd <- attr(data_left[[i]]$y, "scaled:scale")
                             if (!is.null(data_left[[i]]$y_lower)) {
-                                data_left[[i]]$y_lower <- base::scale(data_left[[i]]$y_lower)
+                                data_left[[i]]$y_lower <- (data_left[[i]]$y_lower - center)/sd
                             }
                             if (!is.null(data_left[[i]]$y_upper)) {
-                                data_left[[i]]$y_upper <- base::scale(data_left[[i]]$y_upper)
+                                data_left[[i]]$y_upper <- (data_left[[i]]$y_upper - center)/sd
+                            }
+                        } else if (detrend_ts) {
+                            if (i == 1) message("\n`detrend_ts` = T --> remove data_left trend before plot ...")
+                            x <- as.numeric(data_left[[i]]$x)
+                            lm <- stats::lm(data_left[[i]]$y ~ x)
+                            data_left[[i]]$y <- data_left[[i]]$y - lm$fitted.values
+                            if (!is.null(data_left[[i]]$y_lower)) {
+                                data_left[[i]]$y_lower <- data_left[[i]]$y_lower - lm$fitted.values
+                            }
+                            if (!is.null(data_left[[i]]$y_upper)) {
+                                data_left[[i]]$y_upper <- data_left[[i]]$y_upper - lm$fitted.values
+                            }
+                        } else if (diff_ts) {
+                            if (i == 1) message("\n`diff_ts` = T --> diff data_left before plot ...")
+                            diff <- base::diff(data_left[[i]]$y)
+                            data_left[[i]]$y <- c(NA, diff)
+                            if (!is.null(data_left[[i]]$y_lower) && !is.null(data_left[[i]]$y_upper)) {
+                                # find new lower and upper uncert limits
+                                diffl <- base::diff(data_left[[i]]$y_lower)
+                                diffu <- base::diff(data_left[[i]]$y_upper)
+                                arr <- cbind(diff, diffl, diffu)
+                                inds <- t(apply(arr, 1, function(x) base::sort(x, index.return=T)$ix))
+                                if (any(inds[,2] != 1)) { # `diff` not between `diffu` and `diffl` if all are sorted?
+                                    errinds <- which(inds[,2] != 1) 
+                                    stop("diff is not between diffl and diffl at ", length(errinds), " time points. this never happened")
+                                }
+                                diffl2 <- rep(NA, t=length(diffl))
+                                diffl2[inds[,1] == 2] <- diffl[inds[,1] == 2]
+                                diffl2[inds[,1] == 3] <- diffu[inds[,1] == 3]
+                                data_left[[i]]$y_lower <- c(NA, diffl2)
+                                diffu2 <- rep(NA, t=length(diffl))
+                                diffu2[inds[,3] == 2] <- diffl[inds[,3] == 2]
+                                diffu2[inds[,3] == 3] <- diffu[inds[,3] == 3]
+                                data_left[[i]]$y_upper <- c(NA, diffu2)
                             }
                         }
                     }
-                }
-            } # if length(data_left) > 0
+                } # if center_ts 
 
-            # update ylim according to additional data_left (e.g. obs)
-            if (length(data_left) > 0) {
+                # apply moving average to data_left
+                if (add_smoothed) {
+                    message("`add_smoothed` is true --> calc moving average of data_left")
+                    for (i in seq_along(data_left)) {
+                        # todo: distinguish between unsmoothed and smoothed and not overwrite data_left
+                        if (!is.null(data_left[[i]]$n_ma) && data_left[[i]]$n_ma != 1) {
+                            data_left[[i]]$y <- as.numeric(stats::filter(data_left[[i]]$y, 
+                                                                         filter=rep(1/data_left[[i]]$n_ma, t=data_left[[i]]$n_ma)))
+                            if (!is.null(data_left[[i]]$y_lower)) {
+                                data_left[[i]]$y_lower <- as.numeric(stats::filter(data_left[[i]]$y_lower, 
+                                                                                   filter=rep(1/data_left[[i]]$n_ma, t=data_left[[i]]$n_ma)))
+                            }
+                            if (!is.null(data_left[[i]]$y_upper)) {
+                                data_left[[i]]$y_upper <- as.numeric(stats::filter(data_left[[i]]$y_upper, 
+                                                                                   filter=rep(1/data_left[[i]]$n_ma, t=data_left[[i]]$n_ma))) 
+                            }
+                        }
+                    }
+                } # if add_smoothed
+
+                # update ylim according to additional data_left (e.g. obs)
                 ylim_left <- range(lapply(data_left, "[[", "y"), na.rm=T)
                 message("\nupdate left yaxis ylim = ", paste(ylim, collapse=", "), 
-                        " with ylim_left = ", paste(ylim_left, collapse=", "), " ...") 
+                        " with data_left$y = ", paste(ylim_left, collapse=", "), " ...") 
                 ylim <- range(ylim, ylim_left)
                 ylim_left_lower <- lapply(data_left, "[[", "y_lower")
                 if (!all(sapply(ylim_left_lower, is.null))) {
                     ylim_left_lower <- range(ylim_left_lower, na.rm=T)
                     message("update left yaxis ylim = ", paste(ylim, collapse=", "), 
-                            " with ylim_left_lower = ", paste(ylim_left_lower, collapse=", "), " ...") 
+                            " with data_left$y_lower = ", paste(ylim_left_lower, collapse=", "), " ...") 
                     ylim <- range(ylim, ylim_left_lower)
                 }
                 ylim_left_upper <- lapply(data_left, "[[", "y_upper")
-                if (!all(sapply(ylim_left_lower, is.null))) {
+                if (!all(sapply(ylim_left_upper, is.null))) {
                     ylim_left_upper <- range(ylim_left_upper, na.rm=T)
                     message("update left yaxis ylim = ", paste(ylim, collapse=", "), 
-                            " with ylim_left_upper = ", paste(ylim_left_lower, collapse=", "), " ...") 
+                            " with data_left$y_upper = ", paste(ylim_left_upper, collapse=", "), " ...") 
                     ylim <- range(ylim, ylim_left_upper)
                 }
+
             } # if (length(data_left) > 0)
 
             # special manual ylim
@@ -9274,7 +9464,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     # kotokel: c(-3.08014665995613, 1.35190103264372)
                     # elgygytgyn: c(-1.47405790466153, 1.61041540752816)
                     # two-yurts: c(-2.1518519172735, 2.0338372598759)
-                    # hol-t, hol-tx10; n_mas 250, 50
+                    # hol-t, hol-tx10; n_mas_an 250, 50
                     # ladoga: c(-2.85126486366215, 2.32484231975009)
                     # shuchye: c(-2.85992909997141, 2.44526416112507)
                     # emanda: c(-2.06748945256795, 2.55525657817665)
@@ -9316,7 +9506,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             
             # plotname
             if (exists("plotprefix")) {
-                plotprefixp <- plotprefix
+                plotprefixp <- paste0(plotprefix, "_", length(z), "exps")
             } else { # default
                 plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
                 if (F && plot_groups[plot_groupi] == "samedims") { # use only varnames_out_samedims below
@@ -9326,7 +9516,6 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                       "_", paste(unique(seasonsp_p), collapse="_vs_"), 
                                       "_", paste(unique(froms_plot_p), collapse="_vs_"), 
                                       "_to_", paste(unique(tos_plot_p), collapse="_vs_"), 
-                                      paste(unique(n_mas_fname_p), collapse="_vs_"), 
                                       "_", paste(unique(areas_p), collapse="_vs_"), 
                                       collapse="_vs_")
             }
@@ -9767,22 +9956,20 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # add uncertainties if given
                 for (i in seq_along(data_left)) {
                     if (!is.null(data_left[[i]]$y_lower) || !is.null(data_left[[i]]$y_upper)) {
-                        message("add data_left[[", i, "]]$text = ", data_left[[i]]$text, " uncertainties to plot ...")
+                        message("add `data_left[[", i, "]]$text` = ", data_left[[i]]$text, " uncertainties to plot ...")
                         if (!is.null(data_left[[i]]$y_lower) && !is.null(data_left[[i]]$y_upper)) {
-                            polygon(c(data_left[[i]]$x, rev(data_left[[i]]$x)),
-                                    c(data_left[[i]]$y_lower, rev(data_left[[i]]$y_upper)),
+                            # potentially NA due to `add_smoothed`
+                            okinds <- which(!is.na(data_left[[i]]$y))
+                            polygon(c(data_left[[i]]$x[okinds], rev(data_left[[i]]$x[okinds])),
+                                    c(data_left[[i]]$y_lower[okinds], rev(data_left[[i]]$y_upper[okinds])),
                                     col=data_left[[i]]$col_rgb, border=NA)
-                        } else if (!is.null(data_left[[i]]$y_lower) && is.null(data_left[[i]]$y_upper)) {
-                            stop("implement")
-                        } else if (is.null(data_left[[i]]$y_lower) && !is.null(data_left[[i]]$y_upper)) {
-                            stop("implement")
                         }
                     }
                 } # for i in data_left
 
                 # add data points/lines
                 for (i in seq_along(data_left)) {
-                    message("add data_left[[", i, "]]$text = ", data_left[[i]]$text, " data to plot ...")
+                    message("add `data_left[[", i, "]]$text` = ", data_left[[i]]$text, " data to plot ...")
                     points(data_left[[i]]$x, data_left[[i]]$y, 
                            type=data_left[[i]]$type, col=data_left[[i]]$col, 
                            pch=data_left[[i]]$pch, cex=data_left[[i]]$cex, 
@@ -10760,6 +10947,26 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 message("\n", varname, " ", mode_p, " plot vs months ...")
                 
+                if (center_ts || scale_ts || detrend_ts || diff_ts) {
+                    for (i in seq_along(z)) {
+                        if (center_ts) {
+                            if (i == 1) message("\n`center_ts` = T --> center zmon before plot ...")
+                            zmon[[i]] <- base::scale(zmon[[i]], scale=F)
+                        } else if (scale_ts) {
+                            if (i == 1) message("\n`scale_ts` = T --> scale zmon before plot ...")
+                            zmon[[i]] <- base::scale(zmon[[i]])
+                        } else if (detrend_ts) {
+                            if (i == 1) message("\n`detrend_ts` = T --> remove zmon trend before plot ...")
+                            x <- as.numeric(dmon$month[[i]])
+                            lm <- stats::lm(zmon[[i]] ~ x)
+                            zmon[[i]] <- zmon[[i]] - lm$fitted.values
+                        } else if (diff_ts) {
+                            if (i == 1) message("\n`diff_ts` = T --> diff zmon before plot ...")
+                            zmon[[i]] <- c(NA, base::diff(zmon[[i]]))
+                        }
+                    }
+                } # if center_ts or scale_ts
+
                 # ylims for fldmean versus months plot
                 message("\n", mode_p, " versus months min / mean / max ", varname, " zmon:")
                 for (i in seq_along(zmon)) {
@@ -10793,21 +11000,20 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                                          text=reccap2[[areas[1]]]$data$fgco2_rfa_ymonmean_median$label
                                                                         )
                     }
-                    if (exists("gregor_and_fay_2021") && length(unique(areas) == 1) && any(names(gregor_and_fay_2021$ymonmean) == areas[1])) {
+                    if (exists("gregor_and_fay_2021") && length(unique(areas) == 1) && any(names(gregor_and_fay_2021) == areas[1])) {
                         message("add gregor_and_fay_2021 data to ylim_mon ...")
-                        data_left_mon[[length(data_left_mon)+1]] <- list(x=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$dims$month, 
-                                                                         #y=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_mean$data$vals,
-                                                                         y=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$vals,
-                                                                         #y_lower=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_min$data$vals,
-                                                                         #y_upper=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_max$data$vals,
-                                                                         #y_lower=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                         #y_upper=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                         y_lower=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                         y_upper=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                         col=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$col,
-                                                                         col_rgb=col2rgba(gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$col, 0.15),
-                                                                         text=gregor_and_fay_2021$ymonmean[[areas[1]]]$fgco2_ens_median$data$label
-                                                                        )
+                        if (T) {
+                            x <- gregor_and_fay_2021[[areas[1]]]$dims$month
+                            y <- gregor_and_fay_2021[[areas[1]]]$data$fgco2_ymonmean_median$vals
+                            y_lower <- gregor_and_fay_2021[[areas[1]]]$data$fgco2_ymonmean_median$vals - 
+                                        gregor_and_fay_2021[[areas[1]]]$data$fgco2_ymonmean_sd$vals
+                            y_upper <- gregor_and_fay_2021[[areas[1]]]$data$fgco2_ymonmean_median$vals + 
+                                        gregor_and_fay_2021[[areas[1]]]$data$fgco2_ymonmean_sd$vals
+                        }
+                        data_left_mon[[length(data_left_mon)+1]] <- list(x=x, y=y, y_lower=y_lower, y_upper=y_upper,
+                                                                         col=gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_median$col,
+                                                                         col_rgb=gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_median$col_rgb,
+                                                                         text=gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_median$label)
                     }
                     if (exists("chau_etal_2020") && length(unique(areas) == 1) && any(names(chau_etal_2020$ymonmean) == areas[1])) {
                         message("add chau_etal_2020 data to ylim_mon ...")
@@ -10846,36 +11052,68 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # scale data_left_mon
                 if (length(data_left_mon) > 0) {
-                    if (center_ts || scale_ts) {
-                        if (center_ts) {
-                            message("\n`center_ts` = T --> center data_left_mon before plot ...")
-                        } else if (scale_ts) {
-                            message("\n`scale_ts` = T --> scale data_left_mon before plot ...")
-                        }
+                    if (center_ts || scale_ts || detrend_ts || diff_ts) {
                         for (i in seq_along(data_left_mon)) {
                             if (center_ts) {
+                                if (i == 1) message("\n`center_ts` = T --> center data_left_mon before plot ...")
                                 data_left_mon[[i]]$y <- base::scale(data_left_mon[[i]]$y, scale=F)
+                                center <- attr(data_left_mon[[i]]$y, "scaled:center")
                                 if (!is.null(data_left_mon[[i]]$y_lower)) {
-                                    data_left_mon[[i]]$y_lower <- base::scale(data_left_mon[[i]]$y_lower, scale=F)
+                                    data_left_mon[[i]]$y_lower <- data_left_mon[[i]]$y_lower - center
                                 }
                                 if (!is.null(data_left_mon[[i]]$y_upper)) {
-                                    data_left_mon[[i]]$y_upper <- base::scale(data_left_mon[[i]]$y_upper, scale=F)
+                                    data_left_mon[[i]]$y_upper <- data_left_mon[[i]]$y_upper - center
                                 }
                             } else if (scale_ts) {
+                                if (i == 1) message("\n`scale_ts` = T --> scale data_left_mon before plot ...")
                                 data_left_mon[[i]]$y <- base::scale(data_left_mon[[i]]$y)
+                                center <- attr(data_left_mon[[i]]$y, "scaled:center")
+                                sd <- attr(data_left_mon[[i]]$y, "scaled:scale")
                                 if (!is.null(data_left_mon[[i]]$y_lower)) {
-                                    data_left_mon[[i]]$y_lower <- base::scale(data_left_mon[[i]]$y_lower)
+                                    data_left_mon[[i]]$y_lower <- (data_left_mon[[i]]$y_lower - center)/sd
                                 }
                                 if (!is.null(data_left_mon[[i]]$y_upper)) {
-                                    data_left_mon[[i]]$y_upper <- base::scale(data_left_mon[[i]]$y_upper)
+                                    data_left_mon[[i]]$y_upper <- (data_left_mon[[i]]$y_upper - center)/sd
+                                }
+                            } else if (detrend_ts) {
+                                if (i == 1) message("\n`detrend_ts` = T --> remove data_left_mon trend before plot ...")
+                                x <- as.numeric(data_left_mon[[i]]$x)
+                                lm <- stats::lm(data_left_mon[[i]]$y ~ x)
+                                data_left_mon[[i]]$y <- data_left_mon[[i]]$y - lm$fitted.values
+                                if (!is.null(data_left_mon[[i]]$y_lower)) {
+                                    data_left_mon[[i]]$y_lower <- data_left_mon[[i]]$y_lower - lm$fitted.values
+                                }
+                                if (!is.null(data_left_mon[[i]]$y_upper)) {
+                                    data_left_mon[[i]]$y_upper <- data_left_mon[[i]]$y_upper - lm$fitted.values
+                                }
+                            } else if (diff_ts) {
+                                if (i == 1) message("\n`diff_ts` = T --> diff data_left_mon before plot ...")
+                                diff <- base::diff(data_left_mon[[i]]$y)
+                                data_left_mon[[i]]$y <- c(NA, diff)
+                                if (!is.null(data_left_mon[[i]]$y_lower) && !is.null(data_left_mon[[i]]$y_upper)) {
+                                    # find new lower and upper uncert limits
+                                    diffl <- base::diff(data_left_mon[[i]]$y_lower)
+                                    diffu <- base::diff(data_left_mon[[i]]$y_upper)
+                                    arr <- cbind(diff, diffl, diffu)
+                                    inds <- t(apply(arr, 1, function(x) base::sort(x, index.return=T)$ix))
+                                    if (any(inds[,2] != 1)) { # `diff` not between `diffu` and `diffl` if all are sorted?
+                                        errinds <- which(inds[,2] != 1) 
+                                        stop("diff is not between diffl and diffl at ", length(errinds), " time points. this never happened")
+                                    }
+                                    diffl2 <- rep(NA, t=length(diffl))
+                                    diffl2[inds[,1] == 2] <- diffl[inds[,1] == 2]
+                                    diffl2[inds[,1] == 3] <- diffu[inds[,1] == 3]
+                                    data_left_mon[[i]]$y_lower <- c(NA, diffl2)
+                                    diffu2 <- rep(NA, t=length(diffl))
+                                    diffu2[inds[,3] == 2] <- diffl[inds[,3] == 2]
+                                    diffu2[inds[,3] == 3] <- diffu[inds[,3] == 3]
+                                    data_left_mon[[i]]$y_upper <- c(NA, diffu2)
                                 }
                             }
                         }
                     }
-                } # if length(data_left_mon) > 0
 
-                # update ylim according to additional data_left_mon (e.g. obs)
-                if (length(data_left_mon) > 0) {
+                    # update ylim according to additional data_left_mon (e.g. obs)
                     ylim_left_an <- range(lapply(data_left_mon, "[[", "y"), na.rm=T)
                     message("\nupdate left yaxis ylim_mon = ", paste(ylim_mon, collapse=", "), 
                             " with ylim_left_an = ", paste(ylim_left_an, collapse=", "), " ...") 
@@ -10888,12 +11126,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         ylim_mon <- range(ylim_mon, ylim_left_an_lower)
                     }
                     ylim_left_an_upper <- lapply(data_left_mon, "[[", "y_upper")
-                    if (!all(sapply(ylim_left_an_lower, is.null))) {
+                    if (!all(sapply(ylim_left_an_upper, is.null))) {
                         ylim_left_an_upper <- range(ylim_left_an_upper, na.rm=T)
                         message("update left yaxis ylim_mon = ", paste(ylim_mon, collapse=", "), 
-                                " with ylim_left_an_upper = ", paste(ylim_left_an_lower, collapse=", "), " ...") 
+                                " with ylim_left_an_upper = ", paste(ylim_left_an_upper, collapse=", "), " ...") 
                         ylim_mon <- range(ylim_mon, ylim_left_an_upper)
                     }
+
                 } # if (length(data_left_mon) > 0)
 
                 # add obs
@@ -10992,7 +11231,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # plotname
                 if (exists("plotprefix")) {
-                    plotprefixp <- plotprefix
+                    plotprefixp <- paste0(plotprefix, "_", length(zmon), "exps")
                 } else { # default
                     plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
                     if (F && plot_groups[plot_groupi] == "samedims") {
@@ -11324,28 +11563,57 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 message("\n", varname, " ", mode_p, " plot vs years ...")
                 
-                if (center_ts || scale_ts) {
-                    if (center_ts) {
-                        message("\n`center_ts` = T --> center ts before plot ...")
-                    } else if (scale_ts) {
-                        message("\n`scale_ts` = T --> scale ts before plot ...")
-                    }
+                if (center_ts || scale_ts || detrend_ts || diff_ts) {
                     for (i in seq_along(zan)) {
                         if (center_ts) {
+                            if (i == 1) message("\n`center_ts` = T --> center zan before plot ...")
                             zan[[i]] <- base::scale(zan[[i]], scale=F)
                         } else if (scale_ts) {
+                            if (i == 1) message("\n`scale_ts` = T --> scale zan before plot ...")
                             zan[[i]] <- base::scale(zan[[i]])
+                        } else if (detrend_ts) {
+                            if (i == 1) message("\n`detrend_ts` = T --> remove zan trend before plot ...")
+                            x <- as.numeric(dan$year[[i]])
+                            lm <- stats::lm(zan[[i]] ~ x)
+                            zan[[i]] <- zan[[i]] - lm$fitted.values
+                        } else if (diff_ts) {
+                            if (i == 1) message("\n`diff_ts` = T --> diff zan before plot ...")
+                            zan[[i]] <- c(NA, base::diff(zan[[i]]))
                         }
                     }
                 } # if center_ts or scale_ts
-                
+               
+                if (add_smoothed) {
+                    message("\n`add_smoothed` is true --> calc running mean of datasan ...")
+                    zmaan <- zan
+                    for (i in seq_along(zmaan)) {
+                        if (n_mas_an[i] != 1) {
+                            zmaan[[i]] <- as.numeric(stats::filter(zan[[i]], filter=rep(1/n_mas_an[i], t=n_mas_an[i])))
+                        } else {
+                            # nothing to do: zmaan = zan
+                        }
+                    } # for i
+                } # if add_smoothed
+
                 # ylims for plot vs years
+                ylim_an <- NA
                 message("\n", mode_p, " versus years min / mean / max ", varname, " zan:")
-                for (i in seq_along(zan)) {
-                    message(sprintf(paste0("%", max(nchar(names_short_pan)), "s"), names_short_pan[i]), ": ", 
-                            min(zan[[i]], na.rm=T), " / ", mean(zan[[i]], na.rm=T), " / ", max(zan[[i]], na.rm=T))
+                if (add_unsmoothed) {
+                    for (i in seq_along(zan)) {
+                        message(sprintf(paste0("%", max(nchar(names_short_pan)), "s"), names_short_pan[i]), ": ", 
+                                min(zan[[i]], na.rm=T), " / ", mean(zan[[i]], na.rm=T), " / ", max(zan[[i]], na.rm=T))
+                    }
+                    ylim_an <- range(zan, na.rm=T)
                 }
-                ylim_an <- range(zan, na.rm=T)
+                if (add_smoothed) {
+                    message("\n", mode_p, " versus time min / mean / max ", varname, " zmaan:")
+                    for (i in seq_along(z)) {
+                        message(sprintf(paste0("%", max(nchar(names_short_p)), "s"), names_short_p[i]), ": ", 
+                                min(zmaan[[i]], na.rm=T), " / ", mean(zmaan[[i]], na.rm=T), " / ", max(zmaan[[i]], na.rm=T))
+                    }
+                    ylim_an <- range(ylim_an, zmaan, na.rm=T)
+                }
+                ylim_an[is.infinite(ylim_an)] <- 0
                 message("\nylim_an=", appendLF=F)
                 dput(ylim_an)
                 ylim_an[is.infinite(ylim_an)] <- 0
@@ -11356,49 +11624,72 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # add to data_left_an
                 if (any(varname == c("co2_flx_ocean", "fgco2"))) {
-                    if (exists("reccap2") && length(unique(areas) == 1) && any(names(reccap2) == areas[1])) {
-                        message("add reccap2 fgco2 data to ylim_an ...")
-                        data_left_an[[length(data_left_an)+1]] <- list(x=reccap2[[areas[1]]]$dims$year, 
-                                                                       #y=reccap2[[areas[1]]]$data$fgco2_an_mean$vals,
-                                                                       #y=reccap2[[areas[1]]]$data$fgco2_an_median$vals,
-                                                                       y=reccap2[[areas[1]]]$data$fgco2_rfa_an_median$vals,
-                                                                       #y_lower=reccap2[[areas[1]]]$data$fgco2_an_min$vals,
-                                                                       y_lower=reccap2[[areas[1]]]$data$fgco2_rfa_an_min$vals,
-                                                                       #y_upper=reccap2[[areas[1]]]$data$fgco2_an_max$vals,
-                                                                       y_upper=reccap2[[areas[1]]]$data$fgco2_rfa_an_max$vals,
-                                                                       col=reccap2[[areas[1]]]$data$fgco2_an_mean$col,
-                                                                       col_rgb=reccap2[[areas[1]]]$data$fgco2_an_min$col,
-                                                                       #text=reccap2[[areas[1]]]$data$fgco2_an_mean$label
-                                                                       #text=reccap2[[areas[1]]]$data$fgco2_an_median$label
-                                                                       text=reccap2[[areas[1]]]$data$fgco2_rfa_an_median$label
-                                                                       )
+                    if (exists("cmip6") && length(unique(areas) == 1) && any(sapply(cmip6, names) == areas[1])) {
+                        message("add cmip6 fgco2 data to data_left_an ...")
+                        if (T) {
+                            x <- cmip6$historical_and_ssp126_15_models[[areas[1]]]$dims$year
+                            y <- cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_an_median$vals
+                            y_lower <- cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_an_median$vals - 
+                                        cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_an_sd$vals
+                            y_upper <- cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_an_median$vals + 
+                                        cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_an_sd$vals
+                            if (T) {
+                                inds <- which(x >= anlim[1] & x <= anlim[2])
+                                x <- x[inds]; y <- y[inds]; y_lower <- y_lower[inds]; y_upper <- y_upper[inds]
+                            }
+                        }
+                        data_left_an[[length(data_left_an)+1]] <- list(x=x, y=y, y_lower=y_lower, y_upper=y_upper,
+                                                                       n_ma=n_mas_an[1],
+                                                                       col=cmip6[[1]][[1]]$data$fgco2_an_median$col,
+                                                                       col_rgb=cmip6[[1]][[1]]$data$fgco2_an_median$col_rgb,
+                                                                       text=cmip6[[1]][[1]]$data$fgco2_an_median$label)
+                        names(data_left_an)[length(data_left_an)] <- "cmip6"
                     }
-                    if (exists("gregor_and_fay_2021") && length(unique(areas) == 1) && any(names(gregor_and_fay_2021$annual) == areas[1])) {
-                        message("add gregor_and_fay_2021 data to ylim_an ...")
-                        data_left_an[[length(data_left_an)+1]] <- list(x=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$dims$year, 
-                                                                       #y=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_mean$data$vals,
-                                                                       y=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$vals,
-                                                                       #y_lower=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_min$data$vals,
-                                                                       #y_upper=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_max$data$vals,
-                                                                       #y_lower=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_mean$data$vals-gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                       #y_upper=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_mean$data$vals+gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                       y_lower=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$vals-gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                       y_upper=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$vals+gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_sd$data$vals,
-                                                                       col=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$col,
-                                                                       col_rgb=col2rgba(gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$col, 0.15),
-                                                                       #text=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_mean$data$label
-                                                                       text=gregor_and_fay_2021$annual[[areas[1]]]$fgco2_ens_median$data$label
-                                                                       )
+                    if (exists("gregor_and_fay_2021") && length(unique(areas) == 1) && any(names(gregor_and_fay_2021) == areas[1])) {
+                        message("add gregor_and_fay_2021 data to data_left_an ...")
+                        if (T) {
+                            x <- gregor_and_fay_2021[[areas[1]]]$dims$year
+                            y <- gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_median$vals
+                            y_lower <- gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_median$vals - 
+                                        gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_sd$vals
+                            y_upper <- gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_median$vals + 
+                                        gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_sd$vals
+                        }
+                        data_left_an[[length(data_left_an)+1]] <- list(x=x, y=y, y_lower=y_lower, y_upper=y_upper,
+                                                                       n_ma=n_mas_an[1],
+                                                                       col=gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_median$col,
+                                                                       col_rgb=gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_median$col_rgb,
+                                                                       text=gregor_and_fay_2021[[areas[1]]]$data$fgco2_an_median$label)
+                        names(data_left_an)[length(data_left_an)] <- "gregor_and_fay_2021"
+                    }
+                    if (exists("reccap2") && length(unique(areas) == 1) && any(names(reccap2) == areas[1])) {
+                        if (T) {
+                            x <- reccap2[[areas[1]]]$dims$year
+                            y <- reccap2[[areas[1]]]$data$fgco2_rfa_an_median$vals
+                            y_lower <- reccap2[[areas[1]]]$data$fgco2_rfa_an_median$vals - 
+                                        reccap2[[areas[1]]]$data$fgco2_rfa_an_sd$vals
+                            y_upper <- reccap2[[areas[1]]]$data$fgco2_rfa_an_median$vals + 
+                                        reccap2[[areas[1]]]$data$fgco2_rfa_an_sd$vals
+                        }
+                        message("add reccap2 fgco2 data to data_left_an ...")
+                        data_left_an[[length(data_left_an)+1]] <- list(x=x, y=y, y_lower=y_lower, y_upper=y_upper, 
+                                                                       n_ma=n_mas_an[1],
+                                                                       col=reccap2[[areas[1]]]$data$fgco2_rfa_an_median$col,
+                                                                       col_rgb=reccap2[[areas[1]]]$data$fgco2_rfa_an_median$col_rgb,
+                                                                       text=reccap2[[areas[1]]]$data$fgco2_rfa_an_median$label)
+                        names(data_left_an)[length(data_left_an)] <- "reccap2"
                     }
                     if (exists("chau_etal_2020") && length(unique(areas) == 1) && any(names(chau_etal_2020$annual) == areas[1])) {
-                        message("add chau_etal_2020 data to ylim_an ...")
+                        message("add chau_etal_2020 data to data_left_an ...")
                         data_left_an[[length(data_left_an)+1]] <- list(x=chau_etal_2020$annual[[areas[1]]]$fgco2$dims$year, 
                                                                        y=chau_etal_2020$annual[[areas[1]]]$fgco2$data$vals,
                                                                        y_lower=chau_etal_2020$annual[[areas[1]]]$fgco2$data$vals-chau_etal_2020$annual[[areas[1]]]$fgco2_uncertainty$data$vals,
                                                                        y_upper=chau_etal_2020$annual[[areas[1]]]$fgco2$data$vals+chau_etal_2020$annual[[areas[1]]]$fgco2_uncertainty$data$vals,
+                                                                       n_ma=n_mas_an[1],
                                                                        col=chau_etal_2020$annual[[areas[1]]]$fgco2$data$col,
                                                                        col_rgb=col2rgba(chau_etal_2020$annual[[areas[1]]]$fgco2$data$col, 0.15),
                                                                        text=chau_etal_2020$annual[[areas[1]]]$fgco2$data$label)
+                        names(data_left_an)[length(data_left_an)] <- "chau_etal_2020"
                     }
                 } # if add data to data_left_an
 
@@ -11423,40 +11714,90 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         if (is.null(data_left_an[[i]]$text)) data_left_an[[i]]$text <- "set text"
                         if (is.null(data_left_an[[i]]$legend.pos)) data_left_an[[i]]$legend.pos <- NA
                     } # for i in data_left_an
-                } # if length(data_left_an) > 0
 
-                # scale data_left_an
-                if (length(data_left_an) > 0) {
-                    if (center_ts || scale_ts) {
-                        if (center_ts) {
-                            message("\n`center_ts` = T --> center data_left_an before plot ...")
-                        } else if (scale_ts) {
-                            message("\n`scale_ts` = T --> scale data_left_an before plot ...")
-                        }
+                    # scale data_left_an
+                    if (center_ts || scale_ts || detrend_ts || diff_ts) {
                         for (i in seq_along(data_left_an)) {
                             if (center_ts) {
+                                if (i == 1) message("\n`center_ts` = T --> center data_left_an before plot ...")
                                 data_left_an[[i]]$y <- base::scale(data_left_an[[i]]$y, scale=F)
+                                center <- attr(data_left_an[[i]]$y, "scaled:center")
                                 if (!is.null(data_left_an[[i]]$y_lower)) {
-                                    data_left_an[[i]]$y_lower <- base::scale(data_left_an[[i]]$y_lower, scale=F)
+                                    data_left_an[[i]]$y_lower <- data_left_an[[i]]$y_lower - center
                                 }
                                 if (!is.null(data_left_an[[i]]$y_upper)) {
-                                    data_left_an[[i]]$y_upper <- base::scale(data_left_an[[i]]$y_upper, scale=F)
+                                    data_left_an[[i]]$y_upper <- data_left_an[[i]]$y_upper - center
                                 }
                             } else if (scale_ts) {
+                                if (i == 1) message("\n`scale_ts` = T --> scale data_left_an before plot ...")
                                 data_left_an[[i]]$y <- base::scale(data_left_an[[i]]$y)
+                                center <- attr(data_left_an[[i]]$y, "scaled:center")
+                                sd <- attr(data_left_an[[i]]$y, "scaled:scale")
                                 if (!is.null(data_left_an[[i]]$y_lower)) {
-                                    data_left_an[[i]]$y_lower <- base::scale(data_left_an[[i]]$y_lower)
+                                    data_left_an[[i]]$y_lower <- (data_left_an[[i]]$y_lower - center)/sd
                                 }
                                 if (!is.null(data_left_an[[i]]$y_upper)) {
-                                    data_left_an[[i]]$y_upper <- base::scale(data_left_an[[i]]$y_upper)
+                                    data_left_an[[i]]$y_upper <- (data_left_an[[i]]$y_upper - center)/sd
+                                }
+                            } else if (detrend_ts) {
+                                if (i == 1) message("\n`detrend_ts` = T --> remove data_left_an trend before plot ...")
+                                x <- as.numeric(data_left_an[[i]]$x)
+                                lm <- stats::lm(data_left_an[[i]]$y ~ x)
+                                data_left_an[[i]]$y <- data_left_an[[i]]$y - lm$fitted.values
+                                if (!is.null(data_left_an[[i]]$y_lower)) {
+                                    data_left_an[[i]]$y_lower <- data_left_an[[i]]$y_lower - lm$fitted.values
+                                }
+                                if (!is.null(data_left_an[[i]]$y_upper)) {
+                                    data_left_an[[i]]$y_upper <- data_left_an[[i]]$y_upper - lm$fitted.values
+                                }
+                            } else if (diff_ts) {
+                                if (i == 1) message("\n`diff_ts` = T --> diff data_left_an before plot ...")
+                                diff <- base::diff(data_left_an[[i]]$y)
+                                data_left_an[[i]]$y <- c(NA, diff)
+                                if (!is.null(data_left_an[[i]]$y_lower) && !is.null(data_left_an[[i]]$y_upper)) {
+                                    # find new lower and upper uncert limits
+                                    diffl <- base::diff(data_left_an[[i]]$y_lower)
+                                    diffu <- base::diff(data_left_an[[i]]$y_upper)
+                                    arr <- cbind(diff, diffl, diffu)
+                                    inds <- t(apply(arr, 1, function(x) base::sort(x, index.return=T)$ix))
+                                    if (any(inds[,2] != 1)) { # `diff` not between `diffu` and `diffl` if all are sorted?
+                                        errinds <- which(inds[,2] != 1) 
+                                        stop("diff is not between diffl and diffl at ", length(errinds), " time points. this never happened")
+                                    }
+                                    diffl2 <- rep(NA, t=length(diffl))
+                                    diffl2[inds[,1] == 2] <- diffl[inds[,1] == 2]
+                                    diffl2[inds[,1] == 3] <- diffu[inds[,1] == 3]
+                                    data_left_an[[i]]$y_lower <- c(NA, diffl2)
+                                    diffu2 <- rep(NA, t=length(diffl))
+                                    diffu2[inds[,3] == 2] <- diffl[inds[,3] == 2]
+                                    diffu2[inds[,3] == 3] <- diffu[inds[,3] == 3]
+                                    data_left_an[[i]]$y_upper <- c(NA, diffu2)
                                 }
                             }
                         }
                     }
-                } # if length(data_left_an) > 0
-
-                # update ylim according to additional data_left_an (e.g. obs)
-                if (length(data_left_an) > 0) {
+                    
+                    # apply moving average to data_left_an
+                    if (add_smoothed) {
+                        message("`add_smoothed` is true --> calc moving average of data_left_an")
+                        for (i in seq_along(data_left_an)) {
+                            # todo: distinguish between unsmoothed and smoothed and not overwrite data_left_an
+                            if (!is.null(data_left_an[[i]]$n_ma) && data_left_an[[i]]$n_ma != 1) {
+                                data_left_an[[i]]$y <- as.numeric(stats::filter(data_left_an[[i]]$y, 
+                                                                                filter=rep(1/data_left_an[[i]]$n_ma, t=data_left_an[[i]]$n_ma)))
+                                if (!is.null(data_left_an[[i]]$y_lower)) {
+                                    data_left_an[[i]]$y_lower <- as.numeric(stats::filter(data_left_an[[i]]$y_lower, 
+                                                                                          filter=rep(1/data_left_an[[i]]$n_ma, t=data_left_an[[i]]$n_ma)))
+                                }
+                                if (!is.null(data_left_an[[i]]$y_upper)) {
+                                    data_left_an[[i]]$y_upper <- as.numeric(stats::filter(data_left_an[[i]]$y_upper, 
+                                                                                          filter=rep(1/data_left_an[[i]]$n_ma, t=data_left_an[[i]]$n_ma))) 
+                                }
+                            }
+                        }
+                    } # if add_smoothed
+                
+                    # update ylim according to additional data_left_an (e.g. obs)
                     ylim_left_an <- range(lapply(data_left_an, "[[", "y"), na.rm=T)
                     message("\nupdate left yaxis ylim_an = ", paste(ylim_an, collapse=", "), 
                             " with ylim_left_an = ", paste(ylim_left_an, collapse=", "), " ...") 
@@ -11469,12 +11810,13 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         ylim_an <- range(ylim_an, ylim_left_an_lower)
                     }
                     ylim_left_an_upper <- lapply(data_left_an, "[[", "y_upper")
-                    if (!all(sapply(ylim_left_an_lower, is.null))) {
+                    if (!all(sapply(ylim_left_an_upper, is.null))) {
                         ylim_left_an_upper <- range(ylim_left_an_upper, na.rm=T)
                         message("update left yaxis ylim_an = ", paste(ylim_an, collapse=", "), 
-                                " with ylim_left_an_upper = ", paste(ylim_left_an_lower, collapse=", "), " ...") 
+                                " with ylim_left_an_upper = ", paste(ylim_left_an_upper, collapse=", "), " ...") 
                         ylim_an <- range(ylim_an, ylim_left_an_upper)
                     }
+
                 } # if (length(data_left_an) > 0)
             
                 # add obs to ylim
@@ -11550,7 +11892,9 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                     if (add_smoothed) {
                         for (i in seq_len(nsettings_right_an)) {
-                            data_right_an$data[[i]]$yma <- filter(data_right_an$data[[i]]$y, rep(1/(n_mas[i]/12), t=n_mas[i]/12))
+                            stop("update n_ma from n_mas_an")
+                            data_right_an$data[[i]]$yma <- as.numeric(stats::filter(data_right_an$data[[i]]$y, 
+                                                                                    filter=rep(1/(n_mas_an[i]/12), t=n_mas_an[i]/12)))
                         }
                     }
 
@@ -11594,7 +11938,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 # plotname
                 if (exists("plotprefix")) {
-                    plotprefixp <- plotprefix
+                    plotprefixp <- paste0(plotprefix, "_", length(zan), "_models")
                 } else { # default
                     plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
                     if (F && plot_groups[plot_groupi] == "samedims") {
@@ -11680,11 +12024,42 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 if (add_zeroline) {
                     abline(h=0, col="gray", lwd=0.5)
                 }
+                
+                # add obs uncertainty 
+                if (length(data_left_an) > 0) {
+                    message("\nadd data_left uncertainty to datasan vs years ...")
 
-                # add data
-                for (i in seq_along(zan)) {
-                    lines(dan$year[[i]], zan[[i]], 
-                          col=cols_pan[i], lty=ltys_pan[i], lwd=lwds_pan[i], pch=pchs_pan[i])
+                    # add uncertainties if given
+                    for (i in seq_along(data_left_an)) {
+                        if (!is.null(data_left_an[[i]]$y_lower) || !is.null(data_left_an[[i]]$y_upper)) {
+                            message("add data_left_an[[", i, "]]$text = ", data_left_an[[i]]$text, " uncertainties to plot ...")
+                            if (!is.null(data_left_an[[i]]$y_lower) && !is.null(data_left_an[[i]]$y_upper)) {
+                                # remove potential NA due to moving average
+                                okinds <- which(!is.na(data_left_an[[i]]$y))
+                                polygon(c(data_left_an[[i]]$x[okinds], rev(data_left_an[[i]]$x[okinds])),
+                                        c(data_left_an[[i]]$y_lower[okinds], rev(data_left_an[[i]]$y_upper[okinds])),
+                                        col=data_left_an[[i]]$col_rgb, border=NA)
+                            }
+                        }
+                    } # for i in data_left_an
+
+                } # if length(data_left_an) > 0
+                # finished adding obs
+
+                # add annual data
+                if (add_unsmoothed) {
+                    for (i in seq_along(zan)) {
+                        lines(dan$year[[i]], zan[[i]], 
+                              col=cols_pan[i], lty=ltys_pan[i], lwd=lwds_pan[i], pch=pchs_pan[i])
+                    }
+                }
+
+                # add smoothed data after unsmoothed data
+                if (add_smoothed) {
+                    for (i in seq_along(zmaan)) {
+                        lines(dan$year[[i]], zmaan[[i]], 
+                              col=cols_pan[i], lty=ltys_pan[i], lwd=lwds_pan[i], pch=pchs_pan[i])
+                    }
                 }
 
                 # add linear regression trend if wanted
@@ -11819,26 +12194,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         }
                     }
                 } # add_linear_trend
-
+                
                 # add obs 
                 if (length(data_left_an) > 0) {
                     message("\nadd data_left to datasan vs years ...")
-
-                    # add uncertainties if given
-                    for (i in seq_along(data_left_an)) {
-                        if (!is.null(data_left_an[[i]]$y_lower) || !is.null(data_left_an[[i]]$y_upper)) {
-                            message("add data_left_an[[", i, "]]$text = ", data_left_an[[i]]$text, " uncertainties to plot ...")
-                            if (!is.null(data_left_an[[i]]$y_lower) && !is.null(data_left_an[[i]]$y_upper)) {
-                                polygon(c(data_left_an[[i]]$x, rev(data_left_an[[i]]$x)),
-                                        c(data_left_an[[i]]$y_lower, rev(data_left_an[[i]]$y_upper)),
-                                        col=data_left_an[[i]]$col_rgb, border=NA)
-                            } else if (!is.null(data_left_an[[i]]$y_lower) && is.null(data_left_an[[i]]$y_upper)) {
-                                stop("implement")
-                            } else if (is.null(data_left_an[[i]]$y_lower) && !is.null(data_left_an[[i]]$y_upper)) {
-                                stop("implement")
-                            }
-                        }
-                    } # for i in data_left_an
 
                     # add data points/lines
                     for (i in seq_along(data_left_an)) {
@@ -11851,7 +12210,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                 } # if length(data_left_an) > 0
                 # finished adding obs
-                
+
                 # add legend if wanted
                 if (T && add_legend) {
                     message("\nadd datasan legend ...")
@@ -12076,10 +12435,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     for (i in seq_along(zan)) {
                         if (F) { # use moving average data
                             warning("using ma data for dplR::redfit() yields strange very low ci")
-                            if (!exists("zma")) {
+                            if (!exists("zmaan")) {
                                 stop("not yet")
-                            } # if !exists("zma")
-                            x <- zma[[i]]
+                            } # if !exists("zmaan")
+                            x <- zmaan[[i]]
                         } else if (T) { # use annual data
                             x <- zan[[i]]
                         }
@@ -12128,7 +12487,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                 redf[[i]]$ci99 <- fac*redf[[i]]$ci99
                             }
                         }
-                    } # for i zma
+                    } # for i zmaan
 
                     # plot red noise corrected spectrum of the data 
                     if (any(is.list(redf))) { # any success
@@ -12168,7 +12527,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
                         # plotname
                         if (exists("plotprefix")) {
-                            plotprefixp <- plotprefix
+                            plotprefixp <- paste0(plotprefix, "_", length(zan), "exps")
                         } else { # default
                             plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
                             if (F && plot_groups[plot_groupi] == "samedims") { # use only varnames_out_samedims below
@@ -12301,6 +12660,81 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } # if any !is.na(redf)
                 } # if plot_redfit
             
+                # do special stuff with annual data
+                if (F && length(data_left_an) > 0) {
+                    if (any(names(data_left_an) == "cmip6") &&
+                        any(names(data_left_an) == "gregor_and_fay_2021")) {
+                        # fgco2: cor=0.9428198, p=6.883e-15
+                        # detrended fgco2: cor=0.5182613, p=0.003348
+                        # diff fgco2: cor=0.3033448, p=0.1097
+                        # diff fgco2 5ma: cor=0.4209964, p=0.0361
+                        plot(data_left_an$cmip6$y, data_left_an$gregor_and_fay_2021$y, 
+                             t="n", xlab="CMIP6 fgco2", ylab="GF21 fgco2") 
+                        abline(v=0, h=0, a=0, b=1)
+                        text(data_left_an$cmip6$y, data_left_an$gregor_and_fay_2021$y, data_left_an$cmip6$x)
+                        if (exists("co2_hist") && exists("co2_ssp126")) {
+                            # co2:
+                            inds_hist <- which(as.integer(format(co2_hist$time, "%Y")) >= min(data_left_an$cmip6$x) &
+                                               as.integer(format(co2_hist$time, "%Y")) <= 2014)
+                            inds_ssp126 <- which(as.integer(format(co2_ssp126$time, "%Y")) >= 2015 &
+                                                 as.integer(format(co2_ssp126$time, "%Y")) <= max(data_left_an$cmip6$x))
+                            co2 <- c(co2_hist$co2_ppm[inds_hist], co2_ssp126$co2_ppm[inds_ssp126])
+                            plot(data_left_an$cmip6$y, co2, 
+                                 xlim=range(data_left_an$cmip6$y, data_left_an$gregor_and_fay_2021$y, na.rm=T),
+                                 t="n", xlab="fgco2", ylab="dco2_atm") 
+                            # fgco2: cor=0.96, p<2.2e-16
+                            # detrended fgco2: cor=0.04, p=0.8388
+                            # diff fgco2: cor=0.001, p=0.9958
+                            # diff 5ma fgco2: cor=0.48, p=0.01504
+                            points(data_left_an$cmip6$y, co2, pch=16)
+                            # fgco2: cor=0.95, p=1.792e-15
+                            # detrended fgco2: cor=0.07, p=0.7188
+                            # diff fgco2: cor=0.24, p=0.2101
+                            # diff 5ma fgco2: cor=0.7, p=8.677e-05
+                            points(data_left_an$gregor_and_fay_2021$y, co2, col=2, pch=16) 
+                            legend("topleft", c("CMIP6", "GF21"), col=1:2, pch=16, bty="n")
+                            # co2 diff:
+                            inds_hist <- which(as.integer(format(co2_hist$time_diff, "%Y")) >= min(data_left_an$cmip6$x) &
+                                               as.integer(format(co2_hist$time_diff, "%Y")) <= 2013)
+                            inds_ssp126 <- which(as.integer(format(co2_ssp126$time_diff, "%Y")) >= 2014 &
+                                                 as.integer(format(co2_ssp126$time_diff, "%Y")) <= max(data_left_an$cmip6$x))
+                            co2_diff <- c(co2_hist$co2_diff_ppm[inds_hist], co2_ssp126$co2_diff_ppm[inds_ssp126])
+                            plot(data_left_an$cmip6$y, co2_diff, 
+                                 xlim=range(data_left_an$cmip6$y, data_left_an$gregor_and_fay_2021$y, na.rm=T),
+                                 t="n", xlab="fgco2", ylab="dco2_atm") 
+                            # fgco2: cor=0.6989527, p=1.735e-05
+                            # detrended fgco2: cor=-0.07619227, p=0.689
+                            # diff fgco2: cor=0.07074821, p=0.7153
+                            # diff 5ma fgco2: cor=0.222156, p=0.2858
+                            points(data_left_an$cmip6$y, co2_diff, pch=16)
+                            # fgco2: cor=0.6814324, p=3.388e-05
+                            # detrended fgco2: cor=-0.04542101, p=0.8116
+                            # diff fgco2: cor=0.3047852, p=0.1079
+                            # diff 5ma fgco2: cor=0.3680523, p=0.07027
+                            points(data_left_an$gregor_and_fay_2021$y, co2_diff, col=2, pch=16) 
+                            legend("topleft", c("CMIP6", "GF21"), col=1:2, pch=16, bty="n")
+                        }
+                        if (exists("nino34")) {
+                            inds <- which(nino34$nino34_anom$dims$year$vals >= min(data_left_an$cmip6$x) &
+                                          nino34$nino34_anom$dims$year$vals <= max(data_left_an$cmip6$x))
+                            plot(data_left_an$cmip6$y, nino34$nino34_anom$data$yearmean$vals[inds], 
+                                 xlim=range(data_left_an$cmip6$y, data_left_an$gregor_and_fay_2021$y, na.rm=T),
+                                 t="n", xlab="fgco2", ylab="Annual Nino3.4 [°C]")
+                            # fgco2: cor=0.03112894, p=0.8703
+                            # detrended fgco2: cor=0.2846705, p=0.1273
+                            # diff fgco2: 0.2274809, p=0.2353
+                            # diff 5ma fgco2: -0.003611361, p=0.9863
+                            points(data_left_an$cmip6$y, nino34$nino34_anom$data$yearmean$vals[inds], pch=16) 
+                            # fgco2: cor=0.1402687, p=0.4597 
+                            # detrended fgco2: cor=0.5059132, p=0.004341
+                            # diff fgco2: cor=0.5731631, p=0.001154
+                            # diff5ma fgco2: cor=0.1462264, p=0.4855
+                            points(data_left_an$gregor_and_fay_2021$y, nino34$nino34_anom$data$yearmean$vals[inds], col=2, pch=16) 
+                            legend("topleft", c("CMIP6", "GF21"), col=1:2, pch=16, bty="n")
+                        }
+                    }
+                } # if do special stuff with annual data
+
             } # if (ndims_unique_an == 1 && vardims_unique_an == "year") {
             # finished plot `datasan` vs years
 
@@ -12343,10 +12777,10 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # extend data range by 4 pcnt for barplot(), similarly as default yaxs="r" of plot()
                 ylim_ltm <- ylim_ltm + c(-1, 1)*0.04*(max(ylim_ltm)-min(ylim_ltm))
                 
-                message("\n", mode_p, " versus ltm_range min / mean / max ", varname, " zan:")
+                message("\n", mode_p, " versus ltm_range ", varname, " zan:")
                 for (i in seq_along(zan)) {
-                    message(sprintf(paste0("%", max(nchar(names_short_pltm)), "s"), names_short_pltm[i]), ": ", 
-                            min(zltm[[i]], na.rm=T), " / ", mean(zltm[[i]], na.rm=T), " / ", max(zltm[[i]], na.rm=T))
+                    message(sprintf(paste0("%", max(nchar(names_short_pltm)), "s"), 
+                                    names_short_pltm[i]), ": ", zltm[[i]])
                 }
                 message("ylim_ltm = ", appendLF=F)
                 dput(ylim_ltm)
@@ -12354,7 +12788,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 
                 # plotname
                 if (exists("plotprefix")) {
-                    plotprefixp <- plotprefix
+                    plotprefixp <- paste0(plotprefix, "_", length(zltm), "exps")
                 } else { # default
                     plotprefixp <- paste(unique(names_short_pltm), collapse="_vs_")
                     if (F && plot_groups[plot_groupi] == "samedims") {

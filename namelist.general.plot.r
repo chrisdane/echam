@@ -145,8 +145,7 @@ add_linear_trend <- F
 add_nonlinear_trend <- F
 add_1to1_line <- T
 add_scatter_density <- F
-center_ts <- F # either center_ts or scale_ts or none but not both
-scale_ts <- F
+center_ts <- scale_ts <- detrend_ts <- diff_ts <- F
 ts_highlight_seasons <- list(#bool=T,
                              bool=F,
                              seasons=c("DJF", "MAM", "JJA", "SON"),

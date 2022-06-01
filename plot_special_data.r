@@ -433,3 +433,43 @@ if (F && save_PaTh_list) {
     dev.off()
 } # if save_PaTh_list
 
+# plot co2
+if (exists("co2_hist") && exists("co2_ssp126")) {
+    fromto <- c(1990, 2022)
+    plotname <- paste0("co2_hist_ssp126_", fromto[1], "-", fromto[2], ".png")
+    message("\nplot ", plotname, " ...")
+    png(plotname, width=2000, height=1500, res=300)
+    # absolute values
+    inds_hist <- which(as.integer(format(co2_hist$time, "%Y")) >= fromto[1] &
+                       as.integer(format(co2_hist$time, "%Y")) <= 2014)
+    inds_ssp126 <- which(as.integer(format(co2_ssp126$time, "%Y")) >= 2015 &
+                         as.integer(format(co2_ssp126$time, "%Y")) <= fromto[2])
+    co2_time <- c(co2_hist$time[inds_hist], co2_ssp126$time[inds_ssp126])
+    co2 <- c(co2_hist$co2_ppm[inds_hist], co2_ssp126$co2_ppm[inds_ssp126])
+    par(mar=c(5.1, 4.1, 4.1, 5.1))
+    plot(co2_time, co2, t="l",
+         xlab="Time", ylab="atm. CO2 [ppm]",
+         xaxt="n", yaxt="n")
+    axis.POSIXct(1, at=pretty(co2_time, n=15))
+    axis(2, at=pretty(co2, n=10), las=2)
+
+    # diff values
+    par(new=T)
+    inds_hist <- which(as.integer(format(co2_hist$time_diff, "%Y")) >= fromto[1] &
+                       as.integer(format(co2_hist$time_diff, "%Y")) <= 2013)
+    inds_ssp126 <- which(as.integer(format(co2_ssp126$time_diff, "%Y")) >= 2014 &
+                         as.integer(format(co2_ssp126$time_diff, "%Y")) <= fromto[2])
+    co2_time_diff <- c(co2_hist$time_diff[inds_hist], co2_ssp126$time_diff[inds_ssp126])
+    co2_diff <- c(co2_hist$co2_diff_ppm[inds_hist], co2_ssp126$co2_diff_ppm[inds_ssp126])
+    plot(co2_time_diff, co2_diff, t="l", col=col2rgba(2, 0.3), xlab=NA, ylab=NA, axes=F)
+    ma3 <- filter(co2_diff, rep(1/3, t=3))
+    lines(co2_time_diff, ma3, col=2, lty=2)
+    ma5 <- filter(co2_diff, rep(1/5, t=5))
+    lines(co2_time_diff, ma5, col=2)
+    axis(4, at=pretty(co2_diff, n=10), las=2, col=2, col.axis=2, col.ticks=2)
+    mtext("atm. CO2 diff [ppm] 3 and 5a ma", 4, 3.5, col=2)
+    box()
+    dev.off()
+} # if exists("co2_hist") && exists("co2_ssp126")
+
+
