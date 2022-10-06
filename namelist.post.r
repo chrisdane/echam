@@ -15,6 +15,7 @@ workpath <- host$workpath
 #files <- list(list.files(path, glob2rx("pattern*"), full.names=T)) # opt: recursive=T
 #files <- list(list.files(path, glob2rx("E5sf00_MM_????-????_207"), full.names=T))
 #files <- list(system("find path -maxdepth 1 -name \"E5sf00_MM_????-????_207\" -printf \"%f\n\"", intern=T))
+# providing `datapaths` is deprecated
 
 # ======================================================
 # 1 setting
@@ -940,7 +941,7 @@ if (F) { # old hist
     varnamesin <- "SSTK"
     #codes <- 207
     #varnamesin <- "WS10"
-    files <- list(list.files("/mnt/lustre02/work/bk1099/data/sf00_MM", pattern=glob2rx(paste0("E5sf00_MM_????-????_", sprintf("%03i", codes))), full.names=T, recursive=T))
+    files <- list(list.files("/work/bk1099/data/sf00_MM", pattern=glob2rx(paste0("E5sf00_MM_????-????_", sprintf("%03i", codes))), full.names=T))
     prefixes <- "era5_sf00_MM"
     fpatterns <- paste0("E5sf00_MM_<year_from>-<year_to>_", sprintf("%03i", codes))
     froms <- "1989"
@@ -954,9 +955,47 @@ if (F) { # old hist
     cdo_after_calcs <- "-t ecmwf"
     if (varnamesin == "SSTK") cdo_after_calcs <- paste0(cdo_after_calcs, " -subc,273.15")
 
+} else if (F) { # en4
+    models <- "EN.4.2.2"
+    if (T) {
+        files <- list(list.files("/work/ab0246/a270073/data/en4/data/4.2.2", pattern=glob2rx("EN.4.2.2.f.analysis.g10.*.nc"), full.names=T))
+        fpatterns <- "EN.4.2.2.f.analysis.g10.<year><mon>.nc"
+    } else if (F) { # my calc_mldHT09.r results
+        files <- list(list.files("/work/ab0246/a270073/data/en4/post/mld_HT09", pattern=glob2rx("EN.4.2.2.f.analysis.g10.*_mldHT09.nc"), full.names=T))
+        fpatterns <- "EN.4.2.2.f.analysis.g10.<year><mon>_mldHT09.nc"
+    }
+    prefixes <- models
+    varnamesin <- "temperature"
+    #varnamesin <- "mixeddp" # mixed layer depth from density algorithm
+    #varnamesin <- "mldepthdensp030_m" # mixed layer depth from density threshold method (> 0.03 kg m-3)
+    #varnamesin <- "mldepthdensp125_m" # mixed layer depth from density threshold method (> 0.125 kg m-3)
+    sellevsidx <- 1
+    #froms <- 1980
+    froms <- 1982
+    #froms <- 1989
+    #tos <- 2014
+    tos <- 2021 # todo: calc mld 2021
+    #modes <- "select"
+    #modes <- "timmean"
+    modes <- "fldmean"
+    #modes <- "yearmax"
+    cdo_after_sels <- "-remapnn,global_1" 
+    mask_list <- lapply(vector("list", l=length(models)), base::append, 
+                        # gregor_etal_2019 basins:
+                        #list(name="g19_NH-HL",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_NH-ST",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_EQU",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_SH-ST",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        list(name="g19_SH-HL",
+                             cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+
 } else if (F) { # lacroix_etal_2020
     models <- "lacroix_etal_2020"
-    files <- list(list.files(paste0(workpath, "/data/reccap2-ocean"), pattern="fgco2_lacroix-river_v20220218.nc", full.names=T, recursive=F))
+    files <- list(list.files(paste0(workpath, "/data/reccap2-ocean"), pattern="fgco2_lacroix-river_v20220218.nc", full.names=T))
     fpatterns <- "fgco2_lacroix-river_v20220218.nc" # setgrid to original file; needs cdo >= 2
     prefixes <- "lacroix_etal_2020"
     varnamesin <- "fgco2"
@@ -1022,16 +1061,16 @@ if (F) { # old hist
                            #name="reccap2_so_ice",
                            #cdo_mask=paste0("-eqc,3 -select,name=southern ", workpath, "/data/reccap2-ocean/R2-shared-resources/data/regions/RECCAP2_region_masks_all.nc")))
                            # gregor_etal_2019 basins:
-                           #name="gregor_etal_2019_nh-hl",
-                           #cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_0.5.nc")))
-                           #name="gregor_etal_2019_nh-st",
-                           #cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_0.5.nc")))
-                           #name="gregor_etal_2019_equ",
-                           #cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_0.5.nc")))
-                           #name="gregor_etal_2019_sh-st",
-                           #cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_0.5.nc")))
-                           name="gregor_etal_2019_sh-hl",
-                           cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_lon_from_0.5.nc")))
+                           #name="g19_NH-HL",
+                           #cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_0.5.nc")))
+                           #name="g19_NH-ST",
+                           #cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_0.5.nc")))
+                           #name="g19_EQU",
+                           #cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_0.5.nc")))
+                           #name="g19_SH-ST",
+                           #cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_0.5.nc")))
+                           name="g19_SH-HL",
+                           cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_0.5.nc")))
 
 } else if (F) { # chau_etal_2020
     models <- "chau_etal_2020"
@@ -1082,30 +1121,37 @@ if (F) { # old hist
                            cdo_mask=paste0("-eqc,6 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")))
 
 } else if (F) { # gregor_and_fay_2021
-    if (F) { # fgco2
-        files <- as.list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data"), pattern=glob2rx("SeaFlux_v2021.04_fgco2_wind_*_pco2_*"), full.names=T))
-        fpatterns <- sapply(files, basename) # e.g. SeaFlux_v2021.04_fgco2_wind_CCMP2_pco2_CMEMS_FFNN.nc
-        prefixes <- substr(fpatterns, 24, nchar(fpatterns)-3)
-        varnamesin <- rep("fgco2", t=length(fpatterns))
-        froms <- rep(1990, t=length(fpatterns))
-        tos <- rep(2019, t=length(fpatterns))
-    } else if (F) { # spco2
+    if (F) { # pco2atm
+        files <- list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data"), pattern=glob2rx("SeaFlux_v2021.04_pco2atm_1982-2020.nc"), full.names=T))
+        fpatterns <- "SeaFlux_v2021.04_pco2atm_<year_from>-<year_to>.nc"
+        prefixes <- "NOAA"
+        varnamesin <- "pco2atm"
+        froms <- 1982
+        #froms <- 1990
+        #tos <- 2014
+        #tos <- 2019
+        tos <- 2020
+    } else if (F) { # spco2 all products
         varnamesin <- c("JENA_MLS", "MPI_SOMFFN", "CMEMS_FFNN", "CSIR_ML6", "JMA_MLR", "NIES_FNN")
         varnamesout <- rep("spco2", t=length(varnamesin))
         fpatterns <- rep("SeaFlux_v2021.04_spco2_SOCOM_unfilled_<year_from>-<year_to>.nc", t=length(varnamesin))
         files <- list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data"), pattern="SeaFlux_v2021.04_spco2_SOCOM_unfilled_1982-2019.nc", full.names=T))
         files <- rep(files, t=length(varnamesin))
         prefixes <- varnamesin
-        froms <- rep(1990, t=length(fpatterns))
-        tos <- rep(2019, t=length(fpatterns))
-    } else if (F) { # pco2atm
-        files <- as.list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data"), pattern=glob2rx("SeaFlux_v2021.04_pco2atm_1982-2020.nc"), full.names=T))
-        fpatterns <- "SeaFlux_v2021.04_pco2atm_<year_from>-<year_to>.nc"
-        prefixes <- "NOAA"
-        varnamesin <- "pco2atm"
-        froms <- rep(1990, t=length(fpatterns))
-        tos <- rep(2019, t=length(fpatterns))
-    } else if (T) { # dpco2
+        froms <- rep(1982, t=length(fpatterns))
+        #froms <- rep(1990, t=length(fpatterns))
+        tos <- rep(2014, t=length(fpatterns))
+        #tos <- rep(2019, t=length(fpatterns))
+    } else if (F) { # spco2 ensemble stats
+        varnamesin <- "spco2_ens_mean"
+        #varnamesin <- "spco2_ens_median"
+        fpatterns <- "SeaFlux_v2021.04_spco2_SOCOM_unfilled_ensemble_stats_<year_from>-<year_to>.nc"
+        files <- list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data"), pattern="SeaFlux_v2021.04_spco2_SOCOM_unfilled_ensemble_stats_1982-2019.nc", full.names=T))
+        prefixes <- "ens_stats"
+        froms <- 1982
+        #tos <- 2014
+        tos <- 2019
+    } else if (F) { # dpco2 all products
         varnamesin <- c("JENA_MLS", "MPI_SOMFFN", "CMEMS_FFNN", "CSIR_ML6", "JMA_MLR", "NIES_FNN")
         varnamesout <- rep("dpco2", t=length(varnamesin))
         fpatterns <- rep("SeaFlux_v2021.04_dpco2_<year_from>_<year_to>.nc", t=length(varnamesin))
@@ -1114,10 +1160,41 @@ if (F) { # old hist
         prefixes <- varnamesin
         froms <- rep(1990, t=length(fpatterns))
         tos <- rep(2019, t=length(fpatterns))
+    } else if (F) { # dpco2 ensemble stats
+        varnamesin <- "dpco2_ens_mean"
+        #varnamesin <- "dpco2_ens_median"
+        fpatterns <- "SeaFlux_v2021.04_dpco2_ensemble_stats_<year_from>-<year_to>.nc"
+        files <- list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data"), pattern="SeaFlux_v2021.04_dpco2_ensemble_stats_1982-2020.nc", full.names=T))
+        prefixes <- "ens_stats"
+        froms <- 1982
+        #tos <- 2014
+        tos <- 2020
+    } else if (F) { # fgco2 all products
+        files <- list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data"), pattern=glob2rx("SeaFlux_v2021.04_fgco2_wind_*_pco2_*"), full.names=T))
+        fpatterns <- sapply(files, basename) # e.g. SeaFlux_v2021.04_fgco2_wind_CCMP2_pco2_CMEMS_FFNN.nc
+        prefixes <- substr(fpatterns, 24, nchar(fpatterns)-3)
+        varnamesin <- rep("fgco2", t=length(fpatterns))
+        froms <- rep(1990, t=length(fpatterns))
+        tos <- rep(2019, t=length(fpatterns))
+    } else if (T) { # fgco2 ensemble stats 1990-2019
+        varnamesin <- "fgco2_ens_mean"
+        #varnamesin <- "fgco2_ens_median"
+        if (F) { # timmean
+            files <- list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data"), pattern="SeaFlux_v2021.04_fgco2_all_winds_products_timmean_ensemble_stats.nc", full.names=T))
+            fpatterns <- "SeaFlux_v2021.04_fgco2_all_winds_products_timmean_ensemble_stats.nc" 
+        } else if (T) { # select
+            files <- list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data"), pattern="SeaFlux_v2021.04_fgco2_all_winds_products_ensemble_stats.nc", full.names=T))
+            fpatterns <- "SeaFlux_v2021.04_fgco2_all_winds_products_ensemble_stats.nc"
+        }
+        prefixes <- "ens_stats"
+        froms <- 1990
+        #tos <- 2014
+        tos <- 2019
     }
     models <- rep("gregor_and_fay_2021", t=length(fpatterns))
-    modes <- rep("fldmean", t=length(fpatterns))
-    #modes <- rep("fldint", t=length(fpatterns))
+    #modes <- rep("timmean", t=length(fpatterns))
+    #modes <- rep("fldmean", t=length(fpatterns))
+    modes <- rep("fldint", t=length(fpatterns))
     #mask_list <- list(list(# reccap2
                            #name="reccap2_atlantic",
                            #cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
@@ -1177,68 +1254,52 @@ if (F) { # old hist
                            #name="reccap2_so_ice",
                            #cdo_mask=paste0("-eqc,3 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
                            # gregor_etal_2019 basins:
-                           #name="gregor_etal_2019_nh-hl",
+                           #name="g19_NH-HL",
                            #cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
-                           #name="gregor_etal_2019_nh-st",
+                           #name="g19_NH-ST",
                            #cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
-                           #name="gregor_etal_2019_equ",
+                           #name="g19_EQU",
                            #cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
-                           #name="gregor_etal_2019_sh-st",
+                           #name="g19_SH-ST",
                            #cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
-                           #name="gregor_etal_2019_sh-hl",
+                           #name="g19_SH-HL",
                            #cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
+    areas_out_list <- list(list(name="45to70S",
+                                sellonlatbox=c(lon1=-179.5,lon2=179.5,lat1=-70,lat2=-45)))
+
+} else if (F) { # awiesm-2-recom ying
+    models <- "echam6"
+    #codes <- 6
+    #varnamesin <- "co2_flx_land"
+    #codes <- 7
+    #varnamesin <- "co2_flx_ocean"
+    #codes <- 24
+    #varnamesin <- "co2_flx_lcc"
+    #codes <- 25
+    #varnamesin <- "co2_flx_harvest"
+    #varnamesin <- "fgco2"
+    #varnamesin <- "nbp"
+    varnamesin <- "co2_flx_total"
+    files <- list(list.files("/work/bm1030/a270105/awiesm-output/pi_ciso_mpi/outdata/echam", pattern=glob2rx("*_co2"), full.names=T))
+    codes_files <- "/work/bm1030/a270105/awiesm-output/pi_ciso_mpi/outdata/echam/pi_ciso_mpi_242001.01_co2.codes"
+    fpatterns <- "pi_ciso_mpi_<year><mon>.01_co2"
+    prefixes <- "awi-esm-2.1-recom-par-tracers_piControl"
+    froms <- 2001
+    tos <- 2510
+    modes <- "fldint"
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1 to 3
-    models <- "echam6"
+    #models <- "echam6"
     #models <- "jsbach"
     #models <- "fesom"
-    # chunk 1: 1950:2029
-    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/echam" # chunk 1
-    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/jsbach" # chunk 1
-    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
-    #fpatterns <- "SR_output_echam6_echam_<year>01.nc" # chunk 1
-    #fpatterns <- "SR_output_echam6_co2_<year>01.nc" # chunk 1
-    #fpatterns <- "SR_output_jsbach_jsbach_<year>01.grb"
-    #codes_files <- paste0(datapaths, "/SR_output_195001.01_jsbach.codes")
-    #fpatterns <- "SR_output_jsbach_veg_<year>01.grb"
-    #codes_files <- paste0(datapaths, "/SR_output_195001.01_veg.codes")
-    #fpatterns <- "SR_output_jsbach_yasso_<year>01.grb"
-    #codes_files <- paste0(datapaths, "/SR_output_195001.01_yasso.codes")
-    # chunk 2: 2030:2685
-    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
-    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/jsbach" # chunk 2
-    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
-    #fpatterns <- "test_echam6_g3bid_<year>01.nc" # chunk 2
-    #fpatterns <- "test_echam6_echam_<year>01.nc" # chunk 2
-    #fpatterns <- "test_echam6_co2_<year>01.nc" # chunk 2
-    #fpatterns <- "test_jsbach_jsbach_<year>01.grb" # chunk 2
-    #codes_files <- paste0(datapaths, "/test_203001.01_jsbach.codes")
-    #fpatterns <- "test_jsbach_veg_<year>01.grb" # chunk 2
-    #codes_files <- paste0(datapaths, "/test_203001.01_veg.codes")
-    #fpatterns <- "test_jsbach_yasso_<year>01.grb"
-    #codes_files <- paste0(datapaths, "/test_203001.01_yasso.codes")
-    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc" # chunk 1 and 2 
-    # chunk 3 from 2686
-    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/echam" # chunk3
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/jsbach" # chunk3
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom" # chunk3
-    #fpatterns <- "piControl_<year><mon>.01_echam"
-    fpatterns <- "piControl_<year><mon>.01_co2"
-    #fpatterns <- "piControl_<year><mon>.01_jsbach"
-    #fpatterns <- "piControl_<year><mon>.01_veg"
-    #fpatterns <- "piControl_<year><mon>.01_yasso"
-    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    #
-    #prefixes <- "awi-esm-1-1-lr_kh800_piControl_3hr"
-    #prefixes <- "awi-esm-1-1-lr_kh800_piControl_day"
-    prefixes <- "awi-esm-1-1-lr_kh800_piControl"
+    models <- "recom"
     # echam echamstream
     #codes <- 167
     #varnamesin <- "temp2"
     # echam co2stream 
-    #varnamesin <- "co2_flux"
-    codes <- 7
-    varnamesin <- "co2_flx_ocean"
+    #varnamesin <- "co2_flux" # lcc and harvest missing
+    #codes <- 7
+    #varnamesin <- "co2_flx_ocean"
     #varnamesin <- "fgco2"
     #codes <- 6
     #varnamesin <- "co2_flx_land" # = npp + resp + herb + fire
@@ -1339,7 +1400,50 @@ if (F) { # old hist
     #varnamesin <- "sic"
     # recom
     #varnamesin <- "aCO2"
-    #cdoshifttimes <- "-dt" # for fesom
+    varnamesin <- "POC"
+    # chunk 1: 1950:2029
+    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/echam" # chunk 1
+    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/jsbach" # chunk 1
+    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
+    #fpatterns <- "SR_output_echam6_echam_<year>01.nc" # chunk 1
+    #fpatterns <- "SR_output_echam6_co2_<year>01.nc" # chunk 1
+    #fpatterns <- "SR_output_jsbach_jsbach_<year>01.grb"
+    #codes_files <- paste0(datapaths, "/SR_output_195001.01_jsbach.codes")
+    #fpatterns <- "SR_output_jsbach_veg_<year>01.grb"
+    #codes_files <- paste0(datapaths, "/SR_output_195001.01_veg.codes")
+    #fpatterns <- "SR_output_jsbach_yasso_<year>01.grb"
+    #codes_files <- paste0(datapaths, "/SR_output_195001.01_yasso.codes")
+    # chunk 2: 2030:2685
+    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
+    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/jsbach" # chunk 2
+    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
+    #fpatterns <- "test_echam6_g3bid_<year>01.nc" # chunk 2
+    #fpatterns <- "test_echam6_echam_<year>01.nc" # chunk 2
+    #fpatterns <- "test_echam6_co2_<year>01.nc" # chunk 2
+    #fpatterns <- "test_jsbach_jsbach_<year>01.grb" # chunk 2
+    #codes_files <- paste0(datapaths, "/test_203001.01_jsbach.codes")
+    #fpatterns <- "test_jsbach_veg_<year>01.grb" # chunk 2
+    #codes_files <- paste0(datapaths, "/test_203001.01_veg.codes")
+    #fpatterns <- "test_jsbach_yasso_<year>01.grb"
+    #codes_files <- paste0(datapaths, "/test_203001.01_yasso.codes")
+    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc" # chunk 1 and 2 
+    # chunk 3 from 2686
+    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/echam" # chunk3
+    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/jsbach" # chunk3
+    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom" # chunk3
+    files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/", models), 
+                             glob2rx(paste0("^", varnamesin, "_*")), full.names=T))
+    #fpatterns <- "piControl_<year><mon>.01_echam"
+    #fpatterns <- "piControl_<year><mon>.01_co2"
+    #fpatterns <- "piControl_<year><mon>.01_jsbach"
+    #fpatterns <- "piControl_<year><mon>.01_veg"
+    #fpatterns <- "piControl_<year><mon>.01_yasso"
+    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+    #
+    #prefixes <- "awi-esm-1-1-lr_kh800_piControl_3hr"
+    #prefixes <- "awi-esm-1-1-lr_kh800_piControl_day"
+    prefixes <- "awi-esm-1-1-lr_kh800_piControl"
+    cdoshifttimes <- "-dt" # for fesom
     #cdo_before_calcs <- "-monmean"
     #modes <- "select"
     #modes <- "timmean"
@@ -1350,8 +1454,9 @@ if (F) { # old hist
     #froms <- 2030 # start chunk2: 2030
     #froms <- 2586 # chunk 2 last 100 years
     #froms <- 2666 # chunk 2 last 20 years
-    froms <- 2686 # start chunk 3: 2686
+    #froms <- 2686 # start chunk 3: 2686
     #froms <- 2823
+    froms <- 2901
     #froms <- 2996
     #froms <- 2997
     #tos <- 1951
@@ -1404,18 +1509,20 @@ if (F) { # old hist
     #                       cdo_mask=paste0("-eqc,4 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
     #mask_list <- list(list(name="reccap2_pequ_e",
     #                       cdo_mask=paste0("-eqc,5 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
-    mask_list <- list(list(name="reccap2_sp_stps",
-                           cdo_mask=paste0("-eqc,6 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+    #mask_list <- list(list(name="reccap2_sp_stps",
+    #                       cdo_mask=paste0("-eqc,6 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl LUtrans1850
-    models <- "echam6"
-    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/echam"
-    fpatterns <- "piControl_LUtrans1850_<year><mon>.01_co2"
-    prefixes <- "awi-esm-1-1-lr_kh800_piControl_LUtrans1850"
+    #models <- "echam6"
+    models <- "recom"
+    # echam jsbach
+    #files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/", models), 
+    #                         glob2rx("*_co2"), full.names=T))
+    #fpatterns <- "piControl_LUtrans1850_<year><mon>.01_co2"
     #codes <- 6
     #varnamesin <- "co2_flx_land"
-    codes <- 7
-    varnamesin <- "co2_flx_ocean"
+    #codes <- 7
+    #varnamesin <- "co2_flx_ocean"
     #codes <- 24
     #varnamesin <- "co2_flx_lcc"
     #codes <- 25
@@ -1423,11 +1530,20 @@ if (F) { # old hist
     #varnamesin <- "nbp" # = co2_flx_land + co2_flx_lcc + co2_flx_harvest
     #varnamesin <- "fgco2"
     #varnamesin <- "co2_flx_total" # = fgco2 + nbp
-    modes <- "fldint"
+    # fesom recom
+    varnamesin <- "aCO2"
+    files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/", models), 
+                             glob2rx(paste0("^", varnamesin, "_*")), full.names=T))
+    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+    cdoshifttimes <- "-dt" # for fesom
+    prefixes <- "awi-esm-1-1-lr_kh800_piControl_LUtrans1850"
+    cdo_before_calcs <- "-monmean"
+    modes <- "select"
+    #modes <- "fldint"
     froms <- 2951
     tos <- 3062
-    areas_out_list <- list(list(name="SO45S",
-                                sellonlatbox=c(lon1=0,lon2=360,lat1=-45,lat2=-90)))
+    #areas_out_list <- list(list(name="SO45S",
+    #                            sellonlatbox=c(lon1=0,lon2=360,lat1=-45,lat2=-90)))
 
 } else if (F) { # cmip6 esgf ACCESS-ESM1-5
     models <- "ACCESS-ESM1-5" # ocean: mom5: native: tripolar; cdo: curvilinear; fldint ok
@@ -1536,14 +1652,23 @@ if (F) { # old hist
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/piControl/r1i1p1f1/Emon/fLuc/gn/v20191120"
     #fpatterns <- "fLuc_Emon_CESM2-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "fLuc"
-    datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20191120"
-    fpatterns <- "fHarvest_Lmon_CESM2-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
-    varnamesin <- "fHarvest"
+    #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20191120"
+    #fpatterns <- "fHarvest_Lmon_CESM2-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+    #varnamesin <- "fHarvest"
     #varnamesin <- "co2_flx_total"
-    prefixes <- "CESM2-FV2_piControl_r1i1p1f1"
-    modes <- "fldint"
-    froms <- 401 # last 100a
-    tos <- 500 # last 100a
+    files <- list(list.files("/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/historical/r1i1p1f1/Omon/thetao/gr/v20191120", full.names=T))
+    varnamesin <- "thetao"
+    #files <- list(list.files("/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/historical/r1i1p1f1/Omon/so/gr/v20191120", full.names=T))
+    #varnamesin <- "so"
+    fpatterns <- "<varnamesin>_Omon_CESM2-FV2_historical_r1i1p1f1_gr_<year_from>01-<year_to>12.nc"
+    #prefixes <- "CESM2-FV2_piControl_r1i1p1f1"
+    prefixes <- "CESM2-FV2_historical_r1i1p1f1"
+    modes <- "select"
+    #modes <- "fldint"
+    #froms <- 401 # last 100a
+    froms <- 1982
+    #tos <- 500 # last 100a
+    tos <- 2014
 
 } else if (F) { # cmip6 esgf CESM2-WACCM
     models <- "CESM2-WACCM" # ocean: pop2: native: ?; cdo: curvilinear; fldint ok
@@ -1931,40 +2056,26 @@ if (F) { # old hist
     models <- "echam6"
     #models <- "jsbach"
     #models <- "fesom"
+    #models <- "recom"
     #post_force <- T
-    # historical
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/echam"
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/jsbach"
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical/outdata/fesom"
-    #fpatterns <- "historical_<year>01.01_echam"
-    #fpatterns <- "historical_<year>01.01_g3bid"
-    #fpatterns <- "historical_<year>01.01_co2"
-    #fpatterns <- "historical_<year>01.01_jsbach"
-    #fpatterns <- "historical_<year>01.01_nitro"
-    #prefixes <- "awi-esm-1-1-lr_kh800_historical"
-    #prefixes <- "awi-esm-1-1-lr_kh800_historical_3hr"
-    #prefixes <- "awi-esm-1-1-lr_kh800_historical_day"
-    # historical2
-    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam"
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/jsbach"
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/fesom"
-    #fpatterns <- "historical2_<year><mon>.01_echam"
-    #fpatterns <- "historical2_<year><mon>.01_g3bid"
-    fpatterns <- "historical2_<year><mon>.01_co2"
-    #fpatterns <- "historical2_<year>01.01_jsbach"
-    #fpatterns <- "historical2_<year><mon>.01_nitro"
-    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    prefixes <- "awi-esm-1-1-lr_kh800_historical2"
     # echam echamstream
+    #fpatterns <- "historical2_<year><mon>.01_echam"
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam", glob2rx("*_echam"), full.names=T))
     #codes <- 167
     #varnamesin <- "temp2"
     #codes <- 171
     #varnamesin <- "wind10"
+    #codes <- 165
+    #varnamesin <- "u10"
+    #codes <- 166
+    #varnamesin <- "v10"
     # echam co2stream
+    fpatterns <- "historical2_<year><mon>.01_co2"
+    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam", glob2rx("*_co2"), full.names=T))
     #codes <- 6
     #varnamesin <- "co2_flx_land"
-    #codes <- 7
-    #varnamesin <- "co2_flx_ocean"
+    codes <- 7
+    varnamesin <- "co2_flx_ocean"
     #varnamesin <- "fgco2"
     #codes <- 24
     #varnamesin <- "co2_flx_lcc"
@@ -1972,9 +2083,11 @@ if (F) { # old hist
     #varnamesin <- "co2_flx_harvest"
     #varnamesin <- "nbp" # = co2_flx_land + co2_flx_lcc + co2_flx_harvest
     #varnamesin <- "co2_flx_total" # fgco2 + nbp
-    codes <- 17
-    varnamesin <- "co2ocean"
+    #codes <- 17
+    #varnamesin <- "co2ocean"
     # jsbach jsbachstream
+    #fpatterns <- "historical2_<year>01.01_jsbach"
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/jsbach", glob2rx("*_jsbach"), full.names=T))
     #codes <- 12
     #varnamesin <- "cover_fract"
     #codes <- 20
@@ -1982,34 +2095,82 @@ if (F) { # old hist
     #codes <- 162
     #varnamesin <- "CO2_emission_landcover_change"
     # jsbach nitrostream
+    #fpatterns <- "historical2_<year><mon>.01_nitro"
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/jsbach", glob2rx("*_nitro"), full.names=T))
     #codes <- 85
     #varnamesin <- "LCC_flux_box_N2atmos"
     # fesom recom
-    #varnamesin <- "aCO2" 
+    #varnamesin <- "thetao"
+    #varnamesin <- "so"
+    #varnamesin <- "tos"
+    #varnamesin <- "mlotst"
+    #varnamesin <- "sic"
     #varnamesin <- "siarean"
     #varnamesin <- "siareas"
     #varnamesin <- "siextentn"
     #varnamesin <- "siextents"
+    #varnamesin <- "aCO2" 
+    #varnamesin <- "pCO2s" 
+    #varnamesin <- "dpCO2s" 
+    #varnamesin <- "CO2f" 
+    #varnamesin <- "bgc02" # dic
+    #varnamesin <- "bgc03" # talk
+    #varnamesin <- "bgc22" # oxygen
+    #varnamesin <- "npp_nanophy_dia"
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/fesom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
+    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+    #cdo_after_calcs <- "-setmissval,8.289665e-17" # for echam
     #cdoshifttimes <- "-dt" # for fesom
     #cdo_before_calcs <- "-monmean"
+    #cdo_before_calcs <- "-yearmean"
+    prefixes <- "awi-esm-1-1-lr_kh800_historical2"
     #modes <- "select"
+    #modes <- "ymonmean"
     #modes <- "timmean"
-    modes <- "fldmean"
-    #modes <- "fldint"
+    #modes <- "fldmean"
+    modes <- "fldint"
     froms <- 1850
     #froms <- 1966
     #froms <- 1967
+    #froms <- 1990
+    #froms <- 1995
     #froms <- 2006
     #froms <- 2007
     #froms <- 2009
     #tos <- 1850
-    tos <- 1855
+    #tos <- 1855
     #tos <- 1985
     #tos <- 1986
+    #tos <- 1996
     #tos <- 2006
-    #tos <- 2014
+    tos <- 2014
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, 
+                        # reccap2 basins:
+                        #list(name="reccap2_atlantic",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_pacific",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_indian",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_arctic",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        #list(name="reccap2_southern",
+                        #     cdo_mask=paste0("-eqc,5 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
+                        # gregor_etal_2019 basins:
+                        #list(name="g19_NH-HL",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+                        #list(name="g19_NH-ST",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+                        #list(name="g19_EQU",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+                        #list(name="g19_SH-ST",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+                        #list(name="g19_SH-HL",
+                        #     cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
+    areas_out_list <- list(list(name="45to70S",
+                                sellonlatbox=c(lon1=0,lon2=358.125,lat1=-70,lat2=-45)))
 
-} else if (T) { # awi-esm-1-1-lr_kh800 ssp126
+} else if (F) { # awi-esm-1-1-lr_kh800 ssp126
     #models <- "echam6"
     models <- "fesom"
     # echam
@@ -2032,16 +2193,19 @@ if (F) { # old hist
 
 } else if (F) { # awi-esm-1-1-lr_kh800 ssp585
     models <- "echam6"
-    #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585b/outdata/echam"
-    #fpatterns <- "ssp585b_<year><mon>.01_echam"
-    #fpatterns <- "ssp585b_<year><mon>.01_co2"
-    #prefixes <- "awi-esm-1-1-lr_kh800_ssp585b"
-    datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/echam"
-    #fpatterns <- "ssp585_<year><mon>.01_echam"
-    fpatterns <- "ssp585_<year><mon>.01_co2"
-    prefixes <- "awi-esm-1-1-lr_kh800_ssp585"
+    #models <- "fesom"
+    # echam echamstream
+    fpatterns <- "ssp585_<year><mon>.01_echam"
+    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/echam", glob2rx("*_echam"), full.names=T))
     #codes <- 167
     #varnamesin <- "temp2"
+    #codes <- 165
+    #varnamesin <- "u10"
+    codes <- 166
+    varnamesin <- "v10"
+    # echam co2stream
+    #fpatterns <- "ssp585_<year><mon>.01_co2"
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/echam", glob2rx("*_co2"), full.names=T))
     #codes <- 6
     #varnamesin <- "co2_flx_land"
     #codes <- 7
@@ -2052,11 +2216,33 @@ if (F) { # old hist
     #varnamesin <- "co2_flx_harvest"
     #varnamesin <- "fgco2"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
+    #varnamesin <- "co2_flx_total"
+    # fesom recom
+    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+    #varnamesin <- "tos"
+    #varnamesin <- "thetao"
+    #varnamesin <- "so"
+    #varnamesin <- "mlotst"
+    #varnamesin <- "sic"
+    #varnamesin <- "pCO2s" 
+    #varnamesin <- "dpCO2s" 
+    #varnamesin <- "CO2f" 
+    #varnamesin <- "bgc02" # dic
+    #varnamesin <- "bgc03" # talk
+    #varnamesin <- "bgc22" # oxygen
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/fesom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
+    #cdoshifttimes <- "-dt" # for fesom
+    prefixes <- "awi-esm-1-1-lr_kh800_ssp585"
+    #cdo_before_calcs <- "-monmean"
+    #cdo_before_calcs <- "-yearmean"
+    modes <- "select"
+    #modes <- "ymonmean"
     #modes <- "fldmean"
-    modes <- "fldint"
-    froms <- 2015
-    tos <- 2019
+    #modes <- "fldint"
+    #froms <- 2015
+    froms <- 2081
+    #tos <- 2019
+    tos <- 2100
 
 } else if (F) { # awi-esm-1-1-lr_kh800 og esm-piControl test
     models <- "echam6"
@@ -2083,13 +2269,49 @@ if (F) { # old hist
     models <- "echam6"
     #models <- "jsbach"
     #models <- "fesom"
+    #models <- "recom"
+    #codes <- 167
+    #varnamesin <- "temp2"
+    #codes <- 1
+    #varnamesin <- "CO2"
+    #codes <- 5
+    #varnamesin <- "co2_flux" # lcc and harvest missing
+    #codes <- 6
+    #varnamesin <- "co2_flx_land" # = npp + resp + herb + fire
+    #codes <- 7
+    #varnamesin <- "co2_flx_ocean"
+    #varnamesin <- "fgco2"
+    #codes <- 9
+    #varnamesin <- "co2_burden_corr_acc2"
+    #codes <- 21
+    #varnamesin <- "co2_flx_npp"
+    #codes <- 22
+    #varnamesin <- "co2_flx_resp"
+    #codes <- 24
+    #varnamesin <- "co2_flx_lcc"
+    codes <- 25
+    varnamesin <- "co2_flx_harvest"
+    #varnamesin <- "nbp" # = co2_flx_land + co2_flx_lcc + co2_flx_harvest
+    #varnamesin <- "co2_flx_total" # = fgco2 + nbp
+    #varnamesin <- "boxC_green"
+    #codes <- 12
+    #varnamesin <- "cover_fract"
+    #codes <- 20
+    #varnamesin <- "veg_ratio_max"
+    # fesom recom
+    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+    #varnamesin <- "tos"
+    #varnamesin <- "thetaoga"
+    #varnamesin <- "siarean"
+    #varnamesin <- "siareas"
+    #varnamesin <- "aCO2"
+    #varnamesin <- "pCO2a"
     if (F) {
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/echam"
         #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/fesom"
         #fpatterns <- "esm-piControl_2685_<year><mon>.01_g3bmon"
         #fpatterns <- "esm-piControl_2685_<year><mon>.01_tracermon"
         fpatterns <- "esm-piControl_2685_<year><mon>.01_co2mon"
-        #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_2percatm"
     } else if (F) {
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2percfalse/outdata/echam"
@@ -2103,7 +2325,6 @@ if (F) { # old hist
         #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/echam"
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_co2fsign/outdata/fesom"
         #fpatterns <- "esm-piControl_co2fsign_<year><mon>.01_co2mon"
-        fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_co2fsign"
     } else if (F) {
         #datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_restartall/outdata/echam"
@@ -2116,58 +2337,78 @@ if (F) { # old hist
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/echam"
         fpatterns <- "esm-piControl_<year><mon>.01_co2mon"
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl"
-    } else if (T) {
-        datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/echam"
-        fpatterns <- "esm-piControl_wout_talk_rest_<year><mon>.01_co2mon"
+    } else if (F) {
+        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl2/outdata/fesom", 
+                                 pattern=paste0("^", varnamesin), full.names=T))
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl2"
+    } else if (F) {
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest"
+        if (T) { # echam
+            files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/echam", 
+                                     pattern="_echam$", full.names=T))
+            fpatterns <- "esm-piControl_wout_talk_rest_<year><mon>.01_echam"
+        } else if (F) { # fesom
+            files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/fesom", 
+                                     pattern=paste0("^", varnamesin), full.names=T))
+            #fpatterns <- "esm-piControl_wout_talk_rest_<year><mon>.01_co2mon"
+        }
+    } else if (T) {
+        #prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest2"
+        prefixes <- "neg_co2_3879"
+        if (T) { # echam
+            #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/echam", 
+            #                         pattern="_echamday$", full.names=T))
+            #fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_echamday"
+            #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/echam", 
+            #                         pattern="_echam$", full.names=T))
+            #fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_echam"
+            #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/echam", 
+            #                         pattern="_co2$", full.names=T))
+            #fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_co2"
+            #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/run_38790101-38791231/work",
+            #                         pattern="_co2$", full.names=T))
+            #fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_co2"
+            files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/neg_co2_3879/run_38790101-38791231/work",
+                                     pattern="_co2day$", full.names=T))
+            fpatterns <- "neg_co2_3879_<year><mon>.01_co2day"
+        } else if (F) { # fesom recom
+            files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/", models), 
+                                     pattern=paste0("^", varnamesin), full.names=T))
+        }
     }
-    #codes <- 167
-    #varnamesin <- "temp2"
-    #codes <- 1
-    #varnamesin <- "CO2"
     #cdo_after_calcs <- "-setunit,ppm -mulc,658267" # [CO2] (in ppm) = 1e6 * 0.658267 * co2mmr
-    #sellevels <- 1 
+    cdo_after_calcs <- "-setunit,\"gC m-2 yr-1\" -mulc,365.25 -mulc,86400 -divc,3.664191 -mulc,100" # kgCO2 m-2 s-1 -> gC m-2 yr-1
     #sellevels <- "0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,18000,19000,20000,21000,22000,23000,24000,25000,26000"
-    #codes <- 5
-    #varnamesin <- "co2_flux"
-    #codes <- 6
-    #varnamesin <- "co2_flx_land"
-    codes <- 7
-    varnamesin <- "co2_flx_ocean"
-    #codes <- 9
-    #varnamesin <- "co2_burden_corr_acc2"
-    #codes <- 21
-    #varnamesin <- "co2_flx_npp"
-    #codes <- 22
-    #varnamesin <- "co2_flx_resp"
-    #codes <- 24
-    #varnamesin <- "co2_flx_lcc"
-    #codes <- 160
-    #varnamesin <- "boxC_green"
-    #codes <- 12
-    #varnamesin <- "cover_fract"
-    #codes <- 20
-    #varnamesin <- "veg_ratio_max"
-    #varnamesin <- "thetaoga"
-    #varnamesin <- "aCO2"
-    #cdoshifttimes <- "-dt" # for fesom
-    #modes <- "select"
+    #sellevels <- 1 
+    #cdoshifttimes <- "-dt" # for fesom monthly or daily
+    #cdo_before_calcs <- "-monmean"
+    modes <- "select"
     #modes <- "timmean"
     #modes <- "fldmean"
     #modes <- "fldsum"
-    modes <- "fldint"
+    #modes <- "fldint"
     #froms <- 2685 # last piControl og year
     #froms <- 2686 # esm-piControl start from piControl
     #froms <- 2778
     #froms <- 2817
     #froms <- 3001 # esm-piControl start from piControl_LUtrans1850
-    froms <- 3151 # esm-piControl_wout_talk_restore
+    #froms <- 3151 # esm-piControl_wout_talk_restore
+    #froms <- 3208
+    froms <- 3879
     #tos <- 2687
     #tos <- 2785 # esm-piControl 100 years
     #tos <- 2962
     #tos <- 3112
     #tos <- 3136
-    tos <- 3156
+    #tos <- 3156
+    #tos <- 3168
+    #tos <- 3208
+    #tos <- 3227
+    #tos <- 3497
+    #tos <- 3590
+    #tos <- 3859
+    tos <- 3879
+    #areas_out_list <- list(list(name="NH", sellonlatbox=c(lon1=0,lon2=360,lat1=0,lat2=90)))
     #areas_out_list <- list(list(name="SO45S",
     #                            sellonlatbox=c(lon1=0,lon2=360,lat1=-45,lat2=-90)))
 
@@ -2458,15 +2699,15 @@ if (F) { # old hist
                         #list(name="reccap2_so_ice",
                         #     cdo_mask=paste0("-eqc,3 -select,name=southern ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
                         # gregor_etal_2019 basins:
-                        #list(name="gregor_etal_2019_nh-hl",
+                        #list(name="g19_NH-HL",
                         #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
-                        #list(name="gregor_etal_2019_nh-st",
+                        #list(name="g19_NH-ST",
                         #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
-                        #list(name="gregor_etal_2019_equ",
+                        #list(name="g19_EQU",
                         #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
-                        #list(name="gregor_etal_2019_sh-st",
+                        #list(name="g19_SH-ST",
                         #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
-                        list(name="gregor_etal_2019_sh-hl",
+                        list(name="g19_SH-HL",
                              cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_T63.nc")))
 
 
@@ -2585,15 +2826,15 @@ if (F) { # old hist
     #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="reccap2_sp_stps"))
     #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,6 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_", models[i], ".nc")
     # gregor_etal_2019 basins:
-    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="gregor_etal_2019_nh-hl"))
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="g19_NH-HL"))
     #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_", models[i], ".nc")
-    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="gregor_etal_2019_nh-st"))
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="g19_NH-ST"))
     #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_", models[i], ".nc")
-    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="gregor_etal_2019_equ"))
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="g19_EQU"))
     #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_", models[i], ".nc")
-    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="gregor_etal_2019_sh-st"))
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="g19_SH-ST"))
     #for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_", models[i], ".nc")
-    mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="gregor_etal_2019_sh-hl"))
+    mask_list <- lapply(vector("list", l=length(models)), base::append, list(name="g19_SH-HL"))
     for (i in seq_along(mask_list)) mask_list[[i]]$cdo_mask <- paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_", models[i], ".nc")
 
 # ======================================================
@@ -2614,36 +2855,131 @@ if (F) { # old hist
 
 # ======================================================
 # special: cmip6 nml created by ~/slurm/cronjobs/filter_esgf_lists.r
-} else if (F) { # 27 levels
-    post_force <- T # for test
+} else if (T) { 
+    post_force <- F
     if (F) { # piControl test
         fnml <- "~/slurm/cronjobs/namelist.post_24settings_Omon_fgco2_23models_piControl_2-2nyears_2022-05-05_12-19-46.r"
     } else if (F) { # piControl
         fnml <- "~/slurm/cronjobs/namelist.post_23settings_Omon_fgco2_23models_piControl_251-251nyears_2022-05-06_09-04-39.r"
     } else if (F) { # historical test
         fnml <- "~/slurm/cronjobs/namelist.post_29settings_Omon_fgco2_29models_historical_2-2nyears_2022-05-06_09-48-29.r"
-    } else if (F) { # historical
-        fnml <- "~/slurm/cronjobs/namelist.post_29settings_Omon_fgco2_29models_historical_165-165nyears_2022-05-06_09-45-36.r"
-    } else if (T) { # ssp126
+    } else if (F) { # historical tos
+        fnml <- "~/slurm/cronjobs/namelist.post_61settings_Omon_tos_61models_historical_165-165nyears_2022-09-28_17-27-53.r"
+    } else if (F) { # historical mlotst
+        fnml <- "~/slurm/cronjobs/namelist.post_44settings_Omon_mlotst_44models_historical_165-165nyears_2022-09-16_09-29-25.r"
+    } else if (F) { # historical spco2
+        fnml <- "~/slurm/cronjobs/namelist.post_19settings_Omon_spco2_19models_historical_165-165nyears_2022-07-15_18-07-18.r"
+    } else if (F) { # historical dpco2
+        fnml <- "~/slurm/cronjobs/namelist.post_14settings_Omon_dpco2_14models_historical_165-165nyears_2022-07-15_17-56-02.r"
+    } else if (F) { # historical dissic
+        fnml <- "~/slurm/cronjobs/namelist.post_19settings_Omon_dissic_19models_historical_165-165nyears_2022-09-29_17-01-37.r"
+    } else if (F) { # historical talk
+        fnml <- "~/slurm/cronjobs/namelist.post_20settings_Omon_talk_20models_historical_165-165nyears_2022-09-29_17-19-58.r"
+    } else if (T) { # historical fgco2
+        #fnml <- "~/slurm/cronjobs/namelist.post_29settings_Omon_fgco2_29models_historical_165-165nyears_2022-05-06_09-45-36.r"
+        fnml <- "~/slurm/cronjobs/namelist.post_29settings_Omon_fgco2_29models_historical_165-165nyears_2022-09-09_09-10-59.r"
+    } else if (F) { # ssp126
         fnml <- "~/slurm/cronjobs/namelist.post_16settings_Omon_fgco2_16models_ssp126_86-86nyears_2022-05-10_16-33-40.r"
     }
     if (!file.exists(fnml)) stop("could not find file ", fnml)
     message("run `source(\"", fnml, "\")` ...")
     source(fnml)
-    # which mode
+
+    # remove incomplete/wrong data
+    inds <- which(models == "EC-Earth3") # only until 2007 data
+    if (length(inds) > 0) { 
+        models <- models[-inds]; files <- files[-inds]; fpatterns <- fpatterns[-inds]
+        prefixes <- prefixes[-inds]; varnamesin <- varnamesin[-inds]
+        froms <- froms[-inds]; tos <- tos[-inds]
+    }
+    inds <- which(varnamesin == "dpco2" & models == "CESM2-WACCM-FV2") # only 1900-1999 data
+    if (length(inds) > 0) { 
+        models <- models[-inds]; files <- files[-inds]; fpatterns <- fpatterns[-inds]
+        prefixes <- prefixes[-inds]; varnamesin <- varnamesin[-inds]
+        froms <- froms[-inds]; tos <- tos[-inds]
+    }
+    inds <- which(varnamesin == "dissic" & models == "GISS-E2-1-G" | # wrong
+                                           models == "NorESM2-LM") # only 1850-1859
+    if (length(inds) > 0) { 
+        models <- models[-inds]; files <- files[-inds]; fpatterns <- fpatterns[-inds]
+        prefixes <- prefixes[-inds]; varnamesin <- varnamesin[-inds]
+        froms <- froms[-inds]; tos <- tos[-inds]
+    }
+    inds <- which(varnamesin == "talk" & models == "GISS-E2-1-G" |  # wrong
+                                         models == "NorCPM1") # wrong historical dates 2015-2029
+    if (length(inds) > 0) { 
+        models <- models[-inds]; files <- files[-inds]; fpatterns <- fpatterns[-inds]
+        prefixes <- prefixes[-inds]; varnamesin <- varnamesin[-inds]
+        froms <- froms[-inds]; tos <- tos[-inds]
+    }
+    
+    sellevsidx <- rep(NA, t=length(models))
+    inds <- which(varnamesin == "dissic" | varnamesin == "talk")
+    if (length(inds) > 0) sellevsidx[inds] <- 1 # select first level = closest to surface surface
+
+    froms <- rep(1982, t=length(models))
+    #froms <- rep(1990, t=length(models))
+    #tos <- rep(1982, t=length(models))
+    #tos <- rep(1990, t=length(models))
+    #modes <- rep("select", t=length(models))
+    #modes <- rep("timmean", t=length(models))
+    #modes <- rep("fldmean", t=length(models))
     modes <- rep("fldint", t=length(models))
-    # do spatial interpolation if necessary
-    cdo_before_calcs <- rep("", t=length(models))
-    indsmode <- which(!is.na(match(modes, c("fldmean", "fldint"))))
-    if (length(indsmode) > 0) {
-        indsmodel <- which(!is.na(match(models, c("BCC-ESM1", "BCC-CSM2-MR"))))
-        if (length(indsmodel) > 0) {
-            indsmatch <- match(indsmodel, indsmode)
-            if (length(indsmatch) > 0) {
-                cdo_before_calcs[indsmatch] <- "-remapbil,global_1"
-            }
+    
+    # additional cmds
+    cdo_after_sels <- cdo_before_calcs <- cdo_after_calcs <- rep("", t=length(models))
+    
+    # spatial interpolation
+    cdo_after_sels <- paste0("-remapycon,global_1", cdo_after_sels)
+    #cdo_after_calcs <- rep("-remapycon,global_1", t=length(models))
+    if (any(grepl("remapycon", cdo_after_sels)) || any(grepl("remapycon", cdo_after_calcs))) {
+        inds <- which(grepl("^BCC|^CAMS|^CanESM|^CMCC|^CNRM|^EC-Earth3|^FGOALS|^HadGEM3|^IITM|^IPSL|^MCM-UA-1-0|^MPI-ESM|^NESM|^NorESM2|^UKESM", models)) 
+        # remapycon does not work for those ocean models:
+        # licom3.0:           FGOALS*
+        # micom:              NorESM2* (NorCPM1 uses micom1.1 which works)
+        # mom4:               BCC*, CAMS*, IITM-*
+        # nemo3.4.1:          CanESM*, NESM*
+        # nemo3.6:            CMCC*, CNRM*, EC-Earth3*
+        # nemo-HadGEM3-GO6.0: HadGEM3*, UKESM*
+        # nemo-opa:           IPSL*
+        # mpiom1.63:          MPI-ESM*
+        # unclear:            MCM-UA-1-0
+        # todo: KIOST-ESM both remapycon and remapnn look strange
+        # --> use remapnn
+        if (length(inds) > 0) {
+            if (any(cdo_after_sels != "")) cdo_after_sels[inds] <- "-remapnn,global_1" 
+            if (any(cdo_after_calcs != "")) cdo_after_calcs[inds] <- "-remapnn,global_1" 
         }
     }
+    # --> yield 360x180 with lons from -179.5
+   
+    # special treatment of bad esgf data
+    if (all(varnamesin == "dpco2") || all(varnamesin == "spco2") || all(varnamesin == "fgco2")) {
+        inds <- which(!is.na(match(models, c("GISS-E2-1-G", "NorCPM1"))))
+        if (length(inds) > 0) cdo_after_sels[inds] <- paste0(cdo_after_sels[inds], " -setctomiss,0")
+    }
+    inds <- which(models == "E3SM-1-0")
+    if (length(inds) > 0) cdo_after_sels[inds] <- paste0(cdo_after_sels[inds], " -setctomiss,1")
+    inds <- which(models == "FGOALS-f3-L")
+    if (length(inds) > 0) cdo_after_sels[inds] <- paste0(cdo_after_sels[inds], " -setctomiss,1e+35")
+    inds <- which(!is.na(match(models, c("KIOST-ESM"))))
+    if (length(inds) > 0) cdo_after_sels[inds] <- paste0(cdo_after_sels[inds], " -setctomiss,nan")
+    
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, 
+                        # gregor_etal_2019 basins:
+                        #list(name="g19_NH-HL",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_NH-ST",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_EQU",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_SH-ST",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_SH-HL",
+                        #     cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+    areas_out_list <- lapply(vector("list", l=length(models)), base::append, 
+                             list(name="45to70S",
+                                  sellonlatbox=c(lon1=-179.5,lon2=179.5,lat1=-70,lat2=-45)))
 
 } # which setting
 

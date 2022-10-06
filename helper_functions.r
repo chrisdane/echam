@@ -4,24 +4,28 @@
 get_host <- function(verbose=F) {
     message("******* get_host() *******")
     hostname <- Sys.info()["nodename"] # = system("hostname", intern=T)
-    if (any(sapply(c("ollie", "prod-", "fat-"), grepl, hostname))) {
+    if (any(sapply(c("ollie", "prod-", "fat-"), grepl, hostname))) { # ollie
         machine_tag <- "ollie"
         homepath <- "~/scripts/r"
         workpath <- paste0("/work/ollie/", Sys.info()["user"])
     } else if (any(sapply(c("mlogin", 
                             "mistralpp", 
-                            "m[0-9][0-9][0-9][0-9][0-9]"), # compute nodes: m12345 
+                            "m[0-9][0-9][0-9][0-9][0-9]"), # mistral; compute nodes: m12345 
                           grepl, hostname))) {
         machine_tag <- "mistral"
         homepath <- "~/scripts/r"
         #workpath <- paste0("/work/ba0941/", Sys.info()["user"])
         #workpath <- paste0("/work/ab0246/", Sys.info()["user"])
         workpath <- paste0("/work/ba1103/", Sys.info()["user"])
-    } else if (any(sapply(c("paleosrv1", "fu-"), grepl, hostname))) {
+    } else if (any(sapply(c("levante"), grepl, hostname))) { # levante
+        machine_tag <- "levante"
+        homepath <- "~/scripts/r"
+        workpath <- paste0("/work/ba1103/", Sys.info()["user"])
+    } else if (any(sapply(c("paleosrv1", "fu-"), grepl, hostname))) { # paleosrv
         machine_tag <- "paleosrv"
         homepath <- "~/scripts/r"
         workpath <- paste0("/isibhv/projects/paleo_work/", Sys.info()["user"])
-    } else if (any(sapply("stan", grepl, hostname))) {
+    } else if (any(sapply("stan", grepl, hostname))) { # stan
         machine_tag <- "stan"
         homepath <- "~/scripts/r"
         workpath <- paste0("/ace/user/", Sys.info()["user"])

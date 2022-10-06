@@ -704,7 +704,7 @@ if (T && file.exists(f)) {
         message("dont add gygy lake to PLOT_coords_cmd_list")
     }
     col <- "black"
-    if (varnames_in[1] == "lm_wisoaprt_d_post_as_time_slope") { # blue letters for significant negative holocene trends
+    if (varnamesin[1] == "lm_wisoaprt_d_post_as_time_slope") { # blue letters for significant negative holocene trends
         message("special lm_wisoaprt_d_post_as_time_slope blue PLOT letters in PLOT_coords_cmd_list")
         col <- "blue"
     }
@@ -1211,7 +1211,7 @@ if (T && file.exists(f)) {
                                     "\". dont know which one to use")
     eval(parse(text=paste0("comas_bru_etal_2020_sisal_d18o_precip <- ", datnames)))
     # remove "Soreq cave" and "Klapferloch cave" since they are already in Iso2k 1.0.0
-    if (all(varnames_in == "lm_wisoaprt_d_post_as_time_slope")) {
+    if (all(varnamesin == "lm_wisoaprt_d_post_as_time_slope")) {
         inds <- which(!is.na(match(sapply(comas_bru_etal_2020_sisal_d18o_precip, "[[", "loc"), 
                                    c("Soreq cave", "Klapferloch cave"))))
         if (length(inds) > 0) {

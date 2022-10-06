@@ -41,7 +41,7 @@ for (r in requirements) {
 ## check user input from plot namelist
 
 # check if must-have objects are set by user and are of correct length
-objs <- c("prefixes", "models", "names_short", "fromsf", "tosf", "varnames_in", "modes")
+objs <- c("prefixes", "models", "names_short", "fromsf", "tosf", "varnamesin", "modes")
 for (obj in objs) if (!exists(obj)) stop("provide `", obj, "` in plot namelist")
 nsettings <- length(prefixes)
 for (i in seq_along(objs)) {
@@ -311,11 +311,6 @@ lastfiles_plot_fname <- paste0(normalizePath(dirname(lastfiles_plot_fname)), "/"
 message("\ncreate file for storing plotnames \"", lastfiles_plot_fname, "\" ...")
 invisible(file.create(lastfiles_plot_fname)) # error if no success
 
-# allocate
-datas <- vector("list", l=nsettings)
-names(datas) <- names_short
-data_infos <- dims <- dims_of_settings <- ll_data <- poly_data <- datas
-
 
 # load pangaea data if defined 
 if (load_pangaea_data) {
@@ -341,7 +336,11 @@ if (plot_special_data) {
     message("\nenable here to plot special data via plot_special_data.r ...")
 }
 
-# read data
+
+# read model data
+datas <- vector("list", l=nsettings) 
+names(datas) <- names_short
+data_infos <- dims <- dims_of_settings <- ll_data <- poly_data <- datas # allocate
 inpaths <- fnames <- rep(NA, t=nsettings)
 mtimes <- as.POSIXct(Sys.time()) # placeholder
 message("\n===================================\nread model data ...")
@@ -349,9 +348,9 @@ for (i in seq_len(nsettings)) {
 
     message("\n*********************************************")
     message("setting ", i, "/", nsettings, ": ", names_short[i], " ...")
-    inpath <- paste0(postpaths[i], "/", models[i], "/", modes[i], "/", varnames_in[i])
+    inpath <- paste0(postpaths[i], "/", models[i], "/", modes[i], "/", varnamesin[i])
     fname <- paste0(prefixes[i], "_", models[i], "_", modes[i], 
-                    codesf[i], "_", varnames_in[i], 
+                    codesf[i], "_", varnamesin[i], 
                     levsf[i], depthsf[i], "_",
                     areas[i])
     if (seasonsf[i] != "") fname <- paste0(fname, "_", seasonsf[i])
@@ -364,6 +363,7 @@ for (i in seq_len(nsettings)) {
     mtimes[i] <- file.info(paste0(inpath, "/", fname))$mtime
         
     message("\nopen ", inpath, "/", fname, " ...")
+    if (!file.exists(paste0(inpath, "/", fname))) stop("file does not exist")
     ncin <- nc_open(paste0(inpath, "/", fname))
 
     # get dims of file
@@ -735,7 +735,7 @@ for (i in seq_len(nsettings)) {
             if (!is.na(fromsp[i])) {
                 message("fromsp is given --> fromsp[", i, "] = ", fromsp[i])
                 fromind <- which(timein_lt$year + 1900 == fromsp[i])[1]
-                if (length(fromind) == 0) {
+                if (is.na(fromind) || length(fromind) == 0) {
                     stop("could not find this year in input time")
                 }
             }
@@ -743,7 +743,7 @@ for (i in seq_len(nsettings)) {
                 message("tosp is given --> tosp[", i, "] = ", tosp[i])
                 toind <- which(timein_lt$year + 1900 == tosp[i])
                 toind <- toind[length(toind)]
-                if (length(toind) == 0) {
+                if (is.na(toind) || length(toind) == 0) {
                     stop("could not find this year in input time")
                 }
             }
@@ -915,7 +915,7 @@ for (i in seq_len(nsettings)) {
     if (any(names(dims[[i]]) == "lon") && any(names(dims[[i]]) == "lat")) {
         
         ll_fnames <- ll_vars <- "" # default: do not load additional lon,lat model data if wanted
-        if (F && grepl("cosmos-aso-wiso_Hol-T", prefixes[i]) && varnames_in[i] == "lm_tsurf_as_time_slope") {
+        if (F && grepl("cosmos-aso-wiso_Hol-T", prefixes[i]) && varnamesin[i] == "lm_tsurf_as_time_slope") {
             ll_vars <- "lm_SICOMO_as_time_slope" # multiple possible
             ll_fnames <- paste0(postpaths[i], "/mpiom1/select/", ll_vars, "/",
                                "cosmos-aso-wiso_Hol-T_remapcon2_r3600x1800_grb_mpiom1_select_selcode_15_", 
@@ -1019,7 +1019,7 @@ for (i in seq_len(nsettings)) {
         
         poly_fnames <- poly_vars <- "" # default: do not load additional lon,lat model data if wanted
         if (F && grepl("cosmos-aso-wiso_Hol-T", prefixes[i]) && 
-            varnames_in[i] == "lm_tsurf_as_time_slope") {
+            varnamesin[i] == "lm_tsurf_as_time_slope") {
             poly_vars <- list(c(lon="grid_corner_lon", lat="grid_corner_lat",
                                 data="lm_THO_as_time_slope")) # multiple lon,lat,data-vectors possible
             poly_fnames <- list(c(lon=paste0(host$repopath, "/mpiom/GR30s.nc"),
@@ -1457,8 +1457,8 @@ for (i in seq_len(nsettings)) {
         if (vars_per_file[vi] == paste0("var", codes[i])) {
             message("variable name of variable \"", vars_per_file[vi], 
                     "\" equals \"var`codes[", i, "]`\" = \"var", codes[i], 
-                    "\". use `varnames_in[", i, "]` = \"", varnames_in[i], "\" from now on ...")
-            names(vars)[vi] <- varnames_in[i]
+                    "\". use `varnamesin[", i, "]` = \"", varnamesin[i], "\" from now on ...")
+            names(vars)[vi] <- varnamesin[i]
         } else {
             names(vars)[vi] <- vars_per_file[vi]
         }
@@ -1493,7 +1493,7 @@ for (i in seq_len(nsettings)) {
 
         # use my dimnames, not original dimnames
         dimnames <- match(dimnames, dims_of_settings[[i]])
-        if (any(is.na(dimnames))) stop("this should not happen")
+        if (any(is.na(dimnames))) stop("this should not happen; maybe add variable \"", vars_per_file[vi], "\" to `ignore_vars` in namelist.general.plot.r")
         dimnames <- names(dims_of_settings[[i]][dimnames]) # e.g. "TIME" --> "time"
         
         # set proper attributes to data object
@@ -2232,14 +2232,15 @@ if (F) { # for testing
 # set variable specific things
 message("\ndefine mutliplication factors and text for unit labels for specific variables ...")
 for (i in seq_len(nsettings)) {
-    message("setting ", i, "/", nsettings, ": ", prefixes[i], " ", names_short[i], " ...")
+    message("********************************************************\n",
+            "setting ", i, "/", nsettings, ": ", prefixes[i], " ", names_short[i], " ...")
     
     for (vi in seq_along(datas[[i]])) {
 
         varname <- names(datas[[i]])[vi]
         message("variable ", vi, "/", length(datas[[i]]), ": ", varname, ":")
         cat(capture.output(str(data_infos[[i]][[vi]])), sep="\n")
-        
+            
         # default: dont apply any factor
         data_infos[[i]][[vi]]$offset$operator <- NULL 
         data_infos[[i]][[vi]]$offset$value <- NULL
@@ -2706,12 +2707,69 @@ for (i in seq_len(nsettings)) {
                 } else {
                     message("kgCO2 m-2 -> ppm")
                     data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*", "*", "/", "/")
-                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, Aearth, 0.272912, 1e12, 2.124) # m2->fldint, kgCO2->kgC; kgC->PgC; PgC->ppm
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, Aearth, 0.272912, 1e12, 2.124) # m-2->fldint, kgCO2->kgC; kgC->PgC; PgC->ppm
                 }
             }
 
-        # carbon fluxes 
-        } else if (any(varname == c("fgco2", "nbp", "netAtmosLandCO2Flux", "co2_flx_total"))) {
+        } else if (grepl("spco2", varname)) {
+            if (grepl("gregor_and_fay_2021", models[i])) {
+                data_infos[[i]][[vi]]$units <- "µatm"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " [µatm]"))))
+                if (F) { # µatm --> Pa
+                    message("µatm --> Pa") # Pa = atm * 101325
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6, 101325) # µatm -> atm; atm -> Pa
+                    data_infos[[i]][[vi]]$units <- "Pa"
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " [Pa]"))))
+                }
+            } else { # cmip6
+                data_infos[[i]][[vi]]$units <- "Pa"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " [Pa]"))))
+                if (T) { # Pa --> µatm
+                    message("Pa --> µatm") # Pa = atm * 101325
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 101325, 1e6) # Pa --> atm; atm -> µatm
+                    data_infos[[i]][[vi]]$units <- "µatm"
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " [µatm]"))))
+                }
+            }
+
+        } else if (grepl("dpco2", varname)) {
+            if (grepl("gregor_and_fay_2021", models[i])) {
+                data_infos[[i]][[vi]]$units <- "µatm"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " - p"["CO2,atm"], " [µatm]"))))
+                if (F) { # µatm --> Pa
+                    message("µatm --> Pa") # Pa = atm * 101325
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6, 101325) # µatm -> atm; atm -> Pa
+                    data_infos[[i]][[vi]]$units <- "Pa"
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " - p"["CO2,atm"], " [Pa]"))))
+                }
+            } else { # cmip6
+                data_infos[[i]][[vi]]$units <- "Pa"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " - p"["CO2,atm"], " [Pa]"))))
+                if (T) { # Pa --> µatm
+                    message("Pa --> µatm") # Pa = atm * 101325
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 101325, 1e6) # Pa --> atm; atm -> µatm
+                    data_infos[[i]][[vi]]$units <- "µatm"
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " - p"["CO2,atm"], " [µatm]"))))
+                }
+            }
+        
+        } else if (varname == "apco2") {
+            data_infos[[i]][[vi]]$units <- "Pa"
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,air"], " [Pa]"))))
+            if (T) { # Pa --> µatm
+                message("Pa --> µatm") # Pa = atm * 101325
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 101325, 1e6) # Pa --> atm; atm -> µatm
+                data_infos[[i]][[vi]]$units <- "µatm"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,air"], " [µatm]"))))
+            }
+
+        # cmip6 carbon fluxes
+        } else if (any(sapply(c("fgco2", "nbp", "netAtmosLandCO2Flux", "co2_flx_total"), grepl, varname))) {
             if (grepl("reccap2", prefixes[i])) {
                 data_infos[[i]][[vi]]$units <- "molC m-2 s-1" # >0: downward
                 if (models[i] == "CCSM-WHOI") {
@@ -2745,14 +2803,14 @@ for (i in seq_len(nsettings)) {
             
             } else if (grepl("gregor_and_fay_2021", models[i])) {
                 data_infos[[i]][[vi]]$units <- "molC m-2 yr-1" # >0: upward
-                if (varname == "fgco2") {
+                if (grepl("fgco2", varname)) {
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [molC m"^paste(-2), " yr"^paste(-1), "] (>0 into atm)"))))
                 }
                 if (T) { # convert carbon units
                     message(">0: upward --> downward")
                     data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
                     data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, -1) # >0: upward --> downward
-                    if (varname == "fgco2") {
+                    if (grepl("fgco2", varname)) {
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [molC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
                     }
                     if (grepl("fldint", modes[i])) {
@@ -2760,21 +2818,27 @@ for (i in seq_len(nsettings)) {
                         data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*", "/", "/")
                         data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 12.0107, 1e3, 1e12) # molC-->gC, gC-->kg, kg->Pg
                         data_infos[[i]][[vi]]$units <- "PgC yr-1"
-                        if (varname == "fgco2") {
+                        if (grepl("fgco2", varname)) {
                             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
                         }
                     } else {
-                        stop("not yet")
+                        message("molC --> gC")
+                        data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                        data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 12.0107) # molC-->gC, gC-->kg, kg->Pg
+                        data_infos[[i]][[vi]]$units <- "gC m-2 yr-1"
+                        if (grepl("fgco2", varname)) {
+                            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [gC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+                        }
                     }
                 } # convert carbon units
 
-            } else { # echam default: original units kgC m-2 s-1
-                data_infos[[i]][[vi]]$units <- "kgC m-2 s-1" # >0: downward
-                if (varname == "fgco2") {
+            } else { # cmip6: kgC m-2 s-1; >0: downward
+                data_infos[[i]][[vi]]$units <- "kgC m-2 s-1" 
+                if (varname == "fgco2") { 
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean)"))))
                 } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into land)"))))
-                } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp !
+                } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp
                     data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [kgC m"^paste(-2), " s"^paste(-1), "] (>0 into ocean/land)"))))
                 }
                 if (T) { # convert carbon units
@@ -2802,7 +2866,17 @@ for (i in seq_len(nsettings)) {
                             data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean/land)"))))
                         }
                     } else {
-                        stop("not yet")
+                        message("co2_flux: kg --> g")
+                        data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "*")
+                        data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3) # kg -> g
+                        data_infos[[i]][[vi]]$units <- "gC m-2 yr-1"
+                        if (varname == "fgco2") {
+                            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [gC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+                        } else if (any(varname == c("nbp", "netAtmosLandCO2Flux"))) {
+                            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-land CO"[2], " flux [gC m"^paste(-2), " yr"^paste(-1), "] (>0 into land)"))))
+                        } else if (varname == "co2_flx_total") { # my own definition = fgco2 + nbp
+                            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("total CO"[2], " flux [gC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean/land)"))))
+                        }
                     }
                 } # convert carbon units
             } # which model
@@ -2863,19 +2937,19 @@ for (i in seq_len(nsettings)) {
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NPP [mmolC m"^paste(-2), " d"^paste(-1), "]"))))
             }
             if (T) {
-                message("mmolC --> molC; molC -> gC; gc -> kgC; d-1 --> yr-1")
-                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*", "/", "*")
-                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3, 12.0107, 1e3, 365.25) # mmolC -> molC; molC -> gC; gc -> kgC; d-1 -> yr-1; 
-                data_infos[[i]][[vi]]$units <- "kgC m-2 yr-1"
+                message("mmolC --> molC; molC -> gC; d-1 --> yr-1")
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*", "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3, 12.0107, 365.25) # mmolC -> molC; molC -> gC; d-1 -> yr-1; 
+                data_infos[[i]][[vi]]$units <- "gC m-2 yr-1"
                 if (varname == "CO2f") {
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [kgC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [gC m"^paste(-2), " yr"^paste(-1), "] (>0 into ocean)"))))
                 } else if (varname == "NPP") {
-                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NPP [kgC m"^paste(-2), " yr"^paste(-1), "]"))))
+                    data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NPP [gC m"^paste(-2), " yr"^paste(-1), "]"))))
                 }
                 if (modes[i] == "fldint") {
-                    message("kgC --> PgC")
-                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/")
-                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e12) # kg -> Pg
+                    message("gC --> kgC; kgC --> PgC")
+                    data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "/")
+                    data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e3, 1e12) # gC --> kgC; kgC -> PgC
                     data_infos[[i]][[vi]]$units <- "PgC yr-1"
                     if (varname == "CO2f") {
                         data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("air-sea CO"[2], " flux [PgC yr"^paste(-1), "] (>0 into ocean)"))))
@@ -2885,6 +2959,51 @@ for (i in seq_len(nsettings)) {
                 }
             }
         
+        } else if (varname == "pCO2s") {
+            data_infos[[i]][[vi]]$units <- "µatm"
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " [µatm]"))))
+            if (F) { # µatm --> Pa
+                message("µatm --> Pa") # Pa = atm * 101325
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6, 101325) # µatm -> atm; atm -> Pa
+                data_infos[[i]][[vi]]$units <- "Pa"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " [Pa]"))))
+            }
+        
+        } else if (varname == "dpCO2s") {
+            data_infos[[i]][[vi]]$units <- "µatm"
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " - p"["CO2,atm"], " [µatm]"))))
+            if (F) { # µatm --> Pa
+                message("µatm --> Pa") # Pa = atm * 101325
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6, 101325) # µatm -> atm; atm -> Pa
+                data_infos[[i]][[vi]]$units <- "Pa"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,oce"], " - p"["CO2,atm"], " [Pa]"))))
+            }
+        
+        } else if (varname == "pCO2a") {
+            data_infos[[i]][[vi]]$units <- "µatm"
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,air"], " [µatm]"))))
+            if (F) { # µatm --> Pa
+                message("µatm --> Pa") # Pa = atm * 101325
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6, 101325) # µatm -> atm; atm -> Pa
+                data_infos[[i]][[vi]]$units <- "Pa"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,air"], " [Pa]"))))
+            }
+        
+        # gregor_and_fay_2021
+        } else if (varname == "pco2atm") {
+            data_infos[[i]][[vi]]$units <- "µatm"
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,air"], " [µatm]"))))
+            if (F) { # µatm --> Pa
+                message("µatm --> Pa") # Pa = atm * 101325
+                data_infos[[i]][[vi]]$offset$operator <- c(data_infos[[i]][[vi]]$offset$operator, "/", "*")
+                data_infos[[i]][[vi]]$offset$value <- c(data_infos[[i]][[vi]]$offset$value, 1e6, 101325) # µatm -> atm; atm -> Pa
+                data_infos[[i]][[vi]]$units <- "Pa"
+                data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("p"["CO2,air"], " [Pa]"))))
+            }
+
         ## land
 
         # jsbach
@@ -2908,6 +3027,16 @@ for (i in seq_len(nsettings)) {
             }
 
         ## ocean
+
+        } else if (grepl("EN.4", models[i]) && varname == "temperature") {
+            data_infos[[i]][[vi]]$label <- "SST [°C]"
+            data_infos[[i]][[vi]]$offset$operator <- "-"
+            data_infos[[i]][[vi]]$offset$value <- 273.15
+
+        } else if (varname == "mldepthdensp030_m") {
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("MLD"[paste(sigma[theta], "=0.03 kg m"^-3)], " [m]"))))
+            data_infos[[i]][[vi]]$offset$operator <- "*"
+            data_infos[[i]][[vi]]$offset$value <- -1
 
         # fesom
         } else if (varname == "hvel") {
@@ -2936,7 +3065,7 @@ for (i in seq_len(nsettings)) {
                 data_infos[[i]][[vi]]$offset$operator <- "/"
                 data_infos[[i]][[vi]]$offset$value <- 1000
             }
-            if (T) {
+            if (F) {
                 message("special mlotst label")
                 data_infos[[i]][[vi]]$label <- substitute(paste("MLD"[paste(sigma[theta], "=0.125 kg m"^-3)], " Event/Clim*100 [%]"))
             }
@@ -2958,9 +3087,11 @@ for (i in seq_len(nsettings)) {
                 data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("max MLD"["MS"], " Event/Clim*100 [%]"))))
             }
 
-        } else if (grepl("siarea", varname)) {
-            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NH sea ice extent [km"^2, 
-                                                                            " " %*% " ", 10^6, "]"))))
+        } else if (varname == "siarean") {
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("NH sea ice extent [km"^2, " " %*% " ", 10^6, "]"))))
+
+        } else if (varname == "siareas") {
+            data_infos[[i]][[vi]]$label <- eval(substitute(expression(paste("SH sea ice extent [km"^2, " " %*% " ", 10^6, "]"))))
         
         } else if (varname == "tos") {
             data_infos[[i]][[vi]]$label <- "SST [°C]"
@@ -3922,13 +4053,9 @@ if (any(sapply(lapply(lapply(dims, names), "==", "time"), any))) {
                     } else {
                         apply_dims <- apply_dims[-timedimind]
                     }
-                    if (length(months_unique) == 1 || # whole time series has only one month --> var vs months has no sense
-                        length(months_unique) == length(months)) { # or every months occurs only once --> `datasmon` would yield the same as `datas`
-                        if (length(months_unique) == 1) {
-                            message("   whole time series consists of only 1 month: ", months_unique, " --> do not calc monthly climatology")
-                        } else {
-                            message("   every month of the time series occurs only once --> do not calc monthly climatology")
-                        }
+                    if (length(months_unique) != 12) {
+                        message("   whole time series consists of only ", length(months_unique), " unique months: ", 
+                                paste(months_unique, collapse=", "), " --> do not calc monthly climatology")
                         datasmon[[i]][[vi]] <- NA
                     } else {
                         message("mon ", appendLF=F)
@@ -4509,7 +4636,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             cnt <- cnt + 1
                             z[[cnt]] <- datas[[i]][[vi]]
                             names(z)[cnt] <- paste0(names(datas)[i], "_", names(datas[[i]])[vi]) 
-                            # --> <names_short>_vs_<varnames_in> --> these names are used for the varnames_uv check in lon vs lat plots
+                            # --> <names_short>_vs_<varnamesin> --> these names are used for the varnames_uv check in lon vs lat plots
                             dinds[[cnt]] <- i
                             vinds[[cnt]] <- vi
                         } # if variable belongs to current dimlengh-dimname combination
@@ -4968,7 +5095,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         
         # temporary plot specs
         mode_p <- paste(sort(unique(modes[sapply(dinds, "[")])), collapse="_vs_")
-        varnames_in_p <- gsub("_", "", varnames_in[sapply(dinds, "[")])
+        varnamesin_p <- gsub("_", "", varnamesin[sapply(dinds, "[")])
         names_short_p <- names_short[sapply(dinds, "[")]
         areas_p <- areas_out[sapply(dinds, "[")]
         seasonsp_p <- seasonsp[sapply(dinds, "[")]
@@ -4983,7 +5110,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
         lwds_p <- lwds[sapply(dinds, "[")]
         pchs_p <- pchs[sapply(dinds, "[")]
         if (exists("datasmon")) {
-            varnames_in_pmon <- gsub("_", "", varnames_in[sapply(dmoninds, "[")])
+            varnamesin_pmon <- gsub("_", "", varnamesin[sapply(dmoninds, "[")])
             names_short_pmon <- names_short[sapply(dmoninds , "[")]
             areas_pmon <- areas_out[sapply(dmoninds , "[")]
             seasonsp_pmon <- seasonsp[sapply(dmoninds , "[")]
@@ -5001,7 +5128,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             pchs_pmon <- pchs[sapply(dmoninds , "[")]
         }
         if (exists("datasan")) {
-            varnames_in_pan <- gsub("_", "", varnames_in[sapply(daninds, "[")])
+            varnamesin_pan <- gsub("_", "", varnamesin[sapply(daninds, "[")])
             names_short_pan <- names_short[sapply(daninds , "[")]
             areas_pan <- areas_out[sapply(daninds , "[")]
             seasonsp_pan <- seasonsp[sapply(daninds , "[")]
@@ -5019,7 +5146,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             pchs_pan <- pchs[sapply(daninds , "[")]
         }
         if (exists("datasltm")) {
-            varnames_in_pltm <- gsub("_", "", varnames_in[sapply(dltminds, "[")])
+            varnamesin_pltm <- gsub("_", "", varnamesin[sapply(dltminds, "[")])
             names_short_pltm <- names_short[sapply(dltminds , "[")]
             areas_pltm <- areas_out[sapply(dltminds , "[")]
             seasonsp_pltm <- seasonsp[sapply(dltminds , "[")]
@@ -5125,7 +5252,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         text_cols_p <- c(text_cols_p, era5_ts$col)
                         cols_p <- c(cols_p, era5_ts$col)
                         ltys_p <- c(ltys_p, era5_ts$lty)
-                        varnames_in_p <- c(varnames_in_p, era5var)
+                        varnamesin_p <- c(varnamesin_p, era5var)
                         names_short_p <- c(names_short_p, era5_ts$name)
                         areas_p <- c(areas_p, areas_p[1])
                         seasonsp_p <- c(seasonsp_p, seasonsp_p[1])
@@ -5144,7 +5271,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             dmon$month[[length(dmon$month)+1]] <- era5_ts$data[[era5var]]$month
                             names_legend_pmon <- names_legend_p
                             text_cols_pmon <- text_cols_p
-                            varnames_in_pmon <- varnames_in_p
+                            varnamesin_pmon <- varnamesin_p
                             names_short_pmon <- names_short_p
                             areas_pmon <- areas_p
                             seasonsp_pmon <- seasonsp_p
@@ -5163,7 +5290,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             dan$year[[length(dan$year)+1]] <- era5_ts$data[[era5var]]$year
                             names_legend_pan <- names_legend_p
                             text_cols_pan <- text_cols_p
-                            varnames_in_pan <- varnames_in_p
+                            varnamesin_pan <- varnamesin_p
                             names_short_pan <- names_short_p
                             areas_pan <- areas_p
                             seasonsp_pan <- seasonsp_p
@@ -7099,6 +7226,16 @@ for (plot_groupi in seq_len(nplot_groups)) {
             # placeholder defaults for image.plot.nxm.r:
             znames_method <- znames_pos <- znames_cex <- legend.line <- colorbar.cex <- NULL
             contour_only <- F
+            if (T) { # mydefault: zoom into 10-90% range of all values
+                message("color levels: zoom into 10-90% range of all values")
+                zlevels <- vector("list", l=length(z))
+                for (i in seq_along(zlevels)) {
+                    zlevels[[i]] <- quantile(z[[i]], probs=c(0.1, 0.9), na.rm=T)
+                }
+                zlevels <- pretty(c(min(sapply(zlevels, min)), max(sapply(zlevels, max))), n=15)
+                if (zlim[1] < min(zlevels)) zlevels <- c(zlim[1], zlevels)
+                if (zlim[2] > max(zlevels)) zlevels <- c(zlevels, zlim[2])
+            }
             if (any(zname == c("tos", "thetao"))) {
                 #anom_colorbar <- F
             } else if (zname == "hvel") {
@@ -7181,6 +7318,24 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 }
             } else if (zname == "CO2") {
                 #contour_only <- T
+            } else if (varname == "spco2") {
+                message("use 10 and 90% quants from GF21")
+                #zlevels <- pretty(c(298.2760, 375.1922 ), n=15)
+                zlevels <- pretty(c(298, 376), n=15)
+                if (zlim[1] < min(zlevels)) zlevels <- c(zlim[1], zlevels)
+                if (zlim[2] > max(zlevels)) zlevels <- c(zlevels, zlim[2])
+            } else if (varname == "dpco2") {
+                message("use 10 and 90% quants from GF21")
+                #zlevels <- pretty(c(-60.97321, 18.98701), n=15)
+                zlevels <- pretty(c(-60, 20), n=15)
+                if (zlim[1] < min(zlevels)) zlevels <- c(zlim[1], zlevels)
+                if (zlim[2] > max(zlevels)) zlevels <- c(zlevels, zlim[2])
+            } else if (varname == "apco2") {
+                message("use 10 and 90% quants from GF21")
+                #zlevels <- pretty(c(352.3847, 366.7315), n=15)
+                zlevels <- pretty(c(352, 368), n=15)
+                if (zlim[1] < min(zlevels)) zlevels <- c(zlim[1], zlevels)
+                if (zlim[2] > max(zlevels)) zlevels <- c(zlevels, zlim[2])
             } else if (zname == "co2_flx_ocean") {
                 #nlevels <- 20
                 #palname <- "colormaps_jaisnd"
@@ -7801,7 +7956,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
 
             # open plot device 
             plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
-                               zname, "_", 
+                               zname, "_",
+                               ifelse(plot_groups[plot_groupi] == "samedims", paste0(varname, "_"), ""),
                                paste0(names_short_p, "_", seasonsp_p, 
                                       "_", froms_plot_p, "_to_", tos_plot_p, "_", 
                                       areas_p, collapse="_vs_"), 
@@ -7813,6 +7969,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("plotname \"", plotname, "\" too long ...")
                 plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                    zname, "_", 
+                                   ifelse(plot_groups[plot_groupi] == "samedims", paste0(varname, "_"), ""),
                                    paste(unique(names_short_p), collapse="_"), "_",
                                    paste(unique(seasonsp_p), collapse="_"), "_", 
                                    paste(unique(froms_plot_p), collapse="_"), "-", 
@@ -7826,6 +7983,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 message("plotname \"", plotname, "\" too long ...")
                 plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                    zname, "_", 
+                                   ifelse(plot_groups[plot_groupi] == "samedims", paste0(varname, "_"), ""),
                                    #paste(unique(names_short_p), collapse="_"), "_",
                                    #names_short_p[1], "_", # only 1 setting to decrease plotname size
                                    names_short_p[1], "_", names_short_p[length(z)], "_", # only 1st and last setting to decrease plotname size
@@ -8900,22 +9058,22 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 for (i in seq_along(z)) {
                     if (center_ts) {
                         if (i == 1) message("\n`center_ts` = T --> center z before plot ...")
+                        if (!grepl("_center_ts", plotname_suffix)) plotname_suffix <- paste0(plotname_suffix, "_center_ts") # add only once over several ploti's and plot_groupi's
                         z[[i]] <- base::scale(z[[i]], scale=F)
-                        plotname_suffix <- paste0(plotname_suffix, "_center_ts")
                     } else if (scale_ts) {
                         if (i == 1) message("\n`scale_ts` = T --> scale z before plot ...")
+                        if (!grepl("_scale_ts", plotname_suffix)) plotname_suffix <- paste0(plotname_suffix, "_scale_ts") # add only once over several ploti's and plot_groupi's
                         z[[i]] <- base::scale(z[[i]])
-                        plotname_suffix <- paste0(plotname_suffix, "_scale_ts")
                     } else if (detrend_ts) {
                         if (i == 1) message("\n`detrend_ts` = T --> remove z trend before plot ...")
+                        if (!grepl("_detrend_ts", plotname_suffix)) plotname_suffix <- paste0(plotname_suffix, "_detrend_ts") # add only once over several ploti's and plot_groupi's
                         x <- as.numeric(d$time[[i]])
                         lm <- stats::lm(z[[i]] ~ x)
                         z[[i]] <- z[[i]] - lm$fitted.values
-                        plotname_suffix <- paste0(plotname_suffix, "_detrend_ts")
                     } else if (diff_ts) {
                         if (i == 1) message("\n`diff_ts` = T --> diff z before plot ...")
+                        if (!grepl("_diff_ts", plotname_suffix)) plotname_suffix <- paste0(plotname_suffix, "_diff_ts") # add only once over several ploti's and plot_groupi's
                         z[[i]] <- c(NA, base::diff(z[[i]]))
-                        plotname_suffix <- paste0(plotname_suffix, "_diff_ts")
                     }
                 }
             } # if center_ts scale_ts detrend_ts diff_ts
@@ -9140,7 +9298,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                                          y_lower=moc_rapid$moc[okinds] - moc_rapid$moc_error[okinds],
                                                          y_upper=moc_rapid$moc[okinds] + moc_rapid$moc_error[okinds])
             } # if add moc ts
-            if (T && varname == "siarean") {
+            if (F && varname == "siarean" && exists("nsidc_siextentn_annual")) {
                 message("add nsidc annual to ylim ...")
                 data_left[[length(data_left)+1]] <- list(x=nsidc_siextentn_annual$time,
                                                          y=nsidc_siextentn_annual$siarean)
@@ -9258,7 +9416,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     }
                 } # if temp2, tsurf, aprt
             } # if exists("noaa_ghcdn")
-            if (any(varname == c("co2_flx_ocean", "fgco2"))) {
+            if (F && any(varname == c("co2_flx_ocean", "fgco2"))) {
                 if (exists("cmip6") && length(unique(areas) == 1) && any(sapply(cmip6, names) == areas[1])) {
                     message("add cmip6 fgco2 data to data_left ...")
                     if (T) {
@@ -9510,7 +9668,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
             } else { # default
                 plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
                 if (F && plot_groups[plot_groupi] == "samedims") { # use only varnames_out_samedims below
-                    plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
+                    plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnamesin_p), collapse="_vs_"))
                 }
                 plotprefixp <- paste0(plotprefixp,
                                       "_", paste(unique(seasonsp_p), collapse="_vs_"), 
@@ -10002,13 +10160,14 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         #rect(tmp$rect[1], tmp$rect[2], tmp$rect[3], tmp$rect[4])
                         le$pos <- c(x=tmp$rect[1], y=tmp$rect[4]) # topleft corner if x- and y-coords are both increasing (default)
                     } else {
-                        message("manually set legend position: ", appendLF=F)
+                        message("manual legend position datas: ", appendLF=F)
                         #le$pos <- "bottom" 
                         #le$pos <- "topleft" 
                         #le$pos <- "left"
-                        le$pos <- "bottomleft"
-                        #le$pos <- "topright"
+                        #le$pos <- "bottomleft"
+                        le$pos <- "topright"
                         #le$pos <- "bottomright" 
+                        #le$pos <- "right"
                         #le$pos <- c(tatn[1], yat[length(yat)-1])
                         #le$pos <- c(as.numeric(as.POSIXct("2650-1-1", tz="UTC")), 13.45)
                         #le$pos <- c(as.numeric(as.POSIXct("100-1-1", tz="UTC")), yat[length(yat)])
@@ -10038,7 +10197,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 names_legend_p_w_lm <- names_legend_p
                 if (typeof(lm_labels) == "expression") {
                     names_legend_p_w_lm <- lm_labels # use lm result
-                    le$cex <- 0.85
+                    le$cex <- 0.66*lecex # decrease font size for long labels including regression results
                 }
                 inds <- which(!is.na(names_legend_p)) # throw out user provided NA
                 le$text <- names_legend_p_w_lm[inds]
@@ -10457,7 +10616,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } else if (plot_groups[plot_groupi] == "samedims") {
                     plotname <- paste0(plotpath, "/", mode_p, "/", varname, "/",
                                        varname, "_",
-                                       paste0(names_short_p, "_", varnames_in_p, collapse="_vs_"), 
+                                       paste0(names_short_p, "_", varnamesin_p, collapse="_vs_"), 
                                        plotname_suffix)
                 }
             }
@@ -10710,12 +10869,12 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 for (i in seq_along(z)) {
                     outpath <- paste0(postpaths[sapply(dinds, "[")][i], "/", 
                                       models[sapply(dinds, "[")][i], "/moc_ts/", 
-                                      varnames_in[sapply(dinds, "[")][i])
+                                      varnamesin[sapply(dinds, "[")][i])
                     dir.create(outpath, recursive=T, showWarnings=F)
                     outname <- paste0(outpath, "/", 
                                       prefixes[sapply(dinds, "[")][i], "_moc_ts", 
                                       codesf[sapply(dinds, "[")][i], "_", 
-                                      varnames_in[sapply(dinds, "[")][i], "_", 
+                                      varnamesin[sapply(dinds, "[")][i], "_", 
                                       areas_p[i], "_", seasonsp_p[i], "_", 
                                       froms_plot_p[i], "-", tos_plot_p[i],
                                       depthsf_p[i], ".", p$plot_type)
@@ -10786,7 +10945,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } # for loni
 
                     # save t-test result as netcdf
-                    varname_out <- paste0(varnames_in[2], "_minus_", varnames_in[1])
+                    varname_out <- paste0(varnamesin[2], "_minus_", varnamesin[1])
                     path_out <- paste0(host$workpath, "/post/",
                                        paste(rev(unique(models)), collapse="_minus_"), 
                                        "/timmean/", varname_out)
@@ -11235,7 +11394,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } else { # default
                     plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
                     if (F && plot_groups[plot_groupi] == "samedims") {
-                        plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
+                        plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnamesin_p), collapse="_vs_"))
                     }
                     plotprefixp <- paste0(plotprefixp,
                                           "_", paste(unique(seasonsp_p), collapse="_vs_"), 
@@ -11623,7 +11782,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 data_left_an <- list() # default: dont add additional data to left yaxis
                 
                 # add to data_left_an
-                if (any(varname == c("co2_flx_ocean", "fgco2"))) {
+                if (F && any(varname == c("co2_flx_ocean", "fgco2"))) {
                     if (exists("cmip6") && length(unique(areas) == 1) && any(sapply(cmip6, names) == areas[1])) {
                         message("add cmip6 fgco2 data to data_left_an ...")
                         if (T) {
@@ -11634,6 +11793,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                             y_upper <- cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_an_median$vals + 
                                         cmip6$historical_and_ssp126_15_models[[areas[1]]]$data$fgco2_an_sd$vals
                             if (T) {
+                                message("special: anlim")
                                 inds <- which(x >= anlim[1] & x <= anlim[2])
                                 x <- x[inds]; y <- y[inds]; y_lower <- y_lower[inds]; y_upper <- y_upper[inds]
                             }
@@ -11837,6 +11997,21 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     } # if temp2, tsurf, aprt
                 } # if exists("noaa_ghcdn")
                 
+                # special ylim_an
+                if (T && grepl("gf21_awicm_cmip6_historical", plotprefix) && varname == "spco2" && detrend_ts) {
+                    ylim_an <- c(-7.78022208495861, 7.29931147734601) # gf21 vs cmip6 pco2 annual detrend_ts 1982:2014 limits
+                    message("special ylim gf21 vs cmip6 pco2 annual detrend = ", ylim_an[1], ", ", ylim_an[2])
+                }
+                if (T && grepl("en4_awicm_cmip6_historical", plotprefix) && varname == "tos" && detrend_ts) {
+                    # -0.292978302998975, 0.224162542458739 # global
+                    # -0.313774519576182, 0.378410529254522 # nh-hl
+                    # -0.4092586410591, 0.301542033061207 # hl-st
+                    # -0.903218437926931, 0.932171877391696 # equ
+                    # -0.332128702177577, 0.332468953220456 # sh-st
+                    # -0.195399451146452, 0.215974586187412 # sh-hl
+                    ylim_an <- c(-0.903218437926931, 0.932171877391696) # en4 vs cmip6 pco2 annual detrend_ts 1982:2014 limits
+                    message("special ylim en4 vs cmip6 tos annual detrend = ", ylim_an[1], ", ", ylim_an[2])
+                }
                 # finished ylim
                 yat_an <- pretty(ylim_an, n=8)
                 ylab_an <- format(yat_an, trim=T)
@@ -11849,7 +12024,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                     message("update zan data_right")
                     data_right_an <- list(data=vector("list", l=length(zan)))
                     names(data_right_an$data) <- names_short_p
-                    if (T && any(varname == c("temp2", "tsurf", "tsurfaprt", "ptemp"))) {
+                    if (F && any(varname == c("temp2", "tsurf", "tsurfaprt", "ptemp"))) {
                         for (i in seq_along(data_right_an$data)) {
                             inpath <- paste0(host$workpath, "/post/", models[i], "/",
                                              "yearsum",
@@ -11861,8 +12036,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                                             "_", fromsf[i], "-", tosf[i], 
                                             depthsf[i], 
                                             ".nc") # todo: levs 
-                            ncin <- nc_open(paste0(inpath, "/", fname))
                             message("read ", inpath, "/", fname, " ...")
+                            ncin <- nc_open(paste0(inpath, "/", fname))
                             data_right_an$data[[i]] <- list(x=dims[[i]]$year,
                                                             y=ncvar_get(ncin, "wisoaprt_d"),
                                                             text="wisoaprt_d_sellevel_2", 
@@ -11942,7 +12117,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } else { # default
                     plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
                     if (F && plot_groups[plot_groupi] == "samedims") {
-                        plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
+                        plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnamesin_p), collapse="_vs_"))
                     }
                     plotprefixp <- paste0(plotprefixp,
                                           "_", paste(unique(seasonsp_p), collapse="_vs_"), 
@@ -12531,7 +12706,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                         } else { # default
                             plotprefixp <- paste(unique(names_short_p), collapse="_vs_")
                             if (F && plot_groups[plot_groupi] == "samedims") { # use only varnames_out_samedims below
-                                plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
+                                plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnamesin_p), collapse="_vs_"))
                             }
                             plotprefixp <- paste0(plotprefixp,
                                                   "_", paste(unique(seasonsp_p), collapse="_vs_"), 
@@ -12777,8 +12952,8 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 # extend data range by 4 pcnt for barplot(), similarly as default yaxs="r" of plot()
                 ylim_ltm <- ylim_ltm + c(-1, 1)*0.04*(max(ylim_ltm)-min(ylim_ltm))
                 
-                message("\n", mode_p, " versus ltm_range ", varname, " zan:")
-                for (i in seq_along(zan)) {
+                message("\n", mode_p, " versus ltm_range ", varname, " zltm:")
+                for (i in seq_along(zltm)) {
                     message(sprintf(paste0("%", max(nchar(names_short_pltm)), "s"), 
                                     names_short_pltm[i]), ": ", zltm[[i]])
                 }
@@ -12792,7 +12967,7 @@ for (plot_groupi in seq_len(nplot_groups)) {
                 } else { # default
                     plotprefixp <- paste(unique(names_short_pltm), collapse="_vs_")
                     if (F && plot_groups[plot_groupi] == "samedims") {
-                        plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnames_in_p), collapse="_vs_"))
+                        plotprefixp <- paste0(plotprefixp, "_", paste(unique(varnamesin_p), collapse="_vs_"))
                     }
                     plotprefixp <- paste0(plotprefixp,
                                           "_", paste(unique(seasonsp_p), collapse="_vs_"), 

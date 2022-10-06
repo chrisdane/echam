@@ -102,7 +102,7 @@ for (runi in seq_len(nruns)) {
     # save temporary plot_echam.r and run
     if (runi == 1) dir.create("tmp", recursive=T, showWarnings=F)
     plot_echam.r_fname <- paste0("tmp/plot_echam_", 
-                                 varnames_in[runi,1], "_", seasonsp[runi,1], "_", areas[runi,1], ".r")
+                                 varnamesin[runi,1], "_", seasonsp[runi,1], "_", areas[runi,1], ".r")
     message("save ", plot_echam.r_fname)
     write(plot_echam.r, file=plot_echam.r_fname)
     cmd <- paste0("nohup Rscript ", plot_echam.r_fname, " > ", plot_echam.r_fname, ".log 2>&1 &")

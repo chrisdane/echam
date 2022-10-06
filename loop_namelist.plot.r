@@ -27,9 +27,9 @@ if (T) {
     #seasonsf <- replicate(rep(rep(c("yearsum", rep("seassum", t=nseas-1)), t=nvars), t=nareas), n=3)
     seasonsf <- replicate(rep(rep(rep("Jan-Dec", t=nseas), t=nvars), t=nareas), n=3)
     seasonsp <- replicate(rep(rep(c(NA, "DJF", "MAM", "JJA", "SON"), t=nvars), t=nareas), n=3)
-    #varnames_in <- replicate(rep(rep(c("wisoaprt_d_post", "wisoevap_d_post", "wisope_d_post"), e=nseas), t=nareas), n=3)
+    #varnamesin <- replicate(rep(rep(c("wisoaprt_d_post", "wisoevap_d_post", "wisope_d_post"), e=nseas), t=nareas), n=3)
     #levs <- matrix(rep(2, t=nvars), nruns, 3, byrow=T)
-    varnames_in <- replicate(rep(rep(c("tsurf", "aprt", "evap", "pe", "ws"), e=nseas), t=nareas), n=3)
+    varnamesin <- replicate(rep(rep(c("tsurf", "aprt", "evap", "pe", "ws"), e=nseas), t=nareas), n=3)
     #modes <- replicate(rep(rep(c("yearsum", rep("seassum", t=nseas-1)), t=nvars), t=nareas), n=3)
     modes <- replicate(rep(rep(rep("select", t=nseas), t=nvars), t=nareas), n=3)
     areas <- replicate(c(rep("ladoga_remapnn", t=nseas*nvars),

@@ -32,12 +32,13 @@ if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
 
 # known dimnames
 known_dimnames <- list(time=c("time", "Time",  "TIME", "time_mon"),
-                       lon=c("lon", "lons", "longitude", "Longitude", "LONGITUDE", "nxi"),
-                       lat=c("lat", "lats", "latitude", "Latitude", "LATITUDE", "nyi"),
-                       depth=c("depth_2"))
+                       lon=c("lon", "lons", "longitude", "Longitude", "LONGITUDE", "x", "i", "nxi"),
+                       lat=c("lat", "lats", "latitude", "Latitude", "LATITUDE", "y", "j", "nyi"),
+                       depth=c("depth", "depth_2"),
+                       nod2d=c("node", "nodes"))
 
 # ignore dimnames
-ignore_dimnames <- c("bnds")
+ignore_dimnames <- c("bnds", "nvertex", "vertices")
 
 # known varnames; use cmor names
 known_vars <- list(fgco2=c("fgco2", "co2_flx_ocean"))
@@ -45,13 +46,14 @@ known_vars <- list(fgco2=c("fgco2", "co2_flx_ocean"))
 # ignore variables
 ignore_vars <- c("bnds",
                  "time_bnds", "time_mon",
+                 "lon", "longitude", "lon_bnds", "longitude_bnds", 
+                 "lat", "latitude", "lat_bnds", "latitude_bnds",
                  "hyai", "hybi", "hyam", "hybm",
                  "plev", "height", 
-                 "depth", "depthvec", 
+                 "depth", "depthvec", "depth_bnds", 
                  "lm_*_as_time_std_error", "lm_*_as_time_t_val", "lm_*_as_time_p_val",
                  "timestamp", "timevec", "timechar", "xi", "yi", # old rfesom 
                  "moc_reg_lat")
-
 
 # general script options
 squeeze <- T # drop dims with length=1 (e.g. lon and lat after fldmean)
@@ -72,6 +74,10 @@ ttest_significance <- 0.05 # p-value (*100 for %)
 png_family <- NULL
 if (host$machine_tag == "mistral") {
     png_family <- "Nimbus Sans L" # mistral R36 default png font Helvetica broken
+} else if (host$machine_tag == "levante") {
+    #png_family <- "Luxi Sans" # levante default png font Helvetica broken
+    #png_family <- "Nimbus Sans"
+    png_family <- "Droid Sans"
 }
 p <- myDefaultPlotOptions(#plot_type="png"
                           #plot_type="active"

@@ -6,7 +6,7 @@
 # 3: myfunctions.r
 # 4: namelist.post.r
 # 5: post_echam.r
-        
+
 warn <- options()$warn
 width <- options()$width
 
@@ -77,6 +77,15 @@ message("cdo_OpenMP_threads = \"", cdo_OpenMP_threads, "\"") # OMP supported ope
 message("cdo_set_rel_time = ", cdo_set_rel_time)
 message("cdo_run_from_script = ", cdo_run_from_script)
 # -O necessary for ens<STAT>, merge, mergetime
+
+if (nice_options != "") {
+    nice <- Sys.which("nice")
+    if (nice == "") stop("user provided nice options \"", nice_options, "\" but could not find nice binary")
+}
+if (ionice_options != "") {
+    ionice <- Sys.which("ionice")
+    if (ionice == "") stop("user provided ionice options \"", ionice_options, "\" but could not find ionice binary")
+}
 
 # check if necessary user variables exist and are of correct length
 exist_checks <- c("models", "files", "fpatterns", "prefixes", 
@@ -277,6 +286,7 @@ if (any(!is.na(sellevsidx))) {
 
 cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
 
+if (!exists("cdo_after_sels")) cdo_after_sels <- rep("", t=nsettings)
 if (!exists("cdo_before_calcs")) cdo_before_calcs <- rep("", t=nsettings)
 if (!exists("cdo_after_calcs")) cdo_after_calcs <- rep("", t=nsettings)
 
@@ -980,8 +990,10 @@ for (i in seq_len(nsettings)) {
         }
 
         # construct cdo command (chained cdo commands will be executed from right to left)
-        # prefix
-        cdoprefix <- paste0(cdo, " ", cdo_OpenMP_threads, " ", cdo_silent)
+        cdoprefix <- ""
+        if (nice_options != "") cdoprefix <- paste0(cdoprefix, " ", nice, " ", nice_options)
+        if (ionice_options != "") cdoprefix <- paste0(cdoprefix, " ", ionice, " ", ionice_options)
+        cdoprefix <- paste0(cdoprefix, " ", cdo, " ", cdo_select_no_history, " ", cdo_OpenMP_threads, " ", cdo_silent)
 
         # convert to nc if grb
         cdoconvert <- "" # default: no conversion
@@ -1065,10 +1077,10 @@ for (i in seq_len(nsettings)) {
             message("\ncheck if requested variable \"", varnamesin[i], "\" ", appendLF=F)
 
             if (!is.na(codes[i])) { # code not provided
-                cdoselect <- paste0(cdo_select_no_history, " -select,code=", codes[i])
+                cdoselect <- paste0("-select,code=", codes[i])
                 message("(\"var", codes[i], "\") ", appendLF=F)
             } else {
-                cdoselect <- paste0(cdo_select_no_history, " -select,name=", varnamesin[i])
+                cdoselect <- paste0("-select,name=", varnamesin[i])
             }
             message("is present in first found file ...")
             
@@ -1106,9 +1118,8 @@ for (i in seq_len(nsettings)) {
                 message("was not found in first file:\n", 
                         "   \"", datapaths[1], "/", files[1], "\"")
 
-                # special case: requested variable is one of the wiso delta variables
-                #if (varnamesin[i] %in% known_wiso_d_vars$vars) {
-                if (varnamesin[i] %in% names(cdo_known_cmds)) {
+                # special case: requested variable is one of the `cdo_known_cmds` variables
+                if (!is.na(match(varnamesin[i], names(cdo_known_cmds)))) {
 
                     own_cmd <- T
                     nchunks <- 1 # for rest of script
@@ -1264,8 +1275,9 @@ for (i in seq_len(nsettings)) {
                 ## calculation cmd
                 
                 cdocalc <- rep("", t=length(modes[[i]]))
-                for (cdocalci in seq_along(cdocalc)) {
-                    # if special cdo calc case
+                    
+                # check default or special cdo calc case
+                for (cdocalci in seq_along(cdocalc)) { 
                     if (modes[[i]][cdocalci] == "select") {
                         cdocalc[cdocalci] <- "" # variable selection only
                     } else if (modes[[i]][cdocalci] == "fldint") {
@@ -1277,13 +1289,13 @@ for (i in seq_len(nsettings)) {
                         cdocalc[cdocalci] <- paste0("-", modes[[i]][cdocalci]) # e.g. "-fldmean"
                     } # which cdo calculation depending on mode
                 } # for all cdo calc operators
+                
                 cdocalc <- paste(cdocalc, collapse=" ")
                 message("\n`modes[[", i, "]]` = \"", paste(modes[[i]], collapse=", "), 
                         "\" --> `cdocalc` = \"", cdocalc, "\" ...")
                 
                 if (cdo_before_calcs[i] == "") {
-                    message("`cdo_before_calcs[", i, "]` not given --> do not run some command before `cdo ", 
-                            cdocalc, "` ...")
+                    message("`cdo_before_calcs[", i, "]` not given --> do not run some command before `cdo ", cdocalc, "` ...")
                 } else {
                     message("`cdo_before_calcs[", i, "]` = \"", cdo_before_calcs[i], "\" --> run `", appendLF=F)
                     cdo_before_calc <- cdo_before_calcs[i]
@@ -1292,14 +1304,14 @@ for (i in seq_len(nsettings)) {
                 }
                 
                 if (cdo_after_calcs[i] == "") {
-                    message("`cdo_after_calcs[", i, "]` not given --> do not run some command after `cdo ", 
-                            cdocalc, "` ...")
+                    message("`cdo_after_calcs[", i, "]` not given --> do not run some command after `cdo ", cdocalc, "` ...")
                 } else {
                     message("`cdo_after_calcs[", i, "]` = \"", cdo_after_calcs[i], "\" --> run `", appendLF=F)
                     cdo_after_calc <- cdo_after_calcs[i]
                     message(cdo_after_calc, "` after cdo `", cdocalc, "` ...")
                     cdocalc <- paste0(cdo_after_calc, " ", cdocalc)
                 }
+
                 if (varnamesout[i] != varnamesin[i]) {
                     message("`varnamesin[", i, "]` = \"", varnamesin[i], "\" != `varnamesout[", i, "]` = \"", varnamesout[i], "` --> run `", appendLF=F)
                     cdo_after_calc <- paste0("-setname,", varnamesout[i])
@@ -1337,8 +1349,6 @@ for (i in seq_len(nsettings)) {
                     }
                 } # if areas_out != "global" 
 
-                # cdoselyear defined earlier
-
                 ## shifttime 
                 cdoshifttime <- "" # default: not shifttime
                 if (cdoshifttimes[i] != "") {
@@ -1358,7 +1368,7 @@ for (i in seq_len(nsettings)) {
                         message("--> dt = ", dt)
                         if (dt == "0seconds") { # `cdo tinfo` only 1 timestep or no success
                             message("--> data has only 1 timestep or no proper \"time\" dim found\n",
-                                    "--> do not apply shifftime\n",
+                                    "--> do not apply shiftime\n",
                                     "--> set `cdoshifttimes[", i, "] = \"[-]<tunit>\" in the post namelist and rerun the script")
                             cdoshifttimes[i] <- "" # do not apply shifttime
                         } else { # `cdo tinfo` success
@@ -1367,10 +1377,10 @@ for (i in seq_len(nsettings)) {
                             cdoshifttimes[i] <- sub("dt", dt, cdoshifttimes[i])
                         } # if `cdo showtimestamp` returned something
                     } # if "dt" is in provided `cdoshifttimes[i]`
-                    cdoshifttime <- paste0("-shifttime,", cdoshifttimes[i])
+                    if (cdoshifttimes[i] != "") cdoshifttime <- paste0("-shifttime,", cdoshifttimes[i])
                     message("--> `cdoshifttime` = \"", cdoshifttime, "\"")
                 } else {
-                    message("`cdoshifttimes[", i, "]` not given --> set to e.g. \"-1mo\" or \"-1dt\", if wanted")
+                    message("`cdoshifttimes[", i, "]` not given --> set to e.g. \"-1mo\" or \"-1dt\" if wanted")
                 } # if cdoshifttime is provided
 
                 # add further cdo chain commands here
@@ -1401,15 +1411,37 @@ for (i in seq_len(nsettings)) {
 
                     ## 1st cmd: selection
                     cmd_select <- cdoselect # always needed: `-select,name=<varname>`
-
-                    # allowed chaining with early cdo version: `-f <type copy>`
-                    if (cdoconvert != "") {
-                        cmd_select <- paste0(cdoconvert, " ", cmd_select)
-                    }
+                    
+                    # add shifttime
+                    if (cdoshifttime != "") cmd_select <- paste0(cdoshifttime, " ", cmd_select)
+                    
+                    # add -selyear
+                    if (cdoselyear != "") cmd_select <- paste0(cdoselyear, " ", cmd_select)
+                    
+                    # add -selmon
+                    if (cdoselmon != "") cmd_select <- paste0(cdoselmon, " ", cmd_select)
+                    
+                    # add -sellevel or -sellevidx
+                    if (cdosellevel != "") cmd_select <- paste0(cdosellevel, " ", cmd_select)
                     
                     # check for further selection commands if wanted
                     # ...
 
+                    # additional cmd provided by user
+                    # todo: this may cause problem with old cdo versions when the user provided cmd is not supported for chaining
+                    if (cdo_after_sels[i] == "") {
+                        message("`cdo_after_sels[", i, "]` not given --> do not run some command after all `cdo sel*` ...")
+                    } else {
+                        message("`cdo_after_sels[", i, "]` = \"", cdo_after_sels[i], "\" --> run after all `cdo sel*` ...")
+                        cmd_select <- paste0(cdo_after_sels[i], " ", cmd_select)
+                    }
+                    
+                    # add -sellonlatbox or -selindexbox
+                    if (cdoselarea != "") cmd_select <- paste0(cdoselarea, " ", cmd_select)
+                   
+                    # allowed chaining with early cdo version: `-f <type copy>`
+                    if (cdoconvert != "") cmd_select <- paste0(cdoconvert, " ", cmd_select)
+                
                     # end of selection: put prefix and in/out
                     selfile <- paste0(postpaths[i], "/tmp_select_", 
                                       Sys.getpid(), 
@@ -1429,33 +1461,8 @@ for (i in seq_len(nsettings)) {
                         cmd_calc <- paste0(cmd_calc, " ", cdocalc) 
                     }
                     
-                    # check for `-sellonlatbox`
-                    if (cdoselarea != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoselarea)
-                    }
-                    
-                    # check for `-sellev`
-                    if (cdosellevel != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdosellevel)
-                    }
-                    
-                    # check for `-selmon`
-                    if (cdoselmon != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoselmon)
-                    }
-
-                    # check for `-selyear`
-                    if (cdoselyear != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoselyear)
-                    }
-                    
                     # check for further calculation commands if wanted
                     # ...
-                    
-                    # shifttime after variable selection
-                    if (cdoshifttime != "") {
-                        cmd_calc <- paste0(cmd_calc, " ", cdoshifttime)
-                    }
                     
                     # end of calculation: put prefix and in/out
                     if (cmd_calc != "") {
@@ -1567,7 +1574,7 @@ for (i in seq_len(nsettings)) {
                         cmd_select_list <- cmd_calc_list <- chunk_inds_list <- vector("list", l=1)
                         cmd_select_list[[1]] <- list(cmd=cmd_select_tmp, n=length(files))
                         cmd_calc_list[[1]] <- list(cmd=cmd_calc)
-                        chunk_inds_list[[1]] <- 1:length(files)
+                        chunk_inds_list[[1]] <- seq_along(files)
                         nchunks <- length(cmd_select_list)
                         fout_vec <- fout
                         selfile_vec <- selfile
@@ -1583,10 +1590,18 @@ for (i in seq_len(nsettings)) {
 
                     cmd <- paste0(cdoprefix, " ", cdoconvert, 
                                   #" ", cmdcat, 
-                                  " ", cdocalc, " ", 
-                                  cdosellevel, " ", cdoselarea, " ", 
-                                  cdoselmon, " ", cdoselyear, " ",  
-                                  cdoshifttime, " ", cdoselect, " ",
+                                  " ", cdocalc,
+                                  " ", cdoselarea)
+                    if (cdo_after_sels[i] == "") {
+                        message("`cdo_after_sels[", i, "]` not given --> do not run some command after all `cdo sel*` ...")
+                    } else {
+                        message("`cdo_after_sels[", i, "]` = \"", cdo_after_sels[i], "\" --> run after all `cdo sel*` ...")
+                        cmd <- paste0(cmd, " ", cdo_after_sels[i])
+                    }
+                    cmd <- paste0(cmd,
+                                  " ", cdosellevel, 
+                                  " ", cdoselmon, " ", cdoselyear, 
+                                  " ", cdoshifttime, " ", cdoselect, " ",
                                   " <files> ", fout)
                     if (F) {
                         cmd <- paste0(cmd, " || echo error")
@@ -1621,7 +1636,7 @@ for (i in seq_len(nsettings)) {
                 # either from file (`$ . <scriptfile>` or via base::system(cmd)
                 for (chunki in seq_len(nchunks)) { # for possible chunks if argument is too long
                     
-                    message("\nchunk ", chunki, "/", nchunks, " cdo selection")
+                    message("\nchunk ", chunki, "/", nchunks, " cdo selection of setting ", i, "/", nsettings, " on ", Sys.info()["nodename"])
                     
                     if (cdo_run_from_script) {
                         if (cdo_chain == "alltogether") {
@@ -2801,10 +2816,11 @@ for (i in seq_len(nsettings)) {
                     # get time dimension name
                     # --> after many tries with cdo/nco, the combination of ncdump and `known_dimnames` is the best way
                     if (!exists("ncudmp")) {
-                        message("`ncdump` not set by user -> check if ncdump binary can be found: run `which(ncdump)`")
+                        message("`ncdump` not set by user -> check if ncdump binary can be found: run `which(ncdump)` ... ", appendLF=F)
                         ncdump <- Sys.which("ncdump")
                     }
-                    if (ncdump == "") stop("did not find program ncdump")
+                    if (ncdump == "") stop("could not find ncdump")
+                    message("ok")
                     tdimname <- paste0(ncdump , " -h ", fout)
                     message("run `", tdimname, "` ...")
                     tdimname <- system(tdimname, intern=T)

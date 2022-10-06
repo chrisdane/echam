@@ -41,7 +41,7 @@ clean <- T # remove temporary files
 cdo_silent <- "" # "-s" for silent or ""
 cdo_select_no_history <- "" # "--no_history" or ""
 cdo_convert_grb2nc <- T # should post processing result be converted to nc (will be set to T if new dates are wanted)?
-cdo_OpenMP_threads <- paste0("-P ", system("nproc", intern=T)) # "-P n" or "" (will be irgnored on commands that do not support OMP)
+cdo_OpenMP_threads <- paste0("-P ", max(1, trunc(0.75*as.integer(system("nproc", intern=T))))) # "-P n" or "" (will be irgnored on commands that do not support OMP)
 cdo_set_rel_time <- T # conversion from absolute to relative time
 cdo_run_from_script <- T # create temporary file and run long cdo command from there
 # maximum number of args cdo
@@ -53,6 +53,26 @@ cdo_nchar_max_arglist <- 2350000 # reduce this number if you get segmentation fa
 # maximum number of args nco
 # $(getconf PAGE_SIZE)*32 = 4096*32 = 131072
 nco_nchar_max_arglist <- 131071
+
+# nice options
+# -n, --adjustment=N
+#   add integer N to the niceness (default 10)
+# Niceness values range from -20 (most favorable to the process) to 19 (least favorable to the process)
+# levante: only values >= 0 are allowed
+nice_options <- "" # default: do not use nice
+#nice_options <- "-n 19"
+#nice_options <- "-n 10"
+nice_options <- "-n 0"
+
+# ionice options
+# -c, --class class
+# Specify the name or number of the scheduling class to use; 0 for none, 1 for realtime, 2 for best-effort, 3 for idle.
+# -n, --classdata level
+# Specify  the scheduling class data.  This only has an effect if the class accepts an argument.  For realtime and best-effort, 0-7 are valid data (priority levels), and 0 repre‐
+# sents the highest priority level.
+ionice_options <- "" # default: do not use ionice
+#ionice_options <- "-c2 -n3"
+ionice_options <- "-c2 -n0"
 
 # model specific general options
 mpiom1_remap <- T
@@ -108,11 +128,13 @@ cdo_known_cmds <- list(
                           "<nco_ncatted> -O -a long_name,tsurfaprt,o,c,\"tsurf weighted by aprt\"",
                           "<nco_ncatted> -O -a units,tsurfaprt,o,c,\"degC\"")),
    "fgco2"=list(cmd=c("<cdo> -setname,fgco2 -mulc,-0.272912 <co2_flx_ocean>", 
+                      # co2_flx_ocean:7
                       # into atm --> into ocean; kgCO2 --> kgC
                       "<nco_ncatted> -O -a code,fgco2,d,,",
                       "<nco_ncatted> -O -a table,fgco2,d,,",
                       "<nco_ncatted> -O -a long_name,fgco2,o,c,\"Surface Downward Flux of Total CO2 [kgC m-2 s-1]\"")),
    "nbp"=list(cmd=c("<cdo> -setname,nbp -mulc,-0.272912 -enssum <co2_flx_land> <co2_flx_lcc> <co2_flx_harvest>", 
+                    # co2_flx_land:6 + co2_flx_lcc:24 + co2_flx_harvest:25
                     # into atm --> into land; kgCO2 --> kgC; nbp = netAtmosLandCO2Flux
                     "<nco_ncatted> -O -a code,nbp,d,,",
                     "<nco_ncatted> -O -a table,nbp,d,,",
@@ -154,10 +176,24 @@ cdo_known_cmds <- list(
                           "<nco_ncatted> -O -a table,cSoilSlow,d,,",
                           "<nco_ncatted> -O -a units,cSoilSlow,o,c,\"kgC m-2\"",
                           "<nco_ncatted> -O -a long_name,cSoilSlow,o,c,\"Carbon Mass in Slow Soil Pool\"")),
-   "divuvttot"=list(cmd=c(paste0("<cdo> -setname,divuvttot -setname,divuvttot -add ",
-                                 "-selvar,divuvt <divuvt> -selvar,divuvteddy <divuvtedd>"),
-                          "<nco_ncatted> -O -a long_name,divuvttot,o,c,\"mean + eddy div_h(u_h t)\""))
-                      ) # cdo_known_cmds
+   "divuvttot"=list(cmd=c(paste0("<cdo> -setname,divuvttot -add ",
+                                 "-selvar,divuvt <divuvt> -selvar,divuvteddy <divuvteddy>"),
+                          "<nco_ncatted> -O -a long_name,divuvttot,o,c,\"mean + eddy div_h(u_h T)\"")),
+   "npp_nanophy_dia"=list(cmd=c(paste0("<cdo> -setname,npp_nanophy_dia -add ",
+                                       "-selvar,diags3d01 <diags3d01> -selvar,diags3d02 <diags3d02>"),
+                                paste0("<nco_ncatted> -O -a long_name,npp_nanophy_dia,o,c,",
+                                       "\"net primary production by nanophytoplankton + net primary production by diatoms\""))),
+   "pCO2a"=list(cmd=c("<cdo> -setname,pCO2a -sub <pCO2s> <dpCO2s>", # recom in µatm; oce - (oce - air) = oce - oce + air = air
+                      "<nco_ncatted> -O -a long_name,pCO2a,o,c,\"Partial pressure of atmospheric CO2\"")),
+   "apco2"=list(cmd=c("<cdo> -setname,apco2 -sub <spco2> <dpco2>", # cmip6 in Pa; oce - (oce - air) = oce - oce + air = air
+                      "<nco_ncatted> -O -a long_name,apco2,o,c,\"Partial pressure of atmospheric CO2\"")),
+   "POCphydiadet"=list(cmd=c("<cdo> -setname,POCphydiadet -enssum <bgc05> <bgc14> <bgc08>", # phyc + diac + detc
+                             "<nco_ncatted> -O -a long_name,poc,o,c,\"Carbon from small pyhtoplankton + diatoms + detritus\"")),
+   "calcite"=list(cmd=c("<cdo> -setname,calcite -enssum <bgc20> <bgc21>", # phycal + detcal
+                        "<nco_ncatted> -O -a long_name,calcite,o,c,\"Calcite from small pyhtoplankton + detritus\"")),
+   "sedimentC"=list(cmd=c("<cdo> -setname,sedimentC -enssum <benC> <benCalc>",
+                          "<nco_ncatted> -O -a long_name,sedimentC,o,c,\"Benthic carbon and calcium carbonate\""))
+         ) # cdo_known_cmds
 
 message("###################### namelist.general.post.r finish ##########################")
 
