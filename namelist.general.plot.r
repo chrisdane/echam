@@ -34,7 +34,7 @@ if (file.exists(paste0(host$homepath, "/functions/myfunctions.r"))) {
 known_dimnames <- list(time=c("time", "Time",  "TIME", "time_mon"),
                        lon=c("lon", "lons", "longitude", "Longitude", "LONGITUDE", "x", "i", "nxi"),
                        lat=c("lat", "lats", "latitude", "Latitude", "LATITUDE", "y", "j", "nyi"),
-                       depth=c("depth", "depth_2"),
+                       depth=c("depth", "depth_2", "lev", "level", "lev_partial", "olevel"),
                        nod2d=c("node", "nodes"))
 
 # ignore dimnames
@@ -46,11 +46,13 @@ known_vars <- list(fgco2=c("fgco2", "co2_flx_ocean"))
 # ignore variables
 ignore_vars <- c("bnds",
                  "time_bnds", "time_mon",
-                 "lon", "longitude", "lon_bnds", "longitude_bnds", 
-                 "lat", "latitude", "lat_bnds", "latitude_bnds",
+                 "lon", "longitude", "nav_lon", "lon_bnds", "longitude_bnds", "nav_lon_bnds", 
+                 "lat", "latitude", "nav_lat", "lat_bnds", "latitude_bnds", "nav_lat_bnds", 
                  "hyai", "hybi", "hyam", "hybm",
                  "plev", "height", 
                  "depth", "depthvec", "depth_bnds", 
+                 "lev_bnds", "lev_partial_bnds", "olevel_bnds",
+                 "cell_area", 
                  "lm_*_as_time_std_error", "lm_*_as_time_t_val", "lm_*_as_time_p_val",
                  "timestamp", "timevec", "timechar", "xi", "yi", # old rfesom 
                  "moc_reg_lat")
@@ -61,6 +63,7 @@ nchar_max_foutname <- 255 - 4 # -4 for extension ".png" or ".pdf"
 load_pangaea_data <- F
 load_special_data <- T
 plot_special_data <- F
+do_aggregate_plot_data <- T
 
 # calc options
 calc_monthly_and_annual_climatology <- T
@@ -79,7 +82,7 @@ if (host$machine_tag == "mistral") {
     #png_family <- "Nimbus Sans"
     png_family <- "Droid Sans"
 }
-p <- myDefaultPlotOptions(#plot_type="png"
+p <- myDefaultPlotOptions(#plot_type="pdf"
                           #plot_type="active"
                           ,png_family=png_family
                           #,png_family="Droid Sans Mono" 

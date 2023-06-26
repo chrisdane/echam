@@ -1,29 +1,41 @@
 # r
 
+options(warn=2) # stop on warning
+
 # save all data loaded by namelist.plot.r to a single ncdf
 message("************************* aggregate_plot_data.r start *************************")
 
+modelnames <- names(z)
+modelname_maxnchar <- 100 # for nc output
+
+# special
 lacroix <- NULL
 if (any(zname == c("co2_flx_ocean", "fgco2")) && 
     all(modes == "fldint") && 
     length(unique(areas)) == 1 &&
-    models[1] != "gregor_and_fay_2021") { # load lacroix_etal_2020 river flux adjustment rfa
+    modelnames[1] != "gregor_and_fay_2021") { # load lacroix_etal_2020 river flux adjustment rfa
     flacroix <- paste0(host$workpath, 
                        "/post/lacroix_etal_2020/fldint/fgco2/lacroix_etal_2020_lacroix_etal_2020_fldint_fgco2_",
                        areas[1], "_Jan-Dec_2022-2022.nc")
     if (!file.exists(flacroix)) stop("flacroix not found")
     lacroix <- nc_open(flacroix)
-    lacroix <- ncvar_get(lacroix, "fgco2") * 12.0107 * 365.25*86400 / 1e15 * -1 # molC s-1 --> PgC yr-1; >0: upward --> >0: downward
+    lacroix <- ncvar_get(lacroix, "fgco2") * 12.0107 * 365.25*86400 / 1e15 # molC s-1 --> PgC yr-1 (>0: upward)
     lacroix <- as.vector(lacroix)
-    message("add lacroix = ", lacroix)
+    message("add lacroix et al. 2020 outgassing: ", lacroix, " PgC yr-1")
 }
-modeldim <- ncdf4::ncdim_def(name="model", units="", vals=seq_along(z))
+
+# start
+modeldim <- ncdf4::ncdim_def(name="model_no", units="", vals=seq_along(modelnames))
+modeldim_nchar <- ncdf4::ncdim_def(name="model_nchar", units="", vals=seq_len(modelname_maxnchar), create_dimvar=F)
+modeldim_name <- ncdf4::ncdim_def(name="model_name", units="", vals=seq_along(modelnames), create_dimvar=F)
+modelvar <- ncdf4::ncvar_def(name="model", units="", dim=list(modeldim_nchar, modeldim_name), prec="char")
 fromto <- seq(anlim[1], anlim[2], b=1)
 tvals <- paste0(rep(fromto, e=12), "-", rep(1:12, t=length(fromto)), "-", rep(15, t=length(fromto)*12)) # all monthly data at same time points
 tvals <- as.POSIXct(tvals, tz="UTC")
 tdim <- ncdf4::ncdim_def(name="time", units="seconds since 1970-1-1", vals=as.numeric(tvals))
+
 # put all datas on same %Y-%m date
-arr <- array(NA, dim=c(nsettings, length(tvals)))
+arr <- array(NA, dim=c(length(z), length(tvals)))
 for (i in seq_along(z)) {
     for (ti in seq_along(z[[i]])) {
         ind <- which(format(tvals, "%Y-%m") == format(d$time[[i]][ti], "%Y-%m"))
@@ -31,7 +43,7 @@ for (i in seq_along(z)) {
         arr[i,ind] <- z[[i]][ti]
     }
 }
-arr_min <- apply(arr, 2, min, na.rm=T)
+arr_min <- apply(arr, 2, min, na.rm=T) # along settings (1); keep time (2)
 arr_max <- apply(arr, 2, max, na.rm=T)
 arr_mean <- apply(arr, 2, mean, na.rm=T)
 arr_median <- apply(arr, 2, median, na.rm=T)
@@ -59,10 +71,10 @@ if (!is.null(lacroix)) {
 # annual means
 anvals <- as.POSIXct(paste0(fromto, "-1-1"), tz="UTC") # placeholder
 for (i in seq_along(anvals)) {
-    anvals[i] <- mean(as.POSIXct(paste0(fromto[i], "-", c(1, 12), "-", c(1, 31)), tz="UTC")) # average of year
+    anvals[i] <- mean(as.POSIXct(paste0(fromto[i], c("-1-1", "-12-31 23:59:59")), tz="UTC")) # average of year
 }
 andim <- ncdf4::ncdim_def(name="years", units="seconds since 1970-1-1", vals=as.numeric(anvals))
-arr_an <- array(NA, dim=c(nsettings, length(anvals)))
+arr_an <- array(NA, dim=c(length(z), length(anvals)))
 for (i in seq_along(zan)) {
     for (ti in seq_along(zan[[i]])) {
         ind <- which(format(anvals, "%Y") == dan$year[[i]][ti])
@@ -98,7 +110,7 @@ if (!is.null(lacroix)) {
 # monthly clim
 monvals <- as.POSIXct(paste0(max(fromto), "-", 1:12, "-15"), tz="UTC") # average of month in placeholder year
 mondim <- ncdf4::ncdim_def(name="months", units="seconds since 1970-1-1", vals=as.numeric(monvals))
-arr_mon <- array(NA, dim=c(nsettings, length(monvals)))
+arr_mon <- array(NA, dim=c(length(z), length(monvals)))
 for (i in seq_along(zmon)) {
     for (ti in seq_along(zmon[[i]])) {
         ind <- which(gsub("^0", "", format(monvals, "%m")) == dmon$month[[i]][ti])
@@ -106,7 +118,7 @@ for (i in seq_along(zmon)) {
         arr_mon[i,ind] <- zmon[[i]][ti]
     }
     if (length(unique(as.vector(arr_mon[i,]))) == 1) { # OCIM-v2014 has constant monthly values
-        message("exclude ", models[i], " from mon ens stats ...")
+        message("exclude ", modelnames[i], " from mon ens stats ...")
         arr_mon[i,] <- NA
     }
 }
@@ -136,7 +148,7 @@ if (!is.null(lacroix)) {
     ncvar_mon_lacroix_sd <- ncdf4::ncvar_def(name=paste0(zname, "_rfa_ymonmean_sd"), units=data_info$units, dim=mondim, missval=NA)
 }
 # output
-vars <- list(ncvar, ncvar_min, ncvar_max, ncvar_mean, ncvar_median, ncvar_sd,
+vars <- list(modelvar, ncvar, ncvar_min, ncvar_max, ncvar_mean, ncvar_median, ncvar_sd,
              ncvar_an, ncvar_an_min, ncvar_an_max, ncvar_an_mean, ncvar_an_median, ncvar_an_sd,
              ncvar_mon, ncvar_mon_min, ncvar_mon_max, ncvar_mon_mean, ncvar_mon_median, ncvar_mon_sd)
 if (!is.null(lacroix)) {
@@ -145,8 +157,9 @@ if (!is.null(lacroix)) {
                    ncvar_an_lacroix, ncvar_an_lacroix_min, ncvar_an_lacroix_max, ncvar_an_lacroix_mean, ncvar_an_lacroix_median, ncvar_an_lacroix_sd,
                    ncvar_mon_lacroix, ncvar_mon_lacroix_min, ncvar_mon_lacroix_max, ncvar_mon_lacroix_mean, ncvar_mon_lacroix_median, ncvar_mon_lacroix_sd))
 }
-message("create fout ", fout, " ...")
+message("save fout ", fout, " ...")
 outnc <- ncdf4::nc_create(fout, vars=vars, force_v4=T)
+ncdf4::ncvar_put(outnc, modelvar, modelnames)
 ncdf4::ncvar_put(outnc, ncvar, arr)
 ncdf4::ncvar_put(outnc, ncvar_min, arr_min)
 ncdf4::ncvar_put(outnc, ncvar_max, arr_max)
@@ -186,7 +199,7 @@ if (!is.null(lacroix)) {
     ncdf4::ncvar_put(outnc, ncvar_mon_lacroix_sd, arr_mon_lacroix_sd)
 }
 for (i in seq_along(z)) {
-    ncdf4::ncatt_put(outnc, "model", i, names_short[i])
+    ncdf4::ncatt_put(outnc, "model_no", i, modelnames[i])
 }
 ncdf4::nc_close(outnc)
 

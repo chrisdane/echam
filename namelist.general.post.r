@@ -68,8 +68,7 @@ nice_options <- "-n 0"
 # -c, --class class
 # Specify the name or number of the scheduling class to use; 0 for none, 1 for realtime, 2 for best-effort, 3 for idle.
 # -n, --classdata level
-# Specify  the scheduling class data.  This only has an effect if the class accepts an argument.  For realtime and best-effort, 0-7 are valid data (priority levels), and 0 repre‐
-# sents the highest priority level.
+# Specify  the scheduling class data.  This only has an effect if the class accepts an argument.  For realtime and best-effort, 0-7 are valid data (priority levels), and 0 represents the highest priority level.
 ionice_options <- "" # default: do not use ionice
 #ionice_options <- "-c2 -n3"
 ionice_options <- "-c2 -n0"
@@ -86,7 +85,19 @@ cdo_known_cmds <- list(
    "psl"=list(cmd=c("<cdo> merge <aps> <geosp> <t>",
                     "<cdo> sealevelpressure")),
    "hvel"=list(cmd=c("<cdo> expr,'hvel=sqrt(uo*uo + vo*vo)' <uvo>")),
-   #"toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -add <srad0> <trad0>"),
+   # TOA imbalance
+   # https://github.com/ncar-hackathons/gallery/blob/master/cmip6dpdt_pendergrass/get_cmip6_ECS-alt.ipynb
+   # cmor: 
+   # N = rsdt - rsut - rlut
+   # rsdt = toa_incoming_shortwave_flux = TOA Incident Shortwave Radiation
+   # rsut = toa_outgoing_shortwave_flux = TOA Outgoing Shortwave Radiation
+   # rlut = toa_outgoing_longwave_flux  = TOA Outgoing Longwave Radiation
+   # rtmt = net_downward_radiative_flux_at_top_of_atmosphere_model = Net Downward Radiative Flux at Top of Model
+   # echam: 
+   # N = trad0 + srad0 (= `cdo add trad0 srad0`)
+   # trad0 = top thermal radiation (OLR)
+   # srad0 = net top solar radiation
+   # srad0d = top incoming SW radiation = rsdt
    "toa_imbalance"=list(cmd="<cdo> -setname,toa_imbalance -enssum <rsdt> -mulc,-1.0 <rsut> -mulc,-1.0 <rlut>"),
    "quv_direction"=list(cmd=c("<cdo> -setname,quv_direction -divc,3.141593 -mulc,180 -atan2 <qv> <qu>",
                               "<nco_ncatted> -O -a long_name,quv_direction,o,c,\"direction of water vapor transport\"",
@@ -179,6 +190,10 @@ cdo_known_cmds <- list(
    "divuvttot"=list(cmd=c(paste0("<cdo> -setname,divuvttot -add ",
                                  "-selvar,divuvt <divuvt> -selvar,divuvteddy <divuvteddy>"),
                           "<nco_ncatted> -O -a long_name,divuvttot,o,c,\"mean + eddy div_h(u_h T)\"")),
+   "chl"=list(cmd=c(paste0("<cdo> -setname,npp -add ",
+                                  "-selvar,bgc15 <bgc15> -selvar,bgc06 <bgc06>"),
+                    paste0("<nco_ncatted> -O -a long_name,chl,o,c,",
+                           "\"Mass Concentration of Total Phytoplankton Expressed as Chlorophyll in Sea Water; Chl_diatoms + Chl_phytoplankton\""))),
    "npp_nanophy_dia"=list(cmd=c(paste0("<cdo> -setname,npp_nanophy_dia -add ",
                                        "-selvar,diags3d01 <diags3d01> -selvar,diags3d02 <diags3d02>"),
                                 paste0("<nco_ncatted> -O -a long_name,npp_nanophy_dia,o,c,",
@@ -192,7 +207,9 @@ cdo_known_cmds <- list(
    "calcite"=list(cmd=c("<cdo> -setname,calcite -enssum <bgc20> <bgc21>", # phycal + detcal
                         "<nco_ncatted> -O -a long_name,calcite,o,c,\"Calcite from small pyhtoplankton + detritus\"")),
    "sedimentC"=list(cmd=c("<cdo> -setname,sedimentC -enssum <benC> <benCalc>",
-                          "<nco_ncatted> -O -a long_name,sedimentC,o,c,\"Benthic carbon and calcium carbonate\""))
+                          "<nco_ncatted> -O -a long_name,sedimentC,o,c,\"Benthic carbon and calcium carbonate\"")),
+   "silicate"=list(cmd=c("<cdo> -setname,siliate -enssum <bgc16> <bgc17> <bgc18> <benSi>", # (diatom + detritus + dissolved acid + benthic) silicate
+                          "<nco_ncatted> -O -a long_name,silicate,o,c,\"Diatoms + detritus + dissolved acid + benthic Silicate\""))
          ) # cdo_known_cmds
 
 message("###################### namelist.general.post.r finish ##########################")

@@ -14,13 +14,21 @@ get_host <- function(verbose=F) {
                           grepl, hostname))) {
         machine_tag <- "mistral"
         homepath <- "~/scripts/r"
-        #workpath <- paste0("/work/ba0941/", Sys.info()["user"])
-        #workpath <- paste0("/work/ab0246/", Sys.info()["user"])
-        workpath <- paste0("/work/ba1103/", Sys.info()["user"])
+        if (F) {
+            workpath <- paste0("/work/ba0941/", Sys.info()["user"])
+        } else if (T) {
+            workpath <- paste0("/work/ab0246/", Sys.info()["user"])
+        }
     } else if (any(sapply(c("levante"), grepl, hostname))) { # levante
         machine_tag <- "levante"
         homepath <- "~/scripts/r"
-        workpath <- paste0("/work/ba1103/", Sys.info()["user"])
+        if (T) {
+            workpath <- paste0("/work/ba1103/", Sys.info()["user"])
+        } else if (F) {
+            workpath <- paste0("/work/ab1095/", Sys.info()["user"])
+        } else if (F) {
+            workpath <- paste0("/work/ab0246/", Sys.info()["user"])
+        }
     } else if (any(sapply(c("paleosrv1", "fu-"), grepl, hostname))) { # paleosrv
         machine_tag <- "paleosrv"
         homepath <- "~/scripts/r"

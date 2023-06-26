@@ -123,9 +123,29 @@ if (T && file.exists(f)) {
     co2_ssp126$timen_diff <- as.numeric(co2_ssp126$time_diff)
     co2_ssp126$co2_diff_ppm <- diff(co2_ssp126$co2_ppm)
     add_co2_ssp126 <- F
-    message("set add_co2_hist=T if you want to add to plot")
+    message("set add_co2_ssp126=T if you want to add to plot")
 } else {
-    message("enable here to load hist CO2 ...")
+    message("enable here to load ssp126 CO2 ...")
+}
+
+# cmip6 ssp585
+f <-"/pool/data/ECHAM6/input/r0008/greenhouse_ssp585.nc"
+if (T && file.exists(f)) {
+    message("disable here if you do not want to load ssp585 CO2 from ", f, " ...")
+    co2_ssp585_ncin <- nc_open(f)
+    time <- co2_ssp585_ncin$dim$time$vals # year as %Y.%f
+    timelt <- as.POSIXlt(paste0(time, "-1-1"), tz="UTC")
+    co2_ssp585 <- list(file=f,
+                       co2_ppm=ncvar_get(co2_ssp585_ncin, "CO2"), time=timelt, timen=time,
+                       text="", col="red", lty=2, lwd=0.5, pch=NA)
+    timelt_diff <- diff(timelt)
+    co2_ssp585$time_diff <- timelt[1:(length(timelt)-1)] + timelt_diff/2
+    co2_ssp585$timen_diff <- as.numeric(co2_ssp585$time_diff)
+    co2_ssp585$co2_diff_ppm <- diff(co2_ssp585$co2_ppm)
+    add_co2_ssp585 <- F
+    message("set add_co2_ssp585=T if you want to add to plot")
+} else {
+    message("enable here to load ssp585 CO2 ...")
 }
 
 # nao time series
@@ -143,7 +163,7 @@ f <- "/work/ab0246/a270073/data/noaa/nino34/read_noaa_nino34_function.r"
 if (T && file.exists(f)) {
     message("disable here if you do not want to load noaa nino34 times series ...")
     source(f)
-    nino34 <- read_noaa_nino34_function(f, path=dirname(f))
+    nino34 <- read_noaa_nino34_function(path=paste0(dirname(f), "/data"))
 } else {
     message("enable here to load ucar hurrel NAO time series ...")
 }
@@ -1592,7 +1612,7 @@ for (ei in seq_along(cmip6_exps)) {
         }
     }
 }
-if (T && any(file.exists(fs))) {
+if (T && !is.null(fs) && any(file.exists(fs))) {
     message("disable here if you do not want to load cmip6 data ...")
     cmip6_freqs <- c("mon", "an", "ymonmean")
     cmip6_modes <- c("mean", "median", "sd", "min", "max")
