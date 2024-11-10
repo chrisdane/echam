@@ -6,8 +6,9 @@ message("###################### namelist.general.post.r start ##################
 
 graphics.off()
 options(show.error.locations=T)
-options(warn=2) # stop on warnings
-#options(warn=0) # back to default
+options(warn=0) # default: print warnings at the end
+#options(warn=1) # show warnings when they occur
+#options(warn=2) # stop on warnings
 
 # clear work space
 if (T) {
@@ -38,11 +39,19 @@ post_force <- F # redo calculation although output file already exists
 clean <- T # remove temporary files
 
 # cdo options
+cdo_pedantic <- "--pedantic" # turn cdo warning into cdo error
 cdo_silent <- "" # "-s" for silent or ""
 cdo_select_no_history <- "" # "--no_history" or ""
 cdo_convert_grb2nc <- T # should post processing result be converted to nc (will be set to T if new dates are wanted)?
+cdo_OpenMP_threads <- "" # default: no
 cdo_OpenMP_threads <- paste0("-P ", max(1, trunc(0.75*as.integer(system("nproc", intern=T))))) # "-P n" or "" (will be irgnored on commands that do not support OMP)
-cdo_set_rel_time <- T # conversion from absolute to relative time
+cdo_OpenMP_threads <- "-P 32"
+# the error  
+#   OMP: Error #34: System unable to allocate necessary resources for OMP thread:
+#   OMP: System error #11: Resource temporarily unavailable
+#   OMP: Hint Try decreasing the value of OMP_NUM_THREADS.
+# may be solved by decreasing -P 
+cdo_set_rel_time <- F # conversion from absolute to relative time
 cdo_run_from_script <- T # create temporary file and run long cdo command from there
 # maximum number of args cdo
 # stan0/1: getconf ARG_MAX 2621440
@@ -71,7 +80,7 @@ nice_options <- "-n 0"
 # Specify  the scheduling class data.  This only has an effect if the class accepts an argument.  For realtime and best-effort, 0-7 are valid data (priority levels), and 0 represents the highest priority level.
 ionice_options <- "" # default: do not use ionice
 #ionice_options <- "-c2 -n3"
-ionice_options <- "-c2 -n0"
+#ionice_options <- "-c2 -n0"
 
 # model specific general options
 mpiom1_remap <- T
@@ -84,6 +93,8 @@ known_dimnames <- list(time=c("time", "Time", "TIME", "time_mon", "T", "t"))
 cdo_known_cmds <- list(
    "psl"=list(cmd=c("<cdo> merge <aps> <geosp> <t>",
                     "<cdo> sealevelpressure")),
+   "apr_tot"=list(cmd="<cdo> -setunit,'mm day-1' -setname,apr_tot -mulc,86400 -enssum <aprl> <aprc>"), # kg m-2 s-1 --> mm day-1
+   "siarea"=list(cmd=c("<cdo> -setunits,m2 -setname,siarea -mul <gridarea> [ divc,100 <siconc> ]")), # cmip6:siconc is in %
    "hvel"=list(cmd=c("<cdo> expr,'hvel=sqrt(uo*uo + vo*vo)' <uvo>")),
    # TOA imbalance
    # https://github.com/ncar-hackathons/gallery/blob/master/cmip6dpdt_pendergrass/get_cmip6_ECS-alt.ipynb
@@ -140,13 +151,13 @@ cdo_known_cmds <- list(
                           "<nco_ncatted> -O -a units,tsurfaprt,o,c,\"degC\"")),
    "fgco2"=list(cmd=c("<cdo> -setname,fgco2 -mulc,-0.272912 <co2_flx_ocean>", 
                       # co2_flx_ocean:7
-                      # into atm --> into ocean; kgCO2 --> kgC
+                      # >0 into atm --> >0 into ocean; kgCO2 --> kgC
                       "<nco_ncatted> -O -a code,fgco2,d,,",
                       "<nco_ncatted> -O -a table,fgco2,d,,",
                       "<nco_ncatted> -O -a long_name,fgco2,o,c,\"Surface Downward Flux of Total CO2 [kgC m-2 s-1]\"")),
    "nbp"=list(cmd=c("<cdo> -setname,nbp -mulc,-0.272912 -enssum <co2_flx_land> <co2_flx_lcc> <co2_flx_harvest>", 
                     # co2_flx_land:6 + co2_flx_lcc:24 + co2_flx_harvest:25
-                    # into atm --> into land; kgCO2 --> kgC; nbp = netAtmosLandCO2Flux
+                    # >0 into atm --> >0 into land; kgCO2 --> kgC; nbp = netAtmosLandCO2Flux
                     "<nco_ncatted> -O -a code,nbp,d,,",
                     "<nco_ncatted> -O -a table,nbp,d,,",
                     "<nco_ncatted> -O -a long_name,nbp,o,c,\"Carbon Mass Flux out of Atmosphere Due to Net Biospheric Production on Land [kgC m-2 s-1]\"")),
@@ -156,9 +167,16 @@ cdo_known_cmds <- list(
                                     "<nco_ncatted> -O -a table,netAtmosLandCO2Flux,d,,",
                                     paste0("<nco_ncatted> -O -a long_name,netAtmosLandCO2Flux,o,c,\"Net flux of CO2 between atmosphere and ",
                                            "land (positive into land) as a result of all processes [kgC m-2 s-1]\""))),
-   "co2_flx_total"=list(cmd=c("<cdo> -setname,co2_flx_total -add <fgco2> <nbp>",
-                              paste0("<nco_ncatted> -O -a long_name,co2_flx_total,o,c,\"Total CO2 flux of ocean and land; ",
-                                     "fgco2+nbp (positive into ocean/land) [kgC m-2 s-1]\""))),
+   "co2_flx_nat"=list(cmd=c("<cdo> -setname,co2_flx_nat -enssum <co2_flx_ocean> <co2_flx_land>",
+                            paste0("<nco_ncatted> -O -a long_name,co2_flx_nat,o,c,\"Total natural CO2 flux of ocean and land; ",
+                                   "co2_flx_ocean+co2_flx_land (positive into atm) [kgCO2 m-2 s-1]\""))),
+   # co2_flx_total1 and co2_flx_total2 are very similar
+   "co2_flx_total1"=list(cmd=c("<cdo> -setname,co2_flx_total1 -enssum <co2_flx_ocean> <co2_flx_land> <co2_flx_anthro> <co2_flux_corr>",
+                               paste0("<nco_ncatted> -O -a long_name,co2_flx_total1,o,c,\"Total CO2 flux of ocean and land; ",
+                                      "co2_flx_ocean+co2_flx_land+co2_flx_anthro+co2_flux_corr (positive into atm) [kgCO2 m-2 s-1]\""))),
+   "co2_flx_total2"=list(cmd=c("<cdo> -setname,co2_flx_total2 -enssum <co2_flx_ocean> <co2_flx_land> <co2_flx_lcc> <co2_flx_harvest> <co2_emis> <co2_flux_corr>", # problem: co2_emis only in esm-hist/ssp, not esm-piControl
+                               paste0("<nco_ncatted> -O -a long_name,co2_flx_total2,o,c,\"Total CO2 flux of ocean and land; ",
+                                      "co2_flx_ocean+co2_flx_land+co2_flx_lcc+co2_flx_harvest+co2_flx_anthro+co2_flux_corr (positive into atm) [kgCO2 m-2 s-1]\""))),
    "fLuc"=list(cmd=c("<cdo> -setname,fLuc -mulc,0.272912 <co2_flx_lcc>", # kgCO2 --> kgC 
                      "<nco_ncatted> -O -a code,fLuc,d,,",
                      "<nco_ncatted> -O -a table,fLuc,d,,",
@@ -204,6 +222,9 @@ cdo_known_cmds <- list(
                       "<nco_ncatted> -O -a long_name,apco2,o,c,\"Partial pressure of atmospheric CO2\"")),
    "POCphydiadet"=list(cmd=c("<cdo> -setname,POCphydiadet -enssum <bgc05> <bgc14> <bgc08>", # phyc + diac + detc
                              "<nco_ncatted> -O -a long_name,poc,o,c,\"Carbon from small pyhtoplankton + diatoms + detritus\"")),
+   "export_detC_100m"=list(cmd=c("<cdo> -setname,export_detC_100m -mulc,22.88 <detoc>", # 22.88 = 20+0.0288*100; molC m-3 * m day-1 = molC m-2 day-1
+                                 "<nco_ncatted> -O -a long_name,export_detC_100m,o,c,\"Carbon export production = (20+0.0288*100)*detoc(100m), detoc: Sum of detrital organic carbon component concentrations\"",
+                                 "<nco_ncatted> -O -a units,export_detC_100m,o,c,\"molC d-1\"")), # cmip6:detoc is in mol m-3, new units refer to fldint
    "calcite"=list(cmd=c("<cdo> -setname,calcite -enssum <bgc20> <bgc21>", # phycal + detcal
                         "<nco_ncatted> -O -a long_name,calcite,o,c,\"Calcite from small pyhtoplankton + detritus\"")),
    "sedimentC"=list(cmd=c("<cdo> -setname,sedimentC -enssum <benC> <benCalc>",

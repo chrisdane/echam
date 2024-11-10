@@ -243,6 +243,7 @@ if (F) { # gregor_and_fay_2021
         names_short <- "esm-piControl_wout_talk_rest2"
         names_legend <- "esm-piControl"
     }
+    if (T) prefixes <- paste0(prefixes, "_regular_dx1.000_dy1.000")
     #varnamesin <- "temp2"
     #varnamesin <- "CO2"
     #varnamesin <- "co2_flux"
@@ -258,21 +259,26 @@ if (F) { # gregor_and_fay_2021
     #varnamesin <- "sos"
     #varnamesin <- "siarean"
     #varnamesin <- "siareas"
-    varnamesin <- "aCO2"
+    #varnamesin <- "aCO2"
     #varnamesin <- "CO2f"
     #varnamesin <- "pCO2s"
     #varnamesin <- "dpCO2s"
     #varnamesin <- "bgc02"
     #varnamesin <- "bgc03"
+    #varnamesin <- "diags3d01"
+    #varnamesin <- "diags3d02"
+    varnamesin <- "NPPtot"
     #depths <- 0
     #depths <- "0-5900"
+    #depths <- "0-5900"
+    depthsf <- "_int0-5900m"
     #depth_fromsp <- -50
     #depth_fromsp <- -250
     #depth_fromsp <- -500
     #echam6_global_setNA <- "ocean"
     #echam6_global_setNA <- "land"
     addland <- F
-    #seasonsf <- "annual"
+    seasonsf <- "annual"
     #fromsf <- 2586
     #fromsf <- 2686
     #fromsf <- 2817
@@ -285,11 +291,12 @@ if (F) { # gregor_and_fay_2021
     #tosf <- 2916
     #tosf <- 3208
     #tosf <- 3112
+    tosf <- 3264
     #tosf <- 3497
     #tosf <- 3574
     #tosf <- 3590
     #tosf <- 3859
-    tosf <- 3945
+    #tosf <- 3945
     #tunit <- "model year"
     tunit <- "esm-piControl year"
     #new_origins <- 1 # esm-piControl
@@ -301,8 +308,8 @@ if (F) { # gregor_and_fay_2021
     #n_mas_an <- 3
     #n_mas_an <- 5
     #n_mas_an <- 10
-    modes <- "select"
-    #modes <- "timmean"
+    #modes <- "select"
+    modes <- "timmean"
     #modes <- "fldmean"
     #modes <- "fldint"
     #modes <- "depth"
@@ -364,6 +371,19 @@ if (F) { # gregor_and_fay_2021
     cols <- "#E41A1C"
     remove_mean_froms <- 1961
     remove_mean_tos <- 1990
+
+} else if (F) { # awi-esm-1-1-lr ssp534-over wrong restart vs ssp585 
+    models <- rep("echam6", t=2)
+    prefixes <- c("awi-esm-1-1-lr_kh800_ssp534-over", "awi-esm-1-1-lr_kh800_ssp585")
+    names_short <- prefixes
+    names_legend <- c("ssp534-os from hist", "ssp585")
+    fromsf <- rep(2015, t=2)
+    tosf <- rep(2040, t=2)
+    #tosf <- rep(2100, t=2)
+    #tosp <- rep(2040, t=2)
+    varnamesin <- rep("temp2", t=2)
+    modes <- rep("timmean", t=2)
+    #modes <- rep("fldmean", t=2)
 
 } else if (F) { # Hol-Tx10 on paleosrv or Hol-T on stan
     models <- "echam5"
@@ -521,9 +541,9 @@ if (F) { # gregor_and_fay_2021
     #models <- rep("recom", t=3)
     prefixes <- c(#"awi-esm-1-1-lr_kh800_piControl_LUtrans1850",
                   "awi-esm-1-1-lr_kh800_piControl_LUtrans1850_levante",
-                  "coccos_piControl_chris_code",
-                  "coccos_piControl_original_bionotzero"
-                  #, "coccos_piControl_original_bugfix"
+                  "mseifert_coccos_piControl_chris_code",
+                  "mseifert_coccos_piControl_original_bionotzero"
+                  #, "mseifert_coccos_piControl_original_bugfix"
                   )
     names_short <- c(#"piControl_LUtrans1850", 
                      "piControl_LUtrans1850_levante", "piControl_chris_code", "piControl_original_bionotzero"
@@ -564,12 +584,12 @@ if (F) { # gregor_and_fay_2021
     #models <- rep("recom", t=7)
     prefixes <- c("awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest2",
                   "awi-esm-1-1-lr_kh800_esm-piControl_start3870",
-                  "coccos_esm-piControl_original",
-                  "coccos_esm-piControl_original_bionotzero",
-                  "coccos_esm-piControl_original_start3870",
-                  #"coccos_esm-piControl_chris_code", # mistake: restore_alkalinity was true
-                  "coccos_esm-piControl_chris_code_bugfix",
-                  "coccos_esm-piControl_chris_code_bugfix_orig_fesom_restart")
+                  "mseifert_coccos_esm-piControl_original",
+                  "mseifert_coccos_esm-piControl_original_bionotzero",
+                  "mseifert_coccos_esm-piControl_original_start3870",
+                  #"mseifert_coccos_esm-piControl_chris_code", # mistake: restore_alkalinity was true
+                  "mseifert_coccos_esm-piControl_chris_code_bugfix",
+                  "mseifert_coccos_esm-piControl_chris_code_bugfix_orig_fesom_restart")
     names_short <- c("default", "default_start3870", "original", "original_bionotzero", "original_start3870", 
                      #"chris_code", 
                      "chris_code_bugfix", "chris_code_bugfix_orig_fesom_restart")
@@ -587,12 +607,12 @@ if (F) { # gregor_and_fay_2021
     tosf <- c(3945, 3878, 3884, 3886, 3881, 3878, 3878) # tos
     fromsp <- c(3871, NA, NA, NA, NA, NA)
     tosp <- c(3886, NA, NA, NA, NA, NA)
-    plotprefix <- "coccos_esm-piControl"
+    plotprefix <- "mseifert_coccos_esm-piControl"
 
 } else if (F) { # mseifert esm-piControl
     models <- rep("fesom", t=2)
     #models <- rep("recom", t=2)
-    prefixes <- c("coccos_esm_piControl_CONTROL",
+    prefixes <- c("mseifert_coccos_esm_piControl_CONTROL",
                   "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest2")
     names_short <- c("esm_piControl_CONTROL",
                      "esm-piControl_wout_talk_rest2")
@@ -605,6 +625,25 @@ if (F) { # gregor_and_fay_2021
     tosf <- c(3971, 3945)
     fromsp <- c(NA, 3871)
     tosp <- c(3945, NA)
+
+} else if (F) { # tnagwekar esm-hist
+    #models <- rep("fesom", t=2)
+    models <- rep("recom", t=2)
+    prefixes <- c("awi-esm-1-1-lr_kh800_esm-hist_regular_dx1.000_dy1.000",
+                  "tnagwekar_hist_new_regular_dx1.000_dy1.000")
+    names_short <- prefixes
+    names_legend <- c("esm-hist chris", "esm-hist tanvi")
+    #varnamesin <- rep("tos", t=2)
+    #varnamesin <- rep("mlotst", t=2)
+    #varnamesin <- rep("sic", t=2)
+    #varnamesin <- rep("siarean", t=2)
+    #varnamesin <- rep("siareas", t=2)
+    #varnamesin <- rep("aCO2", t=2)
+    varnamesin <- rep("pCO2s", t=2)
+    #modes <- rep("select", t=2)
+    modes <- rep("timmean", t=2)
+    fromsf <- rep(1995, t=2)
+    tosf <- rep(2014, t=2)
 
 } else if (F) { # takahashi_etal_2002
     models <- c(rep("gregor_and_fay_2021", t=4), rep("recom", t=4))
@@ -658,6 +697,19 @@ if (F) { # gregor_and_fay_2021
     fromsf <- rep(3001, t=2)
     tosf <- rep(3005, t=2)
 
+} else if (F) { # compare mldHT09 vs fesom1 mlotst
+    models <- rep("fesom", t=2)
+    prefixes <- rep("awi-esm-1-1-lr_kh800_ssp585", t=2)
+    varnamesin <- c("mlotst", "mldepthdensp125_m")
+    names_short <- names_legend <- varnamesin
+    varnames_out_samedims <- "mlotst"
+    names_legend_samedims <- c("fesom:mlotst:0.125", "post processed")
+    modes <- rep("fldmean", t=2)
+    fromsf <- rep(2015, t=2)
+    tosf <- rep(2100, t=2)
+    seasonsf <- rep("annual", t=2)
+    areas <- rep("NH_65_30W120E", t=2)
+
 } else if (F) { # w/out excluded sea ice locations
     models <- rep("recom", t=2)
     prefixes <- c("awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest2",
@@ -673,42 +725,94 @@ if (F) { # gregor_and_fay_2021
 } else if (F) { # nobio dead ocean
     models <- "recom"
     prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_nobio_spinup"
+    if (F) prefixes <- paste0(prefixes, "_regular_dx1.000_dy1.000")
     names_short <- "esm-piControl_nobio_spinup"
     names_legend <- "esm-piControl nobio"
-    varnamesin <- "bgc12"
-    modes <- "depthint"
+    #varnamesin <- "bgc12"
+    #varnamesin <- "diags3d01"
+    #varnamesin <- "diags3d02"
+    varnamesin <- "NPPtot"
+    modes <- "timmean"
+    #modes <- "depthint"
     fromsf <- 3208
-    tosf <- 3323
+    #tosf <- 3323
+    tosf <- 3264
     seasonsf <- "annual"
-    depthsf <- "_0-5900m"
+    #depthsf <- "_0-5900m"
+    depthsf <- "_int0-5900m"
     new_origins <- 208
     #remove_mean_froms <- 208
     #remove_mean_tos <- remove_mean_froms
-    tunit <- "esm-piControl year"
+    #tunit <- "esm-piControl year"
+    tunit <- "nobio year"
 
-} else if (T) { # nobio dead ocean vs control
-    models <- rep("recom", t=2)
+} else if (F) { # nobio dead ocean vs control
+    models <- rep("echam6", t=2)
+    #models <- rep("fesom", t=2)
+    #models <- rep("recom", t=2)
     prefixes <- c("awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest2",
                   "awi-esm-1-1-lr_kh800_esm-piControl_nobio_spinup")
+    if (F) prefixes <- paste0(prefixes, "_regular_dx1.000_dy1.000")
     names_short <- c("esm-piControl_wout_talk_rest2", "esm-piControl_nobio_spinup")
     names_legend <- paste0("esm-piControl ", c("", "nobio"))
-    varnamesin <- rep("aCO2", t=2)
-    #varnamesin <- rep("NPPtot", t=2)
+    #varnamesin <- rep("temp2", t=2)
+    #varnamesin <- rep("co2_flx_land", t=2)
+    #varnamesin <- rep("co2_flx_lcc", t=2)
+    varnamesin <- rep("co2_flx_harvest", t=2)
+    #varnamesin <- rep("nbp", t=2)
+    #varnamesin <- rep("tos", t=2)
+    #varnamesin <- rep("siarean", t=2)
+    #varnamesin <- rep("siareas", t=2)
+    #varnamesin <- rep("aCO2", t=2)
+    #varnamesin <- rep("CO2f", t=2)
+    #varnamesin <- rep("bgc02", t=2) # DIC
     #varnamesin <- rep("bgc05", t=2) # C nanophy
     #varnamesin <- rep("bgc08", t=2) # C det
     #varnamesin <- rep("bgc10", t=2)  # C het 
     #varnamesin <- rep("bgc12", t=2)  # DOC
     #varnamesin <- rep("bgc14", t=2) # C dia
-    modes <- rep("select", t=2)
-    #modes <- rep("fldint", t=2)
+    #varnamesin <- rep("diags3d01", t=2)
+    #varnamesin <- rep("diags3d02", t=2)
+    #varnamesin <- rep("NPPtot", t=2)
+    #modes <- rep("select", t=2)
+    #modes <- rep("timmean", t=2)
+    #modes <- rep("fldmean", t=2)
+    modes <- rep("fldint", t=2)
+    #modes <- rep("depth", t=2)
     fromsf <- c(3208, 3208)
+    #fromsf <- c(3517, 3517)
+    #fromsf <- c(3926, 3926)
+    #tosf <- c(3264, 3264)
+    #tosf <- c(3265, 3264)
+    #tosf <- c(3265, 3265)
+    #tosf <- c(3323, 3264)
     #tosf <- c(3323, 3323)
-    tosf <- c(3945, 3327)
+    #tosf <- c(3536, 3536)
+    #tosf <- c(3945, 3264)
+    #tosf <- c(3945, 3265)
+    #tosf <- c(3945, 3536)
+    #tosf <- c(3945, 3327)
+    #tosf <- c(3945, 3377)
+    #tosf <- c(3945, 3945)
+    #tosf <- c(3945, 4311)
+    tosf <- c(4527, 4527)
     #seasonsf <- rep("annual", t=2)
+    #depthsf <- rep("_0m", t=2)
+    #depthsf <- rep("_0-5900m", t=2)
     #depthsf <- rep("_int0-5900m", t=2)
-    new_origins <- c(208, 208)
-    tosp <- c(327, NA)
-    tunit <- "esm-piControl year"
+    if (F) {
+        new_origins <- c(208, 208)
+        tosp <- c(327, NA)
+        tunit <- "esm-piControl year"
+    } else if (T) {
+        new_origins <- c(1, 1)
+        #tosp <- c(57, NA)
+        #tosp <- c(169, NA)
+        #tosp <- c(328, NA)
+        tunit <- "nobio year"
+        #remove_mean_froms <- c(1, 1)
+        #remove_mean_tos <- remove_mean_froms
+    }
 
 } else if (F) { # nobio dead ocean vs control and spinup
     models <- rep("recom", t=3)
@@ -725,6 +829,53 @@ if (F) { # gregor_and_fay_2021
     depthsf <- rep("_int0-5900m", t=3)
     new_origins <- c(151, 208, 208)
     tunit <- "esm-piControl year"
+
+} else if (F) { # esm-hist_nobio dead ocean
+    #models <- rep("echam6", t=2)
+    models <- rep("fesom", t=2)
+    #models <- rep("recom", t=2)
+    if (T) { # absolute values
+        prefixes <- c("awi-esm-1-1-lr_kh800_esm-hist",
+                      "awi-esm-1-1-lr_kh800_esm-hist_nobio")
+        names_short <- c("esm-hist", "esm-hist_nobio")
+        names_legend <- paste0("esm-hist ", c("", "nobio"))
+    } else if (F) { # anom wrt piControl
+        prefixes <- c("awi-esm-1-1-lr_kh800_esm-hist_anom_wrt_piControl",
+                      "awi-esm-1-1-lr_kh800_esm-hist_nobio_anom_wrt_piControl")
+        names_short <- paste0(c("esm-hist", "esm-hist_nobio"), "_response")
+        names_legend <- paste0("esm-hist", c("", " nobio"), " response") 
+    }
+    if (F) prefixes <- paste0(prefixes, "_regular_dx1.000_dy1.000")
+    #varnamesin <- rep("temp2", t=2)
+    #varnamesin <- rep("co2_flx_land", t=2)
+    #varnamesin <- rep("co2_flx_lcc", t=2)
+    #varnamesin <- rep("co2_flx_harvest", t=2)
+    #varnamesin <- rep("nbp", t=2)
+    varnamesin <- rep("tos", t=2)
+    #varnamesin <- rep("siarean", t=2)
+    #varnamesin <- rep("siareas", t=2)
+    #varnamesin <- rep("aCO2", t=2)
+    #varnamesin <- rep("CO2f", t=2)
+    #varnamesin <- rep("bgc02", t=2) # DIC
+    #varnamesin <- rep("bgc05", t=2) # C nanophy
+    #varnamesin <- rep("bgc08", t=2) # C det
+    #varnamesin <- rep("bgc10", t=2)  # C het 
+    #varnamesin <- rep("bgc12", t=2)  # DOC
+    #varnamesin <- rep("bgc14", t=2) # C dia
+    #varnamesin <- rep("diags3d01", t=2)
+    #varnamesin <- rep("diags3d02", t=2)
+    #varnamesin <- rep("NPPtot", t=2)
+    #modes <- rep("select", t=2)
+    #modes <- rep("timmean", t=2)
+    modes <- rep("fldmean", t=2)
+    #modes <- rep("fldint", t=2)
+    #modes <- rep("depth", t=2)
+    fromsf <- rep(1850, t=2)
+    tosf <- rep(2014, t=2)
+    #seasonsf <- rep("annual", t=2)
+    #depthsf <- rep("_0m", t=2)
+    #depthsf <- rep("_0-5900m", t=2)
+    #depthsf <- rep("_int0-5900m", t=2)
 
 } else if (F) { # mhw composite data vs seas
     workpath <- "/work/ba1103/a270073"
@@ -1348,6 +1499,21 @@ if (F) { # gregor_and_fay_2021
     cols <- c(2, 1)
     lepos <- "bottomright"
 
+} else if (T) { # rho online offline frauke
+    models <- rep("fesom", t=2)
+    prefixes <- rep("fesom1.4_old_Low01_s52", t=2)
+    names_short <- prefixes 
+    names_legend <- c("online", "offline")
+    varnamesin <- c("rho", "rho_insitu")
+    varnames_out_samedims <- "rho_insitu"
+    names_legend_samedims <- names_legend
+    depthsf <- rep("_0-6000m", t=2)
+    areas <- rep("global", t=2)
+    fromsf <- rep(2009, t=2)
+    tosf <- rep(2009, t=2)
+    seasonsf <- rep("annual", t=2)
+    modes <- rep("depth", t=2)
+
 # =====================================
 # 3 settings
 } else if (F) { # en4
@@ -1723,18 +1889,63 @@ if (F) { # gregor_and_fay_2021
 # =====================================
 # 4 settings
 } else if (F) { # sofia
+    # hist cols: c("hist_7001"="#199d76", "hist_7003"="#746fb2", "hist_7005"="#e6aa01", "hist_9211"="#656565")
     workpath <- "/work/ab1095/a270073"
-    if (F) { 
+    #workpath <- "/work/ba1103/a270073"
+    if (T) { 
+        names_short <- c("piControl2", "fwf_01")
+        #names_legend <- c("ctrl", "fwf_01")
+        names_legend <- c("piControl", "antwater")
+        #fromsf <- c(1850, 1870)
+        fromsf <- c(1870, 1870)
+        #fromsf <- c(1948, 1948)
+        #tosf <- c(1967, 1967)
+        #fromsf <- c(1951, 1951)
+        #tosf <- c(1970, 1967)
+        tosf <- c(1970, 1970)
+        #tosf <- c(2100, 1967)
+        #tosf <- c(2100, 1970)
+        #fromsp <- c(1870, NA)
+        #tosp <- c(1970, NA)
+    } else if (F) {
+        if (F) { # hist_7001
+            names_short <- c("historical3_and_ssp585_2", "hist_7001")
+            names_legend <- c("historical+ssp585", "hist-antwater-70-01")
+        } else if (T) { # hist_7005
+            names_short <- c("historical3_and_ssp585_2", "hist_7005")
+            names_legend <- c("historical+ssp585", "hist-antwater-70-05")
+        }
+        fromsf <- c(1850, 1970)
+        tosf <- c(2100, 2020)
+        fromsp <- c(1970, NA)
+        tosp <- c(2020, NA)
+    } else if (F) {
+        if (T) { # hist_7001
+            names_short <- c("historical3_and_ssp585_2", "hist_7001", "hist_7005", "hist_9211")
+            names_legend <- c("historical+ssp585", "hist-antwater-70-01", "hist-antwater-70-05", "hist-antwater-92-11")
+            cols <- mycols(4)[c(1, 4, 3, 2)]
+        }
+        fromsf <- c(1850, 1970, 1970, 1992)
+        tosf <- c(2100, rep(2020, t=3))
+        fromsp <- c(1970, rep(NA, t=3))
+        tosp <- c(2020, rep(NA, t=3))
+    } else if (F) { 
         names_short <- c("piControl2", "antwater")
         names_legend <- c("ctrl", "0.1 Sv paleo")
         fromsf <- c(1961, 1961)
         tosf <- c(1970, 1970)
     } else if (F) {
+        names_short <- c("fwf_01", "norm_yes", "norm_no")
+        names_legend <- names_short
+        fromsf <- rep(1870, t=length(names_short))
+        tosf <- c(1970, rep(1879, t=2))
+        tosp <- c(1879, NA, NA)
+    } else if (F) {
         names_short <- c("piControl2", "antwater", "antwater_1sv", "antwater_10sv")
         names_legend <- c("ctrl", "0.1 Sv paleo", "1 Sv paleo", "10 Sv paleo")
         fromsf <- rep(1870, t=length(names_short))
         tosf <- c(1970, 1970, rep(1879, t=2))
-    } else if (T) {
+    } else if (F) {
         names_short <- c("piControl2", "antwater", "ant_01sv", "ant_01sv_nocorr")
         names_legend <- c("ctrl", "0.1 Sv paleo", "0.1 Sv", "0.1 Sv no corr")
         fromsf <- rep(1870, t=length(names_short))
@@ -1742,18 +1953,56 @@ if (F) { # gregor_and_fay_2021
         #tosp <- c(1879, rep(NA, t=3))
         #tosp <- rep(1879, t=4)
         #tosf <- c(1970, rep(1879, t=3))
-        tosf <- c(1970, 1970, 1917, 1879)
+        #tosf <- c(1970, 1970, 1917, 1879)
+        tosf <- c(1970, 1970, 1970, 1879)
         #tosf <- c(1970, 1970, rep(1879, t=2))
+    } else if (F) {
+        names_short <- c("piControl2", "ant_01sv", "antwater", "ptr_01", "fwf_01")
+        names_legend <- c("ctrl", "landice", "paleo", "ptr", "fwf")
+        fromsf <- rep(1870, t=length(names_short))
+        tosf <- rep(1879, t=length(names_short))
+        tosf[2] <- 1970
+    } else if (F) {
+        names_short <- c("piControl2", "fwf_01", "runoff_01")
+        names_legend <- c("ctrl", "fwf", "runoff")
+        fromsf <- rep(1870, t=length(names_short))
+        tosf <- rep(1879, t=length(names_short))
+    } else if (T) { # picontrol, antwater, historical, hist_7001, ssp585
+        names_short <- c("piControl2", "fwf_01", "historical3", "hist_7001", "ssp585_2")
+        names_legend <- c("piControl", "antwater", "historical", "hist-antwater-70-01", "ssp585")
+        fromsf <- c(1850, 1870, 1850, 1970, 2015)
+        tosf <- c(2100, 1970, 2014, 1992, 2100)
+        fromsp <- c(1870, NA, 1870, NA, NA)
+        tosp <- c(2014, NA, NA, NA, 2020)
     }
+    #tosp <- rep(1879, t=length(names_short))
+    #tosp <- rep(1967, t=length(names_short))
+    #models <- rep("echam6", t=length(names_short))
     models <- rep("fesom", t=length(names_short))
     prefixes <- paste0("awi-esm-1-1-lr_kh800_", names_short)
+    #varnamesin <- rep("temp2", t=length(models))
+    #varnamesin <- rep("thetao", t=length(models))
     #varnamesin <- rep("sos", t=length(models))
+    #varnamesin <- rep("so", t=length(models))
+    #varnamesin <- rep("runoff", t=length(models))
     #varnamesin <- rep("virtual_salt", t=length(models))
     varnamesin <- rep("wnet", t=length(models))
+    #varnamesin <- rep("wfo", t=length(models))
+    #varnamesin <- rep("wnet", t=length(models))
+    #varnamesin <- c("wnet", rep("wnet_fwf", t=3))
+    #varnames_out_samedims <- "wnet_fwf"
+    #names_legend_samedims <- names_legend
+    #depths <- rep("2000", t=length(models))
+    #depths <- rep("0-5900", t=length(models))
     #modes <- rep("timmean", t=length(models))
     #modes <- rep("fldmean", t=length(models))
     modes <- rep("fldint", t=length(models))
+    #modes <- rep("depth", t=length(models))
+    #seasonsf <- rep("annual", t=length(models))
+    #remove_mean_froms <- rep(1870, t=length(models))
+    #remove_mean_tos <- remove_mean_froms
     #areas <- rep("S60", t=length(models))
+    #areas <- rep("g19_SH-HL", t=length(models))
     if (all(modes == "timmean")) prefixes <- paste0(prefixes, "_regular_dx1.000_dy1.000")
     #remove_setting <- "piControl2"
 
@@ -2281,8 +2530,14 @@ if (F) { # gregor_and_fay_2021
     varnamesin <- rep("aCO2", t=length(prefixes))
     fromsf <- c(1950, 1850, rep(2015, t=4), 3001, 1850, 1850, rep(2015, t=5))
     tosf <- c(3000, 2014, rep(2100, t=4), 3945, 2100, 2014, rep(2100, t=5))
-    new_origins <- c(1, 737, rep(902, t=4), 1052, 1997, 1997, rep(2162, t=5))
-    tunit <- "piControl-year"
+    if (F) {
+        new_origins <- c(1, 737, rep(902, t=4), 1052, 1997, 1997, rep(2162, t=5))
+        tunit <- "piControl year"
+    } else if (T) {
+        new_origins <- c(-1050, -314, rep(-149, t=4), 1, 946, 946, rep(1111, t=5))
+        tunit <- "piControl/esm-piControl year"
+        do_aggregate_plot_data <- F
+    }
     modes <- rep("select", t=length(prefixes))
 
 } else if (F) { # gregor_etal_2019 lsm comparison
@@ -3188,6 +3443,7 @@ if (F) { # gregor_and_fay_2021
                 "MIROC-ES2L",
                 #"MPI-ESM-1-2-HAM", 
                 "MPI-ESM1-2-HR", "MPI-ESM1-2-LR", 
+                "NorESM2-LM", "NorESM2-MM",
                 "UKESM1-0-LL")
     prefixes <- c("CanESM5-CanOE_historical_and_ssp126_r1i1p2f1", "CanESM5_historical_and_ssp126_r1i1p1f1",
                   #"CESM2-FV2_historical_r1i1p1f1", 
@@ -3195,11 +3451,13 @@ if (F) { # gregor_and_fay_2021
                   "CESM2-WACCM_historical_and_ssp126_r1i1p1f1", 
                   "CNRM-ESM2-1_historical_and_ssp126_r1i1p1f2", 
                   #"GFDL-CM4_historical_and_ssp126_r1i1p1f1", 
+                  #"GFDL-ESM4_historical_and_ssp119_r1i1p1f1",
                   "GFDL-ESM4_historical_and_ssp126_r1i1p1f1",
                   "IPSL-CM6A-LR_historical_and_ssp126_r1i1p1f1",
                   "MIROC-ES2L_historical_and_ssp126_r1i1p1f2",
                   #"MPI-ESM-1-2-HAM_historical_and_ssp126_r1i1p1f1", 
                   "MPI-ESM1-2-HR_historical_and_ssp126_r1i1p1f1", "MPI-ESM1-2-LR_historical_and_ssp126_r1i1p1f1", 
+                  "NorESM2-LM_historical_and_ssp126_r1i1p1f1", "NorESM2-MM_historical_and_ssp126_r1i1p1f1",
                   "UKESM1-0-LL_historical_and_ssp126_r1i1p1f2")
     plotprefix <- "cmip6_historical_and_ssp126"
     if (F) { # tos
@@ -3217,7 +3475,8 @@ if (F) { # gregor_and_fay_2021
     } else if (F) { # mlotst
         models <- c("fesom", models)
         prefixes <- c("awi-esm-1-1-lr_kh800_historical_and_ssp126", prefixes)
-        varnamesin <- c("mldepthdensp030_m", rep("mlotst", t=length(models)-1)) # post-processed 0.03 fesom mld
+        varnamesin <- c("mldepthdensp030_m", rep("mlotst", t=length(models)-1)) 
+        #varnamesin[models == "GFDL-ESM4"] <- "mldepthdensp030_m" # post-processed 0.03 mld
         varnames_out_samedims <- "mlotst"
         if (F) { # add en4
             plotprefix <- "obs_cmip6_historical_and_ssp126"
@@ -3252,18 +3511,29 @@ if (F) { # gregor_and_fay_2021
         prefixes <- c("NOAA", "awi-esm-1-1-lr_kh800_historical_and_ssp126", prefixes) # add GF21
         varnamesin <- c("pco2atm", "pCO2a", rep("apco2", t=length(models)-2))
         varnames_out_samedims <- "apco2"
-    } else if (F) { # fgco2
+    } else if (T) { # fgco2
         models <- c("echam6", models)
         prefixes <- c("awi-esm-1-1-lr_kh800_historical_and_ssp126", prefixes)
         varnamesin <- c("co2_flx_ocean", rep("fgco2", t=length(models)-1))
         varnames_out_samedims <- "fgco2"
-        if (F) { # add gregor_and_fay_2021
-            plotprefix <- "obs_cmip6_historical_and_ssp126"
-            models <- c("gregor_and_fay_2021", "gregor_and_fay_2021", models)
-            prefixes <- c("aggregate_18models", "aggregate_18models", prefixes)
-            varnamesin <- c("fgco2_mon_mean", "fgco2_mon_median", rep("fgco2", t=length(models)-3))
+        if (T) { # add cmip6 mean
+            models <- c("cmip6_historical_and_ssp126", models)
+            prefixes <- c("aggregate_12models", prefixes)
+            varnamesin <- c("fgco2_mon_mean", varnamesin)
         }
-    } else if (T) { # chl
+        if (T) { # add gregor_and_fay_2021
+            plotprefix <- "obs_cmip6_historical_and_ssp126"
+            if (F) { # add mean and median
+                models <- c("gregor_and_fay_2021", "gregor_and_fay_2021", models)
+                prefixes <- c("aggregate_18models", "aggregate_18models", prefixes)
+                varnamesin <- c("fgco2_mon_mean", "fgco2_mon_median", rep("fgco2", t=length(models)-3))
+            } else if (T) { # add mean
+                models <- c("gregor_and_fay_2021", models)
+                prefixes <- c("aggregate_18models", prefixes)
+                varnamesin <- c("fgco2_mon_mean", varnamesin)
+            }
+        }
+    } else if (F) { # chl
         models <- c("recom", models)
         prefixes <- c("awi-esm-1-1-lr_kh800_historical_and_ssp126", prefixes)
         varnamesin <- rep("chl", t=length(models))
@@ -3271,25 +3541,28 @@ if (F) { # gregor_and_fay_2021
         varnames_out_samedims <- "chl"
         if (F) { # add obs
             plotprefix <- "obs_cmip6_historical_and_ssp126"
-            models <- c("oceancolor", models)
-            prefixes <- c("cmems_mod_glo_bgc_my_0.25_P1M-m", prefixes)
+            models <- c("cmems", models)
+            prefixes <- c("cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast", prefixes)
             varnamesin <- c("chl", varnamesin)
             levsf <- c(levsf, "")
         }
     } # which variable
-    inds <- list()
-    if (varnames_out_samedims == "mlotst") inds[[length(inds)+1]] <- which(models == "GFDL-ESM4" | models == "MIROC-ES2L") # no data
+    rminds <- list()
+    #if (varnames_out_samedims == "mlotst") rminds[[length(rminds)+1]] <- match(c("GFDL-ESM4", "MIROC-ES2L"), models) # no data
+    if (varnames_out_samedims == "mlotst") rminds[[length(rminds)+1]] <- match(c("MIROC-ES2L"), models) # no data
+    if (F && varnames_out_samedims == "fgco2") rminds[[length(rminds)+1]] <- match(c("CNRM-ESM2-1"), models) # has additional carbon influx from rivers
     if (varnames_out_samedims == "chl") {
-        inds[[length(inds)+1]] <- which(models == "MIROC-ES2L") # no data
-        inds[[length(inds)+1]] <- which(models == "CNRM-ESM2-1" | models == "IPSL-CM6A-LR") # strange values
+        rminds[[length(rminds)+1]] <- which(models == "MIROC-ES2L") # no data
+        rminds[[length(rminds)+1]] <- which(models == "CNRM-ESM2-1" | models == "IPSL-CM6A-LR") # strange values
     }
-    inds <- unique(unlist(inds))
-    if (length(inds) > 0) { 
-        models <- models[-inds]; prefixes <- prefixes[-inds]; varnamesin <- varnamesin[-inds]
-        if (exists("levsf")) levsf <- levsf[-inds]
+    rminds <- unique(unlist(rminds))
+    if (length(rminds) > 0) { 
+        models <- models[-rminds]; prefixes <- prefixes[-rminds]; varnamesin <- varnamesin[-rminds]
+        if (exists("levsf")) levsf <- levsf[-rminds]
     }
     cols <- rep(NA, t=length(models))
-    cols[models == "EN.4.2.2" | models == "gregor_and_fay_2021" | models == "oceancolor"] <- mycols(1)
+    cols[models == "EN.4.2.2" | models == "gregor_and_fay_2021" | models == "cmems"] <- mycols(1)
+    cols[models == "cmip6_historical_and_ssp126"] <- mycols(1) # cmip mean
     cols[models == "echam6" | models == "fesom" | models == "recom"] <- mycols(2)[2]
     cols[models == "CanESM5-CanOE"] <- mycols(3)[3]
     cols[models == "CanESM5"] <- mycols(4)[4]
@@ -3300,27 +3573,36 @@ if (F) { # gregor_and_fay_2021
     cols[models == "MIROC-ES2L"] <- mycols(9)[9]
     cols[models == "MPI-ESM1-2-HR"] <- mycols(10)[10]
     cols[models == "MPI-ESM1-2-LR"] <- mycols(11)[11]
+    cols[models == "NorESM2-LM"] <- mycols(13)[13]
+    cols[models == "NorESM2-MM"] <- mycols(14)[14]
     cols[models == "UKESM1-0-LL"] <- mycols(12)[12]
     if (anyNA(cols)) stop("set fix color for all models")
-    lwds <- rep(1, t=length(models))
-    lwds[1] <- 2 # obs
+    lwds <- ltys <- rep(1, t=length(models))
+    lwds[] <- 2
+    lwds[1] <- lwds[1] + 1 # obs
+    lwds[models == "cmip6_historical_and_ssp126"] <- lwds[models == "cmip6_historical_and_ssp126"] + 1 # cmip mean
+    lwds[models == "echam6" | models == "fesom" | models == "recom"] <- 3
+    ltys[models == "cmip6_historical_and_ssp126"] <- 3 # cmip mean
+    ltys[models == "echam6" | models == "fesom" | models == "recom"] <- 3
     names_legend <- models
     names_legend[models == "EN.4.2.2"] <- "EN4.2.2"
-    #names_legend[models == "gregor_and_fay_2021"] <- "GF21"
-    names_legend[models == "gregor_and_fay_2021"] <- c("GF21 mean", "GF21 median")
-    names_legend[models == "oceancolor"] <- "Oceancolor"
+    names_legend[models == "gregor_and_fay_2021"] <- "SeaFlux mean"
+    #names_legend[models == "gregor_and_fay_2021"] <- c("SeaFlux mean", "SeaFlux median")
+    names_legend[models == "cmems"] <- "Hindcast"
+    names_legend[models == "cmip6_historical_and_ssp126"] <- "CMIP6 mean"
     names_legend[models == "echam6" | models == "fesom" | models == "recom"] <- "AWI-ESM-1-REcoM"
     names_short <- names_legend
     names_legend_samedims <- names_legend
     #modes <- rep("timmean", t=length(models))
-    modes <- rep("fldmean", t=length(models))
-    #modes <- rep("fldint", t=length(models))
-    #fromsf <- rep(1850, t=length(models))
+    #modes <- rep("fldmean", t=length(models))
+    modes <- rep("fldint", t=length(models))
+    fromsf <- rep(1850, t=length(models))
     #fromsf <- rep(1981, t=length(models))
-    fromsf <- rep(1982, t=length(models))
+    #fromsf <- rep(1982, t=length(models))
+    #fromsf[match(c("CESM2-WACCM", "GFDL-ESM4"), names_legend)] <- 1970
     #fromsf[1] <- 1982 # obs
     #fromsf[2] <- 1982 # obs
-    #fromsf[1] <- 1990 # obs
+    fromsf[1] <- 1990 # obs
     #fromsf[2] <- 1990 # obs
     #fromsf[1] <- 1993 # obs
     #fromsf[2] <- 1850 # awicm1-recom
@@ -3336,18 +3618,18 @@ if (F) { # gregor_and_fay_2021
     #tosf[1] <- 2020 # obs
     #tosf[1] <- 2021 # obs
     #fromsp <- rep(1982, t=length(models))
-    #fromsp <- rep(1990, t=length(models))
+    fromsp <- rep(1990, t=length(models))
     #fromsp[1] <- 1990 # obs
     #fromsp[2] <- 1982 # awicm1-recom
     #tosp <- rep(2014, t=length(models))
     #tosp <- rep(2019, t=length(models))
-    center_ts <- T
+    center_ts <- F
     detrend_ts <- F
     #areas <- rep("g19_NH-HL", t=length(models))
     #areas <- rep("g19_NH-ST", t=length(models))
     #areas <- rep("g19_EQU", t=length(models))
     #areas <- rep("g19_SH-ST", t=length(models))
-    areas <- rep("g19_SH-HL", t=length(models))
+    #areas <- rep("g19_SH-HL", t=length(models))
     #areas <- rep("45to70S", t=length(models))
     #areas <- rep("nino34", t=length(models))
 

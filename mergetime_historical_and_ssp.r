@@ -6,10 +6,31 @@ options(warn=2) # stop on warning
 force <- F
 postpath <- "/work/ba1103/a270073/post"
 
-historical_grep <- "_historical_"
-#historical_grep <- "_historical2_"
-ssp_grep <- "_ssp126_"
-replacement <- "_historical_and_ssp126_"
+if (T) {
+    historical_grep <- "_historical_"
+    ssp_grep <- "_ssp126_"
+    replacement <- "_historical_and_ssp126_"
+} else if (F) {
+    historical_grep <- "_historical2_"
+    ssp_grep <- "_ssp126_"
+    replacement <- "_historical2_and_ssp126_"
+} else if (F) {
+    historical_grep <- "_historical_"
+    ssp_grep <- "_ssp245_"
+    replacement <- "_historical_and_ssp245_"
+} else if (F) {
+    historical_grep <- "_historical_"
+    ssp_grep <- "_ssp370_"
+    replacement <- "_historical_and_ssp370_"
+} else if (F) {
+    historical_grep <- "_historical_"
+    ssp_grep <- "_ssp585_"
+    replacement <- "_historical_and_ssp585_"
+} else if (F) {
+    historical_grep <- "_historical3_"
+    ssp_grep <- "_ssp585_2_"
+    replacement <- "_historical3_and_ssp585_2_"
+}
 
 #########################################################################
 
@@ -28,10 +49,24 @@ for (modeli in seq_along(models)) {
         for (vari in seq_along(vars)) {
         
             files <- list.files(paste0(postpath, "/", models[modeli], "/", modes[modei], "/", vars[vari]), full.names=T, recursive=F)
+            
+            # exclude specific non-default file pattern files
+            inds <- grep(paste0("_setgrid_remapycon_global_.*?.nc",
+                                "|_levelwise_0-5900m_setgrid_remapycon_global_1.nc",
+                                "|_setgrid.nc",
+                                "|_levelwise.nc"), 
+                         files)
+            if (length(inds) > 0) {
+                if (F) message("remove ", length(inds), " files with non-default file patterns:\n",
+                               paste(files[inds], collapse="\n"))
+                files <- files[-inds]
+            }
+            if (length(files) == 0) next # vari
+
             paths <- dirname(files)
             files <- basename(files)
-
-            # remove already existing e.g. "historical_and_ssp126" files
+            
+            # remove already existing e.g. "_historical_and_ssp126_" files
             replacement_inds <- grepl(glob2rx(paste0("*", replacement, "*", models[modeli], "_", modes[modei], "_", vars[vari], "*")), files)
             if (any(replacement_inds)) {
                 files <- files[-which(replacement_inds)]
@@ -50,6 +85,8 @@ for (modeli in seq_along(models)) {
                     if (any(ssp_inds)) {
                         ssp_files <- files[ssp_inds]
                         ssp_paths <- files[ssp_inds]
+
+                        #if (models[modeli] == "CESM2-WACCM" && modes[modei] == "fldint" && vars[vari] == "intpp") stop("asd")
 
                         # remove experiment and date from historical; e.g. ACCESS-CM2_historical_r1i1p1f1_ACCESS-CM2_fldmean_mlotst_g19_EQU_Jan-Dec_1982-2014.nc
                         hist_files_blank <- sub(historical_grep, "_", hist_files) # e.g. ACCESS-CM2_r1i1p1f1_ACCESS-CM2_fldmean_mlotst_g19_EQU_Jan-Dec_1982-2014.nc
@@ -100,19 +137,38 @@ for (modeli in seq_along(models)) {
                                                 ssp_files[fj], " from ", ssp_from_to[[fj]][1], " to ", ssp_from_to[[fj]][2], "\n",
                                                 "are equal and there is no gap between last historical year ", hist_from_to[[fi]][2], 
                                                 " and first ssp year ", ssp_from_to[[fj]][1], " --> merge them ...")
-                                        cmd <- paste0("cdo mergetime ", 
-                                                      postpath, "/", models[modeli], "/", modes[modei], "/", vars[vari], "/", hist_files[fi], " ",
-                                                      postpath, "/", models[modeli], "/", modes[modei], "/", vars[vari], "/", ssp_files[fj], " ",
-                                                      fout)
+                                        
+                                        # skip potentially large select files (except time series)
+                                        if (T && 
+                                            modes[modei] == "select" && 
+                                            !any(vars[vari] == c("aCO2", "siarean", "siareas", "fgco2", "CO2f", "mlotst"))) { # add exceptions here
+                                            message("special: skip merging potentially large select files")
+                                            next # fj
+                                        }
+
+                                        fhist <- paste0(postpath, "/", models[modeli], "/", modes[modei], "/", vars[vari], "/", hist_files[fi])
+                                        fssp <- paste0(postpath, "/", models[modeli], "/", modes[modei], "/", vars[vari], "/", ssp_files[fj])
+                                        
+                                        # check if both input files are completed
+                                        checkhist <- system(paste0("ncdump -k ", fhist), ignore.stdout=T)
+                                        if (checkhist != 0) message("fhist ", fhist, " broken/currently written to")
+                                        checkssp <- system(paste0("ncdump -k ", fssp), ignore.stdout=T)
+                                        if (checkssp != 0) message("fssp ", fssp, " broken/currently written to")
+                                        if (checkhist != 0 || checkssp != 0) {
+                                            message("skip")
+                                            next # fj
+                                        }
+
+                                        cmd <- paste0("cdo -O mergetime ", fhist, " ", fssp, " ", fout)
                                         message("run `", cmd, "` ...")
                                         check <- system(cmd)
-                                        if (check != 0) stop("cmd failed")
-                                        if (!file.exists(fout)) stop("fout does not exist")
+                                        if (check != 0) warning("error on `", cmd, "`")
+                                        #if (!file.exists(fout)) stop("fout does not exist")
+                                    
                                     } # if fout already exists
                                 } # if hist_files_blank[fi] == ssp_files_blank[fi] && diff(c(hist_from_to[[fi]][2], ssp_from_to[[fj]][1])) == 1
                             } # for fj ssp_files
                         } # for fi hist_files
-
                     } # if any(ssp_inds)
                 } # if any(hist_inds)
             } # if any files left after removing already existing *<replacement>* files

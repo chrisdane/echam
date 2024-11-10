@@ -978,10 +978,10 @@ if (F) { # old hist
 
 } else if (F) { # en4
     models <- "EN.4.2.2"
-    if (T) { # original files
+    if (F) { # original files
         files <- list(list.files("/work/ab0246/a270073/data/en4/data/4.2.2", pattern=glob2rx("EN.4.2.2.f.analysis.g10.*.nc"), full.names=T))
         fpatterns <- "EN.4.2.2.f.analysis.g10.<year><mon>.nc"
-    } else if (F) { # my calc_mldHT09.r results
+    } else if (T) { # my calc_mldHT09.r results
         files <- list(list.files("/work/ba1103/a270073/post/EN.4.2.2/select/mldHT09", pattern=glob2rx("EN.4.2.2.f.analysis.g10.*_mldHT09.nc"), full.names=T))
         fpatterns <- "EN.4.2.2.f.analysis.g10.<year><mon>_mldHT09.nc"
     } else if (F) { # my calc_rho.r results
@@ -990,24 +990,24 @@ if (F) { # old hist
     }
     prefixes <- models
     #varnamesin <- "temperature"
-    varnamesin <- "salinity"
+    #varnamesin <- "salinity"
     #varnamesin <- "rho_pot_0"
     #varnamesin <- "sigma_pot_0"
     #varnamesin <- "mldepthdensp001_m" # mixed layer depth from density threshold method (> 0.03 kg m-3)
     #varnamesin <- "mldepthdensp030_m" # mixed layer depth from density threshold method (> 0.03 kg m-3)
-    #varnamesin <- "mldepthdensp125_m" # mixed layer depth from density threshold method (> 0.125 kg m-3)
+    varnamesin <- "mldepthdensp125_m" # mixed layer depth from density threshold method (> 0.125 kg m-3)
     #varnamesin <- "mixeddp" # mixed layer depth from density algorithm
     #sellevsidx <- "1/23"
-    froms <- 1970
-    #froms <- 1980
+    #froms <- 1970
+    froms <- 1980
     #froms <- 1982
     #froms <- 1989
     #froms <- 2019
     #tos <- 1979
     #tos <- 2014
-    tos <- 2018
+    #tos <- 2018
     #tos <- 2019
-    #tos <- 2020
+    tos <- 2020
     #tos <- 2021 # todo: calc mld 2021
     modes <- "select"
     #modes <- "timmean"
@@ -1155,7 +1155,7 @@ if (F) { # old hist
                            cdo_mask=paste0("-eqc,6 -select,name=pacific ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_chau_etal_2020.nc")))
 
 } else if (F) { # gregor_and_fay_2021
-    if (T) { # pco2atm
+    if (F) { # pco2atm
         files <- list(list.files(paste0(workpath, "/data/gregor_and_fay_2021/data/v2021.04"), pattern=glob2rx("SeaFlux_v2021.04_pco2atm_1982-2020.nc"), full.names=T))
         fpatterns <- "SeaFlux_v2021.04_pco2atm_<year_from>-<year_to>.nc"
         prefixes <- "NOAA"
@@ -1182,24 +1182,31 @@ if (F) { # old hist
         prefixes <- varnamesin
         froms <- rep(1982, t=length(fpatterns))
         tos <- rep(2020, t=length(fpatterns))
-    } else if (F) { # fgco2
-        files <- list.files(paste0(workpath, "/data/gregor_and_fay_2021/data/v2021.04"), pattern=glob2rx("SeaFlux_v2021.04_fgco2_wind_*_pco2_*"), full.names=T)
-        if (T) { # remove NCEP*
-            inds <- which(grepl("NCEP", basename(files)))
-            if (length(inds) > 0) files <- files[-inds]
+    } else if (T) { # fgco2
+        if (F) { # individual products
+            files <- list.files(paste0(workpath, "/data/gregor_and_fay_2021/data/v2021.04"), pattern=glob2rx("SeaFlux_v2021.04_fgco2_wind_*_pco2_*"), full.names=T)
+            if (F) { # remove NCEP*
+                inds <- which(grepl("NCEP", basename(files)))
+                if (length(inds) > 0) files <- files[-inds]
+            }
+            fpatterns <- sapply(files, basename) # e.g. SeaFlux_v2021.04_fgco2_wind_CCMP2_pco2_CMEMS_FFNN.nc
+            prefixes <- paste0("v2021.04_", substr(fpatterns, 24, nchar(fpatterns)-3))
+        } else if (T) { # ensmean
+            files <- list.files(paste0(workpath, "/data/gregor_and_fay_2021/post/v2021.04"), pattern="SeaFlux_v2021.04_fgco2_1990-2019_ensmean_exclude_wind_NCEP.nc", full.names=T)
+            fpatterns <- sapply(files, basename) # SeaFlux_v2021.04_fgco2_1990-2019_ensmean_exclude_wind_NCEP.nc
+            prefixes <- "v2021.04_ensmean_exclude_wind_NCEP" 
         }
-        fpatterns <- sapply(files, basename) # e.g. SeaFlux_v2021.04_fgco2_wind_CCMP2_pco2_CMEMS_FFNN.nc
-        prefixes <- substr(fpatterns, 24, nchar(fpatterns)-3)
         varnamesin <- rep("fgco2", t=length(fpatterns))
         froms <- rep(1990, t=length(fpatterns))
         tos <- rep(2019, t=length(fpatterns))
     }
     models <- rep("gregor_and_fay_2021", t=length(fpatterns))
+    modes <- rep("select", t=length(fpatterns))
     #modes <- rep("timmean", t=length(fpatterns))
-    modes <- rep("fldmean", t=length(fpatterns))
+    #modes <- rep("fldmean", t=length(fpatterns))
     #modes <- rep("fldint", t=length(fpatterns))
-    mask_list <- lapply(vector("list", l=length(models)), base::append, 
-                        list(
+    #mask_list <- lapply(vector("list", l=length(models)), base::append, 
+    #                    list(
                            # reccap2
                            #name="reccap2_atlantic",
                            #cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_gregor_and_fay_2021.nc")))
@@ -1267,27 +1274,27 @@ if (F) { # old hist
                            #cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
                            #name="g19_SH-ST",
                            #cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
-                           name="g19_SH-HL",
-                           cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
+                           #name="g19_SH-HL",
+                           #cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_gregor_and_fay_2021.nc")))
     #areas_out_list <- list(list(name="45to70S", sellonlatbox=c(lon1=-360,lon2=360,lat1=-70,lat2=-45)))
 
-} else if (F) { # oceancolor
-    models <- "oceancolor"
+} else if (F) { # cmems
+    models <- "cmems"
     if (F) { # cmems_mod_glo_bgc_my_0.25_P1M-m 
-        files <- list(list.files("/work/ba1103/a270073/data/oceancolor/data/cmems_mod_glo_bgc_my_0.25_P1M-m", 
+        files <- list(list.files("/work/ba1103/a270073/data/cmems/data/cmems_mod_glo_bgc_my_0.25_P1M-m", 
                                  pattern=glob2rx("chl_lev1_mercatorfreebiorys2v4_global_mean_*.nc"), full.names=T))
         fpatterns <- "chl_lev1_mercatorfreebiorys2v4_global_mean_<year><mon>.nc"
-        prefixes <- "cmems_mod_glo_bgc_my_0.25_P1M-m"
+        prefixes <- "cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast"
         varnamesin <- "chl"
     } else if (T) { # cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D
-        prefixes <- "cmems_obs-oc_glo_bgc_plankton_my_l4-gapfree-multi-4km_P1D"
+        prefixes <- "cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour"
         varnamesin <- "CHL"
         if (F) { # daily
-            files <- list(list.files("/work/ba1103/a270073/data/oceancolor/data/cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D", full.names=T))
+            files <- list(list.files("/work/ba1103/a270073/data/cmems/data/cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D", full.names=T))
             fpatterns <- "<year><mon><day>_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D.nc"
         } else if (T) { # monthly
-            files <- list(list.files("/work/ba1103/a270073/data/oceancolor/post/cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D", full.names=T))
-            fpatterns <- "cmems_obs-oc_glo_bgc_plankton_my_l4-gapfree-multi-4km_P1D_oceancolor_select_CHL_global_Jan-Dec_<year_from>-<year_to>.nc"
+            files <- "/work/ba1103/a270073/post/cmems/select/cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour_select_CHL_global_Jan-Dec_1997-2019.nc"
+            fpatterns <- "cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour_select_CHL_global_Jan-Dec_<year_from>-<year_to>.nc"
         }
     }
     #sellevsidx <- 1
@@ -1303,20 +1310,84 @@ if (F) { # old hist
     mask_list <- lapply(vector("list", l=length(models)), base::append, 
                         # gregor_etal_2019 basins:
                         #list(name="g19_NH-HL",
-                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_oceancolor_cmems_mod_glo_bgc_my_0.25_P1M-m.nc")))
-                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_oceancolor_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D.nc")))
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
                         #list(name="g19_NH-ST",
-                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_oceancolor_cmems_mod_glo_bgc_my_0.25_P1M-m.nc")))
-                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_oceancolor_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D.nc")))
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
                         #list(name="g19_EQU",
-                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_oceancolor_cmems_mod_glo_bgc_my_0.25_P1M-m.nc")))
-                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_oceancolor_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D.nc")))
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
                         #list(name="g19_SH-ST",
-                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_oceancolor_cmems_mod_glo_bgc_my_0.25_P1M-m.nc")))
-                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_oceancolor_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D.nc")))
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
                         list(name="g19_SH-HL",
-                        #     cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_oceancolor_cmems_mod_glo_bgc_my_0.25_P1M-m.nc")))
-                             cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_oceancolor_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D.nc")))
+                        #     cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                             cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
+
+} else if (F) { # oc-cci occci sathyendranath
+    models <- "oc-cci"
+    files <- list.files("/work/ba1103/a270073/data/oc-cci/data/v6.0/chlor_a", "ESACCI-OC-L3S-CHLOR_A-MERGED-1M_MONTHLY_4km_GEO_PML_OCx-", full.names=T)
+    fpatterns <- "ESACCI-OC-L3S-CHLOR_A-MERGED-1M_MONTHLY_4km_GEO_PML_OCx-<year><mon>-fv6.0.nc"
+    prefixes <- "ESACCI-OC-L3S-MERGED-1M_MONTHLY_4km_GEO_PML_OCx_v6.0"
+    varnamesin <- "chlor_a"
+    #varnamesin <- "total_nobs_sum"
+    #varnamesin <- "chlor_a_log10_bias"
+    #varnamesin <- "chlor_a_log10_rmsd"
+    froms <- 1997
+    tos <- 2023
+    #seasons <- list(JFMmean=c(1:3))
+    #seasons <- list(AMJmean=c(4:6))
+    #seasons <- list(JASmean=c(7:9))
+    #seasons <- list(ONDmean=c(10:12))
+    #cdo_before_calcs <- "-yearmean"
+    #modes <- "select"
+    modes <- "fldmean"
+    mask_list <- lapply(vector("list", l=length(models)), base::append, 
+                        # gregor_etal_2019 basins:
+                        #list(name="g19_NH-HL",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
+                        #list(name="g19_NH-ST",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
+                        #list(name="g19_EQU",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
+                        #list(name="g19_SH-ST",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
+                        list(name="g19_SH-HL",
+                        #     cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_cmems_mod_glo_bgc_my_0.25_P1M-m_hindcast.nc")))
+                             cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_cmems_obs-oc_glo_bgc-plankton_my_l4-gapfree-multi-4km_P1D_globcolour.nc")))
+
+} else if (F) { # oisst
+    models <- "oisst"
+    files <- list.files("/work/ba1103/a270073/data/oisst/data/v2/monthly", "sst.mon.mean.nc", full.names=T)
+    fpatterns <- "sst.mon.mean.nc"
+    prefixes <- "oisst_v2"
+    varnamesin <- "sst"
+    froms <- 1981
+    tos <- 2023
+    #seasons <- list(JFMmean=c(1:3))
+    #seasons <- list(AMJmean=c(4:6))
+    #seasons <- list(JASmean=c(7:9))
+    #seasons <- list(ONDmean=c(10:12))
+    #cdo_before_calcs <- "-yearmean"
+    #modes <- "select"
+    modes <- "fldmean"
+    mask_list <- lapply(vector("list", l=length(models)), base::append, 
+                        # gregor_etal_2019 basins:
+                        #list(name="g19_NH-HL",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_OISST_L4_AVHRR-only-v2.nc")))
+                        #list(name="g19_NH-ST",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_OISST_L4_AVHRR-only-v2.nc")))
+                        #list(name="g19_EQU",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_OISST_L4_AVHRR-only-v2.nc")))
+                        #list(name="g19_SH-ST",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_OISST_L4_AVHRR-only-v2.nc")))
+                        list(name="g19_SH-HL",
+                             cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_v20220620_OISST_L4_AVHRR-only-v2.nc")))
 
 } else if (F) { # awiesm-2-recom ying
     models <- "echam6"
@@ -1330,8 +1401,8 @@ if (F) { # old hist
     #varnamesin <- "co2_flx_harvest"
     #varnamesin <- "fgco2"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
-    files <- list(list.files("/work/bm1030/a270105/awiesm-output/pi_ciso_mpi/outdata/echam", pattern=glob2rx("*_co2"), full.names=T))
+    varnamesin <- "co2_flx_total2"
+    files <- list(list.files("/work/bm1030/a270105/awiesm-output/pi_ciso_mpi/outdata/echam", pattern=glob2rx("*_co2$"), full.names=T))
     codes_files <- "/work/bm1030/a270105/awiesm-output/pi_ciso_mpi/outdata/echam/pi_ciso_mpi_242001.01_co2.codes"
     fpatterns <- "pi_ciso_mpi_<year><mon>.01_co2"
     prefixes <- "awi-esm-2.1-recom-par-tracers_piControl"
@@ -1341,9 +1412,9 @@ if (F) { # old hist
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl chunks 1 to 3
     #models <- "echam6"
-    #models <- "jsbach"
+    models <- "jsbach"
     #models <- "fesom"
-    models <- "recom"
+    #models <- "recom"
     # echam echamstream
     #codes <- 167
     #varnamesin <- "temp2"
@@ -1358,17 +1429,21 @@ if (F) { # old hist
     #varnamesin <- "co2_flx_resp"
     #varnamesin <- "co2_flx_herb"
     #varnamesin <- "co2_flx_fire"
+    #codes <- 8
+    #varnamesin <- "co2_burden"
+    #codes <- 20
+    #varnamesin <- "co2_flx_anthro"
     #codes <- 24
     #varnamesin <- "co2_flx_lcc"
     #codes <- 25
     #varnamesin <- "co2_flx_harvest"
     #varnamesin <- "nbp" # = co2_flx_land + co2_flx_lcc + co2_flx_harvest
-    #varnamesin <- "co2_flx_total" # = fgco2 + nbp
+    #varnamesin <- "co2_flx_total2" # = fgco2 + nbp
     # jsbach jsbachstream
     #codes <- 12
     #varnamesin <- "cover_fract"
-    #codes <- 20
-    #varnamesin <- "veg_ratio_max"
+    codes <- 20
+    varnamesin <- "veg_ratio_max"
     #codes <- 24
     #varnamesin <- "box_veg_ratio"
     #codes <- 160
@@ -1450,48 +1525,75 @@ if (F) { # old hist
     #varnamesin <- "siextentn"
     #varnamesin <- "sic"
     # recom
-    varnamesin <- "aCO2"
+    #varnamesin <- "aCO2"
     #varnamesin <- "POC"
-    # chunk 1: 1950:2029
-    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/echam" # chunk 1
-    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/jsbach" # chunk 1
-    #datapaths <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/fesom" # chunk 1
-    #fpatterns <- "SR_output_echam6_echam_<year>01.nc" # chunk 1
-    #fpatterns <- "SR_output_echam6_co2_<year>01.nc" # chunk 1
-    #fpatterns <- "SR_output_jsbach_jsbach_<year>01.grb"
-    #codes_files <- paste0(datapaths, "/SR_output_195001.01_jsbach.codes")
-    #fpatterns <- "SR_output_jsbach_veg_<year>01.grb"
-    #codes_files <- paste0(datapaths, "/SR_output_195001.01_veg.codes")
-    #fpatterns <- "SR_output_jsbach_yasso_<year>01.grb"
-    #codes_files <- paste0(datapaths, "/SR_output_195001.01_yasso.codes")
-    # chunk 2: 2030:2685
-    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
-    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/jsbach" # chunk 2
-    #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
-    #fpatterns <- "test_echam6_g3bid_<year>01.nc" # chunk 2
-    #fpatterns <- "test_echam6_echam_<year>01.nc" # chunk 2
-    #fpatterns <- "test_echam6_co2_<year>01.nc" # chunk 2
-    #fpatterns <- "test_jsbach_jsbach_<year>01.grb" # chunk 2
-    #codes_files <- paste0(datapaths, "/test_203001.01_jsbach.codes")
-    #fpatterns <- "test_jsbach_veg_<year>01.grb" # chunk 2
-    #codes_files <- paste0(datapaths, "/test_203001.01_veg.codes")
-    #fpatterns <- "test_jsbach_yasso_<year>01.grb"
-    #codes_files <- paste0(datapaths, "/test_203001.01_yasso.codes")
-    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc" # chunk 1 and 2 
-    # chunk 3 from 2686
-    files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom"), 
-                             glob2rx(paste0("^", varnamesin, "_*")), full.names=T))
-    #fpatterns <- "piControl_<year><mon>.01_echam"
-    #fpatterns <- "piControl_<year><mon>.01_co2"
-    #fpatterns <- "piControl_<year><mon>.01_jsbach"
-    #fpatterns <- "piControl_<year><mon>.01_veg"
-    #fpatterns <- "piControl_<year><mon>.01_yasso"
-    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    #
+    if (F) { # chunk 1: 1950:2029
+        if (F) { # echam
+            #fpatterns <- "SR_output_echam6_echam_<year>01.nc" # chunk 1
+            #fpatterns <- "SR_output_echam6_co2_<year>01.nc" # chunk 1
+        } else if (T) { # jsbach
+            fpatterns <- "SR_output_jsbach_jsbach_<year>01.grb"
+            if (F) {
+                files <- list(list.files("/work/ab1095/a270094/AWIESM/SR_output/outdata/jsbach", 
+                                         glob2rx("SR_output_jsbach_jsbach_????01.grb"), full.names=T))
+            } else if (T) {
+                files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/oguerses/SR_output/jsbach", 
+                                         glob2rx("SR_output_jsbach_jsbach_????01.grb"), full.names=T))
+            }
+            codes_files <- "/work/ab1095/a270094/AWIESM/SR_output/outdata/jsbach/SR_output_195001.01_jsbach.codes"
+            #fpatterns <- "SR_output_jsbach_veg_<year>01.grb"
+            #codes_files <- paste0(datapaths, "/SR_output_195001.01_veg.codes")
+            #fpatterns <- "SR_output_jsbach_yasso_<year>01.grb"
+            #codes_files <- paste0(datapaths, "/SR_output_195001.01_yasso.codes")
+        } else if (F) { # fesom
+        }
+    } else if (T) { # chunk 2: 2030:2685
+        if (F) { # echam
+            #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/echam" # chunk 2
+            #fpatterns <- "test_echam6_g3bid_<year>01.nc" # chunk 2
+            #fpatterns <- "test_echam6_echam_<year>01.nc" # chunk 2
+            #fpatterns <- "test_echam6_co2_<year>01.nc" # chunk 2
+        } else if (T) { # jsbach
+            fpatterns <- "test_jsbach_jsbach_<year>01.grb" # chunk 2
+            #codes_files <- paste0(datapaths, "/test_203001.01_jsbach.codes")
+            #fpatterns <- "test_jsbach_veg_<year>01.grb" # chunk 2
+            #codes_files <- paste0(datapaths, "/test_203001.01_veg.codes")
+            #fpatterns <- "test_jsbach_yasso_<year>01.grb"
+            #codes_files <- paste0(datapaths, "/test_203001.01_yasso.codes")
+            if (F) {
+                files <- list(list.files("/work/ba1103/a270094/AWIESM/test/outdata/jsbach",
+                                         glob2rx("test_jsbach_jsbach_????01.grb"), full.names=T))
+            } else if (T) {
+                files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/oguerses/test/jsbach",
+                                         glob2rx("test_jsbach_jsbach_????01.grb"), full.names=T))
+            }
+            codes_files <- "/work/ba1103/a270094/AWIESM/test/outdata/jsbach/test_203001.01_jsbach.codes"
+        } else if (F) { # fesom 
+            #datapaths <- "/work/ba1103/a270094/AWIESM/test/outdata/fesom" # chunk 2
+            #fpatterns <- "<varnamesin>_fesom_<year>0101.nc" # chunk 1 and 2 
+        }
+    } else if (F) { # chunk 3 from 2686
+        if (T) { # echam
+            files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/echam",
+                                     glob2rx("piControl_??????.01_co2"), full.names=T))
+            #fpatterns <- "piControl_<year><mon>.01_echam"
+            fpatterns <- "piControl_<year><mon>.01_co2"
+        } else if (F) { # jsbach
+            #fpatterns <- "piControl_<year><mon>.01_jsbach"
+            #fpatterns <- "piControl_<year><mon>.01_veg"
+            #fpatterns <- "piControl_<year><mon>.01_yasso"
+        } else if (F) { # fesom
+            #files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl/outdata/fesom"), 
+            #                         glob2rx(paste0("^", varnamesin, "_*")), full.names=T))
+            #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+            #
+        }
+    }
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_3hr"
     #prefixes <- "awi-esm-1-1-lr_kh800_piControl_day"
     prefixes <- "awi-esm-1-1-lr_kh800_piControl"
-    cdoshifttimes <- "-dt" # for fesom
+    #cdoshifttimes <- "-dt" # for fesom
+    #cdo_before_calcs <- "-yearmean"
     #cdo_before_calcs <- "-monmean"
     modes <- "select"
     #modes <- "timmean"
@@ -1499,19 +1601,19 @@ if (F) { # old hist
     #modes <- "fldmean"
     #modes <- "fldint"
     #froms <- 1950 # start chunk1: 1950
-    #froms <- 2030 # start chunk2: 2030
+    froms <- 2030 # start chunk2: 2030
     #froms <- 2586 # chunk 2 last 100 years
     #froms <- 2666 # chunk 2 last 20 years
     #froms <- 2686 # start chunk 3: 2686
     #froms <- 2823
-    froms <- 2825
+    #froms <- 2825
     #froms <- 2901
     #froms <- 2996
     #froms <- 2997
     #tos <- 1951
     #tos <- 2029 # end chunk 1: 2029 
     #tos <- 2031
-    #tos <- 2685 # end chunk 2: 2685
+    tos <- 2685 # end chunk 2: 2685
     #tos <- 2687
     #tos <- 2688
     #tos <- 2824
@@ -1521,7 +1623,7 @@ if (F) { # old hist
     #tos <- 2905 
     #tos <- 2995
     #tos <- 2996
-    tos <- 3000 # end chunk 3: 3000
+    #tos <- 3000 # end chunk 3: 3000
     #areas_out_list <- list(list(name="45to90S", sellonlatbox=c(lon1=-360,lon2=360,lat1=-90,lat2=-45)))
     #mask_list <- list(list(name="reccap2_atlantic",
     #                       cdo_mask=paste0("-eqc,1 -select,name=open_ocean ", workpath, "/mesh/lsm/reccap2-ocean/RECCAP2_region_masks_all_T63.nc")))
@@ -1566,12 +1668,14 @@ if (F) { # old hist
     varnamesin <- "temp2"
     prefixes <- "awi-esm-1-1-lr_kh800_piControl2"
     if (T) {
+        files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl2/outdata/echam", 
+                                 glob2rx("*_echam$"), full.names=T))
         fpatterns <- "piControl2_<year><mon>.01_echam"
-        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl2/outdata/echam", glob2rx("*_echam"), full.names=T))
     }
     #cdoshifttimes <- "-dt" # for fesom
     #cdo_before_calcs <- "-monmean"
-    cdo_before_calcs <- "-yearmean"
+    #cdo_before_calcs <- "-yearmean"
+    modes <- "fldmean"
     modes <- "select"
     froms <- 1850
     tos <- 2100
@@ -1583,7 +1687,8 @@ if (F) { # old hist
     prefixes <- "awi-esm-1-1-lr_kh800_historical3"
     if (T) {
         fpatterns <- "historical3_<year><mon>.01_echam"
-        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical3/outdata/echam", glob2rx("*_echam"), full.names=T))
+        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical3/outdata/echam", 
+                                 glob2rx("*_echam$"), full.names=T))
     }
     #cdoshifttimes <- "-dt" # for fesom
     #cdo_before_calcs <- "-monmean"
@@ -1599,7 +1704,8 @@ if (F) { # old hist
     prefixes <- "awi-esm-1-1-lr_kh800_ssp585_2"
     if (T) {
         fpatterns <- "ssp585_2_<year><mon>.01_echam"
-        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585_2/outdata/echam", glob2rx("*_echam"), full.names=T))
+        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585_2/outdata/echam", 
+                                 glob2rx("*_echam$"), full.names=T))
     }
     #cdoshifttimes <- "-dt" # for fesom
     #cdo_before_calcs <- "-monmean"
@@ -1609,54 +1715,59 @@ if (F) { # old hist
     tos <- 2100
 
 } else if (F) { # awi-esm-1-1-lr_kh800 piControl LUtrans1850
-    models <- "echam6"
-    #models <- "jsbach"
+    #models <- "echam6"
+    models <- "jsbach"
     #models <- "recom"
     # echam jsbach
     #codes <- 6
     #varnamesin <- "co2_flx_land"
     #codes <- 7
     #varnamesin <- "co2_flx_ocean"
+    #codes <- 8
+    #varnamesin <- "co2_burden"
+    #codes <- 20
+    #varnamesin <- "co2_flx_anthro"
     #codes <- 24
     #varnamesin <- "co2_flx_lcc"
     #codes <- 25
     #varnamesin <- "co2_flx_harvest"
     #varnamesin <- "nbp" # = co2_flx_land + co2_flx_lcc + co2_flx_harvest
     #varnamesin <- "fgco2"
-    #varnamesin <- "co2_flx_total" # = fgco2 + nbp
+    #varnamesin <- "co2_flx_total2" # = fgco2 + nbp
     #codes <- 12
     #varnamesin <- "cover_fract"
-    #codes <- 20
-    #varnamesin <- "veg_ratio_max"
-    codes <- 167
-    varnamesin <- "temp2"
+    codes <- 20
+    varnamesin <- "veg_ratio_max"
+    #codes <- 167
+    #varnamesin <- "temp2"
     # fesom recom
     #varnamesin <- "aCO2"
-    if (F) {
+    if (T) {
         prefixes <- "awi-esm-1-1-lr_kh800_piControl_LUtrans1850"
         if (T) { # echam jsbach
             files <- list(list.files(
-                                     #"/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/echam6", 
-                                     "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/jsbach", 
-                                     #pattern="_co2$", full.names=T))
-                                     pattern="_jsbach$", full.names=T))
-            fpatterns <- "piControl_LUtrans1850_<year><mon>.01_jsbach"
+                                     "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/echam", 
+                                     #"/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/jsbach", 
+                                     pattern="_co2$", full.names=T))
+                                     #pattern="_jsbach$", full.names=T))
+            fpatterns <- "piControl_LUtrans1850_<year><mon>.01_co2"
+            #fpatterns <- "piControl_LUtrans1850_<year><mon>.01_jsbach"
         } else if (F) { # fesom recom
             files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850/outdata/", models), 
-                                     glob2rx(paste0("^", varnamesin, "_*")), full.names=T))
+                                     glob2rx(paste0("^", varnamesin, "_fesom_*.nc$")), full.names=T))
             fpatterns <- "<varnamesin>_fesom_<year><mon>01.nc"
         }
     } else if (F) {
         prefixes <- "awi-esm-1-1-lr_kh800_piControl_LUtrans1850_levante"
         files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850_levante/outdata/", models), 
-                                 glob2rx(paste0("^", varnamesin, "_*")), full.names=T))
+                                 glob2rx(paste0("^", varnamesin, "_fesom_*.nc$")), full.names=T))
         fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
     } else if (F) {
         prefixes <- "awi-esm-1-1-lr_kh800_piControl_LUtrans1850_r8"
         files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850_r8/outdata/echam", 
                                  pattern="_echam$", full.names=T))
         fpatterns <- "piControl_LUtrans1850_r8_<year><mon>.01_jsbach"
-    } else if (T) {
+    } else if (F) {
         prefixes <- "awi-esm-1-1-lr_kh800_piControl_LUtrans1850_new"
         files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/piControl_LUtrans1850_new/outdata/echam", 
                                  pattern="_echam$", full.names=T))
@@ -1664,12 +1775,13 @@ if (F) { # old hist
     }
     #cdoshifttimes <- "-dt" # for fesom
     #cdo_before_calcs <- "-monmean"
-    #modes <- "select"
-    modes <- "timmean"
+    modes <- "select"
+    #modes <- "timmean"
     #modes <- "fldint"
-    #froms <- 2951
-    froms <- 3001
-    tos <- 3005
+    froms <- 2951
+    #froms <- 3001
+    #tos <- 3005
+    tos <- 3000
     #tos <- 3010
     #tos <- 3062
     #areas_out_list <- list(list(name="45to90S", sellonlatbox=c(lon1=-360,lon2=360,lat1=-90,lat2=-45)))
@@ -1682,7 +1794,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CSIRO/ACCESS-ESM1-5/piControl/r1i1p1f1/Lmon/nbp/gn/v20210316"
     fpatterns <- "nbp_Lmon_ACCESS-ESM1-5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
+    varnamesin <- "co2_flx_total2"
     prefixes <- "ACCESS-ESM1-5_piControl_r1i1p1f1"
     modes <- "fldint"
     froms <- 901 # last 100a
@@ -1725,7 +1837,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CCCma/CanESM5/piControl/r1i1p1f1/Lmon/nbp/gn/v20190429"
     fpatterns <- "nbp_Lmon_CanESM5_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
+    varnamesin <- "co2_flx_total2"
     prefixes <- "CanESM5_piControl_r1i1p1f1"
     modes <- "fldint"
     froms <- 6101 # last 100a
@@ -1739,7 +1851,7 @@ if (F) { # old hist
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CCCma/CanESM5-CanOE/piControl/r1i1p2f1/Omon/fgco2/gn/v20190429"
     #fpatterns <- "fgco2_Omon_CanESM5-CanOE_piControl_r1i1p2f1_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "fgco2"
-    varnamesin <- "co2_flx_total"
+    varnamesin <- "co2_flx_total2"
     prefixes <- "CanESM5-CanOE_piControl_r1i1p2f1"
     modes <- "fldint"
     froms <- 5901
@@ -1761,7 +1873,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20190320"
     fpatterns <- "fHarvest_Lmon_CESM2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     varnamesin <- "fHarvest"
-    #varnamesin <- "co2_flx_total"
+    #varnamesin <- "co2_flx_total2"
     prefixes <- "CESM2_piControl_r1i1p1f1"
     modes <- "fldint"
     froms <- 1101 # last 100a
@@ -1784,7 +1896,7 @@ if (F) { # old hist
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20191120"
     #fpatterns <- "fHarvest_Lmon_CESM2-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "fHarvest"
-    #varnamesin <- "co2_flx_total"
+    #varnamesin <- "co2_flx_total2"
     files <- list(list.files("/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/historical/r1i1p1f1/Omon/thetao/gr/v20191120", full.names=T))
     varnamesin <- "thetao"
     #files <- list(list.files("/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-FV2/historical/r1i1p1f1/Omon/so/gr/v20191120", full.names=T))
@@ -1810,13 +1922,39 @@ if (F) { # old hist
     #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM/piControl/r1i1p1f1/Emon/fLuc/gn/v20190320"
     #fpatterns <- "fLuc_Emon_CESM2-WACCM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "fLuc"
-    datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20190320"
-    fpatterns <- "fHarvest_Lmon_CESM2-WACCM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
-    varnamesin <- "fHarvest"
-    prefixes <- "CESM2-WACCM_piControl_r1i1p1f1"
-    modes <- "fldint"
-    froms <- 400 # last 100a
-    tos <- 499 # last 100a
+    #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20190320"
+    #fpatterns <- "fHarvest_Lmon_CESM2-WACCM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+    #varnamesin <- "fHarvest"
+    files <- "/work/ba1103/a270073/post/CESM2-WACCM/select/mlotst/CESM2-WACCM_historical_and_ssp126_r1i1p1f1_CESM2-WACCM_select_mlotst_global_Jan-Dec_1970-2019.nc"
+    fpatterns <- "CESM2-WACCM_historical_and_ssp126_r1i1p1f1_CESM2-WACCM_select_mlotst_global_Jan-Dec_<year_from>-<year_to>.nc"
+    prefixes <- "CESM2-WACCM_historical_and_ssp126_r1i1p1f1"
+    
+    cdo_after_sels <- rep("-remapycon,global_1", t=length(models))
+    #varnamesin <- "fgco2"
+    #varnamesin <- "nbp"
+    #varnamesin <- "co2_flx_total2"
+    varnamesin <- "mlotst"
+    #varnamesin <- "mldepthdensp030_m"
+    #modes <- "select"
+    modes <- "fldmean"
+    #modes <- "fldint"
+    #froms <- 400 # last 100a
+    froms <- 1970
+    #tos <- 499 # last 100a
+    #tos <- 2014
+    tos <- 2019
+    mask_list <- lapply(vector("list", l=length(models)), base::append, 
+                        # gregor_etal_2019 basins:
+                        #list(name="g19_NH-HL",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_NH-ST",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_EQU",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_SH-ST",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        list(name="g19_SH-HL",
+                             cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
 
 } else if (F) { # cmip6 esgf CESM2-WACCM-FV2
     models <- "CESM2-WACCM-FV2" # ocean: pop2: native: ?; cdo: curvilinear; fldint ok
@@ -1835,7 +1973,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NCAR/CESM2-WACCM-FV2/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20191120"
     fpatterns <- "fHarvest_Lmon_CESM2-WACCM-FV2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     varnamesin <- "fHarvest"
-    #varnamesin <- "co2_flx_total"
+    #varnamesin <- "co2_flx_total2"
     prefixes <- "CESM2-WACCM-FV2_piControl_r1i1p1f1"
     modes <- "fldint"
     froms <- 401 # last 100a
@@ -1865,7 +2003,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CMCC/CMCC-ESM2/piControl/r1i1p1f1/Lmon/nbp/gn/v20210126"
     fpatterns <- "nbp_Lmon_CMCC-ESM2_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
+    varnamesin <- "co2_flx_total2"
     prefixes <- "CMCC-ESM2_piControl_r1i1p1f1"
     modes <- "fldint"
     froms <- 2000 # last 100a
@@ -1885,7 +2023,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/CNRM-CERFACS/CNRM-ESM2-1/piControl/r1i1p1f2/Emon/fLuc/gr/v20181115"
     fpatterns <- "fLuc_Emon_CNRM-ESM2-1_piControl_r1i1p1f2_gr_<year_from>01-<year_to>12.nc"
     varnamesin <- "fLuc"
-    #varnamesin <- "co2_flx_total"
+    #varnamesin <- "co2_flx_total2"
     prefixes <- "CNRM-ESM2-1_piControl_r1i1p1f2"
     modes <- "fldint"
     froms <- 2250 # last 100a
@@ -1938,17 +2076,57 @@ if (F) { # old hist
 
 } else if (F) { # cmip6 esgf GFDL-ESM4
     models <- "GFDL-ESM4" # ocean: gfdl-mom6: native: tripolar; cdo: ?
-    #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NOAA-GFDL/GFDL-ESM4/piControl/r1i1p1f1/Omon/fgco2/gr/v20180701"
-    #fpatterns <- "fgco2_Omon_GFDL-ESM4_piControl_r1i1p1f1_gr_<year_from>01-<year_to>12.nc"
+    if (F) {
+        datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NOAA-GFDL/GFDL-ESM4/piControl/r1i1p1f1/Omon/fgco2/gr/v20180701"
+        fpatterns <- "fgco2_Omon_GFDL-ESM4_piControl_r1i1p1f1_gr_<year_from>01-<year_to>12.nc"
+        prefixes <- "GFDL-ESM4_piControl_r1i1p1f1"
+    } else if (F) {
+        datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NOAA-GFDL/GFDL-ESM4/piControl/r1i1p1f1/Lmon/nbp/gr1/v20180701"
+        fpatterns <- "nbp_Lmon_GFDL-ESM4_piControl_r1i1p1f1_gr1_<year_from>01-<year_to>12.nc"
+        prefixes <- "GFDL-ESM4_piControl_r1i1p1f1"
+    } else if (F) {
+        files <- "/work/ba1103/a270073/post/GFDL-ESM4/select/mldepthdensp030_m/GFDL-ESM4_historical_and_ssp126_r1i1p1f1_gr_GFDL-ESM4_select_mldepthdensp030_m_global_Jan-Dec_1970-2019.nc"
+        fpatterns <- "GFDL-ESM4_historical_and_ssp126_r1i1p1f1_gr_GFDL-ESM4_select_mldepthdensp030_m_global_Jan-Dec_<year_from>-<year_to>.nc"
+        prefixes <- "GFDL-ESM4_historical_and_ssp126_r1i1p1f1_gr"
+    } else if (F) {
+        files <- "/work/ba1103/a270073/post/GFDL-ESM4/select/mlotst/GFDL-ESM4_historical_and_ssp119_r1i1p1f1_GFDL-ESM4_select_mlotst_global_Jan-Dec_1970-2019.nc"
+        fpatterns <- "GFDL-ESM4_historical_and_ssp119_r1i1p1f1_GFDL-ESM4_select_mlotst_global_Jan-Dec_<year_from>-<year_to>.nc"
+        prefixes <- "GFDL-ESM4_historical_and_ssp119_r1i1p1f1_gr"
+    } else if (F) {
+        files <- list.files("/work/ik1017/CMIP6/data/CMIP6/CMIP/NOAA-GFDL/GFDL-ESM4/historical/r1i1p1f1/Omon/mlotst/gn/v20190726", full.names=T)
+        fpatterns <- "mlotst_Omon_GFDL-ESM4_historical_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+        prefixes <- "GFDL-ESM4_historical_r1i1p1f1"
+    } else if (T) {
+        files <- "/work/ba1103/a270073/post/GFDL-ESM4/select/mlotst/GFDL-ESM4_historical_and_ssp126_r1i1p1f1_GFDL-ESM4_select_mlotst_global_Jan-Dec_1970-2019.nc"
+        fpatterns <- "GFDL-ESM4_historical_and_ssp126_r1i1p1f1_GFDL-ESM4_select_mlotst_global_Jan-Dec_<year_from>-<year_to>.nc"
+        prefixes <- "GFDL-ESM4_historical_and_ssp126_r1i1p1f1"
+    }
+    cdo_after_sels <- rep("-remapycon,global_1", t=length(models))
     #varnamesin <- "fgco2"
-    datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/NOAA-GFDL/GFDL-ESM4/piControl/r1i1p1f1/Lmon/nbp/gr1/v20180701"
-    fpatterns <- "nbp_Lmon_GFDL-ESM4_piControl_r1i1p1f1_gr1_<year_from>01-<year_to>12.nc"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
-    prefixes <- "GFDL-ESM4_piControl_r1i1p1f1"
-    modes <- "fldint"
-    froms <- 401 # last 100a
-    tos <- 500 # last 100a
+    #varnamesin <- "co2_flx_total2"
+    varnamesin <- "mlotst"
+    #varnamesin <- "mldepthdensp030_m"
+    #modes <- "select"
+    modes <- "fldmean"
+    #modes <- "fldint"
+    #froms <- 401 # last 100a
+    froms <- 1970
+    #tos <- 500 # last 100a
+    #tos <- 2014
+    tos <- 2019
+    mask_list <- lapply(vector("list", l=length(models)), base::append, 
+                        # gregor_etal_2019 basins:
+                        #list(name="g19_NH-HL",
+                        #     cdo_mask=paste0("-eqc,1 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_NH-ST",
+                        #     cdo_mask=paste0("-eqc,2 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_EQU",
+                        #     cdo_mask=paste0("-eqc,3 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        #list(name="g19_SH-ST",
+                        #     cdo_mask=paste0("-eqc,4 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
+                        list(name="g19_SH-HL",
+                             cdo_mask=paste0("-eqc,5 -select,name=bio23_5 ", workpath, "/mesh/lsm/gregor_etal_2019/gregor_etal_2019_bio23_5_mask_from_reccap2_dx1_dy1_lon_from_-179.5.nc")))
 
 } else if (F) { # cmip6 esgf GISS-E2-1-G
     models <- "GISS-E2-1-G" # ocean: giss_ocean: native: ?; cdo: lonlat; fldint ok
@@ -1968,7 +2146,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/INM/INM-CM4-8/piControl/r1i1p1f1/Lmon/nbp/gr1/v20190605"
     fpatterns <- "nbp_Lmon_INM-CM4-8_piControl_r1i1p1f1_gr1_<year_from>01-<year_to>12.nc"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
+    varnamesin <- "co2_flx_total2"
     prefixes <- "INM-CM4-8_piControl_r1i1p1f1"
     modes <- "fldint"
     froms <- 2281 # last 100a
@@ -1982,7 +2160,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/INM/INM-CM5-0/piControl/r1i1p1f1/Lmon/nbp/gr1/v20190619"
     fpatterns <- "nbp_Lmon_INM-CM5-0_piControl_r1i1p1f1_gr1_<year_from>01-<year_to>12.nc"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
+    varnamesin <- "co2_flx_total2"
     prefixes <- "INM-CM5-0_piControl_r1i1p1f1"
     modes <- "fldint"
     froms <- 3097 # last 100a
@@ -2002,7 +2180,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/IPSL/IPSL-CM6A-LR/piControl/r1i2p1f1/Lmon/fHarvest/gr/v20190319"
     fpatterns <- "fHarvest_Lmon_IPSL-CM6A-LR_piControl_r1i2p1f1_gr_<year_from>01-<year_to>12.nc"
     varnamesin <- "fHarvest"
-    #varnamesin <- "co2_flx_total"
+    #varnamesin <- "co2_flx_total2"
     #prefixes <- "IPSL-CM6A-LR_piControl_r1i1p1f1"
     prefixes <- "IPSL-CM6A-LR_piControl_r1i2p1f1"
     modes <- "fldint"
@@ -2022,7 +2200,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MIROC/MIROC-ES2L/piControl/r1i1p1f2/Lmon/nbp/gn/v20190823"
     fpatterns <- "nbp_Lmon_MIROC-ES2L_piControl_r1i1p1f2_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
+    varnamesin <- "co2_flx_total2"
     prefixes <- "MIROC-ES2L_piControl_r1i1p1f2"
     modes <- "fldint"
     froms <- 2250 # last 100a
@@ -2045,7 +2223,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/HAMMOZ-Consortium/MPI-ESM-1-2-HAM/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20200120"
     fpatterns <- "fHarvest_Lmon_MPI-ESM-1-2-HAM_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
     varnamesin <- "fHarvest"
-    #varnamesin <- "co2_flx_total"
+    #varnamesin <- "co2_flx_total2"
     prefixes <- "MPI-ESM-1-2-HAM_piControl_r1i1p1f1"
     modes <- "fldint"
     froms <- 2750 # last 100a
@@ -2063,26 +2241,50 @@ if (F) { # old hist
 
 } else if (F) { # cmip6 esgf MPI-ESM1-2-LR
     models <- "MPI-ESM1-2-LR" # ocean: mpiom1.63: native: bipolar; cdo: curvilinear; fldint ok
-    #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Omon/fgco2/gn/v20190710"
-    #fpatterns <- "fgco2_Omon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
-    #varnamesin <- "fgco2"
-    #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20190710"
-    #fpatterns <- "netAtmosLandCO2Flux_Emon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
-    #varnamesin <- "netAtmosLandCO2Flux"
-    #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Lmon/nbp/gn/v20190710"
-    #fpatterns <- "nbp_Lmon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
-    #varnamesin <- "nbp"
-    #datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Emon/fLuc/gn/v20190710"
-    #fpatterns <- "fLuc_Emon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
-    #varnamesin <- "fLuc"
-    datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20190710"
-    fpatterns <- "fHarvest_Lmon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
-    varnamesin <- "fHarvest"
-    #varnamesin <- "co2_flx_total"
-    prefixes <- "MPI-ESM1-2-LR_piControl_r1i1p1f1"
+    if (F) {
+        varnamesin <- "fgco2"
+        if (F) {
+            datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Omon/fgco2/gn/v20190710"
+            fpatterns <- "fgco2_Omon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+        } else if (T) {
+            files <- list.files("/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/esm-hist/r1i1p1f1/Omon/fgco2/gn/v20190710", full.names=T)
+            fpatterns <- "fgco2_Omon_MPI-ESM1-2-LR_esm-hist_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+        }
+    } else if (F) {
+        varnamesin <- "nbp"
+        if (F) {
+            datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Lmon/nbp/gn/v20190710"
+            fpatterns <- "nbp_Lmon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+        } else if (T) {
+            files <- list.files("/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/esm-hist/r1i1p1f1/Lmon/nbp/gn/v20190710", full.names=T)
+            fpatterns <- "nbp_Lmon_MPI-ESM1-2-LR_esm-hist_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+        }
+    } else if (T) {
+        varnamesin <- "netAtmosLandCO2Flux"
+        if (F) { 
+            datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20190710"
+            fpatterns <- "netAtmosLandCO2Flux_Emon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+        } else if (T) {
+            files <- list.files("/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/esm-hist/r1i1p1f1/Emon/netAtmosLandCO2Flux/gn/v20190710", full.names=T)
+            fpatterns <- "netAtmosLandCO2Flux_Emon_MPI-ESM1-2-LR_esm-hist_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+        }
+    } else if (F) {
+        varnamesin <- "fLuc"
+        datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Emon/fLuc/gn/v20190710"
+        fpatterns <- "fLuc_Emon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+    } else if (F) {
+        varnamesin <- "fHarvest"
+        datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MPI-M/MPI-ESM1-2-LR/piControl/r1i1p1f1/Lmon/fHarvest/gn/v20190710"
+        fpatterns <- "fHarvest_Lmon_MPI-ESM1-2-LR_piControl_r1i1p1f1_gn_<year_from>01-<year_to>12.nc"
+    }
+    #varnamesin <- "co2_flx_total2"
+    #prefixes <- "MPI-ESM1-2-LR_piControl_r1i1p1f1"
+    prefixes <- "MPI-ESM1-2-LR_esm-hist_r1i1p1f1"
     modes <- "fldint"
-    froms <- 2750 # last 100a
-    tos <- 2849 # last 100a
+    froms <- 1850
+    #froms <- 2750 # last 100a piControl
+    tos <- 2014
+    #tos <- 2849 # last 100a piControl
 
 } else if (F) { # cmip6 esgf MRI-ESM2-0 
     models <- "MRI-ESM2-0" # ocean: mri.com4.4: native: tripolar; cdo ?
@@ -2092,7 +2294,7 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MRI/MRI-ESM2-0/piControl/r1i2p1f1/Lmon/nbp/gn/v20200313"
     fpatterns <- "nbp_Lmon_MRI-ESM2-0_piControl_r1i2p1f1_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
+    varnamesin <- "co2_flx_total2"
     prefixes <- "MRI-ESM2-0_piControl_r1i2p1f1"
     modes <- "fldint"
     froms <- 2001 # last 100a
@@ -2175,32 +2377,71 @@ if (F) { # old hist
     datapaths <- "/mnt/lustre02/work/ik1017/CMIP6/data/CMIP6/CMIP/MOHC/UKESM1-0-LL/piControl/r1i1p1f2/Lmon/nbp/gn/v20200828"
     fpatterns <- "nbp_Lmon_UKESM1-0-LL_piControl_r1i1p1f2_gn_<year_from>01-<year_to>12.nc"
     #varnamesin <- "nbp"
-    varnamesin <- "co2_flx_total"
+    varnamesin <- "co2_flx_total2"
     prefixes <- "UKESM1-0-LL_piControl_r1i1p1f2"
     modes <- "fldint"
     froms <- 3740 # last 100a
     tos <- 3839 # last 100a
 
+} else if (F) { # post-processed mldHT09
+    models <- "fesom"
+    if (T) { # historical2
+        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/post/fesom/mldHT09", glob2rx("*.nc$"), full.names=T))
+        fpatterns <- "awi-esm-1-1-lr_kh800_historical2_so_fesom_<year>0101_levelwise_0-5900m_setgrid_mldHT09.nc"
+        prefixes <- "awi-esm-1-1-lr_kh800_historical2"
+    } else if (F) { # ssp126
+        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp126/outdata/post/fesom/mldHT09", glob2rx("*.nc$"), full.names=T))
+        fpatterns <- "awi-esm-1-1-lr_kh800_ssp126_so_fesom_<year>0101_levelwise_0-5900m_setgrid_mldHT09.nc"
+        prefixes <- "awi-esm-1-1-lr_kh800_ssp126"
+    } else if (F) { # ssp585
+        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/post/fesom/mldHT09", glob2rx("*.nc$"), full.names=T))
+        fpatterns <- "awi-esm-1-1-lr_kh800_ssp585_so_fesom_<year>0101_levelwise_0-5900m_setgrid_mldHT09.nc"
+        prefixes <- "awi-esm-1-1-lr_kh800_ssp585"
+    }
+    varnamesin <- "mldepthdensp030_m"
+    #varnamesin <- "mldepthdensp125_m"
+    modes <- "select"
+    #modes <- "fldmean"
+    #modes <- "timmean"
+    if (T) {
+        cdo_after_sels <- "-remapycon,global_1"
+        prefixes <- paste0(prefixes, "_regular_dx1.000_dy1.000")
+    } else if (F) {
+        cdo_after_sels <- "-remapycon,global_0.25"
+        prefixes <- paste0(prefixes, "_regular_dx0.250_dy0.250")
+    }
+    cdo_before_calcs <- "-yearmean"
+    #froms <- 1850
+    froms <- 2010
+    #froms <- 2015
+    #froms <- 2096
+    tos <- 2014
+    #tos <- 2100
+    seasons <- list("annual"=1:12)
+    #seasons <- list("Mar"=3) # Mar
+    #seasons <- list("Sep"=9) # Sep
+    areas_out_list <- list(list(name="NH_65_30W120E", sellonlatbox=c(lon1=-30,lon2=120,lat1=65,lat2=90)))
+
 } else if (F) { # awi-esm-1-1-lr_kh800 historical historical2
-    models <- "echam6"
+    #models <- "echam6"
     #models <- "jsbach"
     #models <- "fesom"
-    #models <- "recom"
+    models <- "recom"
     #post_force <- T
     # echam echam stream
-    fpatterns <- "historical2_<year><mon>.01_echam"
-    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam", glob2rx("*_echam"), full.names=T))
+    #fpatterns <- "historical2_<year><mon>.01_echam"
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam", glob2rx("*_echam$"), full.names=T))
     #codes <- 167
     #varnamesin <- "temp2"
-    codes <- 171
-    varnamesin <- "wind10"
+    #codes <- 171
+    #varnamesin <- "wind10"
     #codes <- 165
     #varnamesin <- "u10"
     #codes <- 166
     #varnamesin <- "v10"
     # echam echamday stream
     #fpatterns <- "historical2_<year><mon>.01_echamday"
-    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam", glob2rx("*_echamday"), full.names=T))
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam", glob2rx("*_echamday$"), full.names=T))
     #codes <- 129
     #varnamesin <- "geosp"
     #codes <- 130
@@ -2217,7 +2458,7 @@ if (F) { # old hist
     #varnamesin <- "v10"
     # echam co2 stream
     #fpatterns <- "historical2_<year><mon>.01_co2"
-    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam", glob2rx("*_co2"), full.names=T))
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/echam", glob2rx("*_co2$"), full.names=T))
     #codes <- 6
     #varnamesin <- "co2_flx_land"
     #codes <- 7
@@ -2228,12 +2469,12 @@ if (F) { # old hist
     #codes <- 25
     #varnamesin <- "co2_flx_harvest"
     #varnamesin <- "nbp" # = co2_flx_land + co2_flx_lcc + co2_flx_harvest
-    #varnamesin <- "co2_flx_total" # fgco2 + nbp
+    #varnamesin <- "co2_flx_total2" # fgco2 + nbp
     #codes <- 17
     #varnamesin <- "co2ocean"
     # jsbach jsbachstream
     #fpatterns <- "historical2_<year>01.01_jsbach"
-    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/jsbach", glob2rx("*_jsbach"), full.names=T))
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/jsbach", glob2rx("*_jsbach$"), full.names=T))
     #codes <- 12
     #varnamesin <- "cover_fract"
     #codes <- 20
@@ -2242,7 +2483,7 @@ if (F) { # old hist
     #varnamesin <- "CO2_emission_landcover_change"
     # jsbach nitrostream
     #fpatterns <- "historical2_<year><mon>.01_nitro"
-    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/jsbach", glob2rx("*_nitro"), full.names=T))
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/jsbach", glob2rx("*_nitro$"), full.names=T))
     #codes <- 85
     #varnamesin <- "LCC_flux_box_N2atmos"
     # fesom recom
@@ -2260,17 +2501,17 @@ if (F) { # old hist
     #varnamesin <- "aCO2" 
     #varnamesin <- "pCO2s" 
     #varnamesin <- "dpCO2s" 
-    #varnamesin <- "CO2f" 
+    varnamesin <- "CO2f" 
     #varnamesin <- "bgc02" # dic
     #varnamesin <- "bgc03" # talk
     #varnamesin <- "bgc22" # oxygen
     #varnamesin <- "npp_nanophy_dia"
-    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/fesom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
-    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    #files <- list(list.files("/work/ba1103/a270073/post/fesom/select/mldHT09", glob2rx("mldHT09_awi-esm-1-1-lr_kh800_historical2_*"), full.names=T))
+    files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/historical2/outdata/", models), glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+    #files <- list(list.files("/work/ba1103/a270073/post/fesom/select/mldHT09", glob2rx("mldHT09_awi-esm-1-1-lr_kh800_historical2_*.nc$"), full.names=T))
     #fpatterns <- "mldHT09_awi-esm-1-1-lr_kh800_historical2_so_fesom_<year>0101_levelwise_0-5900m_setgrid_remapycon_global_1.nc"
     #cdo_after_calcs <- "-setmissval,8.289665e-17" # for echam
-    #cdoshifttimes <- "-dt" # for fesom
+    cdoshifttimes <- "-dt" # for fesom/recom
     #cdo_before_calcs <- "-monmean"
     #cdo_before_calcs <- "-yearmean"
     #cdo_before_calcs <- "-del29feb" # for daily climatology ydaymean
@@ -2284,13 +2525,14 @@ if (F) { # old hist
     #froms <- 1850
     #froms <- 1966
     #froms <- 1967
-    froms <- 1970
+    #froms <- 1970
     #froms <- 1982
     #froms <- 1990
     #froms <- 1995
     #froms <- 2006
     #froms <- 2007
     #froms <- 2009
+    froms <- 2014
     #tos <- 1850
     #tos <- 1855
     #tos <- 1985
@@ -2335,15 +2577,15 @@ if (F) { # old hist
     fpatterns <- "ssp126_<year><mon>.01_echam"
     codes <- 171
     varnamesin <- "wind10"
-    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp126/outdata/echam", glob2rx("*_echam"), full.names=T))
+    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp126/outdata/echam", glob2rx("*_echam$"), full.names=T))
     # fesom recom
     #varnamesin <- "mldepthdensp030_m"
     #varnamesin <- "mldepthdensp125_m"
     #varnamesin <- "siextentn"
     #varnamesin <- "aCO2"
-    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp126/outdata/fesom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp126/outdata/fesom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
     #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    #files <- list(list.files("/work/ba1103/a270073/post/fesom/select/mldHT09", glob2rx("mldHT09_awi-esm-1-1-lr_kh800_ssp126_*"), full.names=T))
+    #files <- list(list.files("/work/ba1103/a270073/post/fesom/select/mldHT09", glob2rx("mldHT09_awi-esm-1-1-lr_kh800_ssp126_*.nc$"), full.names=T))
     #fpatterns <- "mldHT09_awi-esm-1-1-lr_kh800_ssp126_so_fesom_<year>0101_levelwise_0-5900m_setgrid_remapycon_global_1.nc"
     #cdoshifttimes <- "-dt" # for fesom
     #cdo_before_calcs <- "-monmean"
@@ -2387,7 +2629,7 @@ if (F) { # old hist
     models <- "recom"
     fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
     varnamesin <- "aCO2"
-    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp245/outdata/recom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
+    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp245/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
     cdoshifttimes <- "-dt" # for fesom
     prefixes <- "awi-esm-1-1-lr_kh800_ssp245"
     cdo_before_calcs <- "-monmean"
@@ -2396,33 +2638,46 @@ if (F) { # old hist
     tos <- 2100
 
 } else if (F) { # awi-esm-1-1-lr_kh800 ssp534-over
-    models <- "recom"
-    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    varnamesin <- "aCO2"
-    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp534-over/outdata/recom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
-    cdoshifttimes <- "-dt" # for fesom
+    models <- "echam6"
+    #models <- "recom"
+    if (T) { # echam
+        fpatterns <- "ssp534-over_<year><mon>.01_echammon"
+        codes <- 167
+        varnamesin <- "temp2"
+        files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp534-over/outdata/echam", 
+                                 glob2rx("*_echammon$"), full.names=T))
+    } else if (F) { # fesom/recom
+        fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+        varnamesin <- "aCO2"
+        files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp534-over/outdata/", models), 
+                                 glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        cdoshifttimes <- "-dt" # for fesom
+    }
     prefixes <- "awi-esm-1-1-lr_kh800_ssp534-over"
-    cdo_before_calcs <- "-monmean"
-    modes <- "select"
+    #cdo_before_calcs <- "-monmean"
+    #modes <- "select"
+    #modes <- "fldmean"
+    modes <- "timmean"
     froms <- 2015
-    tos <- 2100
+    tos <- 2040
+    #tos <- 2100
 
 } else if (F) { # awi-esm-1-1-lr_kh800 ssp585
-    #models <- "echam6"
+    models <- "echam6"
     #models <- "fesom"
-    models <- "recom"
+    #models <- "recom"
     # echam echamstream
-    #fpatterns <- "ssp585_<year><mon>.01_echam"
-    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/echam", glob2rx("*_echam"), full.names=T))
-    #codes <- 167
-    #varnamesin <- "temp2"
+    fpatterns <- "ssp585_<year><mon>.01_echam"
+    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/echam", glob2rx("*_echam$"), full.names=T))
+    codes <- 167
+    varnamesin <- "temp2"
     #codes <- 165
     #varnamesin <- "u10"
     #codes <- 166
     #varnamesin <- "v10"
     # echam co2stream
     #fpatterns <- "ssp585_<year><mon>.01_co2"
-    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/echam", glob2rx("*_co2"), full.names=T))
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/echam", glob2rx("*_co2$"), full.names=T))
     #codes <- 6
     #varnamesin <- "co2_flx_land"
     #codes <- 7
@@ -2433,9 +2688,9 @@ if (F) { # old hist
     #varnamesin <- "co2_flx_harvest"
     #varnamesin <- "fgco2"
     #varnamesin <- "nbp"
-    #varnamesin <- "co2_flx_total"
+    #varnamesin <- "co2_flx_total2"
     # fesom recom
-    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
     #varnamesin <- "tos"
     #varnamesin <- "thetao"
     #varnamesin <- "so"
@@ -2443,29 +2698,50 @@ if (F) { # old hist
     #varnamesin <- "mldepthdensp030_m" # mixed layer depth from density threshold method (> 0.03 kg m-3)
     #varnamesin <- "mldepthdensp125_m" # mixed layer depth from density threshold method (> 0.125 kg m-3)
     #varnamesin <- "sic"
-    varnamesin <- "aCO2"
+    #varnamesin <- "aCO2"
     #varnamesin <- "pCO2s" 
     #varnamesin <- "dpCO2s" 
     #varnamesin <- "CO2f" 
     #varnamesin <- "bgc02" # dic
     #varnamesin <- "bgc03" # talk
     #varnamesin <- "bgc22" # oxygen
-    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/fesom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
-    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/recom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/fesom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+    #files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/ssp585/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
     #files <- list(list.files("/work/ba1103/a270073/post/fesom/select/mldHT09", glob2rx("mldHT09_awi-esm-1-1-lr_kh800_ssp585_*"), full.names=T))
     #fpatterns <- "mldHT09_awi-esm-1-1-lr_kh800_ssp585_so_fesom_<year>0101_levelwise_setgrid_remapycon_global_1.nc"
-    cdoshifttimes <- "-dt" # for fesom
+    #cdoshifttimes <- "-dt" # for fesom
     prefixes <- "awi-esm-1-1-lr_kh800_ssp585"
-    cdo_before_calcs <- "-monmean"
+    #cdo_before_calcs <- "-monmean"
     #cdo_before_calcs <- "-yearmean"
-    modes <- "select"
+    #modes <- "select"
     #modes <- "ymonmean"
     #modes <- "fldmean"
     #modes <- "fldint"
+    modes <- "timmean"
     froms <- 2015
     #froms <- 2081
     #tos <- 2019
-    tos <- 2100
+    tos <- 2040
+    #tos <- 2100
+
+} else if (F) { # awi-esm-1-1-lr_kh800 sofia
+    models <- "echam6"
+    codes <- 167
+    varnamesin <- "temp2"
+    if (T) {
+        prefixes <- "awi-esm-1-1-lr_kh800_fwf_01"
+        files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/sofia/fwf_01/outdata/echam", glob2rx("*_echam$"), full.names=T))
+        fpatterns <- "fwf_01_<year><mon>.01_echam"
+    }
+    #cdoshifttimes <- "-dt" # for fesom
+    #cdo_before_calcs <- "-monmean"
+    #cdo_before_calcs <- "-yearmean"
+    modes <- "fldmean"
+    #modes <- "select"
+    froms <- 1870
+    #froms <- 1879
+    tos <- 1878
+    #tos <- 1967
 
 } else if (F) { # awi-esm-1-1-lr_kh800 og esm-piControl test
     models <- "echam6"
@@ -2488,13 +2764,18 @@ if (F) { # old hist
     froms <- 1001
     tos <- 1010
 
-} else if (T) { # awi-esm-1-1-lr_kh800 esm-piControl
-    #models <- "echam6"
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-piControl
+    models <- "echam6"
     #models <- "jsbach"
     #models <- "fesom"
-    models <- "recom"
+    #models <- "recom"
+    #codes <- 130
+    #varnamesin <- "st"
+    #cdo_before_calcs <- "-sp2gp"
     #codes <- 167
     #varnamesin <- "temp2"
+    #codes <- 239
+    #varnamesin <- "tpot"
     #codes <- 1
     #varnamesin <- "CO2"
     #codes <- 5
@@ -2503,9 +2784,15 @@ if (F) { # old hist
     #varnamesin <- "co2_flx_land" # = npp + resp + herb + fire
     #codes <- 7
     #varnamesin <- "co2_flx_ocean"
+    #codes <- 8
+    #varnamesin <- "co2_burden"
     #varnamesin <- "fgco2"
     #codes <- 9
     #varnamesin <- "co2_burden_corr_acc2"
+    #codes <- 10
+    #varnamesin <- "co2_flux_corr"
+    #codes <- 20
+    #varnamesin <- "co2_flx_anthro"
     #codes <- 21
     #varnamesin <- "co2_flx_npp"
     #codes <- 22
@@ -2514,21 +2801,25 @@ if (F) { # old hist
     #varnamesin <- "co2_flx_lcc"
     #codes <- 25
     #varnamesin <- "co2_flx_harvest"
+    #codes <- 26
+    #varnamesin <- "co2_flx_fire"
     #varnamesin <- "nbp" # = co2_flx_land + co2_flx_lcc + co2_flx_harvest
-    #varnamesin <- "co2_flx_total" # = fgco2 + nbp
+    varnamesin <- "co2_flx_nat" # = co2_flx_ocean + co2_flx_land
+    #varnamesin <- "co2_flx_total1" # = co2_flx_ocean + co2_flx_land + co2_flx_anthro + co2_flux_corr
+    #varnamesin <- "co2_flx_total2" # = fgco2 + nbp
     #varnamesin <- "boxC_green"
     #codes <- 12
     #varnamesin <- "cover_fract"
     #codes <- 20
     #varnamesin <- "veg_ratio_max"
     # fesom recom
-    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
     #fpatterns <- "<varnamesin>_fesom_<year><mon>01.nc" # monthly runs
     #varnamesin <- "tos"
     #varnamesin <- "thetaoga"
     #varnamesin <- "siarean"
     #varnamesin <- "siareas"
-    varnamesin <- "aCO2"
+    #varnamesin <- "aCO2"
     #varnamesin <- "pCO2a"
     if (F) {
         datapaths <- "/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_2685/outdata/echam"
@@ -2560,49 +2851,56 @@ if (F) { # old hist
     } else if (F) {
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl"
         if (T) { # echam
-            files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/", models), 
+            files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/echam", 
                                      #pattern="_echam$", full.names=T))
-                                     pattern="_jsbach$", full.names=T))
+                                     pattern="_co2$", full.names=T))
             #fpatterns <- "esm-piControl_<year><mon>.01_echam"
-            #fpatterns <- "esm-piControl_<year><mon>.01_co2mon"
+            fpatterns <- "esm-piControl_<year><mon>.01_co2"
+        } else if (F) { # jsbach
+            files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/jsbach", 
+                                     pattern="_jsbach$", full.names=T))
             fpatterns <- "esm-piControl_<year><mon>.01_jsbach"
         } else if (F) { # fesom
             files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl/outdata/", models), 
-                                     pattern=paste0("^", varnamesin), full.names=T))
+                                     pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         }
     } else if (F) {
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest"
         if (T) { # echam
-            files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/", models), 
+            files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/echam", 
                                      #pattern="_echam$", full.names=T))
-                                     pattern="_jsbach$", full.names=T))
+                                     pattern="_co2$", full.names=T))
             #fpatterns <- "esm-piControl_wout_talk_rest_<year><mon>.01_echam"
+            fpatterns <- "esm-piControl_wout_talk_rest_<year><mon>.01_co2"
+        } else if (F) { # jsbach
+            files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/jsbach"), 
+                                     pattern="_jsbach$", full.names=T))
             fpatterns <- "esm-piControl_wout_talk_rest_<year><mon>.01_jsbach"
         } else if (F) { # fesom
             files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest/outdata/fesom", 
-                                     pattern=paste0("^", varnamesin), full.names=T))
+                                     pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         }
     } else if (F) {
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_wout_talk_rest2"
         #prefixes <- "neg_co2_3879"
         #prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_start3870"
-        if (F) { # echam jsabch
-            files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/", models), 
+        if (T) { # echam
+            files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/echam"), 
                                      #pattern="_echamday$", full.names=T))
                                      #pattern="_echam$", full.names=T))
-                                     #pattern="_co2$", full.names=T))
-                                     #pattern="_co2$", full.names=T))
+                                     pattern="_co2$", full.names=T))
                                      #pattern="_co2day$", full.names=T))
-                                     pattern="_jsbach$", full.names=T))
             #fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_echamday"
             #fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_echam"
-            #fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_co2"
-            #fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_co2"
-            fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_jsbach"
+            fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_co2"
             #fpatterns <- "neg_co2_3879_<year><mon>.01_co2day"
+        } else if (F) { # jsbach
+            files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/jsbach"), 
+                                     pattern="_jsbach$", full.names=T))
+            fpatterns <- "esm-piControl_wout_talk_rest2_<year><mon>.01_jsbach"
         } else if (F) { # fesom recom
             files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_wout_talk_rest2/outdata/", models), 
-                                     pattern=paste0("^", varnamesin), full.names=T))
+                                     pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
             #files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_start3870/outdata/", models), 
             #                         pattern=paste0("^", varnamesin), full.names=T))
         }
@@ -2618,34 +2916,42 @@ if (F) { # old hist
             #fpatterns <- "restart_esm-piControl2_<year><mon>31_jsbach.nc" 
         } else if (T) { # fesom recom
             files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl2/outdata/", models),
-                                     pattern=paste0("^", varnamesin), full.names=T))
+                                     pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         }
     } else if (T) {
         prefixes <- "awi-esm-1-1-lr_kh800_esm-piControl_nobio_spinup"
-        if (F) { # echam jsbach
-            files <- list(list.files(paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_nobio_spinup/outdata/", models), 
+        if (T) { # echam 
+            files <- list(list.files(paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_nobio_spinup/outdata/echam"), 
+                                     #pattern="_echam$", full.names=T))
+                                     pattern="_co2$", full.names=T))
+            #fpatterns <- "esm-piControl_nobio_spinup_<year><mon>.01_echam"
+            fpatterns <- "esm-piControl_nobio_spinup_<year><mon>.01_co2"
+        } else if (F) { # jsbach
+            files <- list(list.files(paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_nobio_spinup/outdata/jsbach"), 
                                      pattern="_jsbach$", full.names=T))
             fpatterns <- "esm-piControl_nobio_spinup_<year><mon>.01_jsbach"
             #files <- list(list.files(paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_nobio_spinup/restart/", models), 
             #                         pattern="[0-9][0-9]_jsbach.nc", full.names=T))
             #fpatterns <- "restart_esm-piControl2_<year><mon>31_jsbach.nc" 
-        } else if (T) { # fesom recom
+        } else if (F) { # fesom recom
             files <- list(list.files(paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl_nobio_spinup/outdata/", models),
-                                     pattern=paste0("^", varnamesin), full.names=T))
+                                     pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         }
     }
     #cdo_after_calcs <- "-setunit,ppm -mulc,658267" # [CO2] (in ppm) = 1e6 * 0.658267 * co2mmr
     #cdo_after_calcs <- "-setunit,\"gC m-2 yr-1\" -mulc,365.25 -mulc,86400 -divc,3.664191 -mulc,100" # kgCO2 m-2 s-1 -> gC m-2 yr-1
     #sellevels <- "0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,18000,19000,20000,21000,22000,23000,24000,25000,26000"
     #sellevels <- 1 
-    cdoshifttimes <- "-dt" # for fesom monthly or daily
-    cdo_before_calcs <- "-monmean"
-    modes <- "select"
+    #cdoshifttimes <- "-dt" # for fesom monthly or daily
+    #cdo_before_calcs <- "-monmean"
+    #cdo_before_calcs <- "-yearmean"
+    #modes <- "select"
     #modes <- "timmean"
     #modes <- "fldmean"
     #modes <- "fldsum"
-    #modes <- "fldint"
+    modes <- "fldint"
     #froms <- 1850
+    #froms <- 1950
     #froms <- 2685 # last piControl og year
     #froms <- 2686 # esm-piControl start from piControl
     #froms <- 2778
@@ -2653,9 +2959,18 @@ if (F) { # old hist
     #froms <- 3001 # esm-piControl start from piControl_LUtrans1850
     #froms <- 3151 # esm-piControl_wout_talk_restore
     froms <- 3208
+    #froms <- 3328
+    #froms <- 3277
+    #froms <- 3498
+    #froms <- 3517
+    #froms <- 3537
     #froms <- 3860
     #froms <- 3871
     #froms <- 3879
+    #froms <- 3926
+    #froms <- 3946
+    #froms <- 4312
+    #froms <- 4428 # start of production output
     #tos <- 1872
     #tos <- 1968
     #tos <- 2063
@@ -2671,14 +2986,32 @@ if (F) { # old hist
     #tos <- 3207
     #tos <- 3208
     #tos <- 3227
-    tos <- 3327
+    #tos <- 3265
+    #tos <- 3276
+    #tos <- 3327
+    #tos <- 3377
     #tos <- 3497
-    #tos <- 3590
+    #tos <- 3536
     #tos <- 3859
     #tos <- 3878
     #tos <- 3945
+    #tos <- 4311
+    #tos <- 4427 # end of spinup output
+    tos <- 4527
     #areas_out_list <- list(list(name="NH", sellonlatbox=c(lon1=-360,lon2=360,lat1=0,lat2=90)))
     #areas_out_list <- list(list(name="45to90S", sellonlatbox=c(lon1=-360,lon2=360,lat1=-90,lat2=-45)))
+
+} else if (F) { # picontrol_and_esm-piControl spinup
+    models <- "echam6"
+    varnamesin <- "netAtmosLandCO2Flux"
+    prefixes <- "awi-esm-1-1-lr_kh800_piControl_and_esm-piControl"
+    files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-piControl2/outdata/echam", 
+                             pattern="_co2$", full.names=T))
+    fpatterns <- "esm-piControl2_<year><mon>.01_jsbach"
+    modes <- "fldint"
+    froms <- 1950
+    tos <- 4527
+    seasons <- list("annual"=1)
 
 } else if (F) { # mseifert
     models <- "fesom"
@@ -2689,35 +3022,35 @@ if (F) { # old hist
     #varnamesin <- "aCO2"
     if (F) {
         files <- list(list.files(paste0("/work/ba1103/a270120/out/awicm-1.0-recom-coccos/oceannets/piControl_original_bionotzero/outdata/", models), 
-                                 pattern=paste0("^", varnamesin), full.names=T))
+                                 pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         prefixes <- "coccos_piControl_original_bionotzero"
     } else if (F) {
         files <- list(list.files(paste0("/work/ba1103/a270120/out/awicm-1.0-recom-coccos/oceannets/esm-piControl_original/outdata/", models), 
-                                 pattern=paste0("^", varnamesin), full.names=T))
+                                 pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         prefixes <- "coccos_esm-piControl_original"
     } else if (F) {
         files <- list(list.files(paste0("/work/ba1103/a270120/out/awicm-1.0-recom-coccos/oceannets/esm-piControl_original_bionotzero/outdata/", models), 
-                                 pattern=paste0("^", varnamesin), full.names=T))
+                                 pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         prefixes <- "coccos_esm-piControl_original_bionotzero"
     } else if (F) {
         files <- list(list.files(paste0("/work/ba1103/a270120/out/awicm-1.0-recom-coccos/oceannets/esm-piControl_original_start3870/outdata/", models), 
-                                 pattern=paste0("^", varnamesin), full.names=T))
+                                 pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         prefixes <- "coccos_esm-piControl_original_start3870"
     } else if (F) {
         files <- list(list.files(paste0("/work/ba1103/a270120/out/awicm-1.0-recom-coccos/oceannets/esm-piControl_chris_code/outdata/", models), 
-                                 pattern=paste0("^", varnamesin), full.names=T))
+                                 pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         prefixes <- "coccos_esm-piControl_chris_code"
     } else if (F) {
         files <- list(list.files(paste0("/work/ba1103/a270120/out/awicm-1.0-recom-coccos/oceannets/esm-piControl_chris_code_bugfix/outdata/", models), 
-                                 pattern=paste0("^", varnamesin), full.names=T))
+                                 pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         prefixes <- "coccos_esm-piControl_chris_code_bugfix"
     } else if (F) {
         files <- list(list.files(paste0("/work/ba1103/a270120/out/awicm-1.0-recom-coccos/oceannets/esm-piControl_chris_code_bugfix_orig_fesom_restart/outdata/", models), 
-                                 pattern=paste0("^", varnamesin), full.names=T))
+                                 pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         prefixes <- "coccos_esm-piControl_chris_code_bugfix_orig_fesom_restart"
     } else if (T) {
         files <- list(list.files(paste0("/work/ba1103/a270120/out/awicm-1.0-recom-coccos/oceannets/esm_piControl_CONTROL/outdata/", models), 
-                                 pattern=paste0("^", varnamesin), full.names=T))
+                                 pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
         prefixes <- "coccos_esm_piControl_CONTROL"
     }
     cdoshifttimes <- "-dt" # for fesom monthly or daily
@@ -2726,76 +3059,361 @@ if (F) { # old hist
     #tos <- 3878
     tos <- 3971
 
-} else if (F) { # awi-esm-1-1-lr_kh800 esm-hist
-    models <- "recom"
-    varnamesin <- "aCO2"
+} else if (F) { # tnagwekar
+    models <- "fesom"
+    #varnamesin <- "siarean"
+    varnamesin <- "siareas"
     fpatterns <- "<varnamesin>_fesom_<year><mon>01.nc"
-    files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist/outdata/", models),
-                             pattern=paste0("^", varnamesin), full.names=T))
-    prefixes <- "awi-esm-1-1-lr_kh800_esm-hist"
+    files <- list(list.files(paste0("/work/ba1103/a270189/historical_run/hist_new/outdata/", models),
+                             pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
+    prefixes <- "hist_new"
     cdoshifttimes <- "-dt" # for fesom monthly or daily
-    cdo_before_calcs <- "-monmean"
+    #cdo_before_calcs <- "-monmean"
     modes <- "select"
-    froms <- 1850
+    froms <- 1940
     tos <- 2014
 
-} else if (F) { # awi-esm-1-1-lr_kh800 esm-ssp126
-    models <- "recom"
-    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    varnamesin <- "aCO2"
-    files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp126/outdata/recom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
-    cdoshifttimes <- "-dt" # for fesom
-    prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp126"
-    cdo_before_calcs <- "-monmean"
-    modes <- "select"
-    froms <- 2015
-    tos <- 2100
+} else if (T) { # full carbon cycle awi-esm
+    if (T) { # nobio ensemble
+        experiments <- c("esm-piControl_wout_talk_rest2", "esm-piControl_nobio_spinup",
+                         "esm-hist", "esm-hist_nobio",
+                         "esm-hist_vdeta_p25", "esm-hist_vdeta_m25", "esm-hist_vdeta_p25_vdet_p25", "esm-hist_vdeta_m25_vdet_m25", 
+                         "esm-hist_remin_p25", "esm-hist_remin_m25",
+                         "esm-ssp245", "esm-ssp245_nobio",
+                         "esm-ssp245_vdeta_p25", "esm-ssp245_vdeta_m25", "esm-ssp245_vdeta_p25_vdet_p25", "esm-ssp245_vdeta_m25_vdet_m25",
+                         "esm-ssp245_remin_p25", "esm-ssp245_remin_m25",
+                         "esm-ssp585", "esm-ssp585_nobio",
+                         "esm-ssp585_vdeta_p25", "esm-ssp585_vdeta_m25", "esm-ssp585_vdeta_p25_vdet_p25", "esm-ssp585_vdeta_m25_vdet_m25",
+                         "esm-ssp585_remin_p25", "esm-ssp585_remin_m25")
+        prefixes <- paste0("awi-esm-1-1-lr_kh800_", experiments)
+        froms <- c(3208, 3208,
+                   rep(1981, t=8),
+                   rep(2015, t=16))
+        tos <- c(4527, 4527,
+                 rep(2014, t=8),
+                 rep(2100, t=16))
+        workpaths <- paste0("/work/",
+                            c("ba1103", "ab1095",
+                              "ba1103", "ab1095",
+                              rep("ab1095", t=22)),
+                            "/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/", experiments)
+        if (F) { # todo
+            inds <- which(experiments == "esm-ssp585_vdeta_m25_vdet_m25")
+            experiments <- experiments[inds]
+            prefixes <- prefixes[inds]
+            froms <- froms[inds]
+            tos <- tos[inds]
+            workpaths <- workpaths[inds]
+        }
+    }
+    
+    # needed variables
+    varnamesin <- c("aCO2", "co2_flx_land", "co2_flx_ocean", "co2_flx_lcc", "co2_flx_harvest", "co2_flx_anthro", "co2_flux_corr", "co2_flx_nat", "nbp", "co2_flx_total1")
+    codes <- c(NA, 6, 7, 24, 25, 20, 10, NA, NA, NA)
+    models <- c("recom", rep("echam6", t=9))
+    modes <- c("select", rep("fldint", t=9))
+    cdoshifttimes <- c("-dt", rep("", t=9))
+    cdo_before_calcs <- c("-monmean", rep("", t=9))
+    
+    # get files
+    message("get full carbon cycle files. this might take some time for ", length(prefixes), " settings ...")
+    recom_files <- echam_files <- vector("list", l=length(prefixes))
+    recom_fpatterns <- echam_fpatterns <- rep(NA, t=length(prefixes))
+    for (si in seq_along(recom_files)) { # 1/2: get recom aCO2 files
+        recom_files[[si]] <- list.files(paste0(workpaths[si], "/outdata/recom"), pattern="^aCO2_fesom_.*.nc$", full.names=T)
+        recom_fpatterns[si] <- "<varnamesin>_fesom_<year><mon>01.nc"
+    }
+    for (si in seq_along(echam_files)) { # 2/2: get echam co2 files
+        echam_files[[si]] <- list.files(paste0(workpaths[si], "/outdata/echam"), pattern="_co2$", full.names=T)
+        echam_fpatterns[si] <- paste0(experiments[si], "_<year><mon>.01_co2")
+    } # for si
 
-} else if (F) { # awi-esm-1-1-lr_kh800 esm-ssp245
-    models <- "recom"
-    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    varnamesin <- "aCO2"
-    files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245/outdata/recom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
-    cdoshifttimes <- "-dt" # for fesom
-    prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp245"
-    cdo_before_calcs <- "-monmean"
-    modes <- "select"
-    froms <- 2015
-    tos <- 2100
+    # repeat: nsettings x nvarnames
+    nsettings <- length(prefixes); nvars <- length(varnamesin)
+    prefixes <- rep(prefixes, e=nvars)
+    froms <- rep(froms, e=nvars)
+    tos <- rep(tos, e=nvars)
+    files <- vector("list", l=nsettings*nvars)
+    fpatterns <- rep(NA, t=length(files))
+    cnt <- 0
+    for (si in seq_len(nsettings)) {
+        for (vi in seq_len(nvars)) {
+            cnt <- cnt + 1
+            if (vi == 1) { # recoms aco2
+                files[[cnt]] <- recom_files[[si]]
+                fpatterns[[cnt]] <- recom_fpatterns[si]
+            } else { # echams co2 fluxes
+                files[[cnt]] <- echam_files[[si]]
+                fpatterns[[cnt]] <- echam_fpatterns[si]
+            }
+        }
+    }
+    varnamesin <- rep(varnamesin, t=nsettings)
+    codes <- rep(codes, t=nsettings)
+    models <- rep(models, t=nsettings)
+    modes <- rep(modes, t=nsettings)
+    cdoshifttimes <- rep(cdoshifttimes, t=nsettings)
+    cdo_before_calcs <- rep(cdo_before_calcs, t=nsettings)
 
-} else if (F) { # awi-esm-1-1-lr_kh800 esm-ssp370
-    models <- "recom"
-    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    varnamesin <- "aCO2"
-    files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp370/outdata/recom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
-    cdoshifttimes <- "-dt" # for fesom
-    prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp370"
-    cdo_before_calcs <- "-monmean"
-    modes <- "select"
-    froms <- 2015
-    tos <- 2100
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-hist esm-hist_nobio
+    models <- "echam6"
+    #models <- "fesom"
+    #models <- "recom"
+    #codes <- 6
+    #varnamesin <- "co2_flx_land" # = npp + resp + herb + fire
+    #codes <- 7
+    #varnamesin <- "co2_flx_ocean"
+    #codes <- 8
+    #varnamesin <- "co2_burden"
+    #codes <- 9
+    #varnamesin <- "co2_burden_corr_acc2"
+    #codes <- 10
+    #varnamesin <- "co2_flux_corr"
+    #codes <- 11
+    #varnamesin <- "co2_emis"
+    #codes <- 20
+    #varnamesin <- "co2_flx_anthro"
+    #codes <- 21
+    #varnamesin <- "co2_flx_npp"
+    #codes <- 22
+    #varnamesin <- "co2_flx_resp"
+    #codes <- 24
+    #varnamesin <- "co2_flx_lcc"
+    codes <- 25
+    varnamesin <- "co2_flx_harvest"
+    #codes <- 26
+    #varnamesin <- "co2_flx_fire"
+    #varnamesin <- "co2_flx_nat" # = co2_flx_ocean + co2_flx_land
+    #varnamesin <- "nbp" # = co2_flx_land + co2_flx_lcc + co2_flx_harvest
+    #varnamesin <- "co2_flx_total1" # = co2_flx_ocean + co2_flx_land + co2_flx_anthro + co2_flux_corr
+    #codes <- 167
+    #varnamesin <- "temp2"
+    #codes <- 142
+    #varnamesin <- "aprl"
+    #codes <- 143
+    #varnamesin <- "aprc"
+    #varnamesin <- "apr_tot"
+    #varnamesin <- "siarean"
+    #varnamesin <- "siareas"
+    #varnamesin <- "aCO2"
+    if (F) { # esm-hist
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-hist"
+        if (T) { # echam
+            files <- list(list.files("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist/outdata/echam", 
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-hist_<year><mon>.01_co2"
+            #fpatterns <- "esm-hist_<year><mon>.01_echam"
+        } else if (F) { # jsbach
 
-} else if (F) { # awi-esm-1-1-lr_kh800 esm-ssp534os
-    models <- "recom"
-    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    varnamesin <- "aCO2"
-    files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp534os/outdata/recom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
-    cdoshifttimes <- "-dt" # for fesom
-    prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp534os"
-    cdo_before_calcs <- "-monmean"
-    modes <- "select"
-    froms <- 2015
-    tos <- 2100
+        } else if (F) { # fesom/recom
+            fpatterns <- "<varnamesin>_fesom_<year><mon>01.nc"
+            files <- list(list.files(paste0("/work/ba1103/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist/outdata/", models),
+                                     pattern=paste0("^", varnamesin), full.names=T))
+        }
+    } else if (F) { # esm-hist_nobio
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-hist_nobio"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist_nobio/outdata/echam", 
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-hist_nobio_<year><mon>.01_co2"
+            #fpatterns <- "esm-hist_nobio_<year><mon>.01_echam"
+        } else if (F) { # jsbach
 
-} else if (F) { # awi-esm-1-1-lr_kh800 esm-ssp585
-    models <- "recom"
-    fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
-    varnamesin <- "aCO2"
-    files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585/outdata/recom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
-    cdoshifttimes <- "-dt" # for fesom
-    prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp585"
-    cdo_before_calcs <- "-monmean"
-    modes <- "select"
+        } else if (F) { # fesom/recom
+            fpatterns <- "<varnamesin>_fesom_<year><mon>01.nc"
+            files <- list(list.files(paste0("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist_nobio/outdata/", models),
+                                     pattern=paste0("^", varnamesin, "_fesom_*.nc$"), full.names=T))
+        }
+    } else if (F) { # esm-hist_vdeta_m25 nobio sensitivity
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-hist_vdeta_m25"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist_vdeta_m25/outdata/echam", 
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-hist_vdeta_m25_<year><mon>.01_co2"
+            #fpatterns <- "esm-hist_vdeta_m25_<year><mon>.01_echam"
+        }
+    } else if (F) { # esm-hist_vdeta_p25 nobio sensitivity
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-hist_vdeta_p25"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist_vdeta_p25/outdata/echam", 
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-hist_vdeta_p25_<year><mon>.01_co2"
+            #fpatterns <- "esm-hist_vdeta_p25_<year><mon>.01_echam"
+        }
+    } else if (F) { # esm-hist_vdeta_m25_vdet_m25 nobio sensitivity
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-hist_vdeta_m25_vdet_m25"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist_vdeta_m25_vdet_m25/outdata/echam", 
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-hist_vdeta_m25_vdet_m25_<year><mon>.01_co2"
+            #fpatterns <- "esm-hist_vdeta_m25_vdet_m25<year><mon>.01_echam"
+        }
+    } else if (T) { # esm-hist_vdeta_p25_vdet_p25 nobio sensitivity
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-hist_vdeta_p25_vdet_p25"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-hist_vdeta_p25_vdet_p25/outdata/echam", 
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-hist_vdeta_p25_vdet_p25_<year><mon>.01_co2"
+            #fpatterns <- "esm-hist_vdeta_p25_vdet_p25_<year><mon>.01_echam"
+        }
+    }
+    #cdoshifttimes <- "-dt" # for fesom monthly or daily
+    #cdo_before_calcs <- "-monmean"
+    #modes <- "select"
+    #modes <- "fldmean"
+    modes <- "fldint"
+    #froms <- 1850
+    froms <- 1981 # nobio sensitivity start
+    #froms <- 1940
+    tos <- 2014
+    #areas_out_list <- lapply(vector("list", l=length(models)), base::append, 
+                             #list(name="NH_30", sellonlatbox=c(lon1=-360,lon2=360,lat1=30,lat2=90))
+                             #list(name="SH_30", sellonlatbox=c(lon1=-360,lon2=360,lat1=-30,lat2=-90))
+                             #list(name="tropics_30", sellonlatbox=c(lon1=-360,lon2=360,lat1=-30,lat2=30))
+                             #)
+
+} else if (F) { # awi-esm-1-1-lr_kh800 esm-ssp126 esm-ssp245 esm-ssp370 esm-ssp534os esm-ssp585
+    models <- "echam6"
+    #models <- "recom"
+    #codes <- 6
+    #varnamesin <- "co2_flx_land"
+    #codes <- 7
+    #varnamesin <- "co2_flx_ocean"
+    #codes <- 10
+    #varnamesin <- "co2_flux_corr"
+    #codes <- 20
+    #varnamesin <- "co2_flx_anthro"
+    #codes <- 24
+    #varnamesin <- "co2_flx_lcc"
+    codes <- 25
+    varnamesin <- "co2_flx_harvest"
+    #varnamesin <- "co2_flx_nat" # = co2_flx_ocean + co2_flx_land
+    #varnamesin <- "nbp"
+    #varnamesin <- "co2_flx_total1" # = co2_flx_ocean + co2_flx_land + co2_flx_anthro + co2_flux_corr
+    #fpatterns <- "<varnamesin>_fesom_<year>0101.nc"
+    #varnamesin <- "aCO2"
+    if (F) {
+        files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp126/outdata/recom", glob2rx(paste0(varnamesin, "_*")), full.names=T))
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp126"
+    } else if (F) {
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp245"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245/outdata/echam",
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-ssp245_<year><mon>.01_co2"
+            #fpatterns <- "esm-ssp245_<year><mon>.01_echam"
+        } else if (F) { # recom
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        }
+    } else if (F) {
+        files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp370/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp370"
+    } else if (F) {
+        files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp534os/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp534os"
+    } else if (F) {
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp585"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585/outdata/echam",
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-ssp585_<year><mon>.01_co2"
+            #fpatterns <- "esm-ssp585_<year><mon>.01_echam"
+        } else if (F) { # recom
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        }
+    } else if (F) {
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp245_nobio"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245_nobio/outdata/echam",
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-ssp245_nobio_<year><mon>.01_co2"
+            #fpatterns <- "esm-ssp245_nobio_<year><mon>.01_echam"
+        } else if (F) { # recom
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245_nobio/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        }
+    } else if (F) {
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp585_nobio"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585_nobio/outdata/echam",
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-ssp585_nobio_<year><mon>.01_co2"
+            #fpatterns <- "esm-ssp585_nobio_<year><mon>.01_echam"
+        } else if (F) { # recom
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585_nobio/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        }
+    } else if (T) {
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp245_vdeta_m25"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245_vdeta_m25/outdata/echam",
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-ssp245_vdeta_m25_<year><mon>.01_co2"
+            #fpatterns <- "esm-ssp245_vdeta_m25_<year><mon>.01_echam"
+        } else if (F) { # recom
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245_vdeta_m25/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        }
+    } else if (F) {
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp245_vdeta_p25"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245_vdeta_p25/outdata/echam",
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-ssp245_vdeta_p25_<year><mon>.01_co2"
+            #fpatterns <- "esm-ssp245_vdeta_p25_<year><mon>.01_echam"
+        } else if (F) { # recom
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp245_vdeta_p25/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        }
+    } else if (F) {
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp585_vdeta_m25"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585_vdeta_m25/outdata/echam",
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-ssp585_vdeta_m25_<year><mon>.01_co2"
+            #fpatterns <- "esm-ssp585_vdeta_m25_<year><mon>.01_echam"
+        } else if (F) { # recom
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585_vdeta_m25/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        }
+    } else if (F) {
+        prefixes <- "awi-esm-1-1-lr_kh800_esm-ssp585_vdeta_p25"
+        if (T) { # echam
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585_vdeta_p25/outdata/echam",
+                                     pattern="_co2$", 
+                                     #pattern="_echam$", 
+                                     full.names=T))
+            fpatterns <- "esm-ssp585_vdeta_p25_<year><mon>.01_co2"
+            #fpatterns <- "esm-ssp585_vdeta_p25_<year><mon>.01_echam"
+        } else if (F) { # recom
+            files <- list(list.files("/work/ab1095/a270073/out/awicm-1.0-recom/awi-esm-1-1-lr_kh800/esm-ssp585_vdeta_p25/outdata/recom", glob2rx(paste0(varnamesin, "_fesom_*.nc$")), full.names=T))
+        }
+    }
+    #cdoshifttimes <- "-dt" # for fesom
+    #cdo_before_calcs <- "-monmean"
+    #modes <- "select"
+    modes <- "fldint"
     froms <- 2015
     tos <- 2100
 
@@ -3241,121 +3859,302 @@ if (F) { # old hist
     tos <- rep(2685, t=27)
 
 # ======================================================
-# special: cmip6 nml created by ~/slurm/cronjobs/esgf/filter_esgf_lists.r
+# special: cmip6 nml created by ~/slurm/cronjobs/esgf/namelists/filter_esgf_lists.r
 } else if (F) { 
     post_force <- F
-    if (T) { # thetao
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_58settings_Omon_thetao_58models_historical_165-165nyears_2023-05-30_17-34-34.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_39settings_Omon_thetao_39models_ssp126_86-86nyears_2023-04-09_12-31-56.r" 
-    } else if (T) { # so
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_58settings_Omon_so_58models_historical_165-165nyears_2023-05-30_17-42-02.r"
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_38settings_Omon_so_38models_ssp126_86-86nyears_2023-04-09_14-01-56.r"
-    } else if (F) { # chl
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_18settings_Omon_chl_18models_historical_165-165nyears_2022-10-06_16-30-36.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_6settings_Omon_chl_6models_historical_r4i1p1f1_165-165nyears_2022-10-07_13-30-24.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_12settings_Omon_chl_12models_ssp126_86-86nyears_2022-10-06_16-31-34.r"
+    if (F) { # chl
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_18settings_Omon_chl_18models_historical_165-165nyears_2022-10-06_16-30-36.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_6settings_Omon_chl_6models_historical_r4i1p1f1_165-165nyears_2022-10-07_13-30-24.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_chl_12models_ssp126_86-86nyears_2022-10-06_16-31-34.r"
+    } else if (F) { # detoc
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_9settings_Omon_detoc_9models_historical_165-165nyears_2023-11-02_14-30-14.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_7settings_Omon_detoc_7models_ssp126_86-86nyears_2023-11-02_17-11-40.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_9settings_Omon_detoc_9models_ssp245_86-86nyears_2023-11-02_17-17-24.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_10settings_Omon_detoc_10models_ssp370_86-86nyears_2023-11-02_18-58-05.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_4settings_Omon_detoc_4models_ssp534-over_86-86nyears_2023-11-02_17-17-32.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_8settings_Omon_detoc_8models_ssp585_86-86nyears_2023-11-02_17-17-54.r"
     } else if (F) { # dissic
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_19settings_Omon_dissic_19models_historical_165-165nyears_2022-09-29_17-01-37.r"
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_19settings_Omon_dissic_19models_historical_165-165nyears_2022-09-29_17-01-37.r"
     } else if (F) { # dpco2
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_14settings_Omon_dpco2_14models_historical_165-165nyears_2022-07-15_17-56-02.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_10settings_Omon_dpco2_10models_ssp126_86-86nyears_2022-10-06_15-53-04.r"
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_14settings_Omon_dpco2_14models_historical_165-165nyears_2022-07-15_17-56-02.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_10settings_Omon_dpco2_10models_ssp126_86-86nyears_2022-10-06_15-53-04.r"
+    } else if (F) { # epc100
+        # mydl
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_13settings_Omon_epc100_13models_historical_r1i1p1f1_r1i1p1f2_r1i1p4f2_r1i2p1f1_gn_165-165nyears_2023-12-01_18-49-10.r"
+        fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_3settings_Omon_epc100_3models_historical_r4i1p1f1_gn_165-165nyears_2023-12-01_19-17-17.r" # cesm2
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_11settings_Omon_epc100_11models_ssp126_r101i1p1f1_r1i1p1f1_r1i1p1f2_r1i1p2f1_r1i1p4f2_r4i1p1f1_gn_86-86nyears_2023-12-01_18-49-46.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_11settings_Omon_epc100_11models_ssp245_r101i1p1f1_r102i1p1f1_r1i1p1f1_r1i1p1f2_r1i1p2f1_r1i1p4f2_r4i1p1f1_gn_86-86nyears_2023-12-01_18-50-00.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_6settings_Omon_epc100_6models_ssp370_r1i1p1f1_r1i1p4f2_r4i1p1f1_gn_86-86nyears_2023-12-01_18-50-12.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_9settings_Omon_epc100_9models_ssp585_r1i1p1f1_r1i1p1f2_r1i1p4f2_r1i2p1f1_r4i1p1f1_gn_86-86nyears_2023-12-01_18-50-21.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_18settings_Omon_epc100_18models_historical_r1i1p1f1_r1i1p2f1_r1i1p1f2_r101i1p1f1_r11i1p1f1_r1i2p1f1_r10i1p1f1_gn_gr_165-165nyears_2023-11-16_14-16-39.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_epc100_12models_ssp126_r2i1p1f1_r2i1p2f1_r1i1p1f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-13-11.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_11settings_Omon_epc100_11models_ssp245_r1i1p1f1_r2i1p1f1_r2i1p2f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-14-09.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_14settings_Omon_epc100_14models_ssp370_r1i1p1f1_r1i1p2f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-14-43.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_13settings_Omon_epc100_13models_ssp585_r1i1p2f1_r2i1p1f1_r1i1p1f2_r1i1p1f1_r1i2p1f1_gn_gr_86-86nyears_2023-11-16_14-15-19.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_18settings_Omon_epc100_18models_historical_165-165nyears_2023-11-06_12-52-44.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_epc100_12models_ssp126_86-86nyears_2023-11-06_12-38-07.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_11settings_Omon_epc100_11models_ssp245_86-86nyears_2023-11-06_12-38-43.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_14settings_Omon_epc100_14models_ssp370_86-86nyears_2023-11-06_12-38-58.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_13settings_Omon_epc100_13models_ssp585_86-86nyears_2023-11-06_12-39-14.r"
     } else if (F) { # fgco2
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_23settings_Omon_fgco2_23models_piControl_251-251nyears_2022-05-06_09-04-39.r"
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_29settings_Omon_fgco2_29models_historical_165-165nyears_2022-05-06_09-45-36.r"
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_29settings_Omon_fgco2_29models_historical_165-165nyears_2022-09-09_09-10-59.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_8settings_Omon_fgco2_8models_historical_r4i1p1f1_165-165nyears_2022-10-07_13-30-06.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_16settings_Omon_fgco2_16models_ssp126_86-86nyears_2022-10-06_15-53-16.r"
-    } else if (F) { # mlotst
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_44settings_Omon_mlotst_44models_historical_165-165nyears_2022-09-16_09-29-25.r"
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_11settings_Omon_mlotst_11models_historical_r4i1p1f1_165-165nyears_2022-10-07_13-29-26.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_28settings_Omon_mlotst_28models_ssp126_86-86nyears_2022-10-06_15-53-43.r"
-    } else if (F) { # siareas
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_16settings_SImon_siareas_16models_ssp585_86-86nyears_2023-03-29_11-10-19.r"
-    } else if (F) { # siconc
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_56settings_SImon_siconc_56models_historical_165-165nyears_2023-03-29_16-38-09.r"
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_38settings_SImon_siconc_38models_ssp585_86-86nyears_2023-03-29_15-10-56.r"
-    } else if (F) { # spco2
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_19settings_Omon_spco2_19models_historical_165-165nyears_2022-07-15_18-07-18.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_5settings_Omon_spco2_5models_historical_r4i1p1f1_165-165nyears_2022-10-07_13-29-46.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_12settings_Omon_spco2_12models_ssp126_86-86nyears_2022-10-06_15-46-26.r"
-    } else if (F) { # talk
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_20settings_Omon_talk_20models_historical_165-165nyears_2022-09-29_17-19-58.r"
-    } else if (F) { # tos
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_61settings_Omon_tos_61models_historical_165-165nyears_2022-09-28_17-27-53.r"
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_20settings_Omon_tos_20models_historical_r4i1p1f1_165-165nyears_2022-10-06_18-19-37.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_42settings_Omon_tos_42models_ssp126_86-86nyears_2022-10-06_15-53-30.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_29settings_Omon_fgco2_29models_historical_r101i1p1f1_r1i1p1f1_r1i1p1f2_r1i1p2f1_r1i2p1f1_gn_gr_gr1_165-165nyears_2024-11-07_15-06-37.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_16settings_Omon_fgco2_16models_ssp126_r1i1p1f1_r1i1p1f2_r1i1p2f1_gn_gr_gr1_86-86nyears_2024-11-07_15-07-46.r"
+        fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_29settings_Omon_fgco2_29models_historical_r101i1p1f1_r1i1p1f1_r1i1p1f2_r1i1p2f1_r1i2p1f1_gn_gr_gr1_165-165nyears_2024-11-07_15-38-35.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_16settings_Omon_fgco2_16models_ssp126_r1i1p1f1_r1i1p1f2_r1i1p2f1_gn_gr_gr1_86-86nyears_2024-11-07_15-38-19.r"
+        # old:
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_23settings_Omon_fgco2_23models_piControl_251-251nyears_2022-05-06_09-04-39.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_29settings_Omon_fgco2_29models_historical_165-165nyears_2022-05-06_09-45-36.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_29settings_Omon_fgco2_29models_historical_165-165nyears_2022-09-09_09-10-59.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_8settings_Omon_fgco2_8models_historical_r4i1p1f1_165-165nyears_2022-10-07_13-30-06.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_16settings_Omon_fgco2_16models_ssp126_86-86nyears_2022-10-06_15-53-16.r"
+    } else if (F) { # intdic
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_14settings_Omon_intdic_14models_historical_165-165nyears_2023-07-18_18-06-14.r" # gn
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_14settings_Omon_intdic_14models_historical_165-165nyears_2023-07-18_17-51-08.r" # gr
+    } else if (F) { # intpp
+        # mydl
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_7settings_Omon_intpp_7models_historical_r1i1p1f1_r1i1p4f2_r1i2p1f1_gn_165-165nyears_2023-12-01_19-21-48.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_9settings_Omon_intpp_9models_ssp126_r101i1p1f1_r1i1p1f1_r1i1p1f2_r1i1p2f1_r4i1p1f1_gn_86-86nyears_2023-12-01_19-22-10.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_7settings_Omon_intpp_7models_ssp245_r102i1p1f1_r1i1p1f1_r1i1p1f2_r1i1p2f1_r1i1p5f2_r4i1p1f1_gn_86-86nyears_2023-12-01_19-22-19.r"
+        fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_4settings_Omon_intpp_4models_ssp370_r1i1p1f1_r1i1p1f2_r4i1p1f1_gn_86-86nyears_2023-12-01_19-22-26.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_9settings_Omon_intpp_9models_ssp585_r1i1p1f1_r1i1p1f2_r1i1p2f1_r1i2p1f1_r4i1p1f1_gn_gr_86-86nyears_2023-12-01_19-22-33.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_18settings_Omon_intpp_18models_historical_r1i1p1f1_r1i1p2f1_r1i1p1f2_r101i1p1f1_r1i2p1f1_gn_gr_165-165nyears_2023-11-16_13-17-35.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Omon_intpp_5models_historical_r4i1p1f1_gn_165-165nyears_2023-12-01_19-38-42.r" # cesm2
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_10settings_Omon_intpp_10models_ssp126_r1i1p2f1_r1i1p1f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_13-23-10.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_intpp_12models_ssp245_r1i1p1f1_r5i1p2f1_r1i1p2f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-14-14.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_14settings_Omon_intpp_14models_ssp370_r1i1p1f1_r1i1p2f1_r4i1p1f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-14-48.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_intpp_12models_ssp585_r1i1p2f1_r2i1p1f1_r1i1p1f2_r1i1p1f1_r1i2p1f1_gn_gr_86-86nyears_2023-11-16_14-15-24.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_18settings_Omon_intpp_18models_historical_165-165nyears_2023-11-02_15-22-12.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_10settings_Omon_intpp_10models_ssp126_86-86nyears_2023-11-02_17-33-29.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_intpp_12models_ssp245_86-86nyears_2023-11-02_17-34-00.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_14settings_Omon_intpp_14models_ssp370_86-86nyears_2023-11-02_18-58-14.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_4settings_Omon_intpp_4models_ssp534-over_86-86nyears_2023-11-02_17-34-23.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_intpp_12models_ssp585_86-86nyears_2023-11-02_17-34-41.r"
+    } else if (T) { # mlotst
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_44settings_Omon_mlotst_44models_historical_r1i1p1f1_r1i1p1f2_r1i1p1f3_r1i1p2f1_gn_gr_gr1_165-165nyears_2024-11-07_15-37-45.r"
+        fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_28settings_Omon_mlotst_28models_ssp126_r11i1p1f1_r1i1p1f1_r1i1p1f2_r1i1p1f3_r1i1p2f1_r1i1p3f1_gn_gr1_86-86nyears_2024-11-07_15-38-05.r"
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_44settings_Omon_mlotst_44models_historical_r1i1p1f1_r1i1p2f1_r1i1p1f2_r1i1p1f3_gn_gr_gr1_165-165nyears_2023-11-16_14-16-48.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_28settings_Omon_mlotst_28models_ssp126_r1i1p1f1_r1i1p2f1_r11i1p1f1_r1i1p1f2_r1i1p3f1_r1i1p1f3_gn_gr1_86-86nyears_2023-11-16_14-13-16.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_28settings_Omon_mlotst_28models_ssp245_r1i1p1f1_r1i1p2f1_r11i1p1f1_r1i1p1f2_r2i1p1f2_r1i1p1f3_gn_86-86nyears_2023-11-16_14-14-19.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_26settings_Omon_mlotst_26models_ssp370_r1i1p1f1_r1i1p2f1_r1i1p1f2_gn_86-86nyears_2023-11-16_14-14-52.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_28settings_Omon_mlotst_28models_ssp585_r1i1p1f1_r1i1p2f1_r1i1p1f2_r1i1p3f1_r1i1p1f3_gn_gr1_86-86nyears_2023-11-16_14-15-30.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_44settings_Omon_mlotst_44models_historical_165-165nyears_2022-09-16_09-29-25.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_11settings_Omon_mlotst_11models_historical_r4i1p1f1_165-165nyears_2022-10-07_13-29-26.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_28settings_Omon_mlotst_28models_ssp126_86-86nyears_2022-10-06_15-53-43.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_28settings_Omon_mlotst_28models_ssp245_86-86nyears_2023-11-02_19-22-37.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_26settings_Omon_mlotst_26models_ssp370_86-86nyears_2023-11-02_19-22-58.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_28settings_Omon_mlotst_28models_ssp585_86-86nyears_2023-11-02_19-23-15.r"
+    } else if (F) { # o2
+        fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_15settings_Omon_o2_15models_historical_r1i1p1f1_r3i1p2f1_r1i1p1f2_gn_gr_165-165nyears_2023-11-16_14-16-55.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_11settings_Omon_o2_11models_ssp126_r1i1p1f1_r3i1p2f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-13-21.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_13settings_Omon_o2_13models_ssp245_r1i1p1f1_r2i1p2f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-14-24.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_o2_12models_ssp370_r1i1p1f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-14-58.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_11settings_Omon_o2_11models_ssp585_r1i1p1f1_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-15-35.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_15settings_Omon_o2_15models_historical_165-165nyears_2023-11-02_15-21-08.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_11settings_Omon_o2_11models_ssp126_86-86nyears_2023-11-02_17-31-52.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_13settings_Omon_o2_13models_ssp245_86-86nyears_2023-11-02_17-32-10.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_o2_12models_ssp370_86-86nyears_2023-11-02_18-58-19.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_4settings_Omon_o2_4models_ssp534-over_86-86nyears_2023-11-02_17-32-24.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_11settings_Omon_o2_11models_ssp585_86-86nyears_2023-11-02_17-32-38.r"
+    } else if (F) { # remoc
+        # my dl
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_10settings_Oyr_remoc_10models_historical_r1i1p1f1_gn_gr_165-165nyears_2023-12-01_17-47-56.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_6settings_Oyr_remoc_6models_ssp126_r4i1p1f1_r1i1p1f1_gn_86-86nyears_2023-12-01_17-49-34.r" 
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_6settings_Oyr_remoc_6models_ssp245_r4i1p1f1_r1i1p1f1_gn_gr_86-86nyears_2023-12-01_17-49-46.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_7settings_Oyr_remoc_7models_ssp370_r4i1p1f1_r1i1p1f1_gn_86-86nyears_2023-12-01_17-49-53.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_6settings_Oyr_remoc_6models_ssp585_r4i1p1f1_r1i1p1f1_gn_gr_86-86nyears_2023-12-01_17-50-03.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_9settings_Oyr_remoc_9models_historical_r1i1p1f1_r5i1p1f1_gn_gr_165-165nyears_2023-11-16_14-16-19.r"
+        fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_3settings_Oyr_remoc_3models_historical_r4i1p1f1_gn_165-165nyears_2023-12-01_18-39-26.r" # cesm2
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_4settings_Oyr_remoc_4models_ssp126_r1i1p1f1_gr_gn_86-86nyears_2023-11-16_14-12-57.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Oyr_remoc_5models_ssp245_r1i1p1f1_gn_gr_86-86nyears_2023-11-16_14-14-01.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Oyr_remoc_5models_ssp370_r1i1p1f1_gn_86-86nyears_2023-11-16_14-14-39.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Oyr_remoc_5models_ssp585_r1i1p1f1_gn_gr_86-86nyears_2023-11-16_14-15-14.r"
+
+        # old
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_9settings_Oyr_remoc_9models_historical_165-165nyears_2023-11-06_12-51-01.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_4settings_Oyr_remoc_4models_ssp126_86-86nyears_2023-11-06_12-50-16.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Oyr_remoc_5models_ssp245_86-86nyears_2023-11-06_12-49-56.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Oyr_remoc_5models_ssp370_86-86nyears_2023-11-06_12-49-42.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Oyr_remoc_5models_ssp585_86-86nyears_2023-11-06_12-49-17.r"
+    } else if (F) { # rsdo
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_10settings_Omon_rsdo_10models_historical_r1i1p1f1_r1i1p2f1_r1i1p1f3_r1i1p1f2_gn_165-165nyears_2023-11-16_14-17-00.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Omon_rsdo_5models_ssp126_r1i1p1f1_r1i1p1f3_r1i1p1f2_gn_gr_86-86nyears_2023-11-16_14-13-25.r"
+        fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Omon_rsdo_5models_ssp245_r1i1p1f1_r1i1p1f3_r1i1p1f2_gn_86-86nyears_2023-11-16_14-14-28.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_6settings_Omon_rsdo_6models_ssp370_r1i1p1f1_r10i1p2f1_r3i1p2f1_r1i1p1f2_gn_86-86nyears_2023-11-16_14-15-05.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_6settings_Omon_rsdo_6models_ssp585_r1i1p1f1_r2i1p2f1_r2i1p1f1_r1i1p1f3_r1i1p1f2_gn_86-86nyears_2023-11-16_14-15-41.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_10settings_Omon_rsdo_10models_historical_165-165nyears_2023-11-02_14-32-31.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Omon_rsdo_5models_ssp126_86-86nyears_2023-11-02_17-37-43.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Omon_rsdo_5models_ssp245_86-86nyears_2023-11-02_17-38-13.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_6settings_Omon_rsdo_6models_ssp370_86-86nyears_2023-11-02_18-58-23.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_4settings_Omon_rsdo_4models_ssp534-over_86-86nyears_2023-11-02_17-38-31.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_6settings_Omon_rsdo_6models_ssp585_86-86nyears_2023-11-02_17-38-55.r"
     } else if (F) { # sfcWind
-        #fnml <- "~/slurm/cronjobs/esgf/namelist.post_58settings_Amon_sfcWind_58models_historical_165-165nyears_2023-03-27_17-13-54.r"
-        fnml <- "~/slurm/cronjobs/esgf/namelist.post_40settings_Amon_sfcWind_40models_ssp126_86-86nyears_2023-04-19_14-32-57.r"
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_58settings_Amon_sfcWind_58models_historical_165-165nyears_2023-03-27_17-13-54.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_40settings_Amon_sfcWind_40models_ssp126_86-86nyears_2023-04-19_14-32-57.r"
+    } else if (F) { # siareas
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_16settings_SImon_siareas_16models_ssp585_86-86nyears_2023-03-29_11-10-19.r"
+    } else if (F) { # siconc
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_56settings_SImon_siconc_56models_historical_r1i1p1f1_r1i1p2f1_r1i1p1f2_r1i1p1f3_gn_gr_gr1_165-165nyears_2023-11-16_14-17-17.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_37settings_SImon_siconc_37models_ssp126_r1i1p1f1_r1i1p2f1_r4i1p1f1_r1i1p1f2_r1i1p1f3_gn_gr1_86-86nyears_2023-11-16_14-13-41.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_38settings_SImon_siconc_38models_ssp245_r1i1p1f1_r1i1p2f1_r4i1p1f1_r1i1p1f2_r1i1p1f3_gn_gr1_86-86nyears_2023-11-16_18-09-53.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_32settings_SImon_siconc_32models_ssp370_r1i1p1f1_r1i1p2f1_r4i1p1f1_r1i1p1f2_gn_gr1_86-86nyears_2023-11-16_18-09-42.r"
+        fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_38settings_SImon_siconc_38models_ssp585_r1i1p1f1_r1i1p2f1_r4i1p1f1_r1i1p1f2_r1i1p1f3_gn_gr_gr1_86-86nyears_2023-11-16_14-15-56.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_56settings_SImon_siconc_56models_historical_165-165nyears_2023-03-29_16-38-09.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_37settings_SImon_siconc_37models_ssp126_86-86nyears_2023-11-02_19-43-08.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_38settings_SImon_siconc_38models_ssp245_86-86nyears_2023-11-02_19-42-51.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_32settings_SImon_siconc_32models_ssp370_86-86nyears_2023-11-02_19-42-32.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_38settings_SImon_siconc_38models_ssp585_86-86nyears_2023-03-29_15-10-56.r"
+    } else if (F) { # so
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_58settings_Omon_so_58models_historical_165-165nyears_2023-05-30_17-42-02.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_38settings_Omon_so_38models_ssp126_86-86nyears_2023-04-09_14-01-56.r"
+    } else if (F) { # spco2
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_19settings_Omon_spco2_19models_historical_165-165nyears_2022-07-15_18-07-18.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_5settings_Omon_spco2_5models_historical_r4i1p1f1_165-165nyears_2022-10-07_13-29-46.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_12settings_Omon_spco2_12models_ssp126_86-86nyears_2022-10-06_15-46-26.r"
+    } else if (F) { # talk
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_20settings_Omon_talk_20models_historical_165-165nyears_2022-09-29_17-19-58.r"
+    } else if (F) { # thetao
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_58settings_Omon_thetao_58models_historical_r1i1p1f1_r1i1p2f1_r1i1p1f2_r1i1p1f3_gn_gr_gr1_165-165nyears_2023-11-21_15-27-54.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_39settings_Omon_thetao_39models_ssp126_r1i1p1f1_r1i1p2f1_r1i1p1f2_r1i1p3f1_r1i1p1f3_gn_gr1_gr_86-86nyears_2023-11-21_15-25-14.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_37settings_Omon_thetao_37models_ssp245_r1i1p1f1_r1i1p1f2_r2i1p1f2_r1i1p1f3_gn_gr1_gr_86-86nyears_2023-11-21_15-27-11.r"
+        fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_33settings_Omon_thetao_33models_ssp370_r1i1p1f1_r1i1p1f2_gn_gr1_gr_86-86nyears_2023-11-21_15-27-20.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_39settings_Omon_thetao_39models_ssp585_r1i1p1f1_r1i1p1f2_r1i1p3f1_r1i1p1f3_gn_gr_gr1_86-86nyears_2023-11-21_15-27-28.r"
+
+        # noresm gn:
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_58settings_Omon_thetao_58models_historical_r1i1p1f1_r1i1p2f1_r1i1p1f2_r1i1p1f3_gn_gr_gr1_165-165nyears_2023-11-16_14-17-06.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_39settings_Omon_thetao_39models_ssp126_r1i1p1f1_r1i1p2f1_r1i1p1f2_r1i1p3f1_r1i1p1f3_gn_gr1_86-86nyears_2023-11-16_14-13-35.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_37settings_Omon_thetao_37models_ssp245_r1i1p1f1_r1i1p1f2_r2i1p1f2_r1i1p1f3_gn_gr1_86-86nyears_2023-11-16_14-14-32.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_33settings_Omon_thetao_33models_ssp370_r1i1p1f1_r1i1p1f2_gn_gr1_86-86nyears_2023-11-16_14-15-08.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_39settings_Omon_thetao_39models_ssp585_r1i1p1f1_r1i1p1f2_r1i1p3f1_r1i1p1f3_gn_gr_gr1_86-86nyears_2023-11-16_14-15-46.r"
+
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_58settings_Omon_thetao_58models_historical_165-165nyears_2023-05-30_17-34-34.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_39settings_Omon_thetao_39models_ssp126_86-86nyears_2023-04-09_12-31-56.r" 
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_37settings_Omon_thetao_37models_ssp245_86-86nyears_2023-11-02_19-32-14.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_33settings_Omon_thetao_33models_ssp370_86-86nyears_2023-11-02_19-32-01.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_39settings_Omon_thetao_39models_ssp585_86-86nyears_2023-11-02_19-31-45.r"
+    } else if (F) { # tos
+        
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_61settings_Omon_tos_61models_historical_165-165nyears_2022-09-28_17-27-53.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_20settings_Omon_tos_20models_historical_r4i1p1f1_165-165nyears_2022-10-06_18-19-37.r"
+        #fnml <- "~/slurm/cronjobs/esgf/namelists/namelist.post_42settings_Omon_tos_42models_ssp126_86-86nyears_2022-10-06_15-53-30.r"
     }
     if (!file.exists(fnml)) stop("could not find file ", fnml)
     message("run `source(\"", fnml, "\")` ...")
     source(fnml)
+        
+    # remove/keep specific data
+    rminds <- keepinds <- list()
+    #rminds[[length(rminds)+1]] <- match(c("CNRM-CM6-1-HR", "HadGEM3-GC31-MM"), models) # exclude high res
+    rminds[[length(rminds)+1]] <- which(varnamesin == "siareas" & models == "AWI-CM-1-1-MR") # cdo: Unsupported file structure
+    rminds[[length(rminds)+1]] <- which(varnamesin == "siconc" & models == "CIESM") # cdo: segmentation fault
+    rminds[[length(rminds)+1]] <- which(varnamesin == "chl" & models == "GISS-E2-1-G") # wrong
+    rminds[[length(rminds)+1]] <- which(varnamesin == "dissic" & models == "GISS-E2-1-G") # wrong
+    rminds[[length(rminds)+1]] <- which(varnamesin == "talk" & models == "GISS-E2-1-G") # wrong
+    rminds[[length(rminds)+1]] <- which(grepl("ssp585", prefixes) && varnamesin == "mlotst" & models == "EC-Earth3") # 2088 missing
+    rminds <- sort(unique(unlist(rminds)))
+    if (length(rminds) > 0) {
+        message("\nremove ", length(rminds), "/", length(prefixes), " settings:\n", paste(prefixes[rminds], collapse="\n"))
+        models <- models[-rminds]; files <- files[-rminds]; fpatterns <- fpatterns[-rminds]
+        prefixes <- prefixes[-rminds]; varnamesin <- varnamesin[-rminds]
+        froms <- froms[-rminds]; tos <- tos[-rminds]
+    }
 
-    # remove incomplete/wrong data
-    inds <- list()
-    inds[[length(inds)+1]] <- which(varnamesin == "chl" & models == "GISS-E2-1-G") # wrong
-    inds[[length(inds)+1]] <- which(varnamesin == "dissic" & models == "GISS-E2-1-G") # wrong
-    inds[[length(inds)+1]] <- which(varnamesin == "talk" & models == "GISS-E2-1-G") # wrong
-    inds[[length(inds)+1]] <- which(grepl("historical", prefixes) & models == "EC-Earth3") # only until 2007 data
-    inds[[length(inds)+1]] <- which(grepl("historical", prefixes) & varnamesin == "dpco2" & models == "CESM2-WACCM-FV2") # only 1900-1999 data
-    inds[[length(inds)+1]] <- which(grepl("historical", prefixes) & varnamesin == "dissic" & models == "NorESM2-LM") # only 1850-1859
-    inds[[length(inds)+1]] <- which(grepl("historical", prefixes) & varnamesin == "talk" & models == "NorCPM1") # wrong historical dates 2015-2029
-    inds[[length(inds)+1]] <- which(grepl("ssp126", prefixes) & varnamesin == "mlotst" & models == "CESM2") # only 2065-2100 data
-    inds[[length(inds)+1]] <- which(varnamesin == "siareas" & models == "AWI-CM-1-1-MR") # cdo: Unsupported file structure
-    inds[[length(inds)+1]] <- which(varnamesin == "siconc" & models == "CIESM") # cdo: segmentation fault
-    inds[[length(inds)+1]] <- which(varnamesin == "siconc" & models == "CAMS-CSM1-0") # only until 2099
-    inds[[length(inds)+1]] <- which(varnamesin == "sfcWind" & models == "MIROC-ES2H") # only 1850
-    if (T) { # exclude all models except some
-        message("\nspecial: exclude models")
+    # keep only specific data
+    keep_models <- NULL
+    if (T) { # co2 paper
         keep_models <- c("CanESM5-CanOE", "CanESM5", "CESM2-WACCM", 
                          "CNRM-ESM2-1", "GFDL-ESM4", "IPSL-CM6A-LR", 
                          "MIROC-ES2L", "MPI-ESM1-2-HR", "MPI-ESM1-2-LR", 
                          "UKESM1-0-LL")
-        inds[[length(inds)+1]] <- which(is.na(match(models, keep_models)))
+    } else if (F) { # keep only high-res
+        keep_models <- "CNRM-CM6-1-HR" # "HadGEM3-GC31-MM"
+    } else if (F) {
+        keep_models <- "EC-Earth3"
+    } else if (F) {
+        keep_models <- "NorESM2-LM"
+    } else if (F) {
+        keep_models <- c("CESM2-WACCM", "CanESM5-CanOE")
     }
-    inds <- sort(unique(unlist(inds)))
-    if (length(inds) > 0) {
-        message("\nremove ", length(inds), " settings:\n", paste(prefixes[inds], collapse="\n"))
-        models <- models[-inds]; files <- files[-inds]; fpatterns <- fpatterns[-inds]
-        prefixes <- prefixes[-inds]; varnamesin <- varnamesin[-inds]
-        froms <- froms[-inds]; tos <- tos[-inds]
+    if (!is.null(keep_models)) {
+        keepinds[[length(keepinds)+1]] <- match(keep_models, models)
+    }
+    keepinds <- sort(unique(unlist(keepinds)))
+    if (length(keepinds) > 0) {
+        message("\nkeep ", length(keepinds), "/", length(prefixes), " settings:\n", paste(prefixes[keepinds], collapse="\n"))
+        models <- models[keepinds]; files <- files[keepinds]; fpatterns <- fpatterns[keepinds]
+        prefixes <- prefixes[keepinds]; varnamesin <- varnamesin[keepinds]
+        froms <- froms[keepinds]; tos <- tos[keepinds]
     }
     
-    sellevsidx <- rep(NA, t=length(models))
-    inds <- which(varnamesin == "chl" | varnamesin == "dissic" | varnamesin == "talk")
-    if (length(inds) > 0) sellevsidx[inds] <- 1 # select first level = closest to surface
+    if (F && all(varnamesin == "detoc")) {
+        message("\nspecial: calc export_detC_100m based on detoc")
+        varnamesin[] <- "export_detC_100m"
+        rminds[[length(rminds)+1]] <- which(grepl("ssp245|ssp585", prefixes) & models == "CanESM5") # in namelist but detoc data on esgf was not complete and thus skipped
+        rminds[[length(rminds)+1]] <- which(grepl("ssp370", prefixes) & models == "MPI-ESM-1-2-HAM")
+        rminds[[length(rminds)+1]] <- which(grepl("ssp245", prefixes) & models == "NorESM2-LM")
+    }
+    if (F && all(varnamesin == "siconc")) {
+        stop("todo: calc_siarea.r")
+        message("\nspecial: calc siarea based on siconc") 
+        varnamesin[] <- "siarea"
+    }
 
     #froms <- rep(1970, t=length(models))
     #froms <- rep(1981, t=length(models))
     #froms <- rep(1982, t=length(models))
     #froms <- rep(1990, t=length(models))
     #froms <- rep(2014, t=length(models))
+    #tos <- rep(1970, t=length(models))
     #tos <- rep(1982, t=length(models))
     #tos <- rep(1990, t=length(models))
     #tos <- rep(2015, t=length(models))
-    tos <- rep(2018, t=length(models))
-    #tos <- rep(2019, t=length(models))
+    #tos <- rep(2018, t=length(models))
+    tos <- rep(2019, t=length(models))
+    #seasons <- sapply(vector("list", l=length(models)), base::append, list(Mar=3))
+    #seasons <- sapply(vector("list", l=length(models)), base::append, list(Sep=9))
     modes <- rep("select", t=length(models))
     #modes <- rep("timmean", t=length(models))
     #modes <- rep("fldmean", t=length(models))
     #modes <- rep("fldint", t=length(models))
     
+    # fix stuff
+    inds <- which(varnamesin == "remoc" & grepl("CESM2", models)) 
+    if (T && length(inds) > 0) { # years of remoc files on esgf of all CESM2* models have erroneous + 1
+                                 # e.g. 1970 reads 1971 in both filename and time dim value
+        message("\nspecial: add year+1 for CESM2 models")
+        froms <- as.integer(froms); tos <- as.integer(tos)
+        froms[inds] <- froms[inds] + 1
+        tos[inds] <- tos[inds] + 1
+    }
+    
     # additional cmds
     cdo_after_sels <- cdo_before_calcs <- cdo_after_calcs <- rep("", t=length(models))
     
-    # spatial interpolation
-    # global_1 --> 360x180 with lons from -179.5
-    if (F) { # some models
-        inds <- which(grepl("^BCC|^FGOALS", models)) # fldmean does not work on native grid and remapycon does not work
-        if (length(inds) > 0) {
-            cdo_after_sels[inds] <- "-remapbil,global_1"
-        }
-    } else if (F) { # all models
-        cdo_after_sels <- rep("-remapycon,global_1", t=length(models))
-        #cdo_after_calcs <- rep("-remapycon,global_1", t=length(models))
-        if (any(grepl("remapycon", cdo_after_sels)) || any(grepl("remapycon", cdo_after_calcs))) { # remapycon does not work for some models
-            inds <- which(grepl("^BCC|^CAMS|^CanESM|^CMCC|^CNRM|^EC-Earth3|^FGOALS|^HadGEM3|^IITM|^IPSL|^MCM-UA-1-0|^MPI-ESM|^NESM|^NorESM2|^UKESM", models)) 
+    # horizontal interpolation
+    # problematic griddes: BCC-*, CAS-ESM2-0, FGOALS-*, 
+    if (F) { # global_1 --> 360x180 with lons from -179.5
+        tmp <- rep("-remapycon,global_1", t=length(models))
+        inds <- which(grepl("^BCC|^CAMS|^CanESM|^CMCC|^CNRM|^EC-Earth3|^FGOALS|^HadGEM3|^IITM|^IPSL|^MCM-UA-1-0|^MPI-ESM|^NESM|^NorESM2|^UKESM", models))
+        if (length(inds) > 0) { # remapycon does not work --> use remapbil
             # ocean model:       ESM:
             # licom3.0           FGOALS*
             # micom              NorESM2* (NorCPM1 uses micom1.1 which works)
@@ -3366,20 +4165,47 @@ if (F) { # old hist
             # nemo-opa           IPSL*
             # mpiom1.63          MPI-ESM*
             # unclear            MCM-UA-1-0
-            # --> use remapbil
-            if (length(inds) > 0) {
-                if (any(cdo_after_sels != "")) cdo_after_sels[inds] <- "-remapbil,global_1" 
-                if (any(cdo_after_calcs != "")) cdo_after_calcs[inds] <- "-remapbil,global_1" 
-            }
+            if (any(tmp != "")) tmp[inds] <- "-remapbil,global_1" 
         }
-    } # if spatial interp
-    # todo: KIOST-ESM remapnn, remapbil, remapycon look strange
-    inds <- which(models == "KIOST-ESM")
-    if (length(inds)) {
-        inds2 <- which(grepl("remap", cdo_after_sels[inds]) | grepl("remap", cdo_after_calcs[inds]))
-        if (length(inds2)) {
+        inds <- which(models == "KIOST-ESM")
+        if (length(inds) > 0) { # KIOST-ESM both remapycon and remapbil look strange
+            # todo: remapnn?
             stop("\nmodel KIOST-ESM shall be interpolated but dont know how --> remove this setting and rerun")
         }
+        cdo_after_sels <- paste0(tmp, " ", cdo_after_sels)
+        #cdo_after_calcs <- paste0(tmp, " ", cdo_after_calcs)
+    } # if spatial interp
+
+    # select levels
+    sellevsidx <- sellevels <- intlevels <- levranges <- rep(NA, t=length(models))
+    if (F) { 
+        sellevsidx[] <- 1 # select first level = closest to surface
+    } else if (F) { 
+        inds <- which(varnamesin == "chl" | varnamesin == "dissic" | varnamesin == "talk" | varnamesin == "rsdo")
+        if (length(inds) > 0) sellevsidx[inds] <- 1 # select first level = closest to surface
+    } else if (F) {
+        inds <- which(varnamesin == "detoc" | varnamesin == "export_detC_100m")
+        if (length(inds) > 0) intlevels[inds] <- 100
+    } else if (F) {
+        inds <- which(varnamesin == "thetao" | varnamesin == "o2")
+        if (length(inds) > 0) intlevels[inds] <- paste(seq(100, 600, b=20), collapse=",")
+    } else if (F) {
+        inds <- which(varnamesin == "o2" | varnamesin == "thetao")
+        if (length(inds) > 0) {
+            levranges[inds] <- "100,600" # `cdo -select,levrange=<from>,<to>` selects closest levels within and including <from> and <to>
+            inds2 <- grep("CESM2", models[inds]) # CESM2* models use cm as vertical units
+            if (length(inds) > 0) {
+                levranges[inds[inds2]] <- "10000,60000"
+                names(levranges)[inds[inds2]] <- "centimeters"
+            }
+        }
+    }
+
+    # calc vertstats after selection
+    if (F) { # vertical integral
+        cdo_after_sels <- paste0("-vertint ", cdo_after_sels)
+    } else if (F) { # vertical average
+        cdo_after_sels <- paste0("-vertmean ", cdo_after_sels)
     }
 
     # add fixes for strange data
@@ -3390,7 +4216,7 @@ if (F) { # old hist
     inds <- which(models == "E3SM-1-0")
     if (length(inds) > 0) cdo_after_sels[inds] <- paste0(cdo_after_sels[inds], " -setctomiss,1")
     inds <- which(models == "FGOALS-f3-L")
-    if (length(inds) > 0) cdo_after_sels[inds] <- paste0(cdo_after_sels[inds], " -setctomiss,1e+35")
+    if (F && length(inds) > 0) cdo_after_sels[inds] <- paste0(cdo_after_sels[inds], " -setctomiss,1e+35")
     inds <- which(!is.na(match(models, c("KIOST-ESM"))))
     if (length(inds) > 0) cdo_after_sels[inds] <- paste0(cdo_after_sels[inds], " -setctomiss,nan")
     
@@ -3410,6 +4236,7 @@ if (F) { # old hist
                              #list(name="45to70S", sellonlatbox=c(lon1=-360,lon2=360,lat1=-70,lat2=-45))
                              #list(name="nino34", sellonlatbox=c(lon1=-170,lon2=-120,lat1=-5,lat2=5)) !!! lons = -180,180
                              #list(name="50to90S", sellonlatbox=c(lon1=-360,lon2=360,lat1=-90,lat2=-50))
+                             #list(name="NH_66", sellonlatbox=c(lon1=-360,lon2=360,lat1=66,lat2=90))
                              #)
 
 } # which setting

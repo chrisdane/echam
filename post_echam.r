@@ -98,6 +98,13 @@ if (!all(sapply(exist_checks, exists))) {
          "` in post namelist")
 }
 nsettings <- length(models)
+if (!is.list(files)) {
+    if (nsettings == 1) {
+        files <- list(files)
+    } else {
+        stop("`files` must be list of length `nsettings` = ", nsettings)
+    }
+}
 for (i in seq_along(exist_checks)) {
     cmd <- paste0("length(", exist_checks[i], ")")
     length_of_obj <- eval(parse(text=cmd))
@@ -220,87 +227,124 @@ if (any(!dir.exists(postpaths))) {
 }
 postpaths <- normalizePath(postpaths)
 
-if (exists("season_names")) {
-    if (exists("season_inds")) {
-        # check is user provided season_names and season_inds fit to each other
-        stop("todo")
-    } else if (!exists("season_inds")) {
-        # find season_inds based on given season_names 
-        season_inds <- vector("list", l=nsettings)
-        for (i in seq_len(nsettings)) {
-            if (season_names[i] == "annual") {
-                season_inds[[i]] <- 1 # just placeholder
-            } else {
-                message("todo")
-                season_inds[[i]] <- 1:12
-            }
-        }
+cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
+if (!exists("cdo_after_sels")) cdo_after_sels <- rep("", t=nsettings)
+if (!exists("cdo_before_calcs")) cdo_before_calcs <- rep("", t=nsettings) # todo: not imeplemted for all cdo cases?
+if (!exists("cdo_after_calcs")) cdo_after_calcs <- rep("", t=nsettings)
+    
+if (exists("seasons")) {
+    check <- T
+    if (!is.list(seasons)) {
+        check <- F
+    } else {
+        if (is.null(names(seasons)) || length(seasons) != nsettings) check <- F
+        if (!all(sapply(seasons, is.numeric))) check <- F
     }
-} else if (!exists("season_names")) {
-    if (exists("season_inds")) {
-        # find season_names based on given season_inds
-    } else if (!exists("season_inds")) {
-        # no season_names or season_inds given. use default: annual
-        season_inds <- vector("list", l=nsettings)
-        for (i in seq_len(nsettings)) season_inds[[i]] <- 1:12
-    }
-    season_names <- rep(NA, t=nsettings)
-    for (i in seq_len(nsettings)) {
-        if (length(season_inds[[i]]) == 12 && season_inds[[i]] == 1:12) { # default case: annual
-            season_names[i] <- "Jan-Dec"
-        } else if (length(season_inds[[i]]) == 1) { # only 1 month, e.g. "Jan"
-            season_names[i] <- month.abb[season_inds[[i]]]
-        } else { # several months: first letters of months, e.g. "JFM"
-            season_names[i] <- paste(substr(month.abb[season_inds[[i]]], 1, 1), collapse="")
-        }
-    }
+    if (!check) stop("`seasons` must be named list of length `nsettings` = ", nsettings, " with numeric month inds")
+} else { # seasons does not exist: use default
+    seasons <- vector("list", l=nsettings)
+    names(seasons) <- rep("Jan-Dec", t=nsettings)
+    for (i in seq_len(nsettings)) seasons[[i]] <- 1:12
 }
-if (!exists("sellevels")) sellevels <- rep(NA, t=nsettings)
+if (exists("season_inds")) stop("outdated")
+        #if (length(season_inds[[i]]) == 12 && season_inds[[i]] == 1:12) { # default case: annual
+        #    season_names[i] <- "Jan-Dec"
+        #} else if (length(season_inds[[i]]) == 1) { # only 1 month, e.g. "Jan"
+        #    season_names[i] <- month.abb[season_inds[[i]]]
+        #} else { # several months: first letters of months, e.g. "JFM"
+        #    season_names[i] <- paste(substr(month.abb[season_inds[[i]]], 1, 1), collapse="")
+
+# check vertical options
 if (!exists("sellevsidx")) sellevsidx <- rep(NA, t=nsettings)
-inds <- which(!is.na(sellevels) & !is.na(sellevsidx))
-if (length(inds) > 0) {
-    stop("sellevels[", paste(inds, collapse=","), "] = ", paste(sellevels[inds], collapse=", "),
-         " and sellevsidx[", paste(inds, collapse=","), "] = ", paste(sellevsidx[inds], collapse=", "), 
-         ". decide for one")
+if (!exists("sellevels")) sellevels <- rep(NA, t=nsettings)
+if (!exists("intlevels")) intlevels <- rep(NA, t=nsettings)
+if (!exists("levranges")) levranges <- rep(NA, t=nsettings)
+if (length(sellevsidx) != nsettings) stop("if provided, `sellevsidx` must be of same length as nsettings = ", nsettings)
+if (length(sellevels) != nsettings) stop("if provided, `sellevels` must be of same length as nsettings = ", nsettings)
+if (length(intlevels) != nsettings) stop("if provided, `intlevels` must be of same length as nsettings = ", nsettings)
+if (length(levranges) != nsettings) stop("if provided, `levranges` must be of same length as nsettings = ", nsettings)
+for (i in seq_len(nsettings)) {
+    tocheck <- c(sellevsidx[i], sellevels[i], intlevels[i], levranges[i])
+    inds <- which(!is.na(tocheck))
+    if (length(inds) > 1) stop("want more than one of `sellevidx`, `sellev`, `intlevel` `levranges`. either none or one of them")
 }
 if (!exists("lev_fnames")) lev_fnames <- rep("", t=nsettings)
-for (i in seq_len(nsettings)) {
-    levs <- sellevels[i]
-    if (!is.na(levs)) {
-        if (is.character(levs)) {
-            if (grepl(",", levs)) {
-                levs <- strsplit(levs, ",")[[1]]
-                lev_fnames[i] <- paste0("_sellevel_", paste(levs, collapse="_"))
-            } else if (grepl("/", levs)) {
-                levs <- strsplit(levs, "/")[[1]]
-                lev_fnames[i] <- paste0("_sellevel_", levs[1], "-", levs[length(levs)])
-            } else {
-                lev_fnames[i] <- paste0("_sellevel_", levs)
-            }
-        }
-    }
-}
-for (i in seq_len(nsettings)) {
+    
+# check sellevsidx
+for (i in seq_len(nsettings)) { 
     levs <- sellevsidx[i]
     if (!is.na(levs)) {
-        if (is.character(levs)) {
-            if (grepl(",", levs)) {
-                levs <- strsplit(levs, ",")[[1]]
-                lev_fnames[i] <- paste0("_sellevidx_", paste(levs, collapse="_"))
-            } else if (grepl("/", levs)) {
-                levs <- strsplit(levs, "/")[[1]]
-                lev_fnames[i] <- paste0("_sellevidx_", levs[1], "-", levs[length(levs)])
-            } else {
-                lev_fnames[i] <- paste0("_sellevidx_", levs)
-            }
+        if (grepl(",", levs)) {
+            levs <- strsplit(levs, ",")[[1]]
+            lev_fnames[i] <- paste0("_sellevidx_", paste(levs, collapse="_"))
+        } else if (grepl("/", levs)) {
+            levs <- strsplit(levs, "/")[[1]]
+            lev_fnames[i] <- paste0("_sellevidx_", levs[1], "-", levs[length(levs)])
+        } else {
+            lev_fnames[i] <- paste0("_sellevidx_", levs)
         }
     }
 }
 
-cdo_set_rel_time_old <- cdo_set_rel_time # for next setting i
-if (!exists("cdo_after_sels")) cdo_after_sels <- rep("", t=nsettings)
-if (!exists("cdo_before_calcs")) cdo_before_calcs <- rep("", t=nsettings)
-if (!exists("cdo_after_calcs")) cdo_after_calcs <- rep("", t=nsettings)
+# check sellevels
+if (is.null(names(sellevels))) names(sellevels) <- rep("m", t=nsettings) # default: m
+for (i in seq_len(nsettings)) {
+    if (is.na(names(sellevels)[i])) names(sellevels)[i] <- "m" # default: m
+    levs <- sellevels[i]
+    if (!is.na(levs)) {
+        if (grepl(",", levs)) {
+            levs <- strsplit(levs, ",")[[1]]
+            lev_fnames[i] <- paste0("_sellevel_", paste(levs, collapse="_"))
+        } else if (grepl("/", levs)) {
+            levs <- strsplit(levs, "/")[[1]]
+            lev_fnames[i] <- paste0("_sellevel_", levs[1], "-", levs[length(levs)])
+        } else {
+            lev_fnames[i] <- paste0("_sellevel_", levs)
+        }
+        lev_fnames[i] <- paste0(lev_fnames[i], names(levs))
+    }
+}
+
+# check intlevels
+if (is.null(names(intlevels))) names(intlevels) <- rep("m", t=nsettings) # default: m
+for (i in seq_len(nsettings)) { 
+    if (is.na(names(intlevels)[i])) names(intlevels)[i] <- "m" # default: m
+    levs <- intlevels[i]
+    if (!is.na(levs)) {
+        if (grepl(",", levs)) {
+            levs <- strsplit(levs, ",")[[1]]
+            lev_fnames[i] <- paste0("_intlevel_", paste(levs, collapse="_"))
+        } else {
+            lev_fnames[i] <- paste0("_intlevel_", levs)
+        }
+        lev_fnames[i] <- paste0(lev_fnames[i], names(levs))
+    }
+}
+
+# check levranges
+if (is.null(names(levranges))) names(levranges) <- rep("m", t=nsettings) # default: m
+for (i in seq_len(nsettings)) { 
+    if (is.na(names(levranges)[i])) names(levranges)[i] <- "m" # default: m
+    levs <- levranges[i]
+    if (!is.na(levs)) {
+        if (!grepl(",", levs)) stop("for cdo levrange must be of format `cdo select,levrange=from,to`")
+        levs <- sub(",", "-", levs)
+        lev_fnames[i] <- paste0("_levrange_", levs)
+        lev_fnames[i] <- paste0(lev_fnames[i], names(levs))
+    }
+}
+
+# update lev_fnames --> add further cases here if needed
+for (i in seq_len(nsettings)) { 
+    tocheck <- c(cdo_after_sels[i], cdo_before_calcs[i], cdo_after_calcs[i])
+    indmean <- grep("vertmean", tocheck)
+    indint <- grep("vertint", tocheck)
+    if (length(indmean) != 0 && length(indint) != 0) {
+        stop("for setting ", i, " both vertmean and vertint are wanted. decide for one")
+    }
+    if (length(indmean) > 0) lev_fnames[i] <- paste0(lev_fnames[i], "_vertmean")
+    if (length(indint) > 0) lev_fnames[i] <- paste0(lev_fnames[i], "_vertint")
+}
 
 # check for new times if wanted
 message("\ncheck if `new_date_list` is set and correct ... ", appendLF=F)
@@ -430,11 +474,12 @@ for (i in seq_len(nsettings)) {
     message("mode = \"", names(modes)[i], "\" = ", paste(modes[[i]], collapse=", "))
     message("from = ", froms[i])
     message("to = ", tos[i])
-    message("season_name = ", season_names[i])
-    message("season_inds = ", paste0(season_inds[[i]], collapse=","))
+    message("season = ", names(seasons)[i], ": ", paste(seasons[[i]], collapse=", "))
     message("area_out = ", areas_out[i])
-    if (!is.na(sellevels[i])) message("sellevel = ", sellevels[i])
     if (!is.na(sellevsidx[i])) message("sellevidx = ", sellevsidx[i])
+    if (!is.na(sellevels[i])) message("sellevel = ", sellevels[i])
+    if (!is.na(intlevels[i])) message("intlevel = ", sellevels[i])
+    if (!is.na(levranges[i])) message("levrange = ", levranges[i])
     if (!is.null(new_date_list[[i]])) {
         if (!is.null(new_date_list[[i]]$dates)) {
             message("new_date_list[[", i, "]]$dates = ")
@@ -459,7 +504,7 @@ for (i in seq_len(nsettings)) {
                    "_", varnamesout[i], 
                    lev_fnames[i], 
                    "_", areas_out[i],
-                   "_", season_names[i], "_", froms[i], "-", tos[i], 
+                   "_", names(seasons)[i], "_", froms[i], "-", tos[i], 
                    ".nc")
     message("fout = ", fout)
     
@@ -485,12 +530,12 @@ for (i in seq_len(nsettings)) {
         }
 
         # get files
-        if (length(files_list[[i]]) == 0) stop("provided zero files in `files[[", i, "]]")
+        if (length(files_list[[i]]) == 0) stop("provided zero files in `files_list[[", i, "]]")
         message("\ncheck ", length(files_list[[i]]), " provided files ...\nfirst file is ", files_list[[i]][1])
         files_list[[i]] <- sort(files_list[[i]])
         inds <- which(file.access(files_list[[i]], mode=4) == -1) # not readable
         if (length(inds) > 0) {
-            stop(length(inds), " of the provided files are not readable:\n",
+            stop(length(inds), " of the provided files are not readable (is full path provided?):\n",
                  paste(paste0("   ", na.omit(files_list[[i]][head(inds)])), collapse="\n"), "\n...\n",
                  paste(paste0("   ", na.omit(files_list[[i]][tail(inds)])), collapse="\n"))
         } # any file is not readable
@@ -708,19 +753,12 @@ for (i in seq_len(nsettings)) {
             } # if length(files) == 1 or not
 
         } # if <year*> or <mon*> patterns are given by user or not
-       
-        # show years, months, etc. of found files
-        if (verbose > 0) {
-            message("--> found years, months, etc. based on ", length(files), " file", 
-                    ifelse(length(files) > 1, "s", ""), ":")
-            options(width=1000)
-            ht(df, n=25)
-            options(width=width)
-        }
             
         # if only year_from and year_to were provided, but not year, derive `years_filenames` now
         if (is.null(years_filenames)) {
             if (!is.null(years_filenames_from) && !is.null(years_filenames_to)) {
+                if (all(is.na(years_filenames_from))) stop("could not derive file years based on pattern <year_from>. is `fatterns` correct?")
+                if (all(is.na(years_filenames_to))) stop("could not derive file years based on pattern <year_to>. is `fatterns` correct?")
                 message("\nderive input years based on \"<year_from>\" and \"<year_to>\" in a consecutive order ...") 
                 years_filenames <- as.vector(mapply(function(x,y) x:y, years_filenames_from, years_filenames_to))
                 years_filenames <- unlist(years_filenames) # is list if not all x[i]:y[i] sequences from the line above are of same length
@@ -731,16 +769,27 @@ for (i in seq_len(nsettings)) {
                 stop("this is not implemented yet")
             }
             message("derived ", length(years_filenames), " years:")
-            ht(years_filenames, n=25)
-        } # if years_filenames does not exist
+            ht(years_filenames, n=25, transpose=T)
+        } else { # if years_filenames does not exist
+            if (all(is.na(years_filenames))) stop("could not derive file years based on pattern <year>. is `fatterns` correct?")
+        }
 
         # todo: same as above with months_filenames
+        
+        # show years, months, etc. of found files
+        if (verbose > 0) {
+            message("\n--> found years, months, etc. based on ", length(files), " file", 
+                    ifelse(length(files) > 1, "s", ""), ":")
+            options(width=1000)
+            ht(df, n=25)
+            options(width=width)
+        }
 
         # check if found input years are strange: dt not constant
         if (length(years_filenames) > 1 &&
             diff(range(years_filenames)) > 1 && 
             length(unique(diff(unique(years_filenames)))) != 1) {
-            message("found years have non-constant dt. evaulate further with e.g. `diff(unique(years_filenames))`")
+            message("found years have non-constant dt. evaluate further with e.g. `diff(unique(years_filenames))`")
         }
 
         ## remove found years (which were found based on the file names) out of wanted years
@@ -754,26 +803,37 @@ for (i in seq_len(nsettings)) {
         message("\ngiven `froms[", i, "]` = \"", froms[i], "\" and `tos[", i, "]` = \"", tos[i], "\"")
         if (as.integer(froms[i]) < min(years_filenames) || 
             as.integer(tos[i]) > max(years_filenames)) { # some wanted years out of years_filenames
-            if (varnamesin[i] %in% names(cdo_known_cmds)) {
+            if (varnamesin[i] %in% names(cdo_known_cmds)) { # try to apply command later
                 years_wanted <- froms[i]:tos[i] 
-                # try to apply command later
             } else {
-                stop("--> these given years are not within found years: ", 
-                     min(years_filenames), " to ", max(years_filenames))
+                msg <- paste0("setting ", i, "/", nsettings, " ", prefixes[i], 
+                              ": not all wanted years `froms[", i, "]` = ", froms[i], " and `tos[", i, "]` = ", tos[i], 
+                              " are within file years ", min(years_filenames), " to ", max(years_filenames), ". skip")
+                warning(msg, immediate.=T); warning(msg)
+                next # setting
             }
         } else { # all wanted years within years_filenames
             #from_ind <- which.min(abs(years_filenames - as.integer(froms[i])))[1]
             #to_ind <- which.min(abs(years_filenames - as.integer(tos[i])))
             #to_ind <- to_ind[length(to_ind)]
-            from_ind <- which(years_filenames == as.integer(froms[i]))[1]
-            if (is.na(from_ind)) {
-                stop("wanted start year `froms[", i, "]` = \"", froms[i], "\" not available in `years_filenames`")
+            from_ind <- which(years_filenames == as.integer(froms[i]))
+            if (length(from_ind) == 0) {
+                msg <- paste0("setting ", i, "/", nsettings, " ", prefixes[i],
+                              ": wanted start year `froms[", i, "]` = ", froms[i], " not within file years ", 
+                              min(years_filenames), " to ", max(years_filenames), ". skip")
+                warning(msg, immediate.=T); warning(msg)
+                next # setting
             }
+            from_ind <- from_ind[1] # first time step of year
             to_ind <- which(years_filenames == as.integer(tos[i]))
-            to_ind <- to_ind[length(to_ind)]
-            if (is.na(to_ind)) {
-                stop("wanted end year `tos[", i, "]` = \"", tos[i], "\" not available in `years_filenames`")
+            if (length(to_ind) == 0) {
+                msg <- paste0("setting ", i, "/", nsettings, " ", prefixes[i],
+                              ": wanted end year `tos[", i, "]` = ", froms[i], " not within file years ", 
+                              min(years_filenames), " to ", max(years_filenames), ". skip")
+                warning(msg, immediate.=T); warning(msg)
+                next # setting
             }
+            to_ind <- to_ind[length(to_ind)] # last time step of year
             years_wanted <- years_filenames[from_ind:to_ind]
             message("--> found filename years from inds ", from_ind, " to ", to_ind, 
                     " (from total 1 to ", length(years_filenames), "): ",
@@ -860,14 +920,14 @@ for (i in seq_len(nsettings)) {
 
         # remove found months (which were found based on the file names) out of wanted season
         cdoselmon <- "" # default
-        if (season_names[i] != "Jan-Dec" && season_names[i] != "annual") {
-            message("\n", "season_inds = ", paste(season_inds[[i]], collapse=","), 
-                    " -> season = ", season_names[i])
-            if (grepl("<mon>", fpatterns[i])) { # <mon> given per file
-                file_season_inds <- which(months_filenames %in% season_inds[[i]])
+        if (names(seasons)[i] != "Jan-Dec") {
+            message("\n", "season = ", names(seasons)[i], ": ", paste(seasons[[i]], collapse=", "))
+            
+            # <mon> given per file --> remove unwanted months from files
+            if (grepl("<mon>", fpatterns[i])) { 
+                file_season_inds <- which(months_filenames %in% seasons[[i]])
                 if (length(file_season_inds) == 0) { # no files in wanted season 
-                    stop("no files found at season_inds = ", paste(season_inds[[i]], collapse=","), 
-                         " based on given <mon> pattern.")
+                    stop("no files found with these months based on given <mon> pattern.")
                 }
                 message("keep ", length(file_season_inds), " files out of these months. files:")
                 datapaths <- datapaths[file_season_inds]
@@ -881,14 +941,12 @@ for (i in seq_len(nsettings)) {
                     options(width=width)
                 }
 
-            #} else if (grepl("<mon_from>", fpatterns[i])) {
-            #    # this does not help?
-
-            } else { # no "<mon>" string in `fpatterns[i]`
+            # no "<mon>" string in `fpatterns[i]` --> use `cdo selmon`
+            } else { 
                 cmd <- paste0("cdo ", cdo_silent, " showmon ", datapaths[1], "/", files[1])
                 message("run `", cmd, "`")
                 months_per_file <- system(cmd, intern=T)
-                if (months_per_file != "") {
+                if (all(months_per_file != "")) {
                     months_per_file <- strsplit(months_per_file, "\\s+")[[1]]
                     if (any(months_per_file == "")) months_per_file <- months_per_file[-which(months_per_file == "")]
                 }
@@ -896,17 +954,17 @@ for (i in seq_len(nsettings)) {
                     stop("input files do not have proper time axis. not implemented yet")
                 }
                 months_per_file <- as.integer(months_per_file)
-                selmon_season_inds <- which(months_per_file %in% season_inds[[i]])
+                selmon_season_inds <- which(months_per_file %in% seasons[[i]])
                 if (length(selmon_season_inds) == 0) { # no files in wanted season
-                    stop("found zero ", season_name, " months in this file")
+                    stop("found zero months in this file based on this season")
                 }
-                cdoselmon <- paste0("-selmon,", paste(season_inds[[i]], collapse=",")) 
+                cdoselmon <- paste0("-selmon,", paste(seasons[[i]], collapse=",")) 
                 message("--> defined `cdoselmon = \"", cdoselmon, "\"")
 
             } # if <mon> is given in fpatterns or not
-        } # if season_name != "Jan_Dec"
+        } # if season != "Jan_Dec"
 
-        # sort found years and months (which were found based on the file names)
+        # sort years and months based on file names
         # e.g.:
         # 1   Hol-T_echam5_wiso_mm_699701.nc 6997 01
         # 2   Hol-T_echam5_wiso_mm_699712.nc 6997 12
@@ -1005,7 +1063,10 @@ for (i in seq_len(nsettings)) {
         cdoprefix <- ""
         if (nice_options != "") cdoprefix <- paste0(cdoprefix, " ", nice, " ", nice_options)
         if (ionice_options != "") cdoprefix <- paste0(cdoprefix, " ", ionice, " ", ionice_options)
-        cdoprefix <- paste0(cdoprefix, " ", cdo, " ", cdo_select_no_history, " ", cdo_OpenMP_threads, " ", cdo_silent)
+        cdoprefix <- paste0(cdoprefix, " ", cdo, " ", cdo_pedantic, " ", cdo_select_no_history, " ", cdo_OpenMP_threads, " ", cdo_silent)
+        if (grepl("echam", models[i]) || grepl("jsbach", models[i])) {
+            cdoprefix <- paste0(cdoprefix, " -r") # make relative time axis
+        }
 
         # convert to nc if grb
         cdoconvert <- "" # default: no conversion
@@ -1086,16 +1147,7 @@ for (i in seq_len(nsettings)) {
         } else {
 
             # check if requested variable is in first found file
-            message("\ncheck if requested variable \"", varnamesin[i], "\" ", appendLF=F)
-
-            if (!is.na(codes[i])) { # code not provided
-                cdoselect <- paste0("-select,code=", codes[i])
-                message("(\"var", codes[i], "\") ", appendLF=F)
-            } else {
-                cdoselect <- paste0("-select,name=", varnamesin[i])
-            }
-            message("is present in first found file ...")
-            
+            message("\ncheck if requested variable \"", varnamesin[i], "\" exists in first found file")
             cmd <- paste0(cdo, " -s showname ", datapaths[1], "/", files[1], " 2>&1")
             message("run `", cmd, "`")
             var_exist <- tryCatch.W.E(expr=eval(parse(text=paste0("system(cmd, intern=T)"))))$value
@@ -1104,10 +1156,10 @@ for (i in seq_len(nsettings)) {
                 stop("sth is wrong with this file")
             }
             var_exist <- trimws(var_exist)
+            teststring <- varnamesin[i] # default
             if (!is.na(codes[i])) { # code provided
                 teststring <- paste0("var", codes[i])
-            } else {
-                teststring <- varnamesin[i]
+                message("`codes[", i, "]` = ", codes[i], " was provided --> use ", teststring)
             }
             if (any(grepl(teststring, var_exist))) {
                 var_exist <- T # wanted variable is in file
@@ -1115,7 +1167,13 @@ for (i in seq_len(nsettings)) {
                 var_exist <- F
             }
             # finished if requested variable was not found in first found file
-            
+
+            # construct cdo select as it is needed in both cases: var_exist=T or F
+            if (!is.na(codes[i])) { # code not provided
+                cdoselect <- paste0("code=", codes[i])
+            } else {
+                cdoselect <- paste0("name=", varnamesin[i])
+            }
 
             if (F) { # for testing
                 message("\n*********** for testing set variable to not found ************\n")
@@ -1125,10 +1183,8 @@ for (i in seq_len(nsettings)) {
 
             if (!var_exist) { # requested variable not in first found file
 
-                message("--> requested variable \"", varnamesin[i], "\" ", appendLF=F)
-                if (!is.na(codes[i])) message("(\"var", codes[i], "\") ", appendLF=F)
-                message("was not found in first file:\n", 
-                        "   \"", datapaths[1], "/", files[1], "\"")
+                message("--> requested variable \"", teststring, "\" was not found in first file\n",
+                        datapaths[1], "/", files[1])
 
                 # special case: requested variable is one of the `cdo_known_cmds` variables
                 if (!is.na(match(varnamesin[i], names(cdo_known_cmds)))) {
@@ -1154,7 +1210,7 @@ for (i in seq_len(nsettings)) {
                     # check command if all necessary input files are available
                     cmdsin <- cdo_known_cmds[[varnamesin[i]]]$cmd
                     cmdsout <- cmdsin
-                    for (cmdi in 1:length(cmdsin)) { # todo: update with `sub_list` as above
+                    for (cmdi in seq_along(cmdsin)) { # todo: update with `sub_list` as above
                         message("\ncheck user cmd ", cmdi, "/", length(cmdsin), " for \"<\" and \">\": `", cmdsin[cmdi], "` ...")
                         replace_inds_open <- gregexpr("<", cmdsin[cmdi])[[1]]
                         replace_inds_close <- gregexpr(">", cmdsin[cmdi])[[1]]
@@ -1261,9 +1317,8 @@ for (i in seq_len(nsettings)) {
                 own_cmd <- F
 
                 # continue with default case -> cdo cmd and not any of `cdo_known_cmds`
-                message("--> requested variable \"", varnamesin[i], "\" ", appendLF=F)
-                if (!is.na(codes[i])) message("(\"var", codes[i], "\") ", appendLF=F)
-                message("was found in first file")
+                message("--> requested variable \"", teststring, "\" was found in first file\n",
+                        datapaths[1], "/", files[1], "\"")
             
                 # construct necessary cdo commands
                 message("\nconstruct cdo command chain (cdo version = ", cdo_version, ") ...")
@@ -1297,7 +1352,7 @@ for (i in seq_len(nsettings)) {
                     } else if (modes[[i]][cdocalci] == "fldint") {
                         cdocalc[cdocalci] <- "" # combination `-mul -select` does not work; need to apply -mul at the end
                         if (cdo_version < base::numeric_version("1.9.6")) {
-                            stop("need cdo version >= 1.9.8 for fldint")
+                            stop("need cdo >= 1.9.8 for fldint")
                         }
                     } else { # default
                         cdocalc[cdocalci] <- paste0("-", modes[[i]][cdocalci]) # e.g. "-fldmean"
@@ -1335,11 +1390,56 @@ for (i in seq_len(nsettings)) {
 
                 ## sellevel
                 cdosellevel <- "" # default: none
-                if (!is.na(sellevels[i])) {
-                    cdosellevel <- paste0("-sellevel,", sellevels[i])
-                } else if (!is.na(sellevsidx[i])) {
+                check_zaxis <- F
+                if (!is.na(sellevsidx[i])) {
                     cdosellevel <- paste0("-sellevidx,", sellevsidx[i])
+                } else if (!is.na(sellevels[i])) {
+                    cdosellevel <- paste0("-sellevel,", sellevels[i])
+                    check_zaxis <- T
+                    names(check_zaxis) <- names(sellevels)[i] # default: m
+                } else if (!is.na(intlevels[i])) {
+                    cdosellevel <- paste0("-intlevel,", intlevels[i])
+                    check_zaxis <- T
+                    names(check_zaxis) <- names(intlevels)[i] # default: m
+                } else if (!is.na(levranges[i])) {
+                    cdoselect <- paste0("levrange=", levranges[i], ",", cdoselect) # `name=<varname>` --> `levrange=<lev_from>,<lev_to>,name=<varname>`
+                    check_zaxis <- T
+                    names(check_zaxis) <- names(levranges)[i] # default: m
                 }
+                
+                # check if user and file levels have same units
+                if (check_zaxis) {
+                    message("\nlevel selection based on actual level values is wanted --> check zaxides if user and file levels have same units ...")
+                    cmd <- paste0(cdo, " -s zaxisdes ", datapaths[1], "/", files[1]) # todo: consider multiple zaxes (`zaxisdes -select,name=var` might take forever!)
+                    message("run `", cmd, "` ...")
+                    zaxisdes <- system(cmd, intern=T)
+                    zaxisunits <- which(base::startsWith(zaxisdes, "units"))
+                    if (length(zaxisunits) == 0) {
+                        msg <- paste0("setting ", i, "/", nsettings, " ", prefixes[i], 
+                                      ": no line of zaxisdes starts with `units`. skip\n", 
+                                      "--> `cdo zaxisdes ", datapaths[1], "/", files[1], "`:\n",
+                                      paste(zaxisdes, collapse="\n"))
+                        warning(msg, immediate.=T); warning(msg)
+                        next # setting
+                    }
+                    zaxisunits <- zaxisdes[zaxisunits] # e.g. "units     = \"m\""
+                    zaxisunits <- strsplit(zaxisunits, "=")[[1]]
+                    if (length(zaxisunits) != 2) stop("this should not happen")
+                    zaxisunits <- trimws(gsub("\"", "", zaxisunits[2]))
+                    message("--> zaxis units = \"", zaxisunits, "\"")
+                    if (zaxisunits != names(check_zaxis)) {
+                        msg <- paste0("setting ", i, "/", nsettings, " ", prefixes[i], 
+                                      ": `units` of zaxisdes = \"", zaxisunits, "\" != \"", 
+                                      names(check_zaxis), "\" (default: m). skip\n",
+                                      "--> `cdo zaxisdes ", datapaths[1], "/", files[1], "`:\n",
+                                      paste(zaxisdes, collapse="\n"))
+                        warning(msg, immediate.=T); warning(msg)
+                        next # setting
+                    }
+                    message("ok")
+                } # if check_zaxis
+                # finished checking if user and file levels have same units
+                #stop("asd")
 
                 ## sellonlatbox
                 cdoselarea <- "" # default: none
@@ -1368,7 +1468,7 @@ for (i in seq_len(nsettings)) {
                 if (!is.na(cdoshifttimes[i])) {
                     # derive dt of data based on `cdo showtimestamp`
                     # --> this is not always correct if there are strange data gaps
-                    message("provided `cdoshifttimes[", i, "]` = \"", cdoshifttimes[i], "\"")
+                    message("\nprovided `cdoshifttimes[", i, "]` = \"", cdoshifttimes[i], "\"")
                     if (grepl("dt", cdoshifttimes[i])) {
                         message("--> detected \"dt\" --> get time intervall of input files ...")
                         cmd <- paste0(cdo, " tinfo ", datapaths[1], "/", files[1])
@@ -1394,7 +1494,7 @@ for (i in seq_len(nsettings)) {
                     if (cdoshifttimes[i] != "") cdoshifttime <- paste0("-shifttime,", cdoshifttimes[i])
                     message("--> `cdoshifttime` = \"", cdoshifttime, "\"")
                 } else {
-                    message("`cdoshifttimes[", i, "]` not given --> set to e.g. \"-1mo\" or \"-1dt\" if wanted")
+                    message("\n`cdoshifttimes[", i, "]` not given --> set to e.g. \"-1mo\" or \"-1dt\" if wanted")
                 } # if cdoshifttime is provided
 
                 # add further cdo chain commands here
@@ -1424,7 +1524,10 @@ for (i in seq_len(nsettings)) {
                     }
 
                     ## 1st cmd: selection
-                    cmd_select <- cdoselect # always needed: `-select,name=<varname>`
+                    cmd_select <- paste0("-select,", cdoselect) # always needed: `-select[,levrange=<lev_from>,<lev_to>],name=<varname>`
+                    
+                    # add -sellevel or -sellevidx
+                    if (cdosellevel != "") cmd_select <- paste0(cdosellevel, " ", cmd_select)
                     
                     # add shifttime
                     if (cdoshifttime != "") cmd_select <- paste0(cdoshifttime, " ", cmd_select)
@@ -1434,9 +1537,6 @@ for (i in seq_len(nsettings)) {
                     
                     # add -selmon
                     if (cdoselmon != "") cmd_select <- paste0(cdoselmon, " ", cmd_select)
-                    
-                    # add -sellevel or -sellevidx
-                    if (cdosellevel != "") cmd_select <- paste0(cdosellevel, " ", cmd_select)
                     
                     # check for further selection commands if wanted
                     # ...
@@ -1613,9 +1713,10 @@ for (i in seq_len(nsettings)) {
                         cmd <- paste0(cmd, " ", cdo_after_sels[i])
                     }
                     cmd <- paste0(cmd,
-                                  " ", cdosellevel, 
                                   " ", cdoselmon, " ", cdoselyear, 
-                                  " ", cdoshifttime, " ", cdoselect, " ",
+                                  " ", cdoshifttime, 
+                                  " ", cdosellevel, 
+                                  " -select,", cdoselect, 
                                   " <files> ", fout)
                     if (F) {
                         cmd <- paste0(cmd, " || echo error")
@@ -1703,7 +1804,12 @@ for (i in seq_len(nsettings)) {
                         if (!is.null(ticcmd) && !is.null(toccmd)) {
                             ticcmd <- Sys.time()
                             check <- system(cmd_source)
-                            if (check != 0) stop("cmd failed")
+                            if (check != 0) {
+                                msg <- paste0("setting ", i, "/", nsettings, " ", prefixes[i], 
+                                              ": error in cmd `", cmd_source, "`")
+                                warning(msg, immediate.=T); warning(msg)
+                                next # setting
+                            }
                             toccmd <- Sys.time()
                         }
                         
@@ -2328,6 +2434,7 @@ for (i in seq_len(nsettings)) {
                             message("--> input time dim name = \"", tdimname, "\"")
                            
                             # ncap2 command with new time vals
+                            # e.g. `ncap2 -O -s 'time(:)={14}; time@units=\"days since 1-01-01\"' fin fout`
                             cmd_ncap2 <- paste0(nco_ncap2, " -O -h -s '", tdimname, "(:)={<dates_out_ncap>}; ", tdimname, "@units=\"",
                                                 new_date_list[[i]]$nc_time_units, "\"' ", nco_fout_vec[chunki], " ", 
                                                 nco_fout_vec[chunki], " || echo error")
